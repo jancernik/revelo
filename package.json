@@ -9,7 +9,10 @@
     "dev": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run dev:client\" \"pnpm run dev:api\"",
     "install:api": "pnpm install --ignore-scripts",
     "install:client": "cd client && pnpm install --ignore-scripts",
-    "install": "pnpm run install:api; pnpm run install:client"
+    "install": "pnpm run install:api; pnpm run install:client",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node api/drizzle/migrate.js",
+    "db:drop": "npx drizzle-kit drop"
   },
   "keywords": [],
   "author": "",

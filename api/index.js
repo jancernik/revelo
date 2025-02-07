@@ -1,3 +1,5 @@
+import 'dotenv/config'
+import './drizzle/migrate.js'
 import express from 'express'
 import cors from 'cors'
 
