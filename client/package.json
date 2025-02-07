@@ -1,8 +1,8 @@
 {
-  "name": "revelo",
-  "version": "0.0.0",
-  "private": true,
+  "name": "revelo-client",
+  "version": "1.0.0",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",

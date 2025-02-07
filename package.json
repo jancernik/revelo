@@ -1,5 +1,31 @@
 {
-	"dependencies": {
-		"express": "^4.21.2"
-	}
+  "name": "revelo-api",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev:api": "nodemon api/index",
+    "dev:client": "cd client && pnpm run dev",
+    "dev": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run dev:client\" \"pnpm run dev:api\"",
+    "install:api": "pnpm install --ignore-scripts",
+    "install:client": "cd client && pnpm install --ignore-scripts",
+    "install": "pnpm run install:api; pnpm run install:client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.39.1",
+    "express": "^4.21.2",
+    "multer": "1.4.5-lts.1",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "drizzle-kit": "^0.30.4",
+    "nodemon": "^3.1.9"
+  }
 }
