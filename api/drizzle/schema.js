@@ -3,6 +3,7 @@ import {
   varchar,
   timestamp,
   serial,
+  boolean
 } from 'drizzle-orm/pg-core'
 
 export const UserTable = pgTable('user', {
@@ -11,5 +12,6 @@ export const UserTable = pgTable('user', {
   username: varchar('username').unique().notNull(),
   password: varchar('password').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  admin: boolean('admin').notNull().default(false)
 })
