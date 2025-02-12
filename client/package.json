@@ -7,9 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:unit": "vitest",
-    "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-pattern \"/src/components/ui*\" --ignore-path ../.gitignore",
+    "format": "prettier --write --config ../.prettierrc.json src/"
   },
   "dependencies": {
     "vue": "^3.5.13",

@@ -12,7 +12,12 @@
     "install": "pnpm run install:api; pnpm run install:client",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node api/drizzle/migrate.js",
-    "db:drop": "npx drizzle-kit drop"
+    "db:drop": "npx drizzle-kit drop",
+    "lint:api": "eslint . --fix --ignore-pattern \"client/*\"",
+    "lint:client": "cd client && pnpm run lint",
+    "format:api": "prettier --write .",
+    "format:client": "cd client && pnpm run format",
+    "style": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run format:client ; pnpm run lint:client\" \"pnpm run format:api ; pnpm run lint:api\""
   },
   "keywords": [],
   "author": "",
@@ -32,7 +37,9 @@
   "devDependencies": {
     "concurrently": "^9.1.2",
     "drizzle-kit": "^0.30.4",
+    "eslint": "^9.20.1",
     "morgan": "^1.10.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.0"
   }
 }
