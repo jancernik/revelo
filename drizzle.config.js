@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import { config } from './api/config.js'
 
 export default {
   schema: './api/drizzle/schema.js',
@@ -7,6 +7,6 @@ export default {
   verbose: true,
   strict: true,
   dbCredentials: {
-    url: process.env.DB_URL
+    url: config.DB_URL
   }
 }
