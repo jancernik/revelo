@@ -1,31 +1,31 @@
-import bcrypt from 'bcryptjs'
-import { UserTable, RevokedTokenTable } from '../drizzle/schema.js'
+import bcrypt from "bcryptjs";
+import { UserTable, RevokedTokenTable } from "../drizzle/schema.js";
 import {
   generateAccessToken,
   generateRefreshToken,
   setRefreshTokenCookie,
   verifyRefreshToken
-} from '../utils/authUtils.js'
-import { count, eq } from 'drizzle-orm'
-import { db } from '../db.js'
+} from "../utils/authUtils.js";
+import { count, eq } from "drizzle-orm";
+import { db } from "../db.js";
 
 export const signupUser = async (req, res) => {
-  const { email, username, password } = req.body
-  if (!email || !username || !password) return res.status(400).json({ message: 'Missing fields' })
+  const { email, username, password } = req.body;
+  if (!email || !username || !password) return res.status(400).json({ message: "Missing fields" });
 
-  const emailExists = await db.select().from(UserTable).where(eq(UserTable.email, email))
+  const emailExists = await db.select().from(UserTable).where(eq(UserTable.email, email));
   if (emailExists.length > 0) {
-    return res.status(400).json({ message: 'Email already used.' })
+    return res.status(400).json({ message: "Email already used." });
   }
 
-  const usernameExists = await db.select().from(UserTable).where(eq(UserTable.username, username))
+  const usernameExists = await db.select().from(UserTable).where(eq(UserTable.username, username));
   if (usernameExists.length > 0) {
-    return res.status(400).json({ message: 'Username already used.' })
+    return res.status(400).json({ message: "Username already used." });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10)
-  const userCount = await db.select({ count: count() }).from(UserTable)
-  const isAdmin = userCount[0].count === 0
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const userCount = await db.select({ count: count() }).from(UserTable);
+  const isAdmin = userCount[0].count === 0;
 
   const [newUser] = await db
     .insert(UserTable)
@@ -40,74 +40,74 @@ export const signupUser = async (req, res) => {
       email: UserTable.email,
       username: UserTable.username,
       admin: UserTable.admin
-    })
+    });
 
-  const accessToken = generateAccessToken(newUser)
-  const refreshToken = generateRefreshToken(newUser)
+  const accessToken = generateAccessToken(newUser);
+  const refreshToken = generateRefreshToken(newUser);
 
-  setRefreshTokenCookie(res, refreshToken)
+  setRefreshTokenCookie(res, refreshToken);
 
   res.status(201).json({
-    message: 'User created successfully.',
+    message: "User created successfully.",
     user: { email, username, admin: isAdmin },
     accessToken
-  })
-}
+  });
+};
 
 export const loginUser = async (req, res) => {
-  const { username, password } = req.body
+  const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ message: 'Missing fields' })
+    return res.status(400).json({ message: "Missing fields" });
   }
 
-  const [user] = await db.select().from(UserTable).where(eq(UserTable.username, username))
-  if (!user) return res.status(401).json({ message: 'Invalid credentials.' })
+  const [user] = await db.select().from(UserTable).where(eq(UserTable.username, username));
+  if (!user) return res.status(401).json({ message: "Invalid credentials." });
 
-  const match = await bcrypt.compare(password, user.password)
-  if (!match) return res.status(401).json({ message: 'Invalid credentials.' })
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(401).json({ message: "Invalid credentials." });
 
-  const accessToken = generateAccessToken(user)
-  const refreshToken = generateRefreshToken(user)
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
 
-  setRefreshTokenCookie(res, refreshToken)
+  setRefreshTokenCookie(res, refreshToken);
 
-  res.json({ message: 'Logged in successfully.', accessToken })
-}
+  res.json({ message: "Logged in successfully.", accessToken });
+};
 
 export const logoutUser = async (req, res) => {
-  const { refreshToken } = req.cookies
+  const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(400).json({ message: 'Missing fields' })
+    return res.status(400).json({ message: "Missing fields" });
   }
 
-  await db.insert(RevokedTokenTable).values({ token: refreshToken })
+  await db.insert(RevokedTokenTable).values({ token: refreshToken });
 
-  res.clearCookie('refreshToken')
-  res.json({ message: 'Logged out successfully.' })
-}
+  res.clearCookie("refreshToken");
+  res.json({ message: "Logged out successfully." });
+};
 
 export const refreshToken = async (req, res) => {
-  const { refreshToken } = req.cookies
-  if (!refreshToken) return res.status(401).json({ message: 'Invalid credentials' })
+  const { refreshToken } = req.cookies;
+  if (!refreshToken) return res.status(401).json({ message: "Invalid credentials" });
 
   const revokedToken = await db
     .select()
     .from(RevokedTokenTable)
-    .where(eq(RevokedTokenTable.token, refreshToken))
+    .where(eq(RevokedTokenTable.token, refreshToken));
 
   if (revokedToken.length > 0) {
-    res.clearCookie('refreshToken')
-    return res.status(403).json({ message: 'Invalid refresh token.' })
+    res.clearCookie("refreshToken");
+    return res.status(403).json({ message: "Invalid refresh token." });
   }
 
   verifyRefreshToken(refreshToken, (error, user) => {
     if (error) {
-      res.clearCookie('refreshToken')
-      return res.status(401).json({ message: 'Session expired. Please log in again.' })
+      res.clearCookie("refreshToken");
+      return res.status(401).json({ message: "Session expired. Please log in again." });
     }
 
-    const accessToken = generateAccessToken(user)
-    res.json({ accessToken })
-  })
-}
+    const accessToken = generateAccessToken(user);
+    res.json({ accessToken });
+  });
+};

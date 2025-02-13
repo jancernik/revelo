@@ -13,7 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node api/drizzle/migrate.js",
     "db:drop": "npx drizzle-kit drop",
-    "lint:api": "eslint . --fix --ignore-pattern \"client/*\"",
+    "lint:api": "eslint . --fix",
     "lint:client": "cd client && pnpm run lint",
     "format:api": "prettier --write .",
     "format:client": "cd client && pnpm run format",
@@ -35,9 +35,11 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.20.0",
     "concurrently": "^9.1.2",
     "drizzle-kit": "^0.30.4",
     "eslint": "^9.20.1",
+    "globals": "^15.15.0",
     "morgan": "^1.10.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.0"

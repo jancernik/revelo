@@ -38,6 +38,9 @@ importers:
         specifier: ^3.4.5
         version: 3.4.5
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.20.0
+        version: 9.20.0
       concurrently:
         specifier: ^9.1.2
         version: 9.1.2
@@ -47,6 +50,9 @@ importers:
       eslint:
         specifier: ^9.20.1
         version: 9.20.1
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       morgan:
         specifier: ^1.10.0
         version: 1.10.0
@@ -1343,6 +1349,13 @@ packages:
     resolution:
       {
         integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==
+      }
+    engines: { node: '>=18' }
+
+  globals@15.15.0:
+    resolution:
+      {
+        integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==
       }
     engines: { node: '>=18' }
 
@@ -3035,6 +3048,8 @@ snapshots:
       is-glob: 4.0.3
 
   globals@14.0.0: {}
+
+  globals@15.15.0: {}
 
   gopd@1.2.0: {}
 
