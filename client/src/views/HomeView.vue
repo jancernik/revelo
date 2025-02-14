@@ -1,9 +1,5 @@
 <script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+console.log('HomeView.vue')
 </script>
 
-<template>
-  <main>
-    <TheWelcome />
-  </main>
-</template>
+<template>Home</template>
