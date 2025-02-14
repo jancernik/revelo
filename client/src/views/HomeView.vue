@@ -1,5 +1,3 @@
-<script setup>
-console.log('HomeView.vue')
-</script>
+<script setup></script>
 
 <template>Home</template>
