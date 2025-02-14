@@ -4,7 +4,7 @@ import globals from 'globals'
 export default [
   eslint.configs.recommended,
   {
-    ignores: ['client/*', 'tests/*', 'dist/*', '**/*.config.js']
+    ignores: ['client/*', 'tests/*', 'dist/*', '**/*.config.js', '**/pnpm-lock.yaml']
   },
   {
     languageOptions: {

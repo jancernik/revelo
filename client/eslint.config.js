@@ -17,7 +17,7 @@ export default [
   eslint.configs.recommended,
   includeIgnoreFile(gitignorePath),
   {
-    ignores: ["node_modules/*", "dist/*", "**/*.config.js"],
+    ignores: ["node_modules/*", "dist/*", "**/*.config.js", '**/pnpm-lock.yaml'],
   },
   {
     languageOptions: {
