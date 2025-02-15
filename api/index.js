@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: config.CLIENT_BASE_URL, credentials: true }));
 
 app.use(authRoutes);
 

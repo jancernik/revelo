@@ -15,7 +15,7 @@ if (envFile) {
   dotenv.config({ path: envFile });
 }
 
-const requiredEnvVars = ["PORT", "DB_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"];
+const requiredEnvVars = ["PORT", "DB_URL", "JWT_SECRET", "JWT_REFRESH_SECRET", "CLIENT_BASE_URL"];
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 
 if (missingEnvVars.length > 0) {
@@ -28,5 +28,6 @@ export const config = {
   PORT: process.env.PORT,
   DB_URL: process.env.DB_URL,
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL
 };
