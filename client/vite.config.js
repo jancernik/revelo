@@ -1,10 +1,17 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import "dotenv/config";
 
-// https://vite.dev/config/
+const requiredEnvVars = ["VITE_API_BASE_URL", "VITE_CLIENT_BASE_URL"];
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+if (missingEnvVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
+  process.exit(1);
+}
+
 export default defineConfig({
   plugins: [
     vue(),
