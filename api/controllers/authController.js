@@ -11,7 +11,7 @@ import { db } from "../db.js";
 
 export const signupUser = async (req, res) => {
   const { email, username, password } = req.body;
-  if (!email || !username || !password) return res.status(400).json({ message: "Missing fields" });
+  if (!email || !username || !password) return res.status(400).json({ message: "Missing fields." });
 
   const emailExists = await db.select().from(UserTable).where(eq(UserTable.email, email));
   if (emailExists.length > 0) {
@@ -57,7 +57,7 @@ export const signupUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ message: "Missing fields" });
+    return res.status(400).json({ message: "Missing fields." });
   }
 
   const [user] = await db.select().from(UserTable).where(eq(UserTable.username, username));
@@ -71,14 +71,18 @@ export const loginUser = async (req, res) => {
 
   setRefreshTokenCookie(res, refreshToken);
 
-  res.json({ message: "Logged in successfully.", accessToken });
+  res.json({
+    message: "Logged in successfully.",
+    user: { email: user.email, username: user.username, admin: user.admin },
+    accessToken
+  });
 };
 
 export const logoutUser = async (req, res) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(400).json({ message: "Missing fields" });
+    return res.status(400).json({ message: "Missing fields." });
   }
 
   await db.insert(RevokedTokenTable).values({ token: refreshToken });
@@ -89,7 +93,7 @@ export const logoutUser = async (req, res) => {
 
 export const refreshToken = async (req, res) => {
   const { refreshToken } = req.cookies;
-  if (!refreshToken) return res.status(401).json({ message: "Invalid credentials" });
+  if (!refreshToken) return res.status(401).json({ message: "Invalid credentials." });
 
   const revokedToken = await db
     .select()
@@ -104,7 +108,7 @@ export const refreshToken = async (req, res) => {
   verifyRefreshToken(refreshToken, (error, user) => {
     if (error) {
       res.clearCookie("refreshToken");
-      return res.status(401).json({ message: "Session expired. Please log in again." });
+      return res.status(401).json({ message: "Session expired." });
     }
 
     const accessToken = generateAccessToken(user);

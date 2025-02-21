@@ -3,7 +3,7 @@ import api from '@/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem('user')) || null,
     accessToken: localStorage.getItem('accessToken') || null
   }),
 
@@ -21,7 +21,6 @@ export const useAuthStore = defineStore('auth', {
     async login({ username, password }) {
       try {
         const response = await api.post('/login', { username, password })
-        console.log('response.data: ', response.data)
         this.setUser(response.data)
       } catch (error) {
         console.error('Login failed:', error.response?.data || error)
@@ -54,12 +53,14 @@ export const useAuthStore = defineStore('auth', {
     setUser(data) {
       this.user = data.user
       this.accessToken = data.accessToken
+      localStorage.setItem('user', JSON.stringify(data.user))
       localStorage.setItem('accessToken', data.accessToken)
     },
 
     clearUser() {
       this.user = null
       this.accessToken = null
+      localStorage.removeItem('user')
       localStorage.removeItem('accessToken')
     }
   }
