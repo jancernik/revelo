@@ -19,7 +19,15 @@ const loadEnvironment = async () => {
 
 loadEnvironment();
 
-const requiredEnvVars = ["PORT", "DB_URL", "JWT_SECRET", "JWT_REFRESH_SECRET", "CLIENT_BASE_URL"];
+const requiredEnvVars = [
+  "PORT",
+  "DB_URL",
+  "JWT_SECRET",
+  "JWT_REFRESH_SECRET",
+  "CLIENT_BASE_URL",
+  "MAX_ADMINS",
+  "ENABLE_SIGNUP"
+];
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 
 if (missingEnvVars.length > 0) {
@@ -33,5 +41,7 @@ export const config = {
   DB_URL: process.env.DB_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL
+  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
+  MAX_ADMINS: process.env.MAX_ADMINS,
+  ENABLE_SIGNUP: process.env.ENABLE_SIGNUP
 };

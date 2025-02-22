@@ -8,8 +8,13 @@ import {
 } from "../utils/authUtils.js";
 import { count, eq } from "drizzle-orm";
 import { db } from "../db.js";
+import { config } from "../config.js";
 
 export const signupUser = async (req, res) => {
+  if (config.ENABLE_SIGNUP !== "true") {
+    return res.status(403).json({ message: "Signup is disabled." });
+  }
+
   const { email, username, password } = req.body;
   if (!email || !username || !password) return res.status(400).json({ message: "Missing fields." });
 
@@ -24,8 +29,11 @@ export const signupUser = async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const userCount = await db.select({ count: count() }).from(UserTable);
-  const isAdmin = userCount[0].count === 0;
+  const adminCount = await db
+    .select({ count: count() })
+    .from(UserTable)
+    .where(eq(UserTable.admin, true));
+  const isAdmin = adminCount[0].count < config.MAX_ADMINS;
 
   const [newUser] = await db
     .insert(UserTable)
