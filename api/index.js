@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import configRoutes from "./routes/configRoutes.js";
-import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware.js";
+import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
 import { config } from "./config.js";
 
 const app = express();
