@@ -5,10 +5,10 @@ export const notFoundHandler = (req, res) => {
   });
 };
 
-export const errorHandler = (err, req, res) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
+export const errorHandler = (error, req, res) => {
+  console.error(error.stack);
+  res.status(error.status || 500).json({
     error: "Internal Server Error",
-    message: err.message || "Something went wrong"
+    message: error.message || "Something went wrong"
   });
 };
