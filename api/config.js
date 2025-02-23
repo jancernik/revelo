@@ -26,7 +26,7 @@ const requiredEnvVars = [
   "JWT_REFRESH_SECRET",
   "CLIENT_BASE_URL",
   "MAX_ADMINS",
-  "ENABLE_SIGNUP"
+  "ENABLE_SIGNUPS"
 ];
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 
@@ -43,5 +43,5 @@ export const config = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
   MAX_ADMINS: process.env.MAX_ADMINS,
-  ENABLE_SIGNUP: process.env.ENABLE_SIGNUP
+  ENABLE_SIGNUPS: process.env.ENABLE_SIGNUPS
 };

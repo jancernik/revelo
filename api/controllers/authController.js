@@ -11,7 +11,7 @@ import { db } from "../db.js";
 import { config } from "../config.js";
 
 export const signupUser = async (req, res) => {
-  if (config.ENABLE_SIGNUP !== "true") {
+  if (config.ENABLE_SIGNUPS !== "true") {
     return res.status(403).json({ message: "Signup is disabled." });
   }
 

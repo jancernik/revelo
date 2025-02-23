@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
@@ -11,12 +11,24 @@ const password = ref('')
 const handleLogin = async () => {
   try {
     await authStore.login({ username: username.value, password: password.value })
-    router.push('/')
+    if (authStore.user?.admin) {
+      router.push('/admin')
+    } else {
+      router.push('/')
+    }
   } catch (error) {
     console.error(error)
     alert('Login failed')
   }
 }
+
+const redirectIfAuthenticated = () => {
+  if (authStore.user) {
+    router.push('/')
+  }
+}
+
+onMounted(redirectIfAuthenticated)
 </script>
 
 <template>
