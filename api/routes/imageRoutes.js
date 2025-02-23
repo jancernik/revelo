@@ -9,29 +9,14 @@ const storage = multer.diskStorage({
     cb(null, "uploads");
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
+    const uniqueName = `${Date.now()}`;
     cb(null, uniqueName);
   }
 });
 
 const upload = multer({ storage });
 
-router.post("/upload", upload.single("image"), async (req, res) => {
-  try {
-    await uploadImage(req, res);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error uploading image.", error });
-  }
-});
-
-router.get("/images", async (req, res) => {
-  try {
-    await fetchAllImages(req, res);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching images.", error });
-  }
-});
+router.post("/upload", upload.single("image"), uploadImage);
+router.get("/images", fetchAllImages);
 
 export default router;
