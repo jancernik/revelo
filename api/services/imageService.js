@@ -1,14 +1,12 @@
-import { ImageModel } from "../models/imageModel.js";
+import Image from "../models/ImageModel.js";
 import path from "path";
-
-const imageModel = new ImageModel();
 
 export const uploadImageService = async (file) => {
   if (!file) {
     throw new Error("Missing file.");
   }
 
-  const newImage = await imageModel.create({
+  const newImage = await Image.create({
     filename: file.filename,
     path: path.join("uploads", file.filename),
     mimetype: file.mimetype,
@@ -19,5 +17,5 @@ export const uploadImageService = async (file) => {
 };
 
 export const fetchAllImagesService = async () => {
-  return await imageModel.findAll();
+  return await Image.findAll();
 };
