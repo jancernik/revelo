@@ -32,7 +32,6 @@ export class Setting extends BaseModel {
   }
 
   async #doInitialize() {
-    this.fileSettings = [];
     const fileSettings = this.#loadConfigFile();
     Object.keys(fileSettings).forEach(async (name) => {
       const settingData = fileSettings[name];
@@ -177,8 +176,9 @@ export class Setting extends BaseModel {
 }
 
 const SettingInstance = new Setting();
-export default SettingInstance
-;(async () => {
+export default SettingInstance;
+
+(async () => {
   try {
     await SettingInstance.initialize();
     // eslint-disable-next-line no-console
