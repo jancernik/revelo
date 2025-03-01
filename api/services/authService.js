@@ -1,4 +1,5 @@
 import User from "../models/UserModel.js";
+import Setting from "../models/SettingModel.js";
 import RevokedToken from "../models/RevokedTokenModel.js";
 import {
   generateAccessToken,
@@ -6,10 +7,10 @@ import {
   verifyRefreshToken
 } from "../utils/authUtils.js";
 import { eq } from "drizzle-orm";
-import { config } from "../config.js";
 
 export const signupUserService = async ({ email, username, password }) => {
-  if (config.ENABLE_SIGNUPS !== "true") {
+  const enableSignups = await Setting.get("enableSignups");
+  if (!enableSignups) {
     throw new Error("Signup is disabled.");
   }
 
@@ -28,7 +29,8 @@ export const signupUserService = async ({ email, username, password }) => {
   }
 
   const adminCount = await User.count(eq(User.table.admin, true));
-  const isAdmin = adminCount < config.MAX_ADMINS;
+  const maxAdmins = await Setting.get("maxAdmins");
+  const isAdmin = adminCount < maxAdmins;
 
   const newUser = await User.create({
     email,
