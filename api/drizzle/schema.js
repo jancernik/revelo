@@ -25,3 +25,11 @@ export const ImageTable = pgTable("image", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
+
+export const SettingTable = pgTable("setting", {
+  id: serial("id").primaryKey().notNull(),
+  name: varchar("name").unique().notNull(),
+  value: varchar("value").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
