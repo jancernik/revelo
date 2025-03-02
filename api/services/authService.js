@@ -1,6 +1,6 @@
-import User from "../models/UserModel.js";
-import Setting from "../models/SettingModel.js";
-import RevokedToken from "../models/RevokedTokenModel.js";
+import User from "../models/User.js";
+import Setting from "../models/Setting.js";
+import RevokedToken from "../models/RevokedToken.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -8,7 +8,7 @@ import {
 } from "../utils/authUtils.js";
 import { eq } from "drizzle-orm";
 
-export const signupUserService = async ({ email, username, password }) => {
+export const signup = async ({ email, username, password }) => {
   const enableSignups = await Setting.get("enableSignups");
   if (!enableSignups) {
     throw new Error("Signup is disabled.");
@@ -45,7 +45,7 @@ export const signupUserService = async ({ email, username, password }) => {
   return { newUser, accessToken, refreshToken };
 };
 
-export const loginUserService = async ({ username, password }) => {
+export const login = async ({ username, password }) => {
   if (!username || !password) {
     throw new Error("Missing fields.");
   }
@@ -66,7 +66,7 @@ export const loginUserService = async ({ username, password }) => {
   return { user, accessToken, refreshToken };
 };
 
-export const logoutUserService = async (refreshToken) => {
+export const logout = async (refreshToken) => {
   if (!refreshToken) {
     throw new Error("Missing refresh token.");
   }
@@ -74,7 +74,7 @@ export const logoutUserService = async (refreshToken) => {
   await RevokedToken.create({ token: refreshToken });
 };
 
-export const refreshTokenService = async (refreshToken) => {
+export const refresh = async (refreshToken) => {
   if (!refreshToken) {
     throw new Error("Invalid credentials.");
   }

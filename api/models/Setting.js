@@ -1,4 +1,4 @@
-import { SettingTable } from "../drizzle/schema.js";
+import { SettingsTable } from "../drizzle/schema.js";
 import { BaseModel } from "./BaseModel.js";
 import fs from "fs";
 import yaml from "js-yaml";
@@ -6,7 +6,7 @@ import path from "path";
 
 export class Setting extends BaseModel {
   constructor() {
-    super(SettingTable);
+    super(SettingsTable);
 
     this.fileSettings = [];
     this.dbSettings = null;
@@ -176,9 +176,9 @@ export class Setting extends BaseModel {
 }
 
 const SettingInstance = new Setting();
-export default SettingInstance;
+export default SettingInstance
 
-(async () => {
+;(async () => {
   try {
     await SettingInstance.initialize();
     // eslint-disable-next-line no-console

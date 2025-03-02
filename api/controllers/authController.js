@@ -1,15 +1,10 @@
-import {
-  signupUserService,
-  loginUserService,
-  logoutUserService,
-  refreshTokenService
-} from "../services/authService.js";
+import * as authService from "../services/authService.js";
 import { setRefreshTokenCookie } from "../utils/authUtils.js";
 
-export const signupUser = async (req, res) => {
+export const signup = async (req, res) => {
   try {
     const { email, username, password } = req.body;
-    const { newUser, accessToken, refreshToken } = await signupUserService({
+    const { newUser, accessToken, refreshToken } = await authService.signup({
       email,
       username,
       password
@@ -27,10 +22,10 @@ export const signupUser = async (req, res) => {
   }
 };
 
-export const loginUser = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const { user, accessToken, refreshToken } = await loginUserService({ username, password });
+    const { user, accessToken, refreshToken } = await authService.login({ username, password });
 
     setRefreshTokenCookie(res, refreshToken);
 
@@ -44,10 +39,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
-export const logoutUser = async (req, res) => {
+export const logout = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
-    await logoutUserService(refreshToken);
+    await authService.logout(refreshToken);
 
     res.clearCookie("refreshToken");
     res.json({ message: "Logged out successfully." });
@@ -56,10 +51,10 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-export const refreshToken = async (req, res) => {
+export const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
-    const accessToken = await refreshTokenService(refreshToken);
+    const accessToken = await authService.refresh(refreshToken);
 
     res.json({ accessToken });
   } catch (error) {

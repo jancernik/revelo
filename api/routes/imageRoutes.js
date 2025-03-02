@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadImage, fetchAllImages } from "../controllers/imageController.js";
+import { upload, fetchAll } from "../controllers/imageController.js";
 
 const router = Router();
 
@@ -14,9 +14,9 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const multerUpload = multer({ storage });
 
-router.post("/upload", upload.single("image"), uploadImage);
-router.get("/images", fetchAllImages);
+router.post("/upload", multerUpload.single("image"), upload);
+router.get("/images", fetchAll);
 
 export default router;

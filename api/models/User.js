@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { BaseModel } from "./BaseModel.js";
-import { UserTable } from "../drizzle/schema.js";
+import { UserTables } from "../drizzle/schema.js";
 import bcrypt from "bcryptjs";
 
 export class User extends BaseModel {
   constructor() {
-    super(UserTable);
+    super(UserTables);
   }
 
   async findByEmail(email) {

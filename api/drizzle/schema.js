@@ -1,6 +1,6 @@
 import { pgTable, varchar, timestamp, serial, boolean } from "drizzle-orm/pg-core";
 
-export const UserTable = pgTable("user", {
+export const UserTables = pgTable("users", {
   id: serial("id").primaryKey().notNull(),
   email: varchar("email").unique().notNull(),
   username: varchar("username").unique().notNull(),
@@ -10,13 +10,13 @@ export const UserTable = pgTable("user", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
-export const RevokedTokenTable = pgTable("revoked_token", {
+export const RevokedTokensTable = pgTable("revoked_tokens", {
   token: varchar("token").primaryKey().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
-export const ImageTable = pgTable("image", {
+export const ImagesTable = pgTable("images", {
   id: serial("id").primaryKey().notNull(),
   filename: varchar("filename").notNull(),
   mimetype: varchar("mimetype").notNull(),
@@ -26,7 +26,7 @@ export const ImageTable = pgTable("image", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
-export const SettingTable = pgTable("setting", {
+export const SettingsTable = pgTable("settings", {
   id: serial("id").primaryKey().notNull(),
   name: varchar("name").unique().notNull(),
   value: varchar("value").notNull(),

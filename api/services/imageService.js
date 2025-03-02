@@ -1,7 +1,7 @@
-import Image from "../models/ImageModel.js";
+import Image from "../models/Image.js";
 import path from "path";
 
-export const uploadImageService = async (file) => {
+export const upload = async (file) => {
   if (!file) {
     throw new Error("Missing file.");
   }
@@ -16,6 +16,6 @@ export const uploadImageService = async (file) => {
   return newImage;
 };
 
-export const fetchAllImagesService = async () => {
+export const findAll = async () => {
   return await Image.findAll();
 };
