@@ -1,11 +1,7 @@
 import User from "../models/User.js";
 import Setting from "../models/Setting.js";
 import RevokedToken from "../models/RevokedToken.js";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken
-} from "../utils/authUtils.js";
+import { generateAccess, generateRefresh, verifyRefresh } from "../utils/tokenUtils.js";
 import { eq } from "drizzle-orm";
 
 export const signup = async ({ email, username, password }) => {
@@ -39,8 +35,8 @@ export const signup = async ({ email, username, password }) => {
     admin: isAdmin
   });
 
-  const accessToken = generateAccessToken(newUser);
-  const refreshToken = generateRefreshToken(newUser);
+  const accessToken = generateAccess(newUser);
+  const refreshToken = generateRefresh(newUser);
 
   return { newUser, accessToken, refreshToken };
 };
@@ -60,8 +56,8 @@ export const login = async ({ username, password }) => {
     throw new Error("Invalid credentials.");
   }
 
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+  const accessToken = generateAccess(user);
+  const refreshToken = generateRefresh(user);
 
   return { user, accessToken, refreshToken };
 };
@@ -86,11 +82,11 @@ export const refresh = async (refreshToken) => {
   }
 
   return new Promise((resolve, reject) => {
-    verifyRefreshToken(refreshToken, (error, user) => {
+    verifyRefresh(refreshToken, (error, user) => {
       if (error) {
         reject(new Error("Session expired."));
       } else {
-        const accessToken = generateAccessToken(user);
+        const accessToken = generateAccess(user);
         resolve(accessToken);
       }
     });

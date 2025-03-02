@@ -4,17 +4,17 @@ import jwt from "jsonwebtoken";
 const ACCESS_EXPIRATION = 15; // minutes
 const REFRESH_EXPIRATION = 90; // days
 
-export const generateAccessToken = (user) => {
+export const generateAccess = (user) => {
   return jwt.sign({ id: user.id }, config.JWT_SECRET, { expiresIn: `${ACCESS_EXPIRATION}m` });
 };
 
-export const generateRefreshToken = (user) => {
+export const generateRefresh = (user) => {
   return jwt.sign({ id: user.id }, config.JWT_REFRESH_SECRET, {
     expiresIn: `${REFRESH_EXPIRATION}d`
   });
 };
 
-export const setRefreshTokenCookie = (res, refreshToken) => {
+export const setRefreshCookie = (res, refreshToken) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: config.ENV === "production",
@@ -23,7 +23,7 @@ export const setRefreshTokenCookie = (res, refreshToken) => {
   });
 };
 
-export const verifyRefreshToken = (token, callback) => {
+export const verifyRefresh = (token, callback) => {
   jwt.verify(token, config.JWT_REFRESH_SECRET, (error, user) => {
     if (error) {
       return callback(error, null);

@@ -1,5 +1,5 @@
 import * as authService from "../services/authService.js";
-import { setRefreshTokenCookie } from "../utils/authUtils.js";
+import { setRefreshCookie } from "../utils/tokenUtils.js";
 
 export const signup = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ export const signup = async (req, res) => {
       password
     });
 
-    setRefreshTokenCookie(res, refreshToken);
+    setRefreshCookie(res, refreshToken);
 
     res.status(201).json({
       message: "User created successfully.",
@@ -27,7 +27,7 @@ export const login = async (req, res) => {
     const { username, password } = req.body;
     const { user, accessToken, refreshToken } = await authService.login({ username, password });
 
-    setRefreshTokenCookie(res, refreshToken);
+    setRefreshCookie(res, refreshToken);
 
     res.json({
       message: "Logged in successfully.",
