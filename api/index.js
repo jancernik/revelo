@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import configRoutes from "./routes/configRoutes.js";
-import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
+import { errorHandler } from './utils/errors.js';
 import { config } from "./config.js";
 
 const app = express();
@@ -23,8 +23,14 @@ app.use(configRoutes);
 
 app.use("/uploads", express.static("uploads"));
 
-app.use(notFoundHandler);
 app.use(errorHandler);
+
+app.use((req, res) => {
+  res.status(404).json({ 
+    status: 'error',
+    message: 'Route not found' 
+  });
+});
 
 app.listen(config.PORT, () => {
   // eslint-disable-next-line no-console

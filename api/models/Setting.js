@@ -176,9 +176,9 @@ export class Setting extends BaseModel {
 }
 
 const SettingInstance = new Setting();
-export default SettingInstance
+export default SettingInstance;
 
-;(async () => {
+(async () => {
   try {
     await SettingInstance.initialize();
     // eslint-disable-next-line no-console

@@ -1,63 +1,75 @@
+// src/controllers/authController.js
 import * as authService from "../services/authService.js";
 import { setRefreshCookie } from "../utils/tokenUtils.js";
+import { asyncHandler } from '../utils/errors.js';
 
-export const signup = async (req, res) => {
-  try {
-    const { email, username, password } = req.body;
-    const { newUser, accessToken, refreshToken } = await authService.signup({
-      email,
-      username,
-      password
-    });
+export const signup = asyncHandler(async (req, res) => {
+  // No need for try/catch as asyncHandler will catch errors
+  const { email, username, password } = req.validatedData;
+  const { newUser, accessToken, refreshToken } = await authService.signup({
+    email,
+    username,
+    password
+  });
 
-    setRefreshCookie(res, refreshToken);
+  setRefreshCookie(res, refreshToken);
 
-    res.status(201).json({
-      message: "User created successfully.",
-      user: { email, username, admin: newUser.admin },
+  res.status(201).json({
+    status: 'success',
+    message: "User created successfully.",
+    data: {
+      user: { 
+        id: newUser.id,
+        email, 
+        username, 
+        admin: newUser.admin 
+      },
       accessToken
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    }
+  });
+});
 
-export const login = async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const { user, accessToken, refreshToken } = await authService.login({ username, password });
+export const login = asyncHandler(async (req, res) => {
+  const { username, password } = req.validatedData;
+  const { user, accessToken, refreshToken } = await authService.login({ 
+    username, 
+    password 
+  });
 
-    setRefreshCookie(res, refreshToken);
+  setRefreshCookie(res, refreshToken);
 
-    res.json({
-      message: "Logged in successfully.",
-      user: { email: user.email, username: user.username, admin: user.admin },
+  res.json({
+    status: 'success',
+    message: "Logged in successfully.",
+    data: {
+      user: { 
+        id: user.id,
+        email: user.email, 
+        username: user.username, 
+        admin: user.admin 
+      },
       accessToken
-    });
-  } catch (error) {
-    res.status(401).json({ message: error.message });
-  }
-};
+    }
+  });
+});
 
-export const logout = async (req, res) => {
-  try {
-    const { refreshToken } = req.cookies;
-    await authService.logout(refreshToken);
+export const logout = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies;
+  await authService.logout(refreshToken);
 
-    res.clearCookie("refreshToken");
-    res.json({ message: "Logged out successfully." });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+  res.clearCookie("refreshToken");
+  res.json({ 
+    status: 'success',
+    message: "Logged out successfully." 
+  });
+});
 
-export const refresh = async (req, res) => {
-  try {
-    const { refreshToken } = req.cookies;
-    const accessToken = await authService.refresh(refreshToken);
+export const refresh = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies;
+  const accessToken = await authService.refresh(refreshToken);
 
-    res.json({ accessToken });
-  } catch (error) {
-    res.status(401).json({ message: error.message });
-  }
-};
+  res.json({ 
+    status: 'success',
+    data: { accessToken }
+  });
+});
