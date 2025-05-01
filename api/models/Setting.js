@@ -33,16 +33,17 @@ export class Setting extends BaseModel {
 
   async #doInitialize() {
     const fileSettings = this.#loadConfigFile();
-    Object.keys(fileSettings).forEach(async (name) => {
-      const settingData = fileSettings[name];
+    
+    this.fileSettings = Object.entries(fileSettings).map(([name, settingData]) => {
       const defaultValue = settingData.default.toString();
       const isPublic = settingData.public === true;
-      this.fileSettings.push({ 
+      
+      return { 
         name, 
         ...settingData, 
         default: defaultValue,
         public: isPublic
-      });
+      };
     });
 
     this.dbSettings = await this.findAll();
@@ -86,10 +87,12 @@ export class Setting extends BaseModel {
 
     switch (type.toLowerCase()) {
       case "list":
-        return value
-          .filter((v) => typeof v !== "object")
-          .map((v) => v.toString().trim())
-          .join("|");
+        return Array.isArray(value) 
+          ? value
+              .filter((v) => typeof v !== "object")
+              .map((v) => v.toString().trim())
+              .join("|")
+          : "";
       default:
         return value.toString();
     }
@@ -99,9 +102,9 @@ export class Setting extends BaseModel {
     const setting = this.fileSettings.find((s) => s.name === name);
     if (setting) {
       return setting;
-    } else {
-      throw new Error(`Setting '${name}' does not exist.`);
-    }
+    } 
+    
+    throw new Error(`Setting '${name}' does not exist.`);
   }
 
   #getDbSetting(name) {
@@ -120,12 +123,12 @@ export class Setting extends BaseModel {
         description: setting.description,
         category: setting.category
       };
-    } else {
-      return {
-        name: setting.name,
-        value
-      };
-    }
+    } 
+    
+    return {
+      name: setting.name,
+      value
+    };
   }
 
   async get(name, opts = {}) {
@@ -135,7 +138,7 @@ export class Setting extends BaseModel {
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
 
-    if (setting.public === true && !opts.includePrivate) {
+    if (!setting.public && !opts.includeRestricted) {
       return {};
     }
 
@@ -148,17 +151,19 @@ export class Setting extends BaseModel {
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
     let resultSetting;
+    const stringifiedValue = this.#stringifyValue(value, setting.type);
 
     if (!dbSetting) {
       resultSetting = await this.create({
         name,
-        value: this.#stringifyValue(value, setting.type)
+        value: stringifiedValue
       });
       this.dbSettings.push(resultSetting);
     } else {
       resultSetting = await this.update(dbSetting.id, {
-        value: this.#stringifyValue(value, setting.type)
+        value: stringifiedValue
       });
+      
       const index = this.dbSettings.findIndex((s) => s.id === dbSetting.id);
       if (index !== -1) {
         this.dbSettings[index] = resultSetting;
@@ -191,10 +196,10 @@ export class Setting extends BaseModel {
   }
 
   async getAll(opts = {}) {
-    const { complete, includePrivate } = opts;
+    const { complete, includeRestricted } = opts;
     await this.initialize();
 
-    const filteredSettings = includePrivate 
+    const filteredSettings = includeRestricted 
       ? this.fileSettings 
       : this.fileSettings.filter(setting => setting.public === true);
 
