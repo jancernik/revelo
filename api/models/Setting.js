@@ -36,7 +36,13 @@ export class Setting extends BaseModel {
     Object.keys(fileSettings).forEach(async (name) => {
       const settingData = fileSettings[name];
       const defaultValue = settingData.default.toString();
-      this.fileSettings.push({ name, ...settingData, default: defaultValue });
+      const isPublic = settingData.public === true;
+      this.fileSettings.push({ 
+        name, 
+        ...settingData, 
+        default: defaultValue,
+        public: isPublic
+      });
     });
 
     this.dbSettings = await this.findAll();
@@ -102,17 +108,38 @@ export class Setting extends BaseModel {
     return this.dbSettings.find((s) => s.name === name);
   }
 
-  async get(name) {
+  #formatSettingResponse(setting, dbSetting, complete) {
+    const value = this.#parseValue(dbSetting?.value || setting.default, setting.type);
+    
+    if (complete) {
+      return {
+        name: setting.name,
+        value,
+        default: this.#parseValue(setting.default, setting.type),
+        type: setting.type,
+        description: setting.description,
+        category: setting.category
+      };
+    } else {
+      return {
+        name: setting.name,
+        value
+      };
+    }
+  }
+
+  async get(name, opts = {}) {
+    const { complete } = opts;
     await this.initialize();
 
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
 
-    if (dbSetting) {
-      return this.#parseValue(dbSetting.value, setting.type);
-    } else {
-      return this.#parseValue(setting.default, setting.type);
+    if (setting.public === true && !opts.includePrivate) {
+      return {};
     }
+
+    return this.#formatSettingResponse(setting, dbSetting, complete);
   }
 
   async set(name, value) {
@@ -138,7 +165,11 @@ export class Setting extends BaseModel {
       }
     }
 
-    return this.#parseValue(resultSetting.value, setting.type);
+    const parsedValue = this.#parseValue(resultSetting.value, setting.type);
+    return {
+      name,
+      value: parsedValue
+    };
   }
 
   async reset(name) {
@@ -149,36 +180,35 @@ export class Setting extends BaseModel {
 
     if (dbSetting) {
       await this.delete(dbSetting.id);
-
-      this.dbSettings.filter((s) => s.id !== dbSetting.id);
+      this.dbSettings = this.dbSettings.filter((s) => s.id !== dbSetting.id);
     }
-    return this.#parseValue(setting.default, setting.type);
+    
+    const defaultValue = this.#parseValue(setting.default, setting.type);
+    return {
+      name,
+      value: defaultValue
+    };
   }
 
-  async getAll() {
+  async getAll(opts = {}) {
+    const { complete, includePrivate } = opts;
     await this.initialize();
 
-    const settings = this.fileSettings.map((setting) => {
-      const dbSetting = this.#getDbSetting(setting.name) || {};
+    const filteredSettings = includePrivate 
+      ? this.fileSettings 
+      : this.fileSettings.filter(setting => setting.public === true);
 
-      return {
-        name: setting.name,
-        value: this.#parseValue(dbSetting.value || setting.default, setting.type),
-        default: this.#parseValue(setting.default, setting.type),
-        type: setting.type,
-        description: setting.description,
-        category: setting.category
-      };
+    return filteredSettings.map((setting) => {
+      const dbSetting = this.#getDbSetting(setting.name);
+      return this.#formatSettingResponse(setting, dbSetting, complete);
     });
-
-    return settings;
   }
 }
 
 const SettingInstance = new Setting();
-export default SettingInstance
+export default SettingInstance;
 
-;(async () => {
+(async () => {
   try {
     await SettingInstance.initialize();
     // eslint-disable-next-line no-console
