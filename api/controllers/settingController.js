@@ -42,7 +42,7 @@ export const getSetting = async (req, res) => {
 export const updateSetting = async (req, res) => {
   try {
     if (!req.user?.admin) {
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: "Authorization required" });
     }
 
     const { name } = req.params;
@@ -61,7 +61,7 @@ export const updateSetting = async (req, res) => {
 export const resetSetting = async (req, res) => {
   try {
     if (!req.user?.admin) {
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: "Authorization required" });
     }
 
     const { name } = req.params;
