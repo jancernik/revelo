@@ -3,7 +3,7 @@ import * as settingService from "../services/settingService.js";
 export const getSettings = async (req, res) => {
   try {
     const complete = req.query.complete === "true";
-    const includeRestricted = !!req.user;
+    const includeRestricted = !!req.user?.admin;
 
     const settings = await settingService.getSettings({
       complete,
@@ -23,7 +23,7 @@ export const getSetting = async (req, res) => {
   try {
     const { name } = req.params;
     const complete = req.query.complete === "true";
-    const includeRestricted = !!req.user;
+    const includeRestricted = !!req.user?.admin;
 
     const setting = await settingService.getSetting(name, {
       complete,
@@ -41,7 +41,7 @@ export const getSetting = async (req, res) => {
 
 export const updateSetting = async (req, res) => {
   try {
-    if (!req.user) {
+    if (!req.user?.admin) {
       return res.status(401).json({ message: "Authentication required" });
     }
 
@@ -60,7 +60,7 @@ export const updateSetting = async (req, res) => {
 
 export const resetSetting = async (req, res) => {
   try {
-    if (!req.user) {
+    if (!req.user?.admin) {
       return res.status(401).json({ message: "Authentication required" });
     }
 
