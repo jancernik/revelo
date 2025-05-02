@@ -3,6 +3,7 @@ enableSignups:
   category: Login
   type: boolean
   default: true
+  public: true
 
 maxAdmins:
   description: The maximum number of admins allowed

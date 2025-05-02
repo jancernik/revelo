@@ -33,14 +33,14 @@ export class Setting extends BaseModel {
 
   async #doInitialize() {
     const fileSettings = this.#loadConfigFile();
-    
+
     this.fileSettings = Object.entries(fileSettings).map(([name, settingData]) => {
       const defaultValue = settingData.default.toString();
       const isPublic = settingData.public === true;
-      
-      return { 
-        name, 
-        ...settingData, 
+
+      return {
+        name,
+        ...settingData,
         default: defaultValue,
         public: isPublic
       };
@@ -87,7 +87,7 @@ export class Setting extends BaseModel {
 
     switch (type.toLowerCase()) {
       case "list":
-        return Array.isArray(value) 
+        return Array.isArray(value)
           ? value
               .filter((v) => typeof v !== "object")
               .map((v) => v.toString().trim())
@@ -102,8 +102,8 @@ export class Setting extends BaseModel {
     const setting = this.fileSettings.find((s) => s.name === name);
     if (setting) {
       return setting;
-    } 
-    
+    }
+
     throw new Error(`Setting '${name}' does not exist.`);
   }
 
@@ -113,7 +113,7 @@ export class Setting extends BaseModel {
 
   #formatSettingResponse(setting, dbSetting, complete) {
     const value = this.#parseValue(dbSetting?.value || setting.default, setting.type);
-    
+
     if (complete) {
       return {
         name: setting.name,
@@ -123,8 +123,8 @@ export class Setting extends BaseModel {
         description: setting.description,
         category: setting.category
       };
-    } 
-    
+    }
+
     return {
       name: setting.name,
       value
@@ -139,7 +139,7 @@ export class Setting extends BaseModel {
     const dbSetting = this.#getDbSetting(name);
 
     if (!setting.public && !opts.includeRestricted) {
-      return {};
+      throw new Error(`Setting '${name}' does not exist.`);
     }
 
     return this.#formatSettingResponse(setting, dbSetting, complete);
@@ -163,7 +163,7 @@ export class Setting extends BaseModel {
       resultSetting = await this.update(dbSetting.id, {
         value: stringifiedValue
       });
-      
+
       const index = this.dbSettings.findIndex((s) => s.id === dbSetting.id);
       if (index !== -1) {
         this.dbSettings[index] = resultSetting;
@@ -187,7 +187,7 @@ export class Setting extends BaseModel {
       await this.delete(dbSetting.id);
       this.dbSettings = this.dbSettings.filter((s) => s.id !== dbSetting.id);
     }
-    
+
     const defaultValue = this.#parseValue(setting.default, setting.type);
     return {
       name,
@@ -199,9 +199,9 @@ export class Setting extends BaseModel {
     const { complete, includeRestricted } = opts;
     await this.initialize();
 
-    const filteredSettings = includeRestricted 
-      ? this.fileSettings 
-      : this.fileSettings.filter(setting => setting.public === true);
+    const filteredSettings = includeRestricted
+      ? this.fileSettings
+      : this.fileSettings.filter((setting) => setting.public === true);
 
     return filteredSettings.map((setting) => {
       const dbSetting = this.#getDbSetting(setting.name);
