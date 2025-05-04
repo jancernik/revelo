@@ -5,7 +5,6 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
-import configRoutes from "./routes/configRoutes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
 import { config } from "./config.js";
 
@@ -19,7 +18,6 @@ app.use(cors({ origin: config.CLIENT_BASE_URL, credentials: true }));
 
 app.use(authRoutes);
 app.use(imageRoutes);
-app.use(configRoutes);
 
 app.use("/uploads", express.static("uploads"));
 
