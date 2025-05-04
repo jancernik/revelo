@@ -8,6 +8,20 @@
       "when": 1740844527509,
       "tag": "0000_worthless_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1746391966030,
+      "tag": "0001_furry_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746393305022,
+      "tag": "0002_woozy_hellfire_club",
+      "breakpoints": true
     }
   ]
 }
