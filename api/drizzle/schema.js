@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   varchar,
@@ -102,3 +103,30 @@ export const SettingsTable = pgTable("settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
+
+export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
+  versions: many(ImageVersionsTable),
+  posts: many(PostsTable)
+}));
+
+export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
+  image: one(ImagesTable, {
+    fields: [ImageVersionsTable.imageId],
+    references: [ImagesTable.id]
+  })
+}));
+
+export const PostsTableRelations = relations(PostsTable, ({ many }) => ({
+  images: many(PostImagesTable)
+}));
+
+export const PostImagesTableRelations = relations(PostImagesTable, ({ one }) => ({
+  post: one(PostsTable, {
+    fields: [PostImagesTable.postId],
+    references: [PostsTable.id]
+  }),
+  image: one(ImagesTable, {
+    fields: [PostImagesTable.imageId],
+    references: [ImagesTable.id]
+  })
+}));

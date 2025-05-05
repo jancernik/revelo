@@ -78,12 +78,8 @@
           "name": "image_versions_image_id_images_id_fk",
           "tableFrom": "image_versions",
           "tableTo": "images",
-          "columnsFrom": [
-            "image_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["image_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -93,10 +89,7 @@
         "unique_image_version": {
           "name": "unique_image_version",
           "nullsNotDistinct": false,
-          "columns": [
-            "image_id",
-            "type"
-          ]
+          "columns": ["image_id", "type"]
         }
       },
       "policies": {},
@@ -227,12 +220,8 @@
           "name": "post_images_post_id_posts_id_fk",
           "tableFrom": "post_images",
           "tableTo": "posts",
-          "columnsFrom": [
-            "post_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["post_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -240,12 +229,8 @@
           "name": "post_images_image_id_images_id_fk",
           "tableFrom": "post_images",
           "tableTo": "images",
-          "columnsFrom": [
-            "image_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["image_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -253,21 +238,14 @@
       "compositePrimaryKeys": {
         "post_images_image_id_post_id_pk": {
           "name": "post_images_image_id_post_id_pk",
-          "columns": [
-            "image_id",
-            "post_id"
-          ]
+          "columns": ["image_id", "post_id"]
         }
       },
       "uniqueConstraints": {
         "unique_order": {
           "name": "unique_order",
           "nullsNotDistinct": false,
-          "columns": [
-            "image_id",
-            "post_id",
-            "order"
-          ]
+          "columns": ["image_id", "post_id", "order"]
         }
       },
       "policies": {},
@@ -396,9 +374,7 @@
         "settings_name_unique": {
           "name": "settings_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -462,16 +438,12 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -483,11 +455,7 @@
     "public.image_version_types": {
       "name": "image_version_types",
       "schema": "public",
-      "values": [
-        "original",
-        "regular",
-        "thumbnail"
-      ]
+      "values": ["original", "regular", "thumbnail"]
     }
   },
   "schemas": {},
