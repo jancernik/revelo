@@ -106,7 +106,7 @@ export const SettingsTable = pgTable("settings", {
 
 export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
   versions: many(ImageVersionsTable),
-  posts: many(PostsTable)
+  postsImages: many(PostImagesTable)
 }));
 
 export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
