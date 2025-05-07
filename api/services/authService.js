@@ -25,7 +25,7 @@ export const signup = async ({ email, username, password }) => {
   }
 
   const adminCount = await User.count(eq(User.table.admin, true));
-  const maxAdmins = await Setting.get("maxAdmins");
+  const maxAdmins = await Setting.get("maxAdmins", { includeRestricted: true });
   const isAdmin = adminCount < maxAdmins;
 
   const newUser = await User.create({

@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
+import settingRoutes from "./routes/settingRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
 import { config } from "./config.js";
@@ -17,6 +18,7 @@ app.use(morgan("dev"));
 app.use(cors({ origin: config.CLIENT_BASE_URL, credentials: true }));
 
 app.use(authRoutes);
+app.use(settingRoutes);
 app.use(imageRoutes);
 
 app.use("/uploads", express.static("uploads"));
