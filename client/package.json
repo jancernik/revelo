@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.9",
-    "@eslint/eslintrc": "^3.3.0",
+    "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.26.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitest/eslint-plugin": "1.1.25",
