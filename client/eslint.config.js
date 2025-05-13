@@ -31,7 +31,6 @@ export default [
       parser: "vue-eslint-parser",
     },
     rules: {
-      "vue/multi-word-component-names": "off",
       "vue/no-unused-vars": "warn",
       "vue/html-self-closing": [
         "error",
