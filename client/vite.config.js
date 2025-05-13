@@ -17,6 +17,16 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `
+          @import "@/scss/_variables.scss";
+          @import "@/scss/_colors.scss";
+        `
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
