@@ -19,7 +19,7 @@ const handleSignup = async () => {
       password: password.value
     })
     if (authStore.user?.admin) {
-      router.push('/admin')
+      router.push('/dashboard')
     } else {
       router.push('/')
     }
@@ -31,8 +31,8 @@ const handleSignup = async () => {
 
 const redirectIfDisabled = async () => {
   try {
-    const response = await api.get('/config')
-    if (response.data?.enableSignups) {
+    const response = await api.get('/settings/enableSignups')
+    if (response.data?.value) {
       showSignup.value = true
     } else {
       router.push('/login')
@@ -45,7 +45,7 @@ const redirectIfDisabled = async () => {
 
 const redirectIfAuthenticated = () => {
   if (authStore.user) {
-    router.push('/')
+    router.push('/dashboard')
   }
 }
 
@@ -55,13 +55,14 @@ onMounted(redirectIfAuthenticated)
 
 <template>
   <div v-if="showSignup" class="auth-container">
-    <h2>Sign Up</h2>
     <form @submit.prevent="handleSignup">
-      <input v-model="email" placeholder="Email" required />
-      <input v-model="username" placeholder="Username" required />
+      <input v-model="email" type="email" placeholder="Email" required />
+      <input v-model="username" type="text" placeholder="Username" required />
       <input v-model="password" type="password" placeholder="Password" required />
       <button type="submit">Sign Up</button>
     </form>
     <router-link to="/login">Login</router-link>
   </div>
 </template>
+
+<style lang="scss" scoped></style>

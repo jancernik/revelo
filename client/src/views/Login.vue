@@ -12,7 +12,7 @@ const handleLogin = async () => {
   try {
     await authStore.login({ username: username.value, password: password.value })
     if (authStore.user?.admin) {
-      router.push('/admin')
+      router.push('/dashboard')
     } else {
       router.push('/')
     }
@@ -24,7 +24,7 @@ const handleLogin = async () => {
 
 const redirectIfAuthenticated = () => {
   if (authStore.user) {
-    router.push('/')
+    router.push('/dashboard')
   }
 }
 
@@ -33,7 +33,6 @@ onMounted(redirectIfAuthenticated)
 
 <template>
   <div class="auth-container">
-    <h2>Login</h2>
     <form @submit.prevent="handleLogin">
       <input v-model="username" placeholder="Username" required />
       <input v-model="password" type="password" placeholder="Password" required />
@@ -42,3 +41,5 @@ onMounted(redirectIfAuthenticated)
     <router-link to="/signup">Sign up</router-link>
   </div>
 </template>
+
+<style lang="scss" scoped></style>

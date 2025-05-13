@@ -64,3 +64,17 @@ export const loadUser = async (req, res, next) => {
     });
   }
 };
+
+export const currentUser = async (req, res) => {
+  if (!req.user) {
+    return res.status(200).json({ user: {} });
+  } else {
+    res.status(200).json({
+      user: {
+        email: req.user.email,
+        username: req.user.username,
+        admin: req.user.admin
+      }
+    });
+  }
+};

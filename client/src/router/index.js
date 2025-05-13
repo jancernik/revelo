@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import AdminView from '@/views/AdminView.vue'
-import LoginView from '@/views/LoginView.vue'
-import SignupView from '@/views/SignupView.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
+import Home from '@/views/Home.vue'
+import Login from '@/views/Login.vue'
+import Signup from '@/views/Signup.vue'
+import DashboardIndex from '@/views/dashboard/Index.vue'
+import DashboardUpload from '@/views/dashboard/Upload.vue'
+import NotFound from '@/views/errors/NotFound.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -12,27 +13,37 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
-    },
-    {
-      path: '/admin',
-      name: 'admin',
-      component: AdminView,
-      meta: { requiresAuth: true }
+      component: Home
     },
     {
       path: '/login',
       name: 'login',
-      component: LoginView
+      component: Login
     },
     {
       path: '/signup',
       name: 'signup',
-      component: SignupView
+      component: Signup
+    },
+    {
+      path: '/dashboard',
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'dashboard',
+          component: DashboardIndex
+        },
+        {
+          path: 'upload',
+          name: 'upload',
+          component: DashboardUpload
+        }
+      ]
     },
     {
       path: '/:catchAll(.*)',
-      component: NotFoundView
+      component: NotFound
     }
   ]
 })
