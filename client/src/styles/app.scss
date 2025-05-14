@@ -13,6 +13,21 @@ body {
   font-family: Urbanist, Arial, sans-serif;
   min-height: 100dvh;
   font-weight: 500;
-  background: $white;
+  background: $light-grey-1;
   color: $black;
+}
+
+#app {
+  display: flex;
+  height: 100svh;
+  width: 100%;
+  @include responsive-spacing;
+}
+
+#app-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  height: 100%;
+  overflow: hidden;
 }

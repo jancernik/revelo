@@ -1,0 +1,58 @@
+@use './variables';
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin fill-parent {
+  width: 100%;
+  height: 100%;
+}
+
+@mixin responsive-spacing {
+  padding: calc(variables.$sm-spacing / 2);
+
+  > .inner {
+    @include fill-parent;
+    gap: variables.$sm-spacing;
+    border-radius: 0;
+  }
+
+  @media (min-width: variables.$md) {
+    padding: calc(variables.$md-spacing / 2);
+    > .inner {
+      gap: variables.$md-spacing;
+      border-radius: variables.$main-border-radius;
+    }
+  }
+
+  @media (min-width: variables.$lg) {
+    padding: calc(variables.$lg-spacing / 2);
+    > .inner {
+      gap: variables.$lg-spacing;
+    }
+  }
+
+  @media (min-width: variables.$xl) {
+    padding: calc(variables.$xl-spacing / 2);
+    > .inner {
+      gap: variables.$xl-spacing;
+    }
+  }
+
+  @media (min-width: variables.$xxl) {
+    padding: calc(variables.$xxl-spacing / 2);
+    > .inner {
+      gap: variables.$xxl-spacing;
+    }
+  }
+
+  @media (min-width: variables.$xxxl) {
+    padding: calc(variables.$xxxl-spacing / 2);
+    > .inner {
+      gap: variables.$xxxl-spacing;
+    }
+  }
+}

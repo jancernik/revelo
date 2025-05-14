@@ -1,13 +1,31 @@
 <script setup>
-import { RouterView } from 'vue-router'
-import Navbar from '@/components/layout/Navbar.vue'
+import Header from '@/components/layout/Header.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Footer from '@/components/layout/Footer.vue'
+import Main from './components/layout/Main.vue'
+import { ref } from 'vue'
+
+const isSidebarExpanded = ref(false)
+const toggleSidebar = () => {
+  isSidebarExpanded.value = !isSidebarExpanded.value
+}
+
+const setSidebarState = (state) => {
+  isSidebarExpanded.value = state
+}
 </script>
 
 <template>
-  <Navbar />
-  <div class="main-container">
-    <RouterView />
+  <div id="app-container">
+    <Header :toggle-sidebar="toggleSidebar" />
+    <Main />
+    <Footer />
   </div>
+  <Sidebar
+    :is-expanded="isSidebarExpanded"
+    :toggle-sidebar="toggleSidebar"
+    :set-sidebar-state="setSidebarState"
+  />
 </template>
 
 <style lang="scss">
