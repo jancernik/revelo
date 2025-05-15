@@ -1,7 +1,5 @@
 $header-height: 6rem;
 $footer-height: 6rem;
-$sidebar-width-expanded: 12rem;
-$sidebar-width-collapsed: 5rem;
 
 $main-border-radius: 1rem;
 
@@ -15,8 +13,8 @@ $xxxl: 2000px;
 
 // Spacing
 $sm-spacing: 0rem;
-$md-spacing: 1.2rem;
-$lg-spacing: 1.6rem;
-$xl-spacing: 1.6rem;
+$md-spacing: 0.8rem;
+$lg-spacing: $md-spacing;
+$xl-spacing: $md-spacing;
 $xxl-spacing: $xl-spacing;
 $xxxl-spacing: $xl-spacing;

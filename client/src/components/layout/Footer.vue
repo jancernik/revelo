@@ -10,6 +10,7 @@
 #footer {
   height: $footer-height;
   display: none;
+  padding-right: 0 !important;
   @include responsive-spacing;
 
   .footer-inner {
