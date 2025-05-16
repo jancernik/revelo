@@ -48,6 +48,7 @@ export class Image extends BaseModel {
             fit: "cover",
             withoutEnlargement: true
           })
+          .withMetadata()
           .toFile(outputPath);
       }
 
