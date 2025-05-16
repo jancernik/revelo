@@ -18,7 +18,7 @@ const setSidebarState = (state) => {
 <template>
   <div id="app-container">
     <Header :toggle-sidebar="toggleSidebar" />
-    <Main />
+    <Main :is-sidebar-expanded="isSidebarExpanded" />
     <Footer />
   </div>
   <Sidebar
