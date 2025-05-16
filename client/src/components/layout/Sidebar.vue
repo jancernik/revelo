@@ -1,6 +1,6 @@
 <script setup>
 import { LayoutPanelLeft, Library, Shield, LogOut } from 'lucide-vue-next'
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -44,7 +44,10 @@ const navigateTo = (path) => {
 }
 
 const isActive = (path) => {
-  return route && route.path === path
+  if (path === '/') {
+    return route?.path === path
+  }
+  return route?.path.startsWith(path)
 }
 </script>
 
@@ -122,7 +125,8 @@ button {
   transition: gap $transition;
   width: $sidebar-width-expanded;
 
-  span, svg {
+  span,
+  svg {
     font-weight: 600;
     white-space: nowrap;
     z-index: 5;
@@ -137,7 +141,7 @@ ul {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: $md-spacing*0;
+  gap: $md-spacing * 0;
   padding-left: $md-spacing;
   padding-block: calc($md-spacing * 2);
 
@@ -155,7 +159,9 @@ li {
     left: -$md-spacing;
     top: 50%;
     transform: translateY(-50%);
-    transition: all $transition, background-color $transition-hover;
+    transition:
+      all $transition,
+      background-color $transition-hover;
     width: calc($sidebar-width-collapsed - calc($md-spacing / 2));
     width: $md-spacing;
     border-radius: 0px 80% 80% 0px / 0px 20% 20% 0px;
@@ -168,13 +174,15 @@ li {
       height: $md-spacing;
       width: $md-spacing;
       z-index: 2;
-      transition: all $transition, background-color $transition-hover;
+      transition:
+        all $transition,
+        background-color $transition-hover;
     }
 
     &::before {
       top: 100%;
-      border-radius: $md-spacing 0 0 0 ;
-      border-radius: 40% 0px 0px 0px  / 80% 0px 0px 0px ;
+      border-radius: $md-spacing 0 0 0;
+      border-radius: 40% 0px 0px 0px / 80% 0px 0px 0px;
     }
 
     &::after {
@@ -190,8 +198,10 @@ li {
     left: -$md-spacing;
     height: $md-spacing;
     width: $md-spacing;
-    transition: all $transition, background-color $transition-hover;
-    z-index:-1;
+    transition:
+      all $transition,
+      background-color $transition-hover;
+    z-index: -1;
   }
 
   &::before {

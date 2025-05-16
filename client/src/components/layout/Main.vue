@@ -1,8 +1,8 @@
 <script setup>
 import { RouterView } from 'vue-router'
 
-const props = defineProps({
-    isSidebarExpanded: {
+defineProps({
+  isSidebarExpanded: {
     type: Boolean,
     default: false
   }
@@ -29,7 +29,6 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   flex: 1 1 0;
   padding-right: 0 !important;
   transition: $transition;
-
 
   @include fill-parent;
   @include responsive-spacing;
