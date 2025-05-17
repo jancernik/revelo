@@ -133,7 +133,6 @@ input {
   &:focus {
     outline: none;
     border-color: #181818;
-    box-shadow: 0 0 0 1px rgba(24, 24, 24, 0.1);
   }
 
   &::placeholder {

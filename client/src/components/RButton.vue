@@ -38,13 +38,17 @@ defineProps({
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  &:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+  }
   &.color- {
     &primary {
       background-color: #181818;
       color: #fff;
       border: none;
       line-height: 1.25rem;
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #272727;
       }
     }
@@ -53,7 +57,7 @@ defineProps({
       color: #000;
       border: 1px solid #e4e4e4;
       line-height: 1.125rem;
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #f4f4f4;
       }
     }

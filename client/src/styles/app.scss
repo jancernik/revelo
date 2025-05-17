@@ -31,3 +31,9 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
+a:has(> .r-button) {
+  @include flex-center;
+  @include fill-parent;
+  text-decoration: none;
+}

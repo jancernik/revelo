@@ -2,13 +2,23 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import RInput from '@/components/RInput.vue'
+import RButton from '@/components/RButton.vue'
+import api from '@/api'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const username = ref('')
 const password = ref('')
+const loginError = ref('')
+const isLoading = ref(false)
+const showLoginForm = ref(false)
+const showSignupButton = ref(false)
 
 const handleLogin = async () => {
+  loginError.value = ''
+  isLoading.value = true
+
   try {
     await authStore.login({ username: username.value, password: password.value })
     if (authStore.user?.admin) {
@@ -17,8 +27,21 @@ const handleLogin = async () => {
       router.push('/')
     }
   } catch (error) {
+    loginError.value = 'Invalid username or password.'
     console.error(error)
-    alert('Login failed')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const checkIfSignupsAreEnabled = async () => {
+  try {
+    const response = await api.get('/settings/enableSignups')
+    showSignupButton.value = response.data?.value || false
+    showLoginForm.value = true
+  } catch (error) {
+    console.error('Error getting config.', error)
+    router.push('/')
   }
 }
 
@@ -28,18 +51,83 @@ const redirectIfAuthenticated = () => {
   }
 }
 
+onMounted(checkIfSignupsAreEnabled)
 onMounted(redirectIfAuthenticated)
 </script>
 
 <template>
-  <div class="auth-container">
+  <div v-if="showLoginForm" class="login-card">
+    <h1>Login</h1>
+    <div v-if="loginError" class="error-message">{{ loginError }}</div>
     <form @submit.prevent="handleLogin">
-      <input v-model="username" placeholder="Username" required />
-      <input v-model="password" type="password" placeholder="Password" required />
-      <button type="submit">Login</button>
+      <RInput
+        v-model="username"
+        label="Username"
+        placeholder="Enter your username"
+        icon="User"
+        required
+      />
+      <RInput
+        v-model="password"
+        type="password"
+        label="Password"
+        placeholder="Enter your password"
+        icon="Lock"
+        required
+      />
+
+      <div class="form-actions">
+        <RButton type="submit" color="primary" :disabled="isLoading"> Login </RButton>
+
+        <router-link v-if="showSignupButton" to="/signup">
+          <RButton color="secondary">Sign up</RButton>
+        </router-link>
+      </div>
     </form>
-    <router-link to="/signup">Sign up</router-link>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.login-card {
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  border: 1px solid #e4e4e4;
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #181818;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    background-color: #f3e2e2;
+    padding: 0.5rem 1rem;
+    line-height: 1.25rem;
+    border-radius: 0.375rem;
+  }
+
+  form {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+  }
+  .form-actions {
+    @include flex-center;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+</style>
