@@ -1,5 +1,4 @@
 <script setup>
-import { computed, useSlots } from 'vue'
 import RIcon from '@/components/RIcon.vue'
 
 defineProps({
@@ -9,9 +8,9 @@ defineProps({
   },
   color: {
     type: String,
-    default: 'default',
+    default: 'primary',
     validator: (value) => {
-      return ['default', 'red', 'green', 'blue', 'yellow'].includes(value)
+      return ['primary', 'secondary'].includes(value)
     }
   }
 })
@@ -19,78 +18,50 @@ defineProps({
 
 <template>
   <button :class="['r-button', `color-${color}`]" v-bind="$attrs">
-    <RIcon v-if="icon" :size="20" :name="icon" class="btn-icon" />
+    <RIcon v-if="icon" :size="16" :name="icon" class="btn-icon" />
     <span v-if="$slots.default" class="btn-content">
       <slot></slot>
     </span>
   </button>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .r-button {
-  @include flex-center;
-  font-size: 1rem;
+  font-family: Geist, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
   gap: 0.5rem;
-  padding-inline: 1rem;
-  height: 2.3rem;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s ease-in-out;
-  color: $black;
-
+  transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
   &.color- {
-    &default {
-      background-color: $black;
-      color: $white;
+    &primary {
+      background-color: #181818;
+      color: #fff;
+      border: none;
+      line-height: 1.25rem;
       &:hover {
-        background-color: $dark-grey-3;
-      }
-      &:active {
-        background-color: $dark-grey-6;
+        background-color: #272727;
       }
     }
-    &red {
-      background-color: $red;
+    &secondary {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #e4e4e4;
+      line-height: 1.125rem;
       &:hover {
-        background-color: $red-dark-1;
-      }
-      &:active {
-        background-color: $red-dark-2;
-      }
-    }
-    &blue {
-      background-color: $blue;
-      &:hover {
-        background-color: $blue-dark-1;
-      }
-      &:active {
-        background-color: $blue-dark-2;
-      }
-    }
-    &green {
-      background-color: $green;
-      &:hover {
-        background-color: $green-dark-1;
-      }
-      &:active {
-        background-color: $green-dark-2;
-      }
-    }
-    &yellow {
-      background-color: $yellow;
-      &:hover {
-        background-color: $yellow-dark-1;
-      }
-      &:active {
-        background-color: $yellow-dark-2;
+        background-color: #f4f4f4;
       }
     }
   }
   &:not(:has(.btn-content)) {
-    padding-inline: 0;
-    width: 2.3rem;
+    padding: 0;
+    height: 2.25rem;
+    width: 2.25rem;
   }
 }
 </style>

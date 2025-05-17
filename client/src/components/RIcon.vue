@@ -16,7 +16,7 @@ const props = defineProps({
   },
   strokeWidth: {
     type: Number,
-    default: 1.5
+    default: 2
   },
   defaultClass: {
     type: String,

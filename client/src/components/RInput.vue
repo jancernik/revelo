@@ -1,0 +1,176 @@
+<script setup>
+import RIcon from '@/components/RIcon.vue'
+
+defineProps({
+  modelValue: {
+    type: [String, Number],
+    default: ''
+  },
+  label: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  placeholder: {
+    type: String,
+    default: ''
+  },
+  type: {
+    type: String,
+    default: 'text'
+  },
+  icon: {
+    type: String,
+    default: ''
+  },
+  iconPosition: {
+    type: String,
+    default: 'left',
+    validator: (value) => ['left', 'right'].includes(value)
+  },
+  error: {
+    type: String,
+    default: ''
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+const handleInput = (event) => {
+  emit('update:modelValue', event.target.value)
+}
+</script>
+
+<template>
+  <div class="r-input">
+    <label v-if="label">{{ label }}</label>
+    <div
+      class="input-container"
+      :class="[
+        { 'has-icon-left': icon && iconPosition === 'left' },
+        { 'has-icon-right': icon && iconPosition === 'right' },
+        { 'has-error': error },
+        { 'is-disabled': disabled }
+      ]"
+    >
+      <RIcon
+        v-if="icon"
+        :name="icon"
+        :size="16"
+        class="input-icon"
+        :class="{ 'icon-left': iconPosition === 'left', 'icon-right': iconPosition === 'right' }"
+      />
+      <input
+        :type="type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        v-bind="$attrs"
+        @input="handleInput"
+      />
+    </div>
+    <div v-if="error" class="error">{{ error }}</div>
+    <div v-else-if="description" class="description">{{ description }}</div>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.r-input {
+  font-family: Geist, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #181818;
+  }
+}
+
+.input-container {
+  position: relative;
+  width: 100%;
+
+  &.has-icon-left input {
+    padding-left: 2.5rem;
+  }
+
+  &.has-icon-right input {
+    padding-right: 2.5rem;
+  }
+
+  &.has-error input {
+    border-color: #ef4444;
+  }
+
+  &.is-disabled {
+    opacity: 0.7;
+  }
+}
+
+input {
+  font-family: Geist, Arial, sans-serif;
+  font-size: 0.875rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e4e4e4;
+  background-color: #fff;
+  color: #181818;
+  box-sizing: border-box;
+  transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  line-height: 1.125rem;
+
+  &:focus {
+    outline: none;
+    border-color: #181818;
+    box-shadow: 0 0 0 1px rgba(24, 24, 24, 0.1);
+  }
+
+  &::placeholder {
+    color: #a3a3a3;
+  }
+
+  &:disabled {
+    background-color: #f4f4f4;
+    cursor: not-allowed;
+  }
+}
+
+.input-icon {
+  position: absolute;
+  color: #a3a3a3;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+
+  &.icon-left {
+    left: 0.75rem;
+  }
+
+  &.icon-right {
+    right: 0.75rem;
+  }
+}
+
+.error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 400;
+}
+
+.description {
+  font-size: 0.75rem;
+  color: #737373;
+  font-weight: 400;
+}
+</style>
