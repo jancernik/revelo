@@ -56,38 +56,45 @@ onMounted(redirectIfAuthenticated)
 </script>
 
 <template>
-  <div v-if="showLoginForm" class="login-card">
-    <h1>Login</h1>
-    <div v-if="loginError" class="error-message">{{ loginError }}</div>
-    <form @submit.prevent="handleLogin">
-      <RInput
-        v-model="username"
-        label="Username"
-        placeholder="Enter your username"
-        icon="User"
-        required
-      />
-      <RInput
-        v-model="password"
-        type="password"
-        label="Password"
-        placeholder="Enter your password"
-        icon="Lock"
-        required
-      />
+  <div class="login">
+    <div v-if="showLoginForm" class="login-card">
+      <h1>Login</h1>
+      <div v-if="loginError" class="error-message">{{ loginError }}</div>
+      <form @submit.prevent="handleLogin">
+        <RInput
+          v-model="username"
+          label="Username"
+          placeholder="Enter your username"
+          icon="User"
+          required
+        />
+        <RInput
+          v-model="password"
+          type="password"
+          label="Password"
+          placeholder="Enter your password"
+          icon="Lock"
+          required
+        />
 
-      <div class="form-actions">
-        <RButton type="submit" color="primary" :disabled="isLoading"> Login </RButton>
+        <div class="form-actions">
+          <RButton type="submit" color="primary" :disabled="isLoading"> Login </RButton>
 
-        <router-link v-if="showSignupButton" to="/signup">
-          <RButton color="secondary">Sign up</RButton>
-        </router-link>
-      </div>
-    </form>
+          <router-link v-if="showSignupButton" to="/signup">
+            <RButton color="secondary">Sign up</RButton>
+          </router-link>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.login {
+  @include flex-center;
+  @include fill-parent;
+}
+
 .login-card {
   border-radius: 0.75rem;
   width: 100%;

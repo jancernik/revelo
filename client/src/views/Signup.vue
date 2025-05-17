@@ -63,46 +63,53 @@ onMounted(redirectIfAuthenticated)
 </script>
 
 <template>
-  <div v-if="showSignupForm" class="signup-card">
-    <h1>Sign Up</h1>
-    <div v-if="signupError" class="error-message">{{ signupError }}</div>
-    <form @submit.prevent="handleSignup">
-      <RInput
-        v-model="email"
-        type="email"
-        label="Email"
-        placeholder="Enter your email"
-        icon="Mail"
-        required
-      />
-      <RInput
-        v-model="username"
-        label="Username"
-        placeholder="Choose a username"
-        icon="User"
-        required
-      />
-      <RInput
-        v-model="password"
-        type="password"
-        label="Password"
-        placeholder="Create a password"
-        icon="Lock"
-        required
-      />
+  <div class="signup">
+    <div v-if="showSignupForm" class="signup-card">
+      <h1>Sign Up</h1>
+      <div v-if="signupError" class="error-message">{{ signupError }}</div>
+      <form @submit.prevent="handleSignup">
+        <RInput
+          v-model="email"
+          type="email"
+          label="Email"
+          placeholder="Enter your email"
+          icon="Mail"
+          required
+        />
+        <RInput
+          v-model="username"
+          label="Username"
+          placeholder="Choose a username"
+          icon="User"
+          required
+        />
+        <RInput
+          v-model="password"
+          type="password"
+          label="Password"
+          placeholder="Create a password"
+          icon="Lock"
+          required
+        />
 
-      <div class="form-actions">
-        <RButton type="submit" color="primary" :disabled="isLoading"> Sign Up </RButton>
+        <div class="form-actions">
+          <RButton type="submit" color="primary" :disabled="isLoading"> Sign Up </RButton>
 
-        <router-link to="/login">
-          <RButton color="secondary">Login</RButton>
-        </router-link>
-      </div>
-    </form>
+          <router-link to="/login">
+            <RButton color="secondary">Login</RButton>
+          </router-link>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.signup {
+  @include flex-center;
+  @include fill-parent;
+}
+
 .signup-card {
   border-radius: 0.75rem;
   width: 100%;

@@ -38,9 +38,13 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   }
 
   .main-inner {
-    @include flex-center;
     background-color: $white;
     overflow: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 }
 </style>

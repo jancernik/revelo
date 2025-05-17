@@ -1,5 +1,9 @@
-<script setup></script>
+<script setup>
+import ImageGallery from '@/components/common/ImageGallery.vue'
+</script>
 
-<template>Home</template>
+<template>
+  <ImageGallery />
+</template>
 
 <style lang="scss" scoped></style>
