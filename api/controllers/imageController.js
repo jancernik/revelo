@@ -33,6 +33,59 @@ export const confirmUpload = async (req, res) => {
   }
 };
 
+export const uploadBatchForReview = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded." });
+    }
+
+    const data = [];
+    for (const file of req.files) {
+      const imageData = await imageService.uploadForReview(file);
+      data.push(imageData);
+    }
+
+    const message =
+      data.length === 1
+        ? "Image uploaded and ready for review."
+        : `${data.length} images uploaded and ready for review.`;
+
+    res.json({ message, data });
+  } catch (error) {
+    console.error("Batch upload for review error:", error);
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const confirmBatchUpload = async (req, res) => {
+  try {
+    const { batch } = req.body;
+
+    if (!batch || !Array.isArray(batch) || batch.length === 0) {
+      return res.status(400).json({ error: "Invalid batch data." });
+    }
+
+    const images = [];
+    for (const item of batch) {
+      const { sessionId, metadata } = item;
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required." });
+      }
+
+      const image = await imageService.confirmUpload(sessionId, metadata);
+      images.push(image);
+    }
+
+    res.json({
+      message: `${images.length} images saved successfully.`,
+      images
+    });
+  } catch (error) {
+    console.error("Batch confirm and save error:", error);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 export const fetchAll = async (req, res) => {
   try {
     const { limit, offset, orderBy } = req.query;
