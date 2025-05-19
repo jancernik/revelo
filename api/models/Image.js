@@ -15,15 +15,14 @@ export class Image extends BaseModel {
   async #createImageVersions(tx, file, imageId, imageDir) {
     const versions = [];
     const originalFilePath = file.path;
-    const metadata = await sharp(originalFilePath).metadata();
+    const originalFilename = `original.${file.originalname.split(".").pop()}`;
+    const originalOutputPath = path.join(imageDir, originalFilename);
+    await sharp(originalFilePath).rotate().toFile(originalOutputPath);
 
+    const metadata = await sharp(originalOutputPath).metadata();
     const isVertical = metadata.height > metadata.width;
 
     const sizes = {
-      original: {
-        height: metadata.height,
-        width: metadata.width
-      },
       regular: {
         height: isVertical ? Math.round(2000 * (metadata.height / metadata.width)) : 2000,
         width: isVertical ? 2000 : Math.round(2000 * (metadata.width / metadata.height))
@@ -38,28 +37,24 @@ export class Image extends BaseModel {
       const filename = `${type}.${file.originalname.split(".").pop()}`;
       const outputPath = path.join(imageDir, filename);
 
-      if (type === "original") {
-        await fs.copyFile(originalFilePath, outputPath);
-      } else {
-        await sharp(originalFilePath)
-          .resize({
-            width: size.width,
-            height: size.height,
-            fit: "cover",
-            withoutEnlargement: true
-          })
-          .withMetadata()
-          .toFile(outputPath);
-      }
+      await sharp(originalOutputPath)
+        .resize({
+          width: size.width,
+          height: size.height,
+          fit: "inside",
+          withoutEnlargement: true
+        })
+        .toFile(outputPath);
 
       const stats = await fs.stat(outputPath);
+      const outputMeta = await sharp(outputPath).metadata();
 
       const versionData = {
         imageId,
         mimetype: file.mimetype,
         size: stats.size,
-        width: Math.min(metadata.width, size.width),
-        height: Math.min(metadata.height, size.height),
+        width: outputMeta.width,
+        height: outputMeta.height,
         type,
         path: outputPath
       };
