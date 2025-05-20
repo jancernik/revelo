@@ -6,7 +6,11 @@ import {
   fetchAll,
   fetchById,
   uploadBatchForReview,
-  confirmBatchUpload
+  confirmBatchUpload,
+  updateMetadata,
+  deleteImage,
+  cleanupTemp,
+  cleanupOrphaned
 } from "../controllers/imageController.js";
 import { requireAuth, loadUser } from "../middlewares/authMiddleware.js";
 
@@ -44,5 +48,9 @@ router.post("/upload/batch-review", requireAuth, loadUser, batchUpload, uploadBa
 router.post("/upload/batch-confirm", requireAuth, loadUser, confirmBatchUpload);
 router.get("/images", fetchAll);
 router.get("/images/:id", fetchById);
+router.put("/images/:id/metadata", requireAuth, loadUser, updateMetadata);
+router.delete("/images/:id", requireAuth, loadUser, deleteImage);
+router.post("/maintenance/cleanup-temp", requireAuth, loadUser, cleanupTemp);
+router.post("/maintenance/cleanup-orphaned", requireAuth, loadUser, cleanupOrphaned);
 
 export default router;

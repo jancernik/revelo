@@ -119,3 +119,63 @@ export const fetchById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const updateMetadata = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const metadata = req.body;
+
+    const image = await imageService.updateImageMetadata(parseInt(id, 10), metadata);
+
+    res.json({
+      message: "Image metadata updated successfully.",
+      image
+    });
+  } catch (error) {
+    console.error("Update metadata error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await imageService.deleteImage(parseInt(id, 10));
+
+    res.json({
+      message: "Image deleted successfully."
+    });
+  } catch (error) {
+    console.error("Delete image error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const cleanupTemp = async (req, res) => {
+  try {
+    const result = await imageService.cleanupTempFiles();
+
+    res.json({
+      message: `Temporary files cleanup completed. Deleted ${result.deleted} of ${result.scanned} files.`,
+      result
+    });
+  } catch (error) {
+    console.error("Cleanup temp error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const cleanupOrphaned = async (req, res) => {
+  try {
+    const result = await imageService.cleanupOrphanedFiles();
+
+    res.json({
+      message: `Orphaned files cleanup completed. Deleted ${result.deleted} of ${result.scanned} files.`,
+      result
+    });
+  } catch (error) {
+    console.error("Cleanup orphaned error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
