@@ -23,6 +23,10 @@ export class Image extends BaseModel {
     const isVertical = metadata.height > metadata.width;
 
     const sizes = {
+      original: {
+        height: metadata.height,
+        width: metadata.width
+      },
       regular: {
         height: isVertical ? Math.round(2000 * (metadata.height / metadata.width)) : 2000,
         width: isVertical ? 2000 : Math.round(2000 * (metadata.width / metadata.height))
@@ -37,14 +41,20 @@ export class Image extends BaseModel {
       const filename = `${type}.${file.originalname.split(".").pop()}`;
       const outputPath = path.join(imageDir, filename);
 
-      await sharp(originalOutputPath)
-        .resize({
-          width: size.width,
-          height: size.height,
-          fit: "inside",
-          withoutEnlargement: true
-        })
-        .toFile(outputPath);
+      if (type === "original") {
+        if (outputPath !== originalOutputPath) {
+          await fs.copyFile(originalOutputPath, outputPath);
+        }
+      } else {
+        await sharp(originalOutputPath)
+          .resize({
+            width: size.width,
+            height: size.height,
+            fit: "inside",
+            withoutEnlargement: true
+          })
+          .toFile(outputPath);
+      }
 
       const stats = await fs.stat(outputPath);
       const outputMeta = await sharp(outputPath).metadata();
@@ -64,6 +74,12 @@ export class Image extends BaseModel {
       versions.push(versionResult[0]);
     }
     await fs.unlink(originalFilePath);
+
+    if (
+      originalOutputPath !== path.join(imageDir, `original.${file.originalname.split(".").pop()}`)
+    ) {
+      await fs.unlink(originalOutputPath);
+    }
 
     return versions;
   }
