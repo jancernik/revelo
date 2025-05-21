@@ -22,6 +22,20 @@
       "when": 1746393305022,
       "tag": "0002_woozy_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1747850988746,
+      "tag": "0003_cuddly_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1747851255808,
+      "tag": "0004_fuzzy_vector",
+      "breakpoints": true
     }
   ]
 }

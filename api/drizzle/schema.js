@@ -9,7 +9,9 @@ import {
   bigint,
   pgEnum,
   unique,
-  primaryKey
+  primaryKey,
+  vector,
+  index
 } from "drizzle-orm/pg-core";
 
 export const UserTables = pgTable("users", {
@@ -28,19 +30,31 @@ export const RevokedTokensTable = pgTable("revoked_tokens", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
-export const ImagesTable = pgTable("images", {
-  id: serial("id").primaryKey().notNull(),
-  originalFilename: varchar("original_filename", { length: 255 }).notNull(),
-  iso: integer("iso"),
-  aperture: varchar("aperture", { length: 50 }),
-  shutterSpeed: varchar("shutter_speed", { length: 50 }),
-  focalLength: varchar("focal_length", { length: 50 }),
-  camera: varchar("camera", { length: 255 }),
-  lens: varchar("lens", { length: 255 }),
-  date: timestamp("date"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow()
-});
+export const ImagesTable = pgTable(
+  "images",
+  {
+    id: serial("id").primaryKey().notNull(),
+    originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+    iso: integer("iso"),
+    aperture: varchar("aperture", { length: 50 }),
+    shutterSpeed: varchar("shutter_speed", { length: 50 }),
+    focalLength: varchar("focal_length", { length: 50 }),
+    camera: varchar("camera", { length: 255 }),
+    lens: varchar("lens", { length: 255 }),
+    date: timestamp("date"),
+    embedding: vector("embedding", { dimensions: 512 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow()
+  },
+  (table) => {
+    return {
+      embeddingIndex: index("embedding_index").using(
+        "hnsw",
+        table.embedding.op("vector_cosine_ops")
+      )
+    };
+  }
+);
 
 export const ImageVersionTypes = pgEnum("image_version_types", ["original", "regular", "thumbnail"]);
 
