@@ -8,6 +8,7 @@ import settingRoutes from "./routes/settingRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
 import { config } from "./config.js";
+import fs from "fs";
 
 const app = express();
 
@@ -20,6 +21,10 @@ app.use(cors({ origin: config.CLIENT_BASE_URL, credentials: true }));
 app.use(authRoutes);
 app.use(settingRoutes);
 app.use(imageRoutes);
+
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads", { recursive: true });
+}
 
 app.use("/uploads", express.static("uploads"));
 
