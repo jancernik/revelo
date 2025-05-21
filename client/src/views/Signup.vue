@@ -152,5 +152,9 @@ onMounted(redirectIfAuthenticated)
       width: 100%;
     }
   }
+
+  a {
+    width: 100%;
+  }
 }
 </style>

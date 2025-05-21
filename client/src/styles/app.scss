@@ -34,6 +34,5 @@ body {
 
 a:has(> .r-button) {
   @include flex-center;
-  @include fill-parent;
   text-decoration: none;
 }

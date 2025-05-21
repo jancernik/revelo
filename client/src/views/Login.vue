@@ -81,7 +81,7 @@ onMounted(redirectIfAuthenticated)
           <RButton type="submit" color="primary" :disabled="isLoading"> Login </RButton>
 
           <router-link v-if="showSignupButton" to="/signup">
-            <RButton color="secondary">Sign up</RButton>
+            <RButton color="secondary">Sign Up</RButton>
           </router-link>
         </div>
       </form>
@@ -135,6 +135,10 @@ onMounted(redirectIfAuthenticated)
     button {
       width: 100%;
     }
+  }
+
+  a {
+    width: 100%;
   }
 }
 </style>
