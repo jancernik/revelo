@@ -29,4 +29,4 @@ coverage
 *.tsbuildinfo
 
 uploads/*
-!uploads/.gitkeep
+clip/__pycache__/*

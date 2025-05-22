@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+torch
+torchvision
+ftfy
+regex
+git+https://github.com/openai/CLIP.git
