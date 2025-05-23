@@ -1,7 +1,8 @@
 <script setup>
+import { useTemplateRef, nextTick, onMounted } from 'vue'
 import RIcon from '@/components/RIcon.vue'
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: [String, Number],
     default: ''
@@ -31,6 +32,15 @@ defineProps({
     default: 'left',
     validator: (value) => ['left', 'right'].includes(value)
   },
+  unit: {
+    type: String,
+    default: ''
+  },
+  unitPosition: {
+    type: String,
+    default: 'right',
+    validator: (value) => ['left', 'right'].includes(value)
+  },
   error: {
     type: String,
     default: ''
@@ -42,20 +52,38 @@ defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+const inputUnit = useTemplateRef('input-unit')
+const inputContainer = useTemplateRef('input-container')
 
 const handleInput = (event) => {
   emit('update:modelValue', event.target.value)
 }
+
+const updateUnitWidth = () => {
+  if (inputUnit.value && inputContainer.value && props.unit) {
+    const unitWidth = inputUnit.value.offsetWidth
+    inputContainer.value.style.setProperty('--unit-width', `${unitWidth}px`)
+  }
+}
+
+onMounted(() => {
+  if (props.unit) {
+    nextTick(updateUnitWidth)
+  }
+})
 </script>
 
 <template>
   <div class="r-input">
     <label v-if="label">{{ label }}</label>
     <div
+      ref="input-container"
       class="input-container"
       :class="[
         { 'has-icon-left': icon && iconPosition === 'left' },
         { 'has-icon-right': icon && iconPosition === 'right' },
+        { 'has-unit-left': unit && unitPosition === 'left' },
+        { 'has-unit-right': unit && unitPosition === 'right' },
         { 'has-error': error },
         { 'is-disabled': disabled }
       ]"
@@ -67,6 +95,14 @@ const handleInput = (event) => {
         class="input-icon"
         :class="{ 'icon-left': iconPosition === 'left', 'icon-right': iconPosition === 'right' }"
       />
+      <span
+        v-if="unit"
+        ref="input-unit"
+        class="input-unit"
+        :class="{ 'unit-left': unitPosition === 'left', 'unit-right': unitPosition === 'right' }"
+      >
+        {{ unit }}
+      </span>
       <input
         :type="type"
         :value="modelValue"
@@ -106,6 +142,30 @@ const handleInput = (event) => {
 
   &.has-icon-right input {
     padding-right: 2.5rem;
+  }
+
+  &.has-unit-left input {
+    padding-left: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
+  }
+
+  &.has-unit-right input {
+    padding-right: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
+  }
+
+  &.has-icon-left.has-unit-left input {
+    padding-left: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
+  }
+
+  &.has-icon-right.has-unit-right input {
+    padding-right: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
+  }
+
+  &.has-icon-left.has-unit-left .input-unit.unit-left {
+    left: 2.5rem;
+  }
+
+  &.has-icon-right.has-unit-right .input-unit.unit-right {
+    right: 2.5rem;
   }
 
   &.has-error input {
@@ -157,6 +217,27 @@ input {
   }
 
   &.icon-right {
+    right: 0.75rem;
+  }
+}
+
+.input-unit {
+  position: absolute;
+  color: #a3a3a3;
+  font-size: 0.875rem;
+  font-weight: 400;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+
+  &.unit-left {
+    left: 0.75rem;
+  }
+
+  &.unit-right {
     right: 0.75rem;
   }
 }
