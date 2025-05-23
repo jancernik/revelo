@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import RInput from '@/components/RInput.vue'
+import RButton from '@/components/RButton.vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
   extractedMetadata: {
@@ -13,27 +15,72 @@ const props = defineProps({
   previewFilename: {
     type: String,
     required: true
+  },
+  showRemoveButton: {
+    type: Boolean,
+    default: false
+  },
+  showResetButton: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['confirm', 'cancel'])
+const emit = defineEmits(['update', 'remove'])
+
+const createDefaultMetadata = () => ({
+  camera: '',
+  lens: '',
+  iso: '',
+  aperture: '',
+  shutterSpeed: '',
+  focalLength: '',
+  date: ''
+})
 
 const metadata = ref({})
-const metadataChanged = computed(() => {
-  return JSON.stringify(metadata.value) !== JSON.stringify(props.extractedMetadata)
-})
+const originalMetadata = ref({})
 
-onMounted(() => {
-  resetMetadata()
-})
+const initializeMetadata = () => {
+  const safeMetadata = { ...createDefaultMetadata() }
 
-const handleConfirm = () => {
-  emit('confirm', metadata.value)
+  if (props.extractedMetadata) {
+    Object.keys(safeMetadata).forEach((key) => {
+      if (props.extractedMetadata[key] !== undefined) {
+        safeMetadata[key] = props.extractedMetadata[key]
+      }
+    })
+  }
+
+  metadata.value = safeMetadata
+  originalMetadata.value = { ...safeMetadata }
 }
 
-const resetMetadata = () => {
-  metadata.value = JSON.parse(JSON.stringify(props.extractedMetadata))
+const hasChanges = computed(() => {
+  return JSON.stringify(metadata.value) !== JSON.stringify(originalMetadata.value)
+})
+
+const handleReset = () => {
+  metadata.value = { ...originalMetadata.value }
 }
+
+const handleRemove = () => {
+  emit('remove')
+}
+
+watch(
+  () => props.extractedMetadata,
+  () => initializeMetadata(),
+  { immediate: true, deep: true }
+)
+
+watch(
+  metadata,
+  (newMetadata) => {
+    emit('update', newMetadata)
+  },
+  { deep: true }
+)
 </script>
 
 <template>
@@ -41,131 +88,118 @@ const resetMetadata = () => {
     <div class="image-preview">
       <img :src="previewUrl" :alt="previewFilename" />
     </div>
-
     <div class="metadata-form">
       <div class="form-group">
-        <label for="camera">Camera</label>
-        <input
-          id="camera"
-          v-model="metadata.camera"
-          type="text"
-          class="form-input"
-          placeholder="Camera model"
-        />
+        <RInput v-model="metadata.camera" type="text" label="Camera" placeholder="Camera model" />
       </div>
-
       <div class="form-group">
-        <label for="lens">Lens</label>
-        <input
-          id="lens"
-          v-model="metadata.lens"
-          type="text"
-          class="form-input"
-          placeholder="Lens model"
-        />
+        <RInput v-model="metadata.lens" type="text" label="Lens" placeholder="Lens model" />
       </div>
-
       <div class="form-row">
         <div class="form-group">
-          <label for="iso">ISO</label>
-          <input id="iso" v-model="metadata.iso" type="text" class="form-input" placeholder="ISO" />
+          <RInput v-model="metadata.iso" type="text" label="ISO" placeholder="400" />
         </div>
-
         <div class="form-group">
-          <label for="aperture">Aperture</label>
-          <input
-            id="aperture"
+          <RInput
             v-model="metadata.aperture"
             type="text"
-            class="form-input"
-            placeholder="f/number"
+            label="Aperture"
+            placeholder="4.0"
+            unit="f/"
+            unit-position="left"
           />
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
-          <label for="shutterSpeed">Shutter Speed</label>
-          <input
-            id="shutterSpeed"
+          <RInput
             v-model="metadata.shutterSpeed"
             type="text"
-            class="form-input"
-            placeholder="1/125"
+            label="Shutter Speed"
+            unit="s"
+            unit-position="right"
+            placeholder="1/250"
           />
         </div>
-
         <div class="form-group">
-          <label for="focalLength">Focal Length</label>
-          <input
-            id="focalLength"
+          <RInput
             v-model="metadata.focalLength"
             type="text"
-            class="form-input"
-            placeholder="50mm"
+            label="Focal Length"
+            unit="mm"
+            unit-position="right"
+            placeholder="50"
           />
         </div>
       </div>
-
       <div class="form-group">
-        <label for="date">Date Taken</label>
-        <input id="date" v-model="metadata.date" type="date" class="form-input" />
+        <RInput v-model="metadata.date" type="date" label="Date Taken" />
       </div>
-    </div>
-  </div>
-
-  <div class="actions">
-    <div>
-      <button class="cancel" @click="emit('cancel')">Cancel</button>
-    </div>
-    <div>
-      <button v-if="metadataChanged" class="reset" @click="resetMetadata">Reset Changes</button>
-      <button class="confirm" @click="handleConfirm">Confirm & Save</button>
+      <div v-if="showRemoveButton || showResetButton" class="actions">
+        <RButton
+          v-if="showResetButton && hasChanges"
+          class="reset"
+          color="secondary"
+          icon="RotateCcw"
+          @click="handleReset"
+        >
+          Reset
+        </RButton>
+        <RButton
+          v-if="showRemoveButton"
+          class="remove"
+          color="secondary"
+          icon="Trash"
+          @click="handleRemove"
+        >
+          Remove
+        </RButton>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .metadata-editor {
-  @include flex-center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $md-spacing * 2;
 }
 
 .image-preview {
   @include flex-center;
+  flex: 1;
+  min-width: 250px;
 
   img {
     max-width: 100%;
-    max-height: 400px;
+    max-height: 300px;
+    object-fit: contain;
   }
 }
+
 .metadata-form {
+  flex: 2;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
-
-  .form-group {
-    .form-input {
-      width: 100%;
-      border: 1px solid $light-grey-2;
-    }
-    label {
-      display: block;
-      font-size: 1rem;
-    }
-  }
+  gap: 1rem;
 
   .form-row {
     display: flex;
-    flex: 1;
+    gap: 1rem;
+
+    .form-group {
+      flex: 1;
+    }
   }
-}
 
-.actions {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-
-  > div {
+  .actions {
     display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $md-spacing;
+    padding-top: 0.5rem;
   }
 }
 </style>

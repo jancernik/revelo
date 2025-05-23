@@ -92,7 +92,7 @@ onMounted(redirectIfAuthenticated)
           required
         />
 
-        <div class="form-actions">
+        <div class="actions">
           <RButton type="submit" color="primary" :disabled="isLoading"> Sign Up </RButton>
 
           <router-link to="/login">
@@ -142,7 +142,7 @@ onMounted(redirectIfAuthenticated)
     flex-direction: column;
   }
 
-  .form-actions {
+  .actions {
     @include flex-center;
     flex-direction: column;
     gap: 0.75rem;
