@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import ImageCard from '@/components/common/ImageCard.vue'
-import api from '@/api'
+import api from '@/utils/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const images = ref([])
@@ -10,7 +10,6 @@ const fetchImages = async () => {
   try {
     const response = await api.get('/images')
     images.value = response.data
-    console.log('images.value: ', images.value)
   } catch (error) {
     console.error('Error fetching images:', error)
   }

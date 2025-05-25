@@ -5,7 +5,7 @@ import MultipleImagesReview from '@/components/common/MultipleImagesReview.vue'
 
 import SimpleImageGrid from '@/components/common/SimpleImageGrid.vue'
 import RButton from '@/components/RButton.vue'
-import api from '@/api'
+import api from '@/utils/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 

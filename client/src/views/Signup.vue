@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import RInput from '@/components/RInput.vue'
 import RButton from '@/components/RButton.vue'
-import api from '@/api'
+import api from '@/utils/api'
 
 const authStore = useAuthStore()
 const router = useRouter()
