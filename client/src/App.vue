@@ -2,10 +2,13 @@
 import Header from '@/components/layout/Header.vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Footer from '@/components/layout/Footer.vue'
-import Main from './components/layout/Main.vue'
-import { ref } from 'vue'
+import Main from '@/components/layout/Main.vue'
+import { useTheme } from '@/composables/useTheme'
+import { ref, onMounted, watch } from 'vue'
 
+const { themeClass } = useTheme()
 const isSidebarExpanded = ref(false)
+
 const toggleSidebar = () => {
   isSidebarExpanded.value = !isSidebarExpanded.value
 }
@@ -13,6 +16,21 @@ const toggleSidebar = () => {
 const setSidebarState = (state) => {
   isSidebarExpanded.value = state
 }
+
+const applyThemeToDocument = (theme) => {
+  document.documentElement.classList.remove('light', 'dark')
+  if (theme) {
+    document.documentElement.classList.add(theme)
+  }
+}
+
+onMounted(() => {
+  applyThemeToDocument(themeClass.value)
+})
+
+watch(themeClass, (newTheme) => {
+  applyThemeToDocument(newTheme)
+})
 </script>
 
 <template>
