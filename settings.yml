@@ -5,6 +5,13 @@ enableSignups:
   default: true
   public: true
 
+showLoginLink:
+  description: Show the login button
+  category: Login
+  type: boolean
+  default: true
+  public: true
+
 maxAdmins:
   description: The maximum number of admins allowed
   category: Admin
