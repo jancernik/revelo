@@ -3,6 +3,7 @@ import Header from '@/components/layout/Header.vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import Main from '@/components/layout/Main.vue'
+import RDialog from '@/components/RDialog.vue'
 import { useTheme } from '@/composables/useTheme'
 import { ref, onMounted, watch } from 'vue'
 
@@ -44,6 +45,7 @@ watch(themeClass, (newTheme) => {
     :toggle-sidebar="toggleSidebar"
     :set-sidebar-state="setSidebarState"
   />
+  <RDialog />
 </template>
 
 <style lang="scss">

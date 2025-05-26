@@ -30,11 +30,47 @@ export const updateSetting = async (name, value) => {
   }
 
   try {
-    await Setting.get(name);
+    await Setting.get(name, { includeRestricted: true });
     return await Setting.set(name, value);
   } catch (error) {
     throw new Error(`Failed to update setting '${name}': ${error.message}`);
   }
+};
+
+export const updateMultipleSettings = async (settingsData) => {
+  if (!settingsData || typeof settingsData !== "object") {
+    throw new Error("Failed to update settings: Settings data is required and must be an object");
+  }
+
+  const settingNames = Object.keys(settingsData);
+  if (settingNames.length === 0) {
+    throw new Error("Failed to update settings: At least one setting must be provided");
+  }
+
+  const results = [];
+  const errors = [];
+
+  for (const name of settingNames) {
+    try {
+      await Setting.get(name, { includeRestricted: true });
+      const result = await Setting.set(name, settingsData[name]);
+      results.push(result);
+    } catch (error) {
+      errors.push({
+        name,
+        error: error.message
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    const errorMessage = `Failed to update some settings: ${errors.map((e) => `${e.name}: ${e.error}`).join(", ")}`;
+    const error = new Error(errorMessage);
+    error.details = { successful: results, failed: errors };
+    throw error;
+  }
+
+  return results;
 };
 
 export const resetSetting = async (name) => {
@@ -43,7 +79,7 @@ export const resetSetting = async (name) => {
   }
 
   try {
-    await Setting.get(name);
+    await Setting.get(name, { includeRestricted: true });
     return await Setting.reset(name);
   } catch (error) {
     throw new Error(`Failed to reset setting '${name}': ${error.message}`);

@@ -58,6 +58,42 @@ export const updateSetting = async (req, res) => {
   }
 };
 
+export const updateMultipleSettings = async (req, res) => {
+  try {
+    if (!req.user?.admin) {
+      return res.status(401).json({ message: "Authorization required" });
+    }
+
+    const settingsData = req.body;
+
+    if (!settingsData || typeof settingsData !== "object") {
+      return res.status(400).json({
+        message: "Invalid request body. Expected an object with setting names as keys."
+      });
+    }
+
+    const results = await settingService.updateMultipleSettings(settingsData);
+
+    return res.json({
+      message: `Successfully updated ${results.length} settings`,
+      settings: results
+    });
+  } catch (error) {
+    if (error.details) {
+      return res.status(207).json({
+        message: error.message,
+        successful: error.details.successful,
+        failed: error.details.failed
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to update settings",
+      error: error.message
+    });
+  }
+};
+
 export const resetSetting = async (req, res) => {
   try {
     if (!req.user?.admin) {

@@ -1,76 +1,54 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import BooleanSetting from '@/components/common/BooleanSetting.vue'
+import InputSetting from '@/components/common/InputSetting.vue'
+import RButton from '@/components/RButton.vue'
 import api from '@/utils/api'
-import RSwitch from '@/components/RSwitch.vue'
-import RInput from '@/components/RInput.vue'
 
 const settings = ref([])
 const currentValues = reactive({})
 const originalValues = reactive({})
 const loading = ref(true)
-const error = ref('')
-const isSaving = reactive({})
+const isSaving = ref(false)
 const isResetting = reactive({})
-const isResettingToDefault = reactive({})
 
 const categories = computed(() => {
-  return[...new Set(settings.value.map((s) => s.category))].sort()
+  return [...new Set(settings.value.map((s) => s.category))].sort()
+})
+
+const hasChanges = computed(() => {
+  return Object.keys(currentValues).some((key) => currentValues[key] !== originalValues[key])
+})
+
+const changedSettings = computed(() => {
+  const changes = {}
+  Object.keys(currentValues).forEach((key) => {
+    if (currentValues[key] !== originalValues[key]) {
+      changes[key] = currentValues[key]
+    }
+  })
+  return changes
+})
+
+const changedSettingsCount = computed(() => {
+  return Object.keys(changedSettings.value).length
 })
 
 const getSettingsByCategory = (category) => {
   return settings.value.filter((s) => s.category === category)
 }
 
-const hasChanged = (settingName) => {
-  return currentValues[settingName] !== originalValues[settingName]
-}
-
-const showResetButton = (settingName) => {
-  if (hasChanged(settingName)) {
-    return false
-}
-    const setting = settings.value.find((s) => s.name === settingName)
-  return setting && originalValues[settingName] !== setting.default
-}
-
 const updateValue = (settingName, newValue) => {
   currentValues[settingName] = newValue
 }
 
-const parseValue = (value, type) => {
-  if (value === '' || value === null || value === undefined) return value
-
-  if (type === 'integer') {
-    const parsed = parseInt(value, 10)
-    return isNaN(parsed) ? value : parsed
-  } else if (type === 'decimal') {
-    const parsed = parseFloat(value)
-    return isNaN(parsed) ? value : parsed
-  }
-
-  return value
+const resetValue = (settingName) => {
+  currentValues[settingName] = originalValues[settingName]
 }
 
-const resetValue = async (settingName) => {
+const resetDefault = async (settingName) => {
   try {
     isResetting[settingName] = true
-
-    await api.delete(`/settings/${settingName}`)
-
-    currentValues[settingName] = originalValues[settingName]
-
-    console.log(`Setting ${settingName} reset successfully`)
-  } catch (err) {
-    console.error('Error resetting setting:', err)
-  } finally {
-    isResetting[settingName] = false
-  }
-}
-
-const resetToDefault = async (settingName) => {
-  try {
-    isResettingToDefault[settingName] = true
-
     await api.delete(`/settings/${settingName}`)
 
     const setting = settings.value.find((s) => s.name === settingName)
@@ -78,38 +56,37 @@ const resetToDefault = async (settingName) => {
       currentValues[settingName] = setting.default
       originalValues[settingName] = setting.default
     }
-
-    console.log(`Setting ${settingName} reset to default successfully`)
-  } catch (err) {
-    console.error('Error resetting setting to default:', err)
+  } catch (error) {
+    console.error('Error resetting setting to default:', error)
   } finally {
-    isResettingToDefault[settingName] = false
+    isResetting[settingName] = false
   }
 }
 
-const saveValue = async (settingName) => {
+const saveAllChanges = async () => {
   try {
-    isSaving[settingName] = true
+    isSaving.value = true
+    await api.put('/settings', changedSettings.value)
 
-    await api.put(`/settings/${settingName}`, {
-      value: currentValues[settingName]
+    Object.keys(changedSettings.value).forEach((key) => {
+      originalValues[key] = currentValues[key]
     })
-
-    originalValues[settingName] = currentValues[settingName]
-
-    console.log(`Setting ${settingName} saved successfully`)
-  } catch (err) {
-    console.error('Error saving setting:', err)
+  } catch (error) {
+    console.error('Error saving settings:', error)
   } finally {
-    isSaving[settingName] = false
+    isSaving.value = false
   }
+}
+
+const cancelAllChanges = () => {
+  Object.keys(currentValues).forEach((key) => {
+    currentValues[key] = originalValues[key]
+  })
 }
 
 const fetchSettings = async () => {
   try {
     loading.value = true
-    error.value = ''
-
     const response = await api.get('/settings?complete=true')
     settings.value = response.data
 
@@ -117,9 +94,8 @@ const fetchSettings = async () => {
       currentValues[setting.name] = setting.value
       originalValues[setting.name] = setting.value
     })
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-    error.value = 'Failed to load settings.'
+  } catch (error) {
+    console.error('Error fetching settings:', error)
   } finally {
     loading.value = false
   }
@@ -129,149 +105,109 @@ onMounted(fetchSettings)
 </script>
 
 <template>
-  <div class="settings">
-    <div v-if="!loading" class="settings-content">
-      <div v-for="category in categories" :key="category" class="category-section">
-        <h2>{{ category }}</h2>
+  <div v-if="!loading" class="settings">
+    <div class="sections-container">
+      <div v-for="category in categories" :key="category" class="section">
+        <div class="category-header">
+          <h3>{{ category }}</h3>
+        </div>
 
-        <div
-          v-for="setting in getSettingsByCategory(category)"
-          :key="setting.name"
-          class="setting-item"
-        >
-          <div v-if="setting.type === 'boolean'" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-header">
-                <span class="setting-name">{{ setting.name }}</span>
-                <span class="setting-description">{{ setting.description }}</span>
-              </div>
-              <RSwitch
-                :model-value="currentValues[setting.name]"
-                @update:model-value="updateValue(setting.name, $event)"
-              />
-            </div>
-            <div class="setting-actions">
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon"
-                :disabled="isResetting[setting.name]"
-                title="Reset to saved value"
-                @click="resetValue(setting.name)"
-              >
-                ✕
-              </button>
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon btn-primary"
-                :disabled="isSaving[setting.name]"
-                title="Save changes"
-                @click="saveValue(setting.name)"
-              >
-                ✓
-              </button>
-              <button
-                v-if="showResetButton(setting.name)"
-                class="btn btn-icon btn-default"
-                :disabled="isResettingToDefault[setting.name]"
-                title="Reset to default"
-                @click="resetToDefault(setting.name)"
-              >
-                ↺
-              </button>
-            </div>
-          </div>
+        <div class="category-settings">
+          <template v-for="setting in getSettingsByCategory(category)" :key="setting.name">
+            <BooleanSetting
+              v-if="setting.type === 'boolean'"
+              :setting="setting"
+              :current-value="currentValues[setting.name]"
+              :original-value="originalValues[setting.name]"
+              :is-resetting="isResetting[setting.name] || false"
+              @update="updateValue(setting.name, $event)"
+              @reset="resetValue(setting.name)"
+              @reset-default="resetDefault(setting.name)"
+            />
 
-          <div
-            v-else-if="setting.type === 'integer' || setting.type === 'decimal'"
-            class="setting-row"
-          >
-            <div class="setting-info">
-              <div class="setting-header">
-                <span class="setting-name">{{ setting.name }}</span>
-                <span class="setting-description">{{ setting.description }}</span>
-              </div>
-              <RInput
-                :model-value="currentValues[setting.name]"
-                :type="setting.type === 'integer' ? 'number' : 'number'"
-                :step="setting.type === 'decimal' ? '0.01' : '1'"
-                @update:model-value="updateValue(setting.name, parseValue($event, setting.type))"
-              />
-            </div>
-            <div class="setting-actions">
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon"
-                :disabled="isResetting[setting.name]"
-                title="Reset to saved value"
-                @click="resetValue(setting.name)"
-              >
-                ✕
-              </button>
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon btn-primary"
-                :disabled="isSaving[setting.name]"
-                title="Save changes"
-                @click="saveValue(setting.name)"
-              >
-                ✓
-              </button>
-              <button
-                v-if="showResetButton(setting.name)"
-                class="btn btn-icon btn-default"
-                :disabled="isResettingToDefault[setting.name]"
-                title="Reset to default"
-                @click="resetToDefault(setting.name)"
-              >
-                ↺
-              </button>
-            </div>
-          </div>
-
-          <div v-else-if="setting.type === 'string'" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-header">
-                <span class="setting-name">{{ setting.name }}</span>
-                <span class="setting-description">{{ setting.description }}</span>
-              </div>
-              <RInput
-                :model-value="currentValues[setting.name]"
-                type="text"
-                @update:model-value="updateValue(setting.name, $event)"
-              />
-            </div>
-            <div class="setting-actions">
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon"
-                :disabled="isResetting[setting.name]"
-                title="Reset to saved value"
-                @click="resetValue(setting.name)"
-              >
-                ✕
-              </button>
-              <button
-                v-if="hasChanged(setting.name)"
-                class="btn btn-icon btn-primary"
-                :disabled="isSaving[setting.name]"
-                title="Save changes"
-                @click="saveValue(setting.name)"
-              >
-                ✓
-              </button>
-              <button
-                v-if="showResetButton(setting.name)"
-                class="btn btn-icon btn-default"
-                :disabled="isResettingToDefault[setting.name]"
-                title="Reset to default"
-                @click="resetToDefault(setting.name)"
-              >
-                ↺
-              </button>
-            </div>
-          </div>
+            <InputSetting
+              v-else="
+                setting.type === 'string' ||
+                setting.type === 'integer' ||
+                setting.type === 'decimal'
+              "
+              :setting="setting"
+              :current-value="currentValues[setting.name]"
+              :original-value="originalValues[setting.name]"
+              :is-resetting="isResetting[setting.name] || false"
+              @update="updateValue(setting.name, $event)"
+              @reset="resetValue(setting.name)"
+              @reset-default="resetDefault(setting.name)"
+            />
+          </template>
         </div>
       </div>
     </div>
+    <div v-if="hasChanges" class="actions">
+      <div class="info">
+        <h4>
+          {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? 'change' : 'changes' }}
+        </h4>
+      </div>
+      <RButton icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
+        Cancel
+      </RButton>
+      <RButton icon="Check" color="primary" :disabled="isSaving" @click="saveAllChanges">
+        Save
+      </RButton>
+    </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.settings {
+  @include fill-parent;
+  padding: $md-spacing * 2;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .sections-container {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: $md-spacing * 2;
+    display: flex;
+    flex-direction: column;
+    gap: $md-spacing * 2;
+
+    .category-settings {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+
+  .category-header {
+    padding-bottom: $md-spacing;
+
+    h3 {
+      font-size: 1.125rem;
+      font-weight: 500;
+    }
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: $md-spacing * 2;
+    border-top: 1px solid #e5e7eb;
+    gap: $md-spacing;
+    flex-shrink: 0;
+    background: #fff;
+
+    .info {
+      margin-right: auto;
+      h4 {
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+    }
+  }
+}
+</style>
