@@ -1,16 +1,9 @@
 <script setup>
 import { RouterView } from 'vue-router'
-
-defineProps({
-  isSidebarExpanded: {
-    type: Boolean,
-    default: false
-  }
-})
 </script>
 
 <template>
-  <main id="main" :class="{ 'sidebar-expanded': isSidebarExpanded }">
+  <main id="main">
     <div class="main-inner inner">
       <RouterView />
     </div>
@@ -32,10 +25,6 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
 
   @include fill-parent;
   @include responsive-spacing;
-
-  &.sidebar-expanded {
-    padding: $md-spacing * 3;
-  }
 
   .main-inner {
     background-color: $white;

@@ -2,15 +2,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
-defineProps({
-  toggleSidebar: {
-    type: Function,
-    required: true
-  }
-})
-
 const authStore = useAuthStore()
-
 const showMenu = ref(false)
 
 const isLoggedIn = computed(() => !!authStore.user)
@@ -29,8 +21,6 @@ const handleLogout = async () => {
 <template>
   <header id="header">
     <div class="header-inner inner">
-      <button @click="toggleSidebar">Toggle Sidebar</button>
-
       <div class="navbar-left">
         <router-link to="/">Home</router-link>
       </div>

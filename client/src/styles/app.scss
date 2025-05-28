@@ -24,7 +24,12 @@ body {
   @include responsive-spacing;
 }
 
-#app-container {
+.app-container {
+  @include fill-parent;
+  @include flex-center;
+}
+
+.app-content {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
