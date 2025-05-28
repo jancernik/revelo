@@ -3,11 +3,13 @@ import { computed, reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 import RIcon from '@/components/RIcon.vue'
+import { useSettings } from '@/composables/useSettings'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const { settings } = useSettings()
 const isLoggedIn = computed(() => authStore && !!authStore.user)
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 
@@ -37,6 +39,13 @@ const sidebarConfig = reactive([
     icon: 'Shield',
     path: '/dashboard',
     visible: () => isAdmin.value
+  },
+  {
+    id: 'login',
+    label: 'Login',
+    icon: 'LogIn',
+    path: '/login',
+    visible: () => !isLoggedIn.value && settings.value.showLoginLink
   },
   {
     id: 'logout',
@@ -75,7 +84,7 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <aside id="sidebar">
+  <aside :class="['sidebar', settings.sidebarPosition]">
     <div class="sidebar-inner inner">
       <ul>
         <li
@@ -96,6 +105,14 @@ const isActive = (path) => {
 </template>
 
 <style lang="scss" scoped>
+.sidebar {
+  &.right {
+    order: 0;
+  }
+  &.left {
+    order: -1;
+  }
+}
 ul {
   list-style: none;
 }

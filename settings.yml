@@ -12,6 +12,13 @@ showLoginLink:
   default: true
   public: true
 
+sidebarPosition:
+  description: Position of the sidebar
+  category: Layout
+  type: string
+  default: right
+  public: true
+
 maxAdmins:
   description: The maximum number of admins allowed
   category: Admin

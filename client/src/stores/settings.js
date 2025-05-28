@@ -1,0 +1,57 @@
+import { defineStore } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
+
+export const useSettingsStore = defineStore('settings', {
+  state: () => ({
+    settingsArray: [],
+    loading: false,
+    error: null,
+    initialized: false
+  }),
+
+  getters: {
+    settings: (state) => {
+      return state.settingsArray.reduce((map, setting) => {
+        map[setting.name] = setting.value
+        return map
+      }, {})
+    }
+  },
+
+  actions: {
+    async fetchSettings(force = false) {
+      if (this.loading && !force) return
+      if (this.initialized && !force) return
+
+      this.loading = true
+      this.error = null
+
+      try {
+        const authStore = useAuthStore()
+        const isAdmin = authStore.user?.admin === true
+        const endpoint = isAdmin ? '/settings' : '/public-settings'
+        const response = await api.get(endpoint)
+
+        this.settingsArray = response.data
+        this.initialized = true
+      } catch (error) {
+        this.error = error.response?.data?.message || error.message
+        console.error('Failed to fetch settings:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async refreshSettings() {
+      return this.fetchSettings(true)
+    },
+
+    async initialize() {
+      if (!this.initialized) {
+        await this.fetchSettings()
+      }
+    }
+  }
+})

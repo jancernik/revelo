@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import RInput from '@/components/RInput.vue'
 import RButton from '@/components/RButton.vue'
-import api from '@/utils/api'
+import { useSettings } from '@/composables/useSettings'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -14,6 +14,7 @@ const password = ref('')
 const signupError = ref('')
 const isLoading = ref(false)
 const showSignupForm = ref(false)
+const { settings } = useSettings()
 
 const handleSignup = async () => {
   signupError.value = ''
@@ -40,8 +41,7 @@ const handleSignup = async () => {
 
 const checkIfSignupsAreEnabled = async () => {
   try {
-    const response = await api.get('/settings/enableSignups')
-    if (response.data?.value) {
+    if (settings.value.enableSignups) {
       showSignupForm.value = true
     } else {
       router.push('/login')

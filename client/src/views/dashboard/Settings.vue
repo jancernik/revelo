@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import BooleanSetting from '@/components/common/BooleanSetting.vue'
 import InputSetting from '@/components/common/InputSetting.vue'
 import RButton from '@/components/RButton.vue'
+import { useSettings } from '@/composables/useSettings'
 import api from '@/utils/api'
 
 const settings = ref([])
@@ -11,6 +12,7 @@ const originalValues = reactive({})
 const loading = ref(true)
 const isSaving = ref(false)
 const isResetting = reactive({})
+const { refresh } = useSettings()
 
 const categories = computed(() => {
   return [...new Set(settings.value.map((s) => s.category))].sort()
@@ -59,6 +61,7 @@ const resetDefault = async (settingName) => {
   } catch (error) {
     console.error('Error resetting setting to default:', error)
   } finally {
+    refresh()
     isResetting[settingName] = false
   }
 }
@@ -74,6 +77,7 @@ const saveAllChanges = async () => {
   } catch (error) {
     console.error('Error saving settings:', error)
   } finally {
+    refresh()
     isSaving.value = false
   }
 }
@@ -126,7 +130,7 @@ onMounted(fetchSettings)
             />
 
             <InputSetting
-              v-else="
+              v-else-if="
                 setting.type === 'string' ||
                 setting.type === 'integer' ||
                 setting.type === 'decimal'

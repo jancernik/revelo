@@ -7,6 +7,9 @@ import RButton from '@/components/RButton.vue'
     <router-link to="/dashboard/upload">
       <RButton>Upload</RButton>
     </router-link>
+    <router-link to="/dashboard/settings">
+      <RButton>Settings</RButton>
+    </router-link>
   </div>
 </template>
 
