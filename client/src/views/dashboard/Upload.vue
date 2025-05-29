@@ -192,7 +192,7 @@ const getImageSrc = (image, type) => {
     text-align: center;
     max-width: 400px;
     width: 100%;
-    padding: $md-spacing * 2;
+    padding: calc(var(--spacing-3) * 2);
 
     .loading-title {
       font-size: 1.125rem;
@@ -210,11 +210,11 @@ const getImageSrc = (image, type) => {
   @include fill-parent;
   display: flex;
   flex-direction: column;
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
 
   .success-message {
     text-align: center;
-    margin-bottom: $md-spacing * 3;
+    margin-bottom: calc(var(--spacing-3) * 3);
 
     .title {
       font-size: 1.125rem;
@@ -236,7 +236,7 @@ const getImageSrc = (image, type) => {
   .actions {
     display: flex;
     justify-content: center;
-    margin-top: $md-spacing * 3;
+    margin-top: calc(var(--spacing-3) * 3);
   }
 }
 </style>

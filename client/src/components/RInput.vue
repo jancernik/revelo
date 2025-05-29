@@ -183,31 +183,27 @@ input {
   width: 100%;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
-  border: 1px solid #e4e4e4;
-  background-color: #fff;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
   color: #181818;
   box-sizing: border-box;
   transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
   line-height: 1.125rem;
 
-  &:focus {
-    outline: none;
-    border-color: #181818;
-  }
-
   &::placeholder {
-    color: #a3a3a3;
+    color: var(--input);
+    opacity: 1;
   }
 
   &:disabled {
-    background-color: #f4f4f4;
+    opacity: 0.8;
     cursor: not-allowed;
   }
 }
 
 .input-icon {
   position: absolute;
-  color: #a3a3a3;
+  color: var(--input);
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;

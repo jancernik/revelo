@@ -19,28 +19,30 @@ const progressStyle = computed(() => {
 </script>
 
 <template>
-  <div class="r-progress-bar" :style="progressStyle"></div>
+  <div class="progress-bar" :style="progressStyle"></div>
 </template>
 
 <style lang="scss" scoped>
-.r-progress-bar {
+$transition: 0.3s ease-in-out;
+
+.progress-bar {
   position: relative;
   width: 100%;
   height: 0.5rem;
-  background-color: $light-grey-1;
   border-radius: 0.25rem;
+  background-color: var(--secondary);
   overflow: hidden;
 
   &::before {
+    @include fill-parent;
     content: '';
-    position: absolute;
     top: 0;
     left: 0;
-    background-color: $black;
+    position: absolute;
+    background-color: var(--secondary-foreground);
     transform: scaleX(var(--progress-bar-value));
     transform-origin: left;
-    @include fill-parent;
-    transition: transform 0.3s ease-in-out;
+    transition: transform $transition;
   }
 }
 </style>

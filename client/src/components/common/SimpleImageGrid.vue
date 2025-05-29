@@ -46,7 +46,7 @@ defineProps({
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   width: 100%;
-  gap: $md-spacing * 2;
+  gap: calc(var(--spacing-3) * 2);
 }
 
 .image-item {
@@ -75,8 +75,8 @@ defineProps({
   .remove-button {
     @include flex-center;
     position: absolute;
-    top: $md-spacing;
-    right: $md-spacing;
+    top: var(--spacing-3);
+    right: var(--spacing-3);
     width: 1.75rem;
     height: 1.75rem;
     background-color: rgba(0, 0, 0, 0.5);

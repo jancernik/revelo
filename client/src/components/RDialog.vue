@@ -61,7 +61,7 @@ const handleAction = (action) => {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: z(dialog);
   backdrop-filter: blur(2px);
 }
 
@@ -69,7 +69,7 @@ const handleAction = (action) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: #fff;
+  background-color: var(--background);
   border-radius: 0.5rem;
   max-width: 32rem;
   padding: 1.5rem;
@@ -89,7 +89,7 @@ const handleAction = (action) => {
       font-weight: 400;
       font-size: 0.875rem;
       line-height: 1.25rem;
-      color: rgb(113, 113, 122);
+      color: var(--muted-foreground);
     }
   }
 

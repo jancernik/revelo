@@ -1,9 +1,20 @@
-@use './variables';
+@use './variables' as *;
 
-@mixin flex-center {
+@mixin flex($direction: row, $x: flex-start, $y: flex-start) {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: $direction;
+
+  @if $direction == row or $direction == row-reverse {
+    justify-content: $x;
+    align-items: $y;
+  } @else if $direction == column or $direction == column-reverse {
+    justify-content: $y;
+    align-items: $x;
+  }
+}
+
+@mixin flex-center($direction: row) {
+  @include flex($direction, center, center);
 }
 
 @mixin fill-parent {
@@ -11,48 +22,19 @@
   height: 100%;
 }
 
-@mixin responsive-spacing {
-  padding: calc(variables.$sm-spacing / 2);
+@mixin text($size: 'base') {
+  $font-data: map-get($font-sizes, $size);
+  font-size: nth($font-data, 1);
+  line-height: nth($font-data, 2);
+}
 
-  > .inner {
-    @include fill-parent;
-    gap: variables.$sm-spacing;
-    border-radius: 0;
+@mixin breakpoint($size) {
+  $breakpoint: map-get($breakpoints, $size);
+  @media (min-width: $breakpoint) {
+    @content;
   }
+}
 
-  @media (min-width: variables.$md) {
-    padding: calc(variables.$md-spacing / 2);
-    > .inner {
-      gap: variables.$md-spacing;
-      border-radius: variables.$main-border-radius;
-    }
-  }
-
-  @media (min-width: variables.$lg) {
-    padding: calc(variables.$lg-spacing / 2);
-    > .inner {
-      gap: variables.$lg-spacing;
-    }
-  }
-
-  @media (min-width: variables.$xl) {
-    padding: calc(variables.$xl-spacing / 2);
-    > .inner {
-      gap: variables.$xl-spacing;
-    }
-  }
-
-  @media (min-width: variables.$xxl) {
-    padding: calc(variables.$xxl-spacing / 2);
-    > .inner {
-      gap: variables.$xxl-spacing;
-    }
-  }
-
-  @media (min-width: variables.$xxxl) {
-    padding: calc(variables.$xxxl-spacing / 2);
-    > .inner {
-      gap: variables.$xxxl-spacing;
-    }
-  }
+@function z($key) {
+  @return map-get($z-indexes, $key);
 }

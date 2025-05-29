@@ -36,7 +36,7 @@ onMounted(fetchImages)
 .image-gallery {
   display: block;
   columns: 200px 4;
-  column-gap: $md-spacing;
-  padding: $md-spacing * 2;
+  column-gap: var(--spacing-3);
+  padding: calc(var(--spacing-3) * 2);
 }
 </style>

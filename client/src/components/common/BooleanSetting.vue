@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import RSwitch from '@/components/RSwitch.vue'
+import RToggle from '@/components/RToggle.vue'
 import RButton from '@/components/RButton.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -65,7 +65,7 @@ const showResetDefaultDialog = () => {
     </div>
 
     <div class="setting-control">
-      <RSwitch :model-value="currentValue" @update:model-value="handleUpdate" />
+      <RToggle :model-value="currentValue" @update:model-value="handleUpdate" />
 
       <div class="actions">
         <RButton
@@ -92,9 +92,8 @@ const showResetDefaultDialog = () => {
 
 <style lang="scss" scoped>
 .setting-item {
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
   border-radius: 0.75rem;
-  background-color: #fafafa;
   border: 1px solid #e4e4e4;
   transition: all 0.15s ease-in-out;
   justify-content: space-between;

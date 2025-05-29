@@ -1,20 +1,75 @@
-$header-height: 6rem;
-$footer-height: 6rem;
+:root {
+  // Spacing
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
 
-$main-border-radius: 1rem;
+  // Border radius
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 
-// Breakpoints
-$sm: 576px;
-$md: 768px;
-$lg: 992px;
-$xl: 1200px;
-$xxl: 1400px;
-$xxxl: 2000px;
+  // Shadows
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-// Spacing
-$sm-spacing: 0rem;
-$md-spacing: 0.8rem;
-$lg-spacing: $md-spacing;
-$xl-spacing: $md-spacing;
-$xxl-spacing: $xl-spacing;
-$xxxl-spacing: $xl-spacing;
+  // Font weights
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+}
+
+$font-sizes: (
+  'sm': (
+    0.875rem,
+    calc(1.25 / 0.875)
+  ),
+  'base': (
+    1rem,
+    calc(1.5 / 1)
+  ),
+  'lg': (
+    1.125rem,
+    calc(1.75 / 1.125)
+  ),
+  'xl': (
+    1.25rem,
+    calc(1.75 / 1.25)
+  ),
+  '2xl': (
+    1.5rem,
+    calc(2 / 1.5)
+  ),
+  '3xl': (
+    1.875rem,
+    calc(2.25 / 1.875)
+  ),
+  '4xl': (
+    2.25rem,
+    calc(2.5 / 2.25)
+  )
+);
+
+$breakpoints: (
+  'sm': 576px,
+  'md': 768px,
+  'lg': 992px,
+  'xl': 1200px,
+  '2xl': 1400px
+);
+
+$z-indexes: (
+  hide: -1,
+  dropdown: 1000,
+  sidebar: 1200,
+  overlay: 1300,
+  dialog: 1400,
+  toast: 1700
+);

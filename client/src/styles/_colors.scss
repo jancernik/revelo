@@ -1,4 +1,52 @@
 @use 'sass:color';
+
+:root,
+.light {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --primary: #171717;
+  --primary-hover: #272727;
+  --primary-foreground: #fafafa;
+  --secondary: #ffffff;
+  --secondary-hover: #fafafa;
+  --secondary-foreground: #171717;
+  --muted: #e0e0e0;
+  --muted-foreground: #737373;
+  --border: #e5e5e5;
+  --input: #acacac;
+  --sidebar-background: #f3f3f3;
+  --danger-background: #ffd9d9;
+  --danger: #e55353;
+  --warning-background: #feecc5;
+  --warning: #f9b115;
+  --success-background: #dbffe7;
+  --success: #1b9e3e;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-hover: #f4f4f4;
+  --primary-foreground: #171717;
+  --secondary: #0a0a0a;
+  --secondary-hover: #171717;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a1a1a1;
+  --border: #232323;
+  --input: #636363;
+  --sidebar-background: #171717;
+  --danger-background: #402d2d;
+  --danger: #de5a5a;
+  --warning-background: #403828;
+  --warning: #eead20;
+  --success-background: #2d4033;
+  --success: #229741;
+}
+
+// OLD
+
 $interval: 10%;
 
 $red: hsl(354, 62%, 53%);

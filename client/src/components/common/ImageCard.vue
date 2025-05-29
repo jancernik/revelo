@@ -19,7 +19,7 @@ defineProps({
   width: 100%;
   height: auto;
   border-radius: 8px;
-  margin-bottom: $md-spacing;
+  margin-bottom: var(--spacing-3);
   overflow: hidden;
   transition: 0.15s cubic-bezier(0.86, 0, 0.07, 1);
 }

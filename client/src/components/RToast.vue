@@ -74,7 +74,7 @@ $shadow:
 
 .toast-container {
   position: fixed;
-  top: $md-spacing;
+  top: var(--spacing-3);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -100,7 +100,7 @@ $shadow:
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
-  background: #fff;
+  background-color: var(--background);
   border-radius: 0.375rem;
   padding: 1rem;
   width: 100%;
@@ -177,11 +177,6 @@ $shadow:
     border: none;
     cursor: pointer;
     border-radius: 0.25rem;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: #f3f4f6;
-    }
   }
 }
 

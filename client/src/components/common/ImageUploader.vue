@@ -202,7 +202,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
 .image-uploader {
   position: relative;
   @include fill-parent;
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
   transition: $transition;
 
   &.drag-active {
@@ -215,10 +215,10 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   flex-direction: column;
   gap: 1rem;
   position: absolute;
-  top: calc($md-spacing * 2.5);
-  left: calc($md-spacing * 2.5);
-  width: calc(100% - $md-spacing * 5);
-  height: calc(100% - $md-spacing * 5);
+  top: calc(calc(var(--spacing-3) * 2.5));
+  left: calc(calc(var(--spacing-3) * 2.5));
+  width: calc(100% - var(--spacing-3) * 5);
+  height: calc(100% - var(--spacing-3) * 5);
   border: 2px dashed #000;
   border-radius: 0.75rem;
   z-index: 10;
@@ -233,11 +233,14 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   }
 
   &.active {
-    background-color: rgba(230, 230, 230, 0.5);
     opacity: 1;
     transform: scale(1.1);
-
     pointer-events: all;
+
+    background-color: rgba(#171717, 0.05);
+    .dark & {
+      background-color: rgba(#fafafa, 0.05);
+    }
   }
   &.hidden {
     display: none;
@@ -274,8 +277,8 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: $md-spacing * 2;
-    padding-bottom: $md-spacing * 2;
+    margin-bottom: calc(var(--spacing-3) * 2);
+    padding-bottom: calc(var(--spacing-3) * 2);
     border-bottom: 1px solid #e5e7eb;
   }
 
@@ -283,7 +286,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding-bottom: $md-spacing * 2;
+    padding-bottom: calc(var(--spacing-3) * 2);
     gap: 0.5rem;
     h4 {
       font-size: 0.875rem;
@@ -295,14 +298,14 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
       @include flex-center;
       font-size: 0.875rem;
       color: #6b7280;
-      background: #eeeeee;
+      background-color: var(--muted);
       border-radius: 0.625rem;
       padding-inline: 0.375rem;
       height: 1.25rem;
       font-size: 0.75rem;
       &.exceeded {
-        color: #ef4444;
-        background-color: #f3e2e2;
+        color: var(--danger);
+        background-color: var(--danger-background);
       }
     }
   }
@@ -316,10 +319,10 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: $md-spacing * 2;
-    padding-top: $md-spacing * 2;
+    margin-top: calc(var(--spacing-3) * 2);
+    padding-top: calc(var(--spacing-3) * 2);
     border-top: 1px solid #e5e7eb;
-    gap: $md-spacing;
+    gap: var(--spacing-3);
   }
 }
 </style>

@@ -10,18 +10,22 @@
 }
 
 body {
-  font-family: Geist, Arial, sans-serif;
   min-height: 100dvh;
   font-weight: 500;
-  background: $light-grey-1;
-  color: $black;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 #app {
   display: flex;
   height: 100svh;
   width: 100%;
-  @include responsive-spacing;
+
+  > .inner {
+    @include fill-parent;
+    gap: var(--spacing-1);
+    border-radius: 0;
+  }
 }
 
 .app-container {
@@ -37,7 +41,7 @@ body {
   overflow: hidden;
 }
 
-a:has(> .r-button) {
+a:has(> .button) {
   @include flex-center;
   text-decoration: none;
 }

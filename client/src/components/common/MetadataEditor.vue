@@ -163,7 +163,7 @@ watch(
 .metadata-editor {
   display: flex;
   flex-wrap: wrap;
-  gap: $md-spacing * 2;
+  gap: calc(var(--spacing-3) * 2);
 }
 
 .image-preview {
@@ -198,7 +198,7 @@ watch(
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: $md-spacing;
+    gap: var(--spacing-3);
     padding-top: 0.5rem;
   }
 }

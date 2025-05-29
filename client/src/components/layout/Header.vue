@@ -41,14 +41,20 @@ const handleLogout = async () => {
 
 <style lang="scss" scoped>
 #header {
-  height: $footer-height;
+  height: 6rem;
   display: none;
   padding-right: 0 !important;
-  @include responsive-spacing;
+  padding: calc(var(--spacing-1) / 2);
+
+  > .inner {
+    @include fill-parent;
+    gap: var(--spacing-1);
+    border-radius: 0;
+  }
 
   .header-inner {
     @include flex-center;
-    background-color: $white;
+    background-color: var(--background);
   }
 }
 </style>

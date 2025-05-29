@@ -24,10 +24,16 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   transition: $transition;
 
   @include fill-parent;
-  @include responsive-spacing;
+  padding: calc(var(--spacing-1) / 2);
+
+  > .inner {
+    @include fill-parent;
+    gap: var(--spacing-1);
+    border-radius: 0;
+  }
 
   .main-inner {
-    background-color: $white;
+    background-color: var(--background);
     overflow: auto;
     scrollbar-width: none;
 

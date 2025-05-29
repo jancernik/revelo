@@ -120,9 +120,8 @@ const handleUpdate = (newValue) => {
 
 <style lang="scss" scoped>
 .setting-item {
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
   border-radius: 0.75rem;
-  background-color: #fafafa;
   border: 1px solid #e4e4e4;
   transition: all 0.15s ease-in-out;
   justify-content: space-between;

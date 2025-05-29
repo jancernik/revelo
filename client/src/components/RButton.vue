@@ -17,52 +17,56 @@ defineProps({
 </script>
 
 <template>
-  <button :class="['r-button', `color-${color}`]" v-bind="$attrs">
-    <RIcon v-if="icon" :size="16" :name="icon" class="btn-icon" />
-    <span v-if="$slots.default" class="btn-content">
+  <button :class="['button', `color-${color}`]" v-bind="$attrs">
+    <RIcon v-if="icon" :size="16" :name="icon" />
+    <span v-if="$slots.default" class="content">
       <slot></slot>
     </span>
   </button>
 </template>
 
 <style lang="scss" scoped>
-.r-button {
+$transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+
+.button {
+  @include flex-center;
+  @include text(sm);
   font-family: Geist, Arial, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
   padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-medium);
+  transition: $transition;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+
   &:disabled {
     opacity: 0.8;
     cursor: not-allowed;
   }
+
   &.color- {
     &primary {
-      background-color: #181818;
-      color: #fff;
+      background-color: var(--primary);
+      color: var(--primary-foreground);
       border: none;
       line-height: 1.25rem;
       &:hover:not(:disabled) {
-        background-color: #272727;
+        background-color: var(--primary-hover);
       }
     }
+
     &secondary {
-      background-color: #fff;
-      color: #000;
-      border: 1px solid #e4e4e4;
+      background-color: var(--secondary);
+      color: var(--secondary-foreground);
+      border: 1px solid var(--border);
       line-height: 1.125rem;
       &:hover:not(:disabled) {
-        background-color: #f4f4f4;
+        background-color: var(--secondary-hover);
       }
     }
   }
-  &:not(:has(.btn-content)) {
+
+  &:not(:has(.content)) {
     padding: 0;
     height: 2.25rem;
     width: 2.25rem;

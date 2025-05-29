@@ -166,7 +166,7 @@ onMounted(fetchSettings)
 <style lang="scss" scoped>
 .settings {
   @include fill-parent;
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -174,10 +174,10 @@ onMounted(fetchSettings)
   .sections-container {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: $md-spacing * 2;
+    margin-bottom: calc(var(--spacing-3) * 2);
     display: flex;
     flex-direction: column;
-    gap: $md-spacing * 2;
+    gap: calc(var(--spacing-3) * 2);
 
     .category-settings {
       display: flex;
@@ -187,7 +187,7 @@ onMounted(fetchSettings)
   }
 
   .category-header {
-    padding-bottom: $md-spacing;
+    padding-bottom: var(--spacing-3);
 
     h3 {
       font-size: 1.125rem;
@@ -199,11 +199,11 @@ onMounted(fetchSettings)
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-top: $md-spacing * 2;
+    padding-top: calc(var(--spacing-3) * 2);
     border-top: 1px solid #e5e7eb;
-    gap: $md-spacing;
+    gap: var(--spacing-3);
     flex-shrink: 0;
-    background: #fff;
+    background-color: var(--background);
 
     .info {
       margin-right: auto;

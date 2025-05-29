@@ -84,7 +84,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
   @include fill-parent;
   display: flex;
   flex-direction: column;
-  padding: $md-spacing * 2;
+  padding: calc(var(--spacing-3) * 2);
 
   .title {
     font-size: 1.125rem;
@@ -102,15 +102,15 @@ const handleMetadataUpdate = (index, newMetadata) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: $md-spacing * 2;
-    padding-bottom: $md-spacing * 2;
+    margin-bottom: calc(var(--spacing-3) * 2);
+    padding-bottom: calc(var(--spacing-3) * 2);
     border-bottom: 1px solid #e5e7eb;
   }
 
   .image-list {
     .image-item {
       hr {
-        margin-block: $md-spacing * 2;
+        margin-block: calc(var(--spacing-3) * 2);
         border: 0;
         border-bottom: 1px solid #e5e7eb;
       }
@@ -126,10 +126,10 @@ const handleMetadataUpdate = (index, newMetadata) => {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: $md-spacing * 2;
-    padding-top: $md-spacing * 2;
+    margin-top: calc(var(--spacing-3) * 2);
+    padding-top: calc(var(--spacing-3) * 2);
     border-top: 1px solid #e5e7eb;
-    gap: $md-spacing;
+    gap: var(--spacing-3);
   }
 }
 </style>

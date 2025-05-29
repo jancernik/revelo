@@ -106,6 +106,9 @@ const isActive = (path) => {
 
 <style lang="scss" scoped>
 .sidebar {
+  @include flex-center;
+  background-color: var(--sidebar-background);
+  height: 100%;
   &.right {
     order: 0;
   }
@@ -117,7 +120,7 @@ ul {
   list-style: none;
 }
 li.active {
-  background-color: #fff;
+  background-color: var(--background);
 }
 
 button {

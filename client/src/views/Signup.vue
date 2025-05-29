@@ -126,11 +126,11 @@ onMounted(redirectIfAuthenticated)
   }
 
   .error-message {
-    color: #ef4444;
+    color: var(--danger);
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
     text-align: center;
-    background-color: #f3e2e2;
+    background-color: var(--danger-background);
     padding: 0.5rem 1rem;
     line-height: 1.25rem;
     border-radius: 0.375rem;
