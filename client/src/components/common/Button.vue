@@ -1,5 +1,5 @@
 <script setup>
-import RIcon from '@/components/RIcon.vue'
+import Icon from '@/components/common/Icon.vue'
 
 defineProps({
   icon: {
@@ -18,7 +18,7 @@ defineProps({
 
 <template>
   <button :class="['button', `color-${color}`]" v-bind="$attrs">
-    <RIcon v-if="icon" :size="16" :name="icon" />
+    <Icon v-if="icon" :size="16" :name="icon" />
     <span v-if="$slots.default" class="content">
       <slot></slot>
     </span>

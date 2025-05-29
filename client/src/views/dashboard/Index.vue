@@ -1,14 +1,14 @@
 <script setup>
-import RButton from '@/components/RButton.vue'
+import Button from '@/components/common/Button.vue'
 </script>
 
 <template>
   <div class="dashboard">
     <router-link to="/dashboard/upload">
-      <RButton>Upload</RButton>
+      <Button>Upload</Button>
     </router-link>
     <router-link to="/dashboard/settings">
-      <RButton>Settings</RButton>
+      <Button>Settings</Button>
     </router-link>
   </div>
 </template>

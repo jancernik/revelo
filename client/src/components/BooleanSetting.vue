@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import RInput from '@/components/RInput.vue'
-import RButton from '@/components/RButton.vue'
+import Toggle from '@/components/common/Toggle.vue'
+import Button from '@/components/common/Button.vue'
 import { useDialog } from '@/composables/useDialog'
 
 const { show } = useDialog()
@@ -12,11 +12,11 @@ const props = defineProps({
     required: true
   },
   currentValue: {
-    type: [String, Number],
+    type: Boolean,
     required: true
   },
   originalValue: {
-    type: [String, Number],
+    type: Boolean,
     required: true
   },
   isResetting: {
@@ -35,6 +35,10 @@ const showResetDefault = computed(() => {
   return props.originalValue !== props.setting.default
 })
 
+const handleUpdate = (newValue) => {
+  emit('update', newValue)
+}
+
 const showResetDefaultDialog = () => {
   show({
     title: `Reset ${props.setting.name}`,
@@ -51,33 +55,6 @@ const showResetDefaultDialog = () => {
     ]
   })
 }
-
-const inputType = computed(() => {
-  return props.setting.type === 'string' ? 'text' : 'number'
-})
-
-const inputStep = computed(() => {
-  return props.setting.type === 'decimal' ? '0.01' : '1'
-})
-
-const parseValue = (value) => {
-  if (value === '' || value === null || value === undefined) return value
-
-  if (props.setting.type === 'integer') {
-    const parsed = parseInt(value, 10)
-    return isNaN(parsed) ? value : parsed
-  } else if (props.setting.type === 'decimal') {
-    const parsed = parseFloat(value)
-    return isNaN(parsed) ? value : parsed
-  }
-
-  return value
-}
-
-const handleUpdate = (newValue) => {
-  const parsedValue = props.setting.type !== 'string' ? parseValue(newValue) : newValue
-  emit('update', parsedValue)
-}
 </script>
 
 <template>
@@ -88,15 +65,10 @@ const handleUpdate = (newValue) => {
     </div>
 
     <div class="setting-control">
-      <RInput
-        :model-value="currentValue"
-        :type="inputType"
-        :step="inputStep"
-        @update:model-value="handleUpdate"
-      />
+      <Toggle :model-value="currentValue" @update:model-value="handleUpdate" />
 
       <div class="actions">
-        <RButton
+        <Button
           v-if="hasChanged"
           icon="X"
           color="secondary"
@@ -105,7 +77,7 @@ const handleUpdate = (newValue) => {
           @click="$emit('reset')"
         />
 
-        <RButton
+        <Button
           v-else-if="showResetDefault"
           icon="RotateCcw"
           color="secondary"
@@ -127,14 +99,12 @@ const handleUpdate = (newValue) => {
   justify-content: space-between;
   display: flex;
   gap: 0.5rem;
-  flex-direction: column;
 
   .setting-info {
     display: flex;
     flex-direction: column;
     gap: 0.25em;
   }
-
   .name {
     font-weight: 600;
     font-size: 0.875rem;

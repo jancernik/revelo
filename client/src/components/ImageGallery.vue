@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import ImageCard from '@/components/common/ImageCard.vue'
+import ImageCard from '@/components/ImageCard.vue'
 import api from '@/utils/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL

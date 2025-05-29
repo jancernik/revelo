@@ -1,5 +1,5 @@
 <script setup>
-import RIcon from '@/components/RIcon.vue'
+import Icon from '@/components/common/Icon.vue'
 const emit = defineEmits(['remove'])
 
 defineProps({
@@ -28,7 +28,7 @@ defineProps({
       <div class="image-container">
         <img :src="image.src" :alt="image.name" />
         <div v-if="allowDelete" class="remove-button" @click="() => emit('remove', index)">
-          <RIcon name="X" />
+          <Icon name="X" />
         </div>
       </div>
       <div v-if="showFileNames || showFileSizes" class="image-info">

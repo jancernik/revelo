@@ -2,8 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
-import RInput from '@/components/RInput.vue'
-import RButton from '@/components/RButton.vue'
+import Input from '@/components/common/Input.vue'
+import Button from '@/components/common/Button.vue'
 import { useSettings } from '@/composables/useSettings'
 
 const authStore = useAuthStore()
@@ -68,7 +68,7 @@ onMounted(redirectIfAuthenticated)
       <h1>Sign Up</h1>
       <div v-if="signupError" class="error-message">{{ signupError }}</div>
       <form @submit.prevent="handleSignup">
-        <RInput
+        <Input
           v-model="email"
           type="email"
           label="Email"
@@ -76,14 +76,14 @@ onMounted(redirectIfAuthenticated)
           icon="Mail"
           required
         />
-        <RInput
+        <Input
           v-model="username"
           label="Username"
           placeholder="Choose a username"
           icon="User"
           required
         />
-        <RInput
+        <Input
           v-model="password"
           type="password"
           label="Password"
@@ -93,10 +93,10 @@ onMounted(redirectIfAuthenticated)
         />
 
         <div class="actions">
-          <RButton type="submit" color="primary" :disabled="isLoading"> Sign Up </RButton>
+          <Button type="submit" color="primary" :disabled="isLoading"> Sign Up </Button>
 
           <router-link to="/login">
-            <RButton color="secondary">Login</RButton>
+            <Button color="secondary">Login</Button>
           </router-link>
         </div>
       </form>

@@ -2,8 +2,9 @@
 import { computed, reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
-import RIcon from '@/components/RIcon.vue'
+import Icon from '@/components/common/Icon.vue'
 import { useSettings } from '@/composables/useSettings'
+import ThemeToggler from '@/components/ThemeToggler.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -94,10 +95,13 @@ const isActive = (path) => {
         >
           <div class="list-item">
             <button :class="item.className" @click="handleItemClick(item)">
-              <RIcon :name="item.icon" />
+              <Icon :name="item.icon" />
               <span class="text">{{ item.label }}</span>
             </button>
           </div>
+        </li>
+        <li class="theme">
+          <ThemeToggler />
         </li>
       </ul>
     </div>
@@ -105,6 +109,10 @@ const isActive = (path) => {
 </template>
 
 <style lang="scss" scoped>
+.theme {
+  @include flex-center;
+  margin-top: 1rem;
+}
 .sidebar {
   @include flex-center;
   background-color: var(--sidebar-background);

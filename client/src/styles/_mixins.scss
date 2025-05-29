@@ -1,4 +1,6 @@
 @use './variables' as *;
+@use 'sass:list';
+@use 'sass:map';
 
 @mixin flex($direction: row, $x: flex-start, $y: flex-start) {
   display: flex;
@@ -23,18 +25,18 @@
 }
 
 @mixin text($size: 'base') {
-  $font-data: map-get($font-sizes, $size);
-  font-size: nth($font-data, 1);
-  line-height: nth($font-data, 2);
+  $font-data: map.get($font-sizes, $size);
+  font-size: list.nth($font-data, 1);
+  line-height: list.nth($font-data, 2);
 }
 
 @mixin breakpoint($size) {
-  $breakpoint: map-get($breakpoints, $size);
+  $breakpoint: map.get($breakpoints, $size);
   @media (min-width: $breakpoint) {
     @content;
   }
 }
 
 @function z($key) {
-  @return map-get($z-indexes, $key);
+  @return map.get($z-indexes, $key);
 }

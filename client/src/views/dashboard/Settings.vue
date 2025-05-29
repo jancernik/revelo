@@ -1,8 +1,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import BooleanSetting from '@/components/common/BooleanSetting.vue'
-import InputSetting from '@/components/common/InputSetting.vue'
-import RButton from '@/components/RButton.vue'
+import BooleanSetting from '@/components/BooleanSetting.vue'
+import InputSetting from '@/components/InputSetting.vue'
+import Button from '@/components/common/Button.vue'
 import { useSettings } from '@/composables/useSettings'
 import api from '@/utils/api'
 
@@ -153,12 +153,12 @@ onMounted(fetchSettings)
           {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? 'change' : 'changes' }}
         </h4>
       </div>
-      <RButton icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
+      <Button icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
         Cancel
-      </RButton>
-      <RButton icon="Check" color="primary" :disabled="isSaving" @click="saveAllChanges">
+      </Button>
+      <Button icon="Check" color="primary" :disabled="isSaving" @click="saveAllChanges">
         Save
-      </RButton>
+      </Button>
     </div>
   </div>
 </template>

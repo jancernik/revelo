@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import MetadataEditor from './MetadataEditor.vue'
-import RButton from '@/components/RButton.vue'
+import Button from '@/components/common/Button.vue'
 
 const props = defineProps({
   extractedMetadata: {
@@ -73,8 +73,8 @@ const handleMetadataUpdate = (index, newMetadata) => {
     </div>
 
     <div class="actions">
-      <RButton class="cancel" color="secondary" @click="handleCancel"> Cancel </RButton>
-      <RButton class="confirm" color="primary" @click="handleConfirm"> Confirm </RButton>
+      <Button class="cancel" color="secondary" @click="handleCancel"> Cancel </Button>
+      <Button class="confirm" color="primary" @click="handleConfirm"> Confirm </Button>
     </div>
   </div>
 </template>

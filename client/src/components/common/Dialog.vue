@@ -1,6 +1,6 @@
 <script setup>
 import { useDialog } from '@/composables/useDialog'
-import RButton from '@/components/RButton.vue'
+import Button from '@/components/common/Button.vue'
 
 const { dialogState, hide } = useDialog()
 
@@ -33,11 +33,9 @@ const handleAction = (action) => {
           </div>
 
           <div class="dialog-footer">
-            <RButton v-if="dialogState.dismissible" color="secondary" @click="hide">
-              Cancel
-            </RButton>
+            <Button v-if="dialogState.dismissible" color="secondary" @click="hide"> Cancel </Button>
 
-            <RButton
+            <Button
               v-for="(action, index) in dialogState.actions"
               :key="index"
               :color="action.color || 'primary'"
@@ -45,7 +43,7 @@ const handleAction = (action) => {
               @click="handleAction(action)"
             >
               {{ action.name }}
-            </RButton>
+            </Button>
           </div>
         </div>
       </div>

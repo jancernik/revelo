@@ -1,5 +1,5 @@
 <script setup>
-import RButton from '@/components/RButton.vue'
+import Button from '@/components/common/Button.vue'
 import { useTheme } from '@/composables/useTheme'
 
 const { setTheme, themeClass } = useTheme()
@@ -10,7 +10,7 @@ const toggleTheme = () => {
 </script>
 
 <template>
-  <RButton :icon="themeClass === 'dark' ? 'Sun' : 'Moon'" @click="toggleTheme"> </RButton>
+  <Button :icon="themeClass === 'dark' ? 'Sun' : 'Moon'" @click="toggleTheme"> </Button>
 </template>
 
 <style lang="scss" scoped></style>

@@ -1,6 +1,6 @@
 <script setup>
 import { useTemplateRef, nextTick, onMounted } from 'vue'
-import RIcon from '@/components/RIcon.vue'
+import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps({
   modelValue: {
@@ -88,7 +88,7 @@ onMounted(() => {
         { 'is-disabled': disabled }
       ]"
     >
-      <RIcon
+      <Icon
         v-if="icon"
         :name="icon"
         :size="16"
@@ -128,7 +128,7 @@ onMounted(() => {
   label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #181818;
+    color: var(--primary);
   }
 }
 
@@ -185,10 +185,11 @@ input {
   border-radius: 0.375rem;
   border: 1px solid var(--border);
   background-color: var(--secondary);
-  color: #181818;
+  color: var(--primary);
   box-sizing: border-box;
   transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
   line-height: 1.125rem;
+  outline: none;
 
   &::placeholder {
     color: var(--input);
@@ -219,7 +220,7 @@ input {
 
 .input-unit {
   position: absolute;
-  color: #a3a3a3;
+  color: var(--input);
   font-size: 0.875rem;
   font-weight: 400;
   top: 50%;
@@ -240,13 +241,13 @@ input {
 
 .error {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--danger);
   font-weight: 400;
 }
 
 .description {
   font-size: 0.75rem;
-  color: #737373;
+  color: var(--muted-foreground);
   font-weight: 400;
 }
 </style>

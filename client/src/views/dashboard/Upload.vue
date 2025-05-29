@@ -1,10 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-import ImageUploader from '@/components/common/ImageUploader.vue'
-import MultipleImagesReview from '@/components/common/MultipleImagesReview.vue'
+import ImageUploader from '@/components/ImageUploader.vue'
+import MultipleImagesReview from '@/components/MultipleImagesReview.vue'
 
-import SimpleImageGrid from '@/components/common/SimpleImageGrid.vue'
-import RButton from '@/components/RButton.vue'
+import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
+import Button from '@/components/common/Button.vue'
 import api from '@/utils/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
@@ -171,7 +171,7 @@ const getImageSrc = (image, type) => {
       </div>
 
       <div class="actions">
-        <RButton color="primary" @click="handleCancel"> Upload More Images </RButton>
+        <Button color="primary" @click="handleCancel"> Upload More Images </Button>
       </div>
     </div>
   </div>

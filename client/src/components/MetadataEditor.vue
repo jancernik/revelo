@@ -1,6 +1,6 @@
 <script setup>
-import RInput from '@/components/RInput.vue'
-import RButton from '@/components/RButton.vue'
+import Input from '@/components/common/Input.vue'
+import Button from '@/components/common/Button.vue'
 import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
@@ -90,17 +90,17 @@ watch(
     </div>
     <div class="metadata-form">
       <div class="form-group">
-        <RInput v-model="metadata.camera" type="text" label="Camera" placeholder="Camera model" />
+        <Input v-model="metadata.camera" type="text" label="Camera" placeholder="Camera model" />
       </div>
       <div class="form-group">
-        <RInput v-model="metadata.lens" type="text" label="Lens" placeholder="Lens model" />
+        <Input v-model="metadata.lens" type="text" label="Lens" placeholder="Lens model" />
       </div>
       <div class="form-row">
         <div class="form-group">
-          <RInput v-model="metadata.iso" type="text" label="ISO" placeholder="400" />
+          <Input v-model="metadata.iso" type="text" label="ISO" placeholder="400" />
         </div>
         <div class="form-group">
-          <RInput
+          <Input
             v-model="metadata.aperture"
             type="text"
             label="Aperture"
@@ -112,7 +112,7 @@ watch(
       </div>
       <div class="form-row">
         <div class="form-group">
-          <RInput
+          <Input
             v-model="metadata.shutterSpeed"
             type="text"
             label="Shutter Speed"
@@ -122,7 +122,7 @@ watch(
           />
         </div>
         <div class="form-group">
-          <RInput
+          <Input
             v-model="metadata.focalLength"
             type="text"
             label="Focal Length"
@@ -133,10 +133,10 @@ watch(
         </div>
       </div>
       <div class="form-group">
-        <RInput v-model="metadata.date" type="date" label="Date Taken" />
+        <Input v-model="metadata.date" type="date" label="Date Taken" />
       </div>
       <div v-if="showRemoveButton || showResetButton" class="actions">
-        <RButton
+        <Button
           v-if="showResetButton && hasChanges"
           class="reset"
           color="secondary"
@@ -144,8 +144,8 @@ watch(
           @click="handleReset"
         >
           Reset
-        </RButton>
-        <RButton
+        </Button>
+        <Button
           v-if="showRemoveButton"
           class="remove"
           color="secondary"
@@ -153,7 +153,7 @@ watch(
           @click="handleRemove"
         >
           Remove
-        </RButton>
+        </Button>
       </div>
     </div>
   </div>

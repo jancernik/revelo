@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
-import SimpleImageGrid from '@/components/common/SimpleImageGrid.vue'
-import RButton from '@/components/RButton.vue'
-import RIcon from '@/components/RIcon.vue'
+import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
+import Button from '@/components/common/Button.vue'
+import Icon from '@/components/common/Icon.vue'
 
 const MAX_FILES = 10
 
@@ -136,17 +136,17 @@ onBeforeUnmount(() => {
 
   <div ref="container" class="image-uploader" :class="{ 'drag-active': dragActive }">
     <div ref="drop-zone" class="drop-zone" :class="{ active: dragActive, hidden: dropZoneHidden }">
-      <RIcon name="Upload" size="32" />
+      <Icon name="Upload" size="32" />
       <h3 class="drop-text">Drop your images here</h3>
     </div>
 
     <div v-if="!hasSelectedImages" class="section no-selection">
-      <RIcon name="Image" size="32" />
+      <Icon name="Image" size="32" />
       <div class="text">
         <h3 class="title">Select images or drag and drop them here</h3>
         <h4 class="subtitle">JPEG and PNG, up to 50MB</h4>
       </div>
-      <RButton icon="FolderOpen" @click="fileInput.click()"> Select Images </RButton>
+      <Button icon="FolderOpen" @click="fileInput.click()"> Select Images </Button>
     </div>
 
     <div v-else class="section">
@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
           <h3 class="title">Upload images</h3>
           <h4 class="subtitle">JPEG and PNG, up to 50MB</h4>
         </div>
-        <RButton icon="FolderOpen" @click="fileInput.click()"> Select Images </RButton>
+        <Button icon="FolderOpen" @click="fileInput.click()"> Select Images </Button>
       </div>
 
       <div class="gallery-title">
@@ -182,15 +182,15 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="actions">
-        <RButton class="cancel" color="secondary" @click="resetSelection"> Cancel </RButton>
-        <RButton
+        <Button class="cancel" color="secondary" @click="resetSelection"> Cancel </Button>
+        <Button
           class="continue"
           :disabled="hasExceededFileLimit"
           color="primary"
           @click="uploadImages"
         >
           Continue
-        </RButton>
+        </Button>
       </div>
     </div>
   </div>

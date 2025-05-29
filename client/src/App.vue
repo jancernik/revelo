@@ -3,8 +3,8 @@ import Header from '@/components/layout/Header.vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Footer from '@/components/layout/Footer.vue'
 import Main from '@/components/layout/Main.vue'
-import RDialog from '@/components/RDialog.vue'
-import RToast from '@/components/RToast.vue'
+import Dialog from '@/components/common/Dialog.vue'
+import Toast from '@/components/common/Toast.vue'
 import { useTheme } from '@/composables/useTheme'
 import { onMounted, watch } from 'vue'
 
@@ -29,8 +29,8 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
       <Footer />
     </div>
     <Sidebar />
-    <RToast />
-    <RDialog />
+    <Toast />
+    <Dialog />
   </div>
 </template>
 

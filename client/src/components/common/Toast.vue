@@ -1,7 +1,7 @@
 <script setup>
 import { useToast } from '@/composables/useToast'
-import RButton from '@/components/RButton.vue'
-import RIcon from '@/components/RIcon.vue'
+import Button from '@/components/common/Button.vue'
+import Icon from '@/components/common/Icon.vue'
 
 const ICONS = {
   success: 'CheckCircle',
@@ -35,7 +35,7 @@ const handleAction = (toast) => {
         <div :class="['toast', `toast-${toast.type}`]">
           <div class="content">
             <div class="icon">
-              <RIcon v-if="toast.showIcon" :name="getTypeIcon(toast.type)" :size="20" />
+              <Icon v-if="toast.showIcon" :name="getTypeIcon(toast.type)" :size="20" />
             </div>
 
             <div class="text">
@@ -49,17 +49,17 @@ const handleAction = (toast) => {
           </div>
 
           <div class="action">
-            <RButton
+            <Button
               v-if="toast.action"
               :color="toast.action.color || 'secondary'"
               :icon="toast.action.icon"
               @click="handleAction(toast)"
             >
               {{ toast.action.name }}
-            </RButton>
+            </Button>
           </div>
           <button v-if="toast.dismissible" class="close" @click="remove(toast.id)">
-            <RIcon name="X" size="16" />
+            <Icon name="X" size="16" />
           </button>
         </div>
       </div>
@@ -108,7 +108,7 @@ $shadow:
 
   .icon {
     @include flex-center;
-    color: #000;
+    color: var(--primarty);
     align-self: center;
     flex-shrink: 0;
   }
