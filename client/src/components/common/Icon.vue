@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, defineAsyncComponent } from 'vue'
+import { ref, watch, onMounted, defineAsyncComponent, markRaw } from 'vue'
 
 const props = defineProps({
   name: {
@@ -7,7 +7,7 @@ const props = defineProps({
     required: true
   },
   size: {
-    type: Number,
+    type: [String, Number],
     default: 24
   },
   color: {
@@ -28,9 +28,8 @@ const loadedIcon = ref(null)
 
 const loadIcon = async () => {
   try {
-    loadedIcon.value = defineAsyncComponent(
-      async () => (await import('lucide-vue-next'))[props.name]
-    )
+    const icon = defineAsyncComponent(async () => (await import('lucide-vue-next'))[props.name])
+    loadedIcon.value = markRaw(icon)
   } catch (error) {
     console.error(`Failed to load icon: ${props.name}`, error)
     loadedIcon.value = null
