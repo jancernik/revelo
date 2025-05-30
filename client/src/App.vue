@@ -8,12 +8,14 @@ import Toast from '@/components/common/Toast.vue'
 import { useTheme } from '@/composables/useTheme'
 import { onMounted, watch } from 'vue'
 
-const { themeClass } = useTheme()
+const { themeClass, isAnimating } = useTheme()
 
 const applyThemeToDocument = (theme) => {
-  document.documentElement.classList.remove('light', 'dark')
-  if (theme) {
-    document.documentElement.classList.add(theme)
+  if (!isAnimating.value) {
+    document.body.classList.remove('light', 'dark')
+    if (theme) {
+      document.body.classList.add(theme)
+    }
   }
 }
 

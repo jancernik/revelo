@@ -45,3 +45,7 @@ a:has(> .button) {
   @include flex-center;
   text-decoration: none;
 }
+
+.no-transition * {
+  transition: none !important;
+}
