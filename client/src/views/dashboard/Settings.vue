@@ -200,7 +200,7 @@ onMounted(fetchSettings)
     align-items: center;
     justify-content: flex-end;
     padding-top: calc(var(--spacing-3) * 2);
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     gap: var(--spacing-3);
     flex-shrink: 0;
     background-color: var(--background);

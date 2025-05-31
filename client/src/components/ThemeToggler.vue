@@ -28,7 +28,7 @@ button {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
-  background-color: none;
+  background: none;
   border: none;
   cursor: pointer;
   padding: 0;

@@ -169,7 +169,7 @@ onMounted(() => {
   }
 
   &.has-error input {
-    border-color: #ef4444;
+    border-color: var(--danger);
   }
 
   &.is-disabled {

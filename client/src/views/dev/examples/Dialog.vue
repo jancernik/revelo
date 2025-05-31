@@ -33,7 +33,6 @@ const showConfirmDialog = () => {
         icon: 'Trash2',
         callback: () => {
           console.log('Account deleted')
-          // Add actual delete logic here
         }
       }
     ]

@@ -55,7 +55,7 @@ defineProps({
   border-radius: 0.375rem;
   overflow: hidden;
   position: relative;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--border);
 }
 
 .image-container {
@@ -80,7 +80,7 @@ defineProps({
     width: 1.75rem;
     height: 1.75rem;
     background-color: rgba(0, 0, 0, 0.5);
-    color: white;
+    color: #fff;
     border-radius: 50%;
     cursor: pointer;
     opacity: 0;
@@ -111,7 +111,7 @@ defineProps({
 
   .file-size {
     font-size: 0.85em;
-    color: #666;
+    color: var(--muted-foreground);
   }
 }
 </style>

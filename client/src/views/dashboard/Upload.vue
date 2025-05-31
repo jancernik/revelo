@@ -224,7 +224,7 @@ const getImageSrc = (image, type) => {
 
     .subtitle {
       font-size: 0.875rem;
-      color: #6b7280;
+      color: var(--muted-foreground);
     }
   }
 

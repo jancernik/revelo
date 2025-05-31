@@ -219,7 +219,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   left: calc(calc(var(--spacing-3) * 2.5));
   width: calc(100% - var(--spacing-3) * 5);
   height: calc(100% - var(--spacing-3) * 5);
-  border: 2px dashed #000;
+  border: 2px dashed var(--border);
   border-radius: 0.75rem;
   z-index: 10;
   opacity: 0;
@@ -270,7 +270,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   .subtitle {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--muted-foreground);
   }
 
   .section-header {
@@ -279,7 +279,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     justify-content: space-between;
     margin-bottom: calc(var(--spacing-3) * 2);
     padding-bottom: calc(var(--spacing-3) * 2);
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
   }
 
   .gallery-title {
@@ -291,13 +291,13 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     h4 {
       font-size: 0.875rem;
       font-weight: 600;
-      color: #000;
+      color: var(--primary);
     }
 
     .file-counter {
       @include flex-center;
       font-size: 0.875rem;
-      color: #6b7280;
+      color: var(--muted-foreground);
       background-color: var(--muted);
       border-radius: 0.625rem;
       padding-inline: 0.375rem;
@@ -321,7 +321,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     justify-content: flex-end;
     margin-top: calc(var(--spacing-3) * 2);
     padding-top: calc(var(--spacing-3) * 2);
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     gap: var(--spacing-3);
   }
 }

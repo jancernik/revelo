@@ -95,7 +95,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
   .subtitle {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--muted-foreground);
   }
 
   .section-header {
@@ -104,7 +104,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
     justify-content: space-between;
     margin-bottom: calc(var(--spacing-3) * 2);
     padding-bottom: calc(var(--spacing-3) * 2);
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
   }
 
   .image-list {
@@ -112,7 +112,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
       hr {
         margin-block: calc(var(--spacing-3) * 2);
         border: 0;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
       }
     }
   }
@@ -128,7 +128,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
     justify-content: flex-end;
     margin-top: calc(var(--spacing-3) * 2);
     padding-top: calc(var(--spacing-3) * 2);
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     gap: var(--spacing-3);
   }
 }

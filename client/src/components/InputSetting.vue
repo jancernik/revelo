@@ -122,7 +122,7 @@ const handleUpdate = (newValue) => {
 .setting-item {
   padding: calc(var(--spacing-3) * 2);
   border-radius: 0.75rem;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--border);
   transition: all 0.15s ease-in-out;
   justify-content: space-between;
   display: flex;
@@ -138,14 +138,14 @@ const handleUpdate = (newValue) => {
   .name {
     font-weight: 600;
     font-size: 0.875rem;
-    color: #181818;
+    color: var(--primary);
   }
 
   .description {
     font-weight: 400;
     font-size: 0.875rem;
     line-height: 1.125rem;
-    color: #6b7280;
+    color: var(--muted-foreground);
   }
 
   .setting-control {

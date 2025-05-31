@@ -50,7 +50,7 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: not-allowed;
 
       .label-text {
-        color: #999;
+        color: var(--muted-foreground);
       }
     }
   }
@@ -93,7 +93,7 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
   .label-text {
     font-size: 0.875rem;
-    color: #000;
+    color: var(--foreground);
     transition: $transition;
   }
 }

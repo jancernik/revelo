@@ -108,21 +108,21 @@ $shadow:
 
   .icon {
     @include flex-center;
-    color: var(--primarty);
+    color: var(--primary);
     align-self: center;
     flex-shrink: 0;
   }
 
   &-success .icon {
-    color: #10b981;
+    color: var(--success);
   }
 
   &-error .icon {
-    color: #ef4444;
+    color: var(--danger);
   }
 
   &-warning .icon {
-    color: #f59e0b;
+    color: var(--warning);
   }
 
   .content {
@@ -149,7 +149,7 @@ $shadow:
     .description {
       font-size: 0.75rem;
       line-height: 1rem;
-      color: #6b7280;
+      color: var(--muted-foreground);
       word-wrap: break-word;
       overflow-wrap: break-word;
       margin-top: 0.25rem;

@@ -100,12 +100,11 @@ onMounted(redirectIfAuthenticated)
   width: 100%;
   max-width: 400px;
   padding: 2rem;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--border);
 
   h1 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #181818;
     margin-bottom: 1.5rem;
     text-align: center;
   }
