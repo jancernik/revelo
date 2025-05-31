@@ -155,7 +155,7 @@ onUnmounted(() => {
       @navigate="navigateToSection"
     />
 
-    <div class="components">
+    <div class="components scrollable">
       <section v-for="component in components" :id="component.id" :key="component.id">
         <h3>{{ component.name }}</h3>
         <div class="example">

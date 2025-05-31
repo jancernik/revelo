@@ -71,9 +71,12 @@ export function useTheme() {
       const body = document.querySelector('body')
       document.documentElement.classList.add('no-transition')
 
-      const clonedBody = document.createElement('body')
+      const clonedBody = body.cloneNode(true)
       clonedBody.className = 'theme-transition-clone'
-      clonedBody.innerHTML = body.innerHTML
+
+      const scrollableElements = body.querySelectorAll('.scrollable')
+      const scrollOffsets = Array.from(scrollableElements).map((el) => el.scrollTop)
+      console.log('scrollOffsets: ', scrollOffsets)
 
       Object.assign(clonedBody.style, {
         position: 'fixed',
@@ -88,6 +91,11 @@ export function useTheme() {
 
       clonedBody.classList.add(newThemeClass)
       document.body.appendChild(clonedBody)
+
+      const clonedScrollableElements = clonedBody.querySelectorAll('.scrollable')
+      clonedScrollableElements.forEach((el, index) => {
+        el.scrollTop = scrollOffsets[index] || 0
+      })
 
       await nextTick()
 

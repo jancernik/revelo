@@ -4,7 +4,7 @@ import { RouterView } from 'vue-router'
 
 <template>
   <main id="main">
-    <div class="main-inner inner">
+    <div class="main-inner inner scrollable">
       <RouterView />
     </div>
   </main>
