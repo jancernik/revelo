@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Sidebar from '@/views/dev/Sidebar.vue'
 
@@ -9,6 +9,7 @@ const router = useRouter()
 const components = ref([])
 const activeSection = ref('')
 const observer = ref(null)
+let userClicked = false
 
 const loadComponents = async () => {
   try {
@@ -22,7 +23,7 @@ const loadComponents = async () => {
       componentList.push({
         name: filename,
         id: filename.toLowerCase(),
-        component: component
+        component: markRaw(component)
       })
     }
 
@@ -46,15 +47,12 @@ const setupIntersectionObserver = () => {
   }
 
   observer.value = new IntersectionObserver((entries) => {
+    if (userClicked) return
+
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const id = entry.target.id
-        activeSection.value = id
-
-        const newHash = `#${id}`
-        if (route.hash !== newHash) {
-          router.replace({ ...route, hash: newHash })
-        }
+        updateActiveSection(id)
       }
     })
   }, options)
@@ -65,6 +63,37 @@ const setupIntersectionObserver = () => {
       observer.value.observe(element)
     }
   })
+
+  const componentsContainer = document.querySelector('.components')
+  if (componentsContainer) {
+    componentsContainer.addEventListener('scroll', handleScroll)
+  }
+}
+
+const handleScroll = () => {
+  if (userClicked) return
+
+  const componentsContainer = document.querySelector('.components')
+  const scrollTop = componentsContainer.scrollTop
+  const scrollHeight = componentsContainer.scrollHeight
+  const clientHeight = componentsContainer.clientHeight
+
+  const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50
+
+  if (isNearBottom && components.value.length > 0) {
+    const lastComponent = components.value[components.value.length - 1]
+    updateActiveSection(lastComponent.id)
+  }
+}
+
+const updateActiveSection = (id) => {
+  if (activeSection.value !== id) {
+    activeSection.value = id
+    const newHash = `#${id}`
+    if (route.hash !== newHash) {
+      router.replace({ ...route, hash: newHash })
+    }
+  }
 }
 
 const scrollToSection = (id) => {
@@ -78,8 +107,28 @@ const scrollToSection = (id) => {
 }
 
 const navigateToSection = (id) => {
+  userClicked = true
+  updateActiveSection(id)
+
+  const componentsContainer = document.querySelector('.components')
+  let scrollEndTimer
+
+  const checkScrollEnd = () => {
+    clearTimeout(scrollEndTimer)
+    scrollEndTimer = setTimeout(() => {
+      userClicked = false
+      componentsContainer.removeEventListener('scroll', checkScrollEnd)
+    }, 150)
+  }
+
+  if (componentsContainer) {
+    componentsContainer.addEventListener('scroll', checkScrollEnd)
+  }
+
   scrollToSection(id)
   router.push({ ...route, hash: `#${id}` })
+
+  checkScrollEnd()
 }
 
 onMounted(() => {
@@ -89,6 +138,11 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer.value) {
     observer.value.disconnect()
+  }
+
+  const componentsContainer = document.querySelector('.components')
+  if (componentsContainer) {
+    componentsContainer.removeEventListener('scroll', handleScroll)
   }
 })
 </script>
@@ -156,13 +210,13 @@ section {
 }
 
 .example-row {
-  @include flex(row, center);
+  @include flex(row);
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 .example-column {
-  @include flex(column, center);
+  @include flex(column);
   gap: 1rem;
   width: 100%;
 }

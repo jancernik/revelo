@@ -33,10 +33,17 @@ export function useTheme() {
 
     if (options.animate) {
       await animateThemeTransition(newThemeClass, options.origin)
+      theme.value = newTheme
+      localStorage.setItem('theme', newTheme)
+    } else {
+      document.documentElement.classList.add('no-transition')
+      await nextTick()
+      theme.value = newTheme
+      localStorage.setItem('theme', newTheme)
+      setTimeout(() => {
+        document.documentElement.classList.remove('no-transition')
+      }, 50)
     }
-
-    theme.value = newTheme
-    localStorage.setItem('theme', newTheme)
   }
 
   const linearDistance = (x1, y1, x2, y2) => {

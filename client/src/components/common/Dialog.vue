@@ -19,36 +19,34 @@ const handleAction = (action) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="dialog">
-      <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleOverlayClick">
-        <div class="dialog" @click.stop>
-          <div v-if="dialogState.title || dialogState.description" class="dialog-body">
-            <h2 v-if="dialogState.title">
-              {{ dialogState.title }}
-            </h2>
-            <p>
-              {{ dialogState.description }}
-            </p>
-          </div>
+  <Transition name="dialog">
+    <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleOverlayClick">
+      <div class="dialog" @click.stop>
+        <div v-if="dialogState.title || dialogState.description" class="dialog-body">
+          <h2 v-if="dialogState.title">
+            {{ dialogState.title }}
+          </h2>
+          <p>
+            {{ dialogState.description }}
+          </p>
+        </div>
 
-          <div class="dialog-footer">
-            <Button v-if="dialogState.dismissible" color="secondary" @click="hide"> Cancel </Button>
+        <div class="dialog-footer">
+          <Button v-if="dialogState.dismissible" color="secondary" @click="hide"> Cancel </Button>
 
-            <Button
-              v-for="(action, index) in dialogState.actions"
-              :key="index"
-              :color="action.color || 'primary'"
-              :icon="action.icon"
-              @click="handleAction(action)"
-            >
-              {{ action.name }}
-            </Button>
-          </div>
+          <Button
+            v-for="(action, index) in dialogState.actions"
+            :key="index"
+            :color="action.color || 'primary'"
+            :icon="action.icon"
+            @click="handleAction(action)"
+          >
+            {{ action.name }}
+          </Button>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </Transition>
 </template>
 
 <style lang="scss" scoped>

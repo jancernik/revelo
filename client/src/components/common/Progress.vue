@@ -3,29 +3,29 @@ import { computed } from 'vue'
 
 const props = defineProps({
   value: {
-    type: Number,
+    type: [Number, String],
     required: true,
-    validator: (value) => value >= 0 && value <= 100
+    validator: (value) => parseFloat(value) >= 0 && parseFloat(value) <= 100
   }
 })
 
 const roundedValue = computed(() => {
-  return Math.round(props.value)
+  return Math.round(parseFloat(props.value))
 })
 
 const progressStyle = computed(() => {
-  return { '--progress-bar-value': roundedValue.value / 100 }
+  return { '--progress-value': roundedValue.value / 100 }
 })
 </script>
 
 <template>
-  <div class="progress-bar" :style="progressStyle"></div>
+  <div class="progress" :style="progressStyle"></div>
 </template>
 
 <style lang="scss" scoped>
 $transition: 0.3s ease-in-out;
 
-.progress-bar {
+.progress {
   position: relative;
   width: 100%;
   height: 0.5rem;
@@ -40,7 +40,7 @@ $transition: 0.3s ease-in-out;
     left: 0;
     position: absolute;
     background-color: var(--secondary-foreground);
-    transform: scaleX(var(--progress-bar-value));
+    transform: scaleX(var(--progress-value));
     transform-origin: left;
     transition: transform $transition;
   }
