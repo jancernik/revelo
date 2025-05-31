@@ -75,13 +75,13 @@ onUnmounted(stopAnimation)
 .progress-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
   width: 100%;
 }
 
 .progress-label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  @include text('sm');
+  color: var(--font-semibold);
   color: var(--primary);
 }
 </style>

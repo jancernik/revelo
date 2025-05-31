@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
   <div ref="container" class="image-uploader" :class="{ 'drag-active': dragActive }">
     <div ref="drop-zone" class="drop-zone" :class="{ active: dragActive, hidden: dropZoneHidden }">
       <Icon name="Upload" size="32" />
-      <h3 class="drop-text">Drop your images here</h3>
+      <h5 class="drop-text">Drop your images here</h5>
     </div>
 
     <div v-if="!hasSelectedImages" class="section no-selection">
@@ -152,8 +152,8 @@ onBeforeUnmount(() => {
     <div v-else class="section">
       <div class="section-header">
         <div class="text">
-          <h3 class="title">Upload images</h3>
-          <h4 class="subtitle">JPEG and PNG, up to 50MB</h4>
+          <h5 class="title">Upload images</h5>
+          <p class="subtitle">JPEG and PNG, up to 50MB</p>
         </div>
         <Button icon="FolderOpen" @click="fileInput.click()"> Select Images </Button>
       </div>
@@ -202,7 +202,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
 .image-uploader {
   position: relative;
   @include fill-parent;
-  padding: calc(var(--spacing-3) * 2);
+  padding: var(--spacing-6);
   transition: $transition;
 
   &.drag-active {
@@ -213,34 +213,25 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
 .drop-zone {
   @include flex-center;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-4);
   position: absolute;
-  top: calc(calc(var(--spacing-3) * 2.5));
-  left: calc(calc(var(--spacing-3) * 2.5));
-  width: calc(100% - var(--spacing-3) * 5);
-  height: calc(100% - var(--spacing-3) * 5);
+  top: calc(var(--spacing-15) / 2);
+  left: calc(var(--spacing-15) / 2);
+  width: calc(100% - var(--spacing-15));
+  height: calc(100% - var(--spacing-15));
   border: 2px dashed var(--border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-xl);
   z-index: 10;
   opacity: 0;
   transition: $transition;
   pointer-events: none;
   backdrop-filter: blur(10px);
 
-  .drop-text {
-    font-size: 1.125rem;
-    font-weight: 500;
-  }
-
   &.active {
     opacity: 1;
     transform: scale(1.1);
     pointer-events: all;
-
-    background-color: rgba(#171717, 0.05);
-    .dark & {
-      background-color: rgba(#fafafa, 0.05);
-    }
+    @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
   }
   &.hidden {
     display: none;
@@ -254,7 +245,7 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
 
   &.no-selection {
     @include flex-center;
-    gap: 1rem;
+    gap: var(--spacing-4);
 
     .text {
       text-align: center;
@@ -262,14 +253,10 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   }
 
   .title {
-    font-size: 1.125rem;
-    font-weight: 500;
     margin-bottom: 0.25rem;
   }
 
   .subtitle {
-    font-size: 0.875rem;
-    font-weight: 500;
     color: var(--muted-foreground);
   }
 
@@ -277,8 +264,8 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: calc(var(--spacing-3) * 2);
-    padding-bottom: calc(var(--spacing-3) * 2);
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-6);
     border-bottom: 1px solid var(--border);
   }
 
@@ -286,23 +273,22 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding-bottom: calc(var(--spacing-3) * 2);
-    gap: 0.5rem;
+    padding-bottom: var(--spacing-6);
+    gap: var(--spacing-2);
     h4 {
-      font-size: 0.875rem;
-      font-weight: 600;
+      @include text('sm');
+      font-weight: var(--font-semibold);
       color: var(--primary);
     }
 
     .file-counter {
       @include flex-center;
-      font-size: 0.875rem;
+      @include text('sm');
       color: var(--muted-foreground);
       background-color: var(--muted);
-      border-radius: 0.625rem;
-      padding-inline: 0.375rem;
+      border-radius: calc(1.25rem / 2);
+      padding-inline: var(--spacing-1);
       height: 1.25rem;
-      font-size: 0.75rem;
       &.exceeded {
         color: var(--danger);
         background-color: var(--danger-background);
@@ -319,8 +305,8 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: calc(var(--spacing-3) * 2);
-    padding-top: calc(var(--spacing-3) * 2);
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-6);
     border-top: 1px solid var(--border);
     gap: var(--spacing-3);
   }

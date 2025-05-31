@@ -6,9 +6,18 @@
   font-weight: 100 900;
 }
 
-body {
+body,
+button {
   font-family: Geist, Arial, sans-serif;
   @include text('base');
+}
+
+button,
+input,
+textarea {
+  font-family: Geist, Arial, sans-serif;
+  font-weight: var(--font-normal);
+  @include text('sm');
 }
 
 h1 {

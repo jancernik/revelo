@@ -111,7 +111,7 @@ const isActive = (path) => {
 <style lang="scss" scoped>
 .theme {
   @include flex-center;
-  margin-top: 1rem;
+  margin-top: var(--spacing-4);
 }
 .sidebar {
   @include flex-center;
@@ -135,8 +135,8 @@ button {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 1rem;
-  gap: 0.5rem;
+  padding: var(--spacing-4);
+  gap: var(--spacing-2);
   background: none;
   border: none;
   cursor: pointer;

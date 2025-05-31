@@ -46,13 +46,13 @@ defineProps({
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   width: 100%;
-  gap: calc(var(--spacing-3) * 2);
+  gap: var(--spacing-6);
 }
 
 .image-item {
   display: flex;
   flex-direction: column;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-md);
   overflow: hidden;
   position: relative;
   border: 1px solid var(--border);
@@ -99,10 +99,10 @@ defineProps({
 }
 
 .image-info {
-  padding: 0.75rem;
+  padding: var(--spacing-3);
 
   .file-name {
-    font-weight: 500;
+    font-weight: var(--font-medium);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -110,7 +110,7 @@ defineProps({
   }
 
   .file-size {
-    font-size: 0.85em;
+    @include text('sm');
     color: var(--muted-foreground);
   }
 }

@@ -33,39 +33,12 @@ button {
   cursor: pointer;
   padding: 0;
 
-  .light & {
-    .light-icon {
-      display: block;
-    }
-    .dark-icon {
-      display: none;
-    }
-  }
-  .dark & {
-    .light-icon {
-      display: none;
-    }
-    .dark-icon {
-      display: block;
-    }
+  .light-icon {
+    @include light-dark-property(display, block, none);
   }
 
-  .theme-transition-clone.light & {
-    .light-icon {
-      display: block !important;
-    }
-    .dark-icon {
-      display: none !important;
-    }
-  }
-
-  .theme-transition-clone.dark & {
-    .light-icon {
-      display: none !important;
-    }
-    .dark-icon {
-      display: block !important;
-    }
+  .dark-icon {
+    @include light-dark-property(display, none, block);
   }
 }
 </style>

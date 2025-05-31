@@ -37,12 +37,14 @@ export function useTheme() {
       localStorage.setItem('theme', newTheme)
     } else {
       document.documentElement.classList.add('no-transition')
+      document.querySelector('body').style.pointerEvents = 'none'
       await nextTick()
       theme.value = newTheme
       localStorage.setItem('theme', newTheme)
       setTimeout(() => {
         document.documentElement.classList.remove('no-transition')
-      }, 50)
+        document.querySelector('body').style.pointerEvents = 'all'
+      }, 20)
     }
   }
 
@@ -70,6 +72,7 @@ export function useTheme() {
     try {
       const body = document.querySelector('body')
       document.documentElement.classList.add('no-transition')
+      body.style.pointerEvents = 'none'
 
       const clonedBody = body.cloneNode(true)
       clonedBody.className = 'theme-transition-clone'
@@ -120,9 +123,12 @@ export function useTheme() {
 
       setTimeout(() => {
         document.documentElement.classList.remove('no-transition')
-      }, 50)
+        body.style.pointerEvents = 'all'
+      }, 20)
     } catch (error) {
+      console.log(error)
       document.documentElement.classList.remove('no-transition')
+      document.querySelector('body').style.pointerEvents = 'all'
       document.documentElement.classList.remove('light', 'dark')
       document.documentElement.classList.add(newThemeClass)
     } finally {

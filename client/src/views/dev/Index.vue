@@ -186,13 +186,13 @@ section {
   max-width: 800px;
 
   h3 {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-4);
   }
 
   .example {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 2rem;
+    padding: var(--spacing-8);
   }
 }
 </style>
@@ -201,23 +201,23 @@ section {
 .examples-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: var(--spacing-8);
 
   .example-group {
     @include flex(column);
-    gap: 0.5rem;
+    gap: var(--spacing-2);
   }
 }
 
 .example-row {
   @include flex(row);
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--spacing-4);
 }
 
 .example-column {
   @include flex(column);
-  gap: 1rem;
+  gap: var(--spacing-4);
   width: 100%;
 }
 </style>

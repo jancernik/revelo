@@ -24,7 +24,6 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   transition: $transition;
 
   @include fill-parent;
-  padding: calc(var(--spacing-1) / 2);
 
   > .inner {
     @include fill-parent;
@@ -33,13 +32,9 @@ $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   }
 
   .main-inner {
+    @include hide-scrollbar;
     background-color: var(--background);
     overflow: auto;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
   }
 }
 </style>

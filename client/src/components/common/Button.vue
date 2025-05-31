@@ -26,21 +26,20 @@ defineProps({
 </template>
 
 <style lang="scss" scoped>
-$transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+$transition: all 0.15s ease-in-out;
 
 .button {
   @include flex-center;
   @include text(sm);
-  font-family: Geist, Arial, sans-serif;
   gap: var(--spacing-2);
-  padding: 0.5rem 1rem;
+  padding: var(--spacing-2) var(--spacing-4);
   border-radius: var(--radius-md);
   font-weight: var(--font-medium);
   transition: $transition;
   cursor: pointer;
 
   &:disabled {
-    opacity: 0.8;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
@@ -50,8 +49,13 @@ $transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
       color: var(--primary-foreground);
       border: none;
       line-height: 1.25rem;
-      &:hover:not(:disabled) {
-        background-color: var(--primary-hover);
+      &:not(:disabled) {
+        &:hover {
+          background-color: var(--primary-hover);
+        }
+        &:active {
+          background-color: var(--primary-active);
+        }
       }
     }
 
@@ -60,8 +64,13 @@ $transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
       color: var(--secondary-foreground);
       border: 1px solid var(--border);
       line-height: 1.125rem;
-      &:hover:not(:disabled) {
-        background-color: var(--secondary-hover);
+      &:not(:disabled) {
+        &:hover {
+          background-color: var(--secondary-hover);
+        }
+        &:active {
+          background-color: var(--secondary-active);
+        }
       }
     }
   }

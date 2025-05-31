@@ -58,7 +58,7 @@ onMounted(redirectIfAuthenticated)
 <template>
   <div class="login">
     <div v-if="showLoginForm" class="login-card">
-      <h1>Login</h1>
+      <h3>Login</h3>
       <div v-if="loginError" class="error-message">{{ loginError }}</div>
       <form @submit.prevent="handleLogin">
         <Input
@@ -96,40 +96,36 @@ onMounted(redirectIfAuthenticated)
 }
 
 .login-card {
-  border-radius: 0.75rem;
+  border-radius: var(--radius-xl);
   width: 100%;
   max-width: 400px;
-  padding: 2rem;
+  padding: var(--spacing-8);
   border: 1px solid var(--border);
 
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
+  h3 {
     text-align: center;
   }
 
   .error-message {
+    @include text('sm');
     color: var(--danger);
-    font-size: 0.875rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-6);
     text-align: center;
     background-color: var(--danger-background);
-    padding: 0.5rem 1rem;
-    line-height: 1.25rem;
-    border-radius: 0.375rem;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
   }
 
   form {
     display: flex;
-    gap: 1rem;
+    gap: var(--spacing-4);
     flex-direction: column;
   }
   .actions {
     @include flex-center;
     flex-direction: column;
-    gap: 0.75rem;
-    padding-top: 0.5rem;
+    gap: var(--spacing-3);
+    padding-top: var(--spacing-2);
 
     button {
       width: 100%;

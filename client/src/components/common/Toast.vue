@@ -39,9 +39,9 @@ const handleAction = (toast) => {
             </div>
 
             <div class="text">
-              <h3 v-if="toast.title" class="title">
+              <p v-if="toast.title" class="title">
                 {{ toast.title }}
-              </h3>
+              </p>
               <p v-if="toast.description" class="description">
                 {{ toast.description }}
               </p>
@@ -68,10 +68,6 @@ const handleAction = (toast) => {
 </template>
 
 <style lang="scss" scoped>
-$shadow:
-  0 3px 10px rgba(0, 0, 0, 0.1),
-  0 3px 3px rgba(0, 0, 0, 0.05);
-
 .toast-container {
   position: fixed;
   top: var(--spacing-3);
@@ -79,7 +75,7 @@ $shadow:
   transform: translateX(-50%);
   display: flex;
   flex-direction: column-reverse;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
   z-index: 1200;
   max-width: 24rem;
   width: auto;
@@ -95,16 +91,15 @@ $shadow:
 }
 
 .toast {
+  @include flex(row, space-between, center);
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
   background-color: var(--background);
-  border-radius: 0.375rem;
-  padding: 1rem;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
   width: 100%;
-  box-shadow: $shadow;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
 
   .icon {
     @include flex-center;
@@ -127,10 +122,8 @@ $shadow:
 
   .content {
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
     flex: 1;
-    gap: 0.75rem;
+    gap: var(--spacing-3);
     min-width: 0;
   }
 
@@ -139,16 +132,15 @@ $shadow:
     min-width: 0;
 
     .title {
-      font-size: 0.875rem;
-      font-weight: 600;
-      line-height: 1.25rem;
+      @include text('sm');
+      font-weight: var(--font-semibold);
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
     .description {
-      font-size: 0.75rem;
-      line-height: 1rem;
+      @include text('xs');
+      font-weight: var(--font-semibold);
       color: var(--muted-foreground);
       word-wrap: break-word;
       overflow-wrap: break-word;
@@ -162,6 +154,7 @@ $shadow:
     align-items: center;
     justify-content: center;
     margin-left: 0.5rem;
+    height: 100%;
   }
 
   .close {
@@ -176,7 +169,8 @@ $shadow:
     background: none;
     border: none;
     cursor: pointer;
-    border-radius: 0.25rem;
+    border-radius: 0;
+    color: var(--muted-foreground);
   }
 }
 

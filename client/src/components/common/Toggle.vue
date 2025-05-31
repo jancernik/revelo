@@ -42,7 +42,7 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--spacing-2);
     user-select: none;
     cursor: pointer;
 
@@ -64,7 +64,7 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     width: 2.25rem;
     height: 1.25rem;
     background-color: var(--muted);
-    border-radius: 0.625rem;
+    border-radius: calc(1.25rem / 2);
     transition: $transition;
 
     &.active {
@@ -72,11 +72,12 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
       span {
         transform: translateX(1rem);
+        background-color: var(--primary-foreground);
       }
     }
 
     &.disabled {
-      opacity: 0.8;
+      opacity: 0.5;
     }
 
     span {
@@ -85,14 +86,18 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       left: 0.125rem;
       width: 1rem;
       height: 1rem;
-      background-color: var(--primary-foreground);
       border-radius: 50%;
       transition: $transition;
+      background-color: var(--background);
+    }
+
+    &:not(.active) span {
+      @include light-dark-property(background-color, var(--background), var(--foreground));
     }
   }
 
   .label-text {
-    font-size: 0.875rem;
+    @include text('sm');
     color: var(--foreground);
     transition: $transition;
   }

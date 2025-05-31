@@ -44,7 +44,6 @@ const handleLogout = async () => {
   height: 6rem;
   display: none;
   padding-right: 0 !important;
-  padding: calc(var(--spacing-1) / 2);
 
   > .inner {
     @include fill-parent;

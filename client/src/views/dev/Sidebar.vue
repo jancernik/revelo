@@ -35,7 +35,7 @@ defineEmits(['navigate'])
 .dev-sidebar {
   @include flex-center;
   height: 100%;
-  padding: 1rem;
+  padding: var(--spacing-4);
 }
 
 ul {
@@ -55,7 +55,7 @@ button {
   @include text('base');
   font-weight: var(--font-medium);
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: var(--spacing-2) var(--spacing-4);
   background: none;
   border: none;
   cursor: pointer;

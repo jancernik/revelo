@@ -23,9 +23,9 @@ const handleAction = (action) => {
     <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleOverlayClick">
       <div class="dialog" @click.stop>
         <div v-if="dialogState.title || dialogState.description" class="dialog-body">
-          <h2 v-if="dialogState.title">
+          <h5 v-if="dialogState.title">
             {{ dialogState.title }}
-          </h2>
+          </h5>
           <p>
             {{ dialogState.description }}
           </p>
@@ -64,35 +64,29 @@ const handleAction = (action) => {
 .dialog {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-4);
   background-color: var(--background);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   max-width: 32rem;
-  padding: 1.5rem;
+  padding: var(--spacing-6);
   width: 100%;
+  border: 1px solid var(--border);
 
   .dialog-body {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--spacing-2);
 
-    h2 {
-      font-size: 1.125rem;
-      line-height: 1.75rem;
-      font-weight: 600;
-    }
     p {
-      font-weight: 400;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
+      @include text('sm');
+      font-weight: var(--font-normal);
       color: var(--muted-foreground);
     }
   }
 
   .dialog-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
+    @include flex(row, flex-end);
+    gap: var(--spacing-2);
   }
 }
 

@@ -84,17 +84,15 @@ const handleMetadataUpdate = (index, newMetadata) => {
   @include fill-parent;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--spacing-3) * 2);
+  padding: var(--spacing-6);
 
   .title {
-    font-size: 1.125rem;
-    font-weight: 500;
+    @include text('lg');
     margin-bottom: 0.25rem;
   }
 
   .subtitle {
-    font-size: 0.875rem;
-    font-weight: 500;
+    @include text('sm');
     color: var(--muted-foreground);
   }
 
@@ -102,15 +100,15 @@ const handleMetadataUpdate = (index, newMetadata) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: calc(var(--spacing-3) * 2);
-    padding-bottom: calc(var(--spacing-3) * 2);
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-6);
     border-bottom: 1px solid var(--border);
   }
 
   .image-list {
     .image-item {
       hr {
-        margin-block: calc(var(--spacing-3) * 2);
+        margin-block: var(--spacing-6);
         border: 0;
         border-bottom: 1px solid var(--border);
       }
@@ -126,8 +124,8 @@ const handleMetadataUpdate = (index, newMetadata) => {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: calc(var(--spacing-3) * 2);
-    padding-top: calc(var(--spacing-3) * 2);
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-6);
     border-top: 1px solid var(--border);
     gap: var(--spacing-3);
   }

@@ -113,7 +113,7 @@ onMounted(fetchSettings)
     <div class="sections-container">
       <div v-for="category in categories" :key="category" class="section">
         <div class="category-header">
-          <h3>{{ category }}</h3>
+          <h5>{{ category }}</h5>
         </div>
 
         <div class="category-settings">
@@ -149,9 +149,9 @@ onMounted(fetchSettings)
     </div>
     <div v-if="hasChanges" class="actions">
       <div class="info">
-        <h4>
+        <h6>
           {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? 'change' : 'changes' }}
-        </h4>
+        </h6>
       </div>
       <Button icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
         Cancel
@@ -166,7 +166,7 @@ onMounted(fetchSettings)
 <style lang="scss" scoped>
 .settings {
   @include fill-parent;
-  padding: calc(var(--spacing-3) * 2);
+  padding: var(--spacing-6);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -174,32 +174,27 @@ onMounted(fetchSettings)
   .sections-container {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: calc(var(--spacing-3) * 2);
+    margin-bottom: var(--spacing-6);
     display: flex;
     flex-direction: column;
-    gap: calc(var(--spacing-3) * 2);
+    gap: var(--spacing-6);
 
     .category-settings {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--spacing-4);
     }
   }
 
   .category-header {
     padding-bottom: var(--spacing-3);
-
-    h3 {
-      font-size: 1.125rem;
-      font-weight: 500;
-    }
   }
 
   .actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-top: calc(var(--spacing-3) * 2);
+    padding-top: var(--spacing-6);
     border-top: 1px solid var(--border);
     gap: var(--spacing-3);
     flex-shrink: 0;
@@ -207,10 +202,6 @@ onMounted(fetchSettings)
 
     .info {
       margin-right: auto;
-      h4 {
-        font-size: 0.875rem;
-        font-weight: 500;
-      }
     }
   }
 }

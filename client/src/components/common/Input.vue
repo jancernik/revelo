@@ -126,9 +126,9 @@ onMounted(() => {
   width: 100%;
 
   label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--primary);
+    @include text('sm');
+    font-weight: var(--font-medium);
+    color: var(--secondary-foreground);
   }
 }
 
@@ -179,10 +179,11 @@ onMounted(() => {
 
 input {
   font-family: Geist, Arial, sans-serif;
-  font-size: 0.875rem;
+  @include text('sm');
+  font-weight: var(--font-normal);
   width: 100%;
   padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background-color: var(--secondary);
   color: var(--primary);
@@ -221,8 +222,8 @@ input {
 .input-unit {
   position: absolute;
   color: var(--input);
-  font-size: 0.875rem;
-  font-weight: 400;
+  @include text('sm');
+  font-weight: var(--font-normal);
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
@@ -240,14 +241,14 @@ input {
 }
 
 .error {
-  font-size: 0.75rem;
+  @include text('xs');
   color: var(--danger);
-  font-weight: 400;
+  font-weight: var(--font-normal);
 }
 
 .description {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  font-weight: 400;
+  @include text('xs');
+  color: var(--input);
+  font-weight: var(--font-normal);
 }
 </style>

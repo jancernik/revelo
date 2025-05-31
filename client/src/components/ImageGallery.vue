@@ -37,6 +37,6 @@ onMounted(fetchImages)
   display: block;
   columns: 200px 4;
   column-gap: var(--spacing-3);
-  padding: calc(var(--spacing-3) * 2);
+  padding: var(--spacing-6);
 }
 </style>

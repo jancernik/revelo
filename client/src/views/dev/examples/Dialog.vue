@@ -1,10 +1,8 @@
 <script setup>
-import { ref } from 'vue'
 import { useDialog } from '@/composables/useDialog'
 import Button from '@/components/common/Button.vue'
 
 const { show } = useDialog()
-const userName = ref('John Doe')
 
 const showBasicDialog = () => {
   show({

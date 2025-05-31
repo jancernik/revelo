@@ -92,41 +92,40 @@ const showResetDefaultDialog = () => {
 
 <style lang="scss" scoped>
 .setting-item {
-  padding: calc(var(--spacing-3) * 2);
-  border-radius: 0.75rem;
+  padding: var(--spacing-6);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   transition: all 0.15s ease-in-out;
   justify-content: space-between;
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
 
   .setting-info {
     display: flex;
     flex-direction: column;
-    gap: 0.25em;
+    gap: var(--spacing-1);
   }
   .name {
-    font-weight: 600;
-    font-size: 0.875rem;
+    @include text('sm');
+    font-weight: var(--font-medium);
     color: var(--primary);
   }
 
   .description {
-    font-weight: 400;
-    font-size: 0.875rem;
-    line-height: 1.125rem;
+    @include text('sm');
+    font-weight: var(--font-normal);
     color: var(--muted-foreground);
   }
 
   .setting-control {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-2);
     align-items: center;
   }
 
   .actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-2);
     min-width: 2.25rem;
   }
 }

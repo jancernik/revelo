@@ -48,3 +48,18 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@mixin light-dark-property($property, $light-value, $dark-value) {
+  .light & {
+    #{$property}: #{$light-value};
+  }
+  .dark & {
+    #{$property}: #{$dark-value};
+  }
+  .theme-transition-clone.light & {
+    #{$property}: #{$light-value} !important;
+  }
+  .theme-transition-clone.dark & {
+    #{$property}: #{$dark-value} !important;
+  }
+}

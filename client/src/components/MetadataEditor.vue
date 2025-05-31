@@ -163,7 +163,7 @@ watch(
 .metadata-editor {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--spacing-3) * 2);
+  gap: var(--spacing-6);
 }
 
 .image-preview {
@@ -183,11 +183,11 @@ watch(
   min-width: 300px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-4);
 
   .form-row {
     display: flex;
-    gap: 1rem;
+    gap: var(--spacing-4);
 
     .form-group {
       flex: 1;
@@ -199,7 +199,7 @@ watch(
     align-items: center;
     justify-content: flex-end;
     gap: var(--spacing-3);
-    padding-top: 0.5rem;
+    padding-top: var(--spacing-2);
   }
 }
 </style>

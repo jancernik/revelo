@@ -29,9 +29,9 @@ $transition: 0.3s ease-in-out;
   position: relative;
   width: 100%;
   height: 0.5rem;
-  border-radius: 0.25rem;
-  background-color: var(--secondary);
+  border-radius: calc(0.5rem / 2);
   overflow: hidden;
+  @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
 
   &::before {
     @include fill-parent;
@@ -39,7 +39,7 @@ $transition: 0.3s ease-in-out;
     top: 0;
     left: 0;
     position: absolute;
-    background-color: var(--secondary-foreground);
+    background-color: var(--primary);
     transform: scaleX(var(--progress-value));
     transform-origin: left;
     transition: transform $transition;

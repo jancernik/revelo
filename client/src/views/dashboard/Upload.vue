@@ -129,9 +129,9 @@ const getImageSrc = (image, type) => {
   <div class="upload-container">
     <div v-if="isLoading" class="loading-state">
       <div class="loading-content">
-        <h3 class="loading-title">
+        <h5 class="loading-title">
           {{ processingStep === 'extracting' ? 'Extracting metadata...' : 'Uploading images...' }}
-        </h3>
+        </h5>
       </div>
     </div>
 
@@ -153,7 +153,7 @@ const getImageSrc = (image, type) => {
 
     <div v-else-if="step === 3" class="complete-step">
       <div class="success-message">
-        <h3 class="title">Upload Complete</h3>
+        <h5 class="title">Upload Complete</h5>
         <p class="subtitle">
           Successfully uploaded {{ uploadedImages.length }}
           {{ uploadedImages.length === 1 ? 'image' : 'images' }}
@@ -192,12 +192,7 @@ const getImageSrc = (image, type) => {
     text-align: center;
     max-width: 400px;
     width: 100%;
-    padding: calc(var(--spacing-3) * 2);
-
-    .loading-title {
-      font-size: 1.125rem;
-      font-weight: 500;
-    }
+    padding: var(--spacing-6);
   }
 }
 
@@ -210,20 +205,17 @@ const getImageSrc = (image, type) => {
   @include fill-parent;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--spacing-3) * 2);
+  padding: var(--spacing-6);
 
   .success-message {
     text-align: center;
-    margin-bottom: calc(var(--spacing-3) * 3);
+    margin-bottom: var(--spacing-9);
 
     .title {
-      font-size: 1.125rem;
-      font-weight: 500;
       margin-bottom: 0.25rem;
     }
 
     .subtitle {
-      font-size: 0.875rem;
       color: var(--muted-foreground);
     }
   }
@@ -236,7 +228,7 @@ const getImageSrc = (image, type) => {
   .actions {
     display: flex;
     justify-content: center;
-    margin-top: calc(var(--spacing-3) * 3);
+    margin-top: var(--spacing-9);
   }
 }
 </style>
