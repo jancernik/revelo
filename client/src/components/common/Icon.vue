@@ -51,12 +51,20 @@ watch(
 </script>
 
 <template>
-  <component
-    :is="loadedIcon"
-    v-if="loadedIcon"
-    :size="size"
-    :color="color"
-    :stroke-width="strokeWidth"
-    :default-class="defaultClass"
-  />
+  <span
+    :class="defaultClass"
+    :style="{
+      width: `${size}px`,
+      height: `${size}px`
+    }"
+  >
+    <component
+      :is="loadedIcon"
+      v-if="loadedIcon"
+      :size="size"
+      :color="color"
+      :stroke-width="strokeWidth"
+      :default-class="defaultClass"
+    />
+  </span>
 </template>
