@@ -1,22 +1,25 @@
 enableSignups:
   description: Allow users to sign up
   category: Login
-  type: boolean
+  type: toggle
   default: true
   public: true
 
 showLoginLink:
   description: Show the login button
   category: Login
-  type: boolean
+  type: toggle
   default: true
   public: true
 
 sidebarPosition:
   description: Position of the sidebar
   category: Layout
-  type: string
-  default: right
+  type: switch
+  options:
+    - { 'value': 'left', 'label': 'Left' }
+    - { 'value': 'right', 'label': 'Right' }
+  default: { 'value': 'right', 'label': 'Right' }
   public: true
 
 maxAdmins:

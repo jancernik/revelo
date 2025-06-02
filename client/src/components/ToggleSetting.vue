@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Input from '@/components/common/Input.vue'
+import Toggle from '@/components/common/Toggle.vue'
 import Button from '@/components/common/Button.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -12,11 +12,11 @@ const props = defineProps({
     required: true
   },
   currentValue: {
-    type: [String, Number],
+    type: Boolean,
     required: true
   },
   originalValue: {
-    type: [String, Number],
+    type: Boolean,
     required: true
   },
   isResetting: {
@@ -35,6 +35,10 @@ const showResetDefault = computed(() => {
   return props.originalValue !== props.setting.default
 })
 
+const handleUpdate = (newValue) => {
+  emit('update', newValue)
+}
+
 const showResetDefaultDialog = () => {
   show({
     title: `Reset ${props.setting.name}`,
@@ -51,33 +55,6 @@ const showResetDefaultDialog = () => {
     ]
   })
 }
-
-const inputType = computed(() => {
-  return props.setting.type === 'string' ? 'text' : 'number'
-})
-
-const inputStep = computed(() => {
-  return props.setting.type === 'decimal' ? '0.01' : '1'
-})
-
-const parseValue = (value) => {
-  if (value === '' || value === null || value === undefined) return value
-
-  if (props.setting.type === 'integer') {
-    const parsed = parseInt(value, 10)
-    return isNaN(parsed) ? value : parsed
-  } else if (props.setting.type === 'decimal') {
-    const parsed = parseFloat(value)
-    return isNaN(parsed) ? value : parsed
-  }
-
-  return value
-}
-
-const handleUpdate = (newValue) => {
-  const parsedValue = props.setting.type !== 'string' ? parseValue(newValue) : newValue
-  emit('update', parsedValue)
-}
 </script>
 
 <template>
@@ -88,12 +65,7 @@ const handleUpdate = (newValue) => {
     </div>
 
     <div class="setting-control">
-      <Input
-        :model-value="currentValue"
-        :type="inputType"
-        :step="inputStep"
-        @update:model-value="handleUpdate"
-      />
+      <Toggle :model-value="currentValue" @update:model-value="handleUpdate" />
 
       <div class="actions">
         <Button
@@ -121,23 +93,21 @@ const handleUpdate = (newValue) => {
 <style lang="scss" scoped>
 .setting-item {
   padding: var(--spacing-6);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   transition: all 0.15s ease-in-out;
   justify-content: space-between;
   display: flex;
   gap: var(--spacing-2);
-  flex-direction: column;
 
   .setting-info {
     display: flex;
     flex-direction: column;
-    gap: 0.25em;
+    gap: var(--spacing-1);
   }
-
   .name {
     @include text('sm');
-    font-weight: var(--font-semibold);
+    font-weight: var(--font-medium);
     color: var(--primary);
   }
 

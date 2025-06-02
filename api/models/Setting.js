@@ -35,7 +35,7 @@ export class Setting extends BaseModel {
     const fileSettings = this.#loadConfigFile();
 
     this.fileSettings = Object.entries(fileSettings).map(([name, settingData]) => {
-      const defaultValue = settingData.default.toString();
+      const defaultValue = this.#stringifyValue(settingData.default, settingData.type);
       const isPublic = settingData.public === true;
 
       return {
@@ -62,7 +62,7 @@ export class Setting extends BaseModel {
   }
 
   #parseValue(value, type) {
-    if (value === undefined || value === null) {
+    if (value === undefined || value === null || value === "") {
       return value;
     }
 
@@ -70,11 +70,45 @@ export class Setting extends BaseModel {
       case "integer":
         return parseInt(value, 10);
       case "decimal":
-        return parseFloat(value).toFixed(2);
-      case "boolean":
+        return parseFloat(value);
+      case "toggle":
+        if (typeof value === "boolean") return value;
         return value.toLowerCase() === "true";
-      case "list":
-        return value.split("|").map((v) => v.trim());
+      case "text":
+        return value.toString();
+      case "switch":
+      case "select":
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(value);
+          } catch {
+            return value;
+          }
+        }
+        return value;
+      case "multiselect":
+        if (typeof value === "string") {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            return value
+              .split("|")
+              .map((v) => v.trim())
+              .filter((v) => v);
+          }
+        }
+        return Array.isArray(value) ? value : [value];
+      case "textpairs":
+        if (typeof value === "string") {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        }
+        return Array.isArray(value) ? value : [];
       default:
         return value.toString();
     }
@@ -86,15 +120,73 @@ export class Setting extends BaseModel {
     }
 
     switch (type.toLowerCase()) {
-      case "list":
-        return Array.isArray(value)
-          ? value
-              .filter((v) => typeof v !== "object")
-              .map((v) => v.toString().trim())
-              .join("|")
-          : "";
+      case "integer":
+        return parseInt(value, 10).toString();
+      case "decimal":
+        return parseFloat(value).toString();
+      case "toggle":
+        return Boolean(value).toString();
+      case "text":
+        return value.toString();
+      case "switch":
+      case "select":
+        return typeof value === "object" ? JSON.stringify(value) : value.toString();
+      case "multiselect":
+        if (Array.isArray(value)) {
+          return JSON.stringify(value);
+        }
+        return JSON.stringify([value]);
+      case "textpairs":
+        return Array.isArray(value) ? JSON.stringify(value) : JSON.stringify([]);
       default:
         return value.toString();
+    }
+  }
+
+  #validateSettingValue(value, type, options = null) {
+    switch (type.toLowerCase()) {
+      case "switch":
+      case "select":
+        if (options && Array.isArray(options)) {
+          const validValues = options.map((opt) =>
+            typeof opt === "object" ? opt.value || opt.key || opt.id : opt
+          );
+          const checkValue =
+            typeof value === "object" ? value.value || value.key || value.id : value;
+
+          if (!validValues.includes(checkValue)) {
+            throw new Error(`Invalid value for ${type}. Must be one of: ${validValues.join(", ")}`);
+          }
+        }
+        break;
+      case "multiselect":
+        if (options && Array.isArray(options)) {
+          const validValues = options.map((opt) =>
+            typeof opt === "object" ? opt.value || opt.key || opt.id : opt
+          );
+          const valuesToCheck = Array.isArray(value) ? value : [value];
+
+          for (const val of valuesToCheck) {
+            const checkValue = typeof val === "object" ? val.value || val.key || val.id : val;
+
+            if (!validValues.includes(checkValue)) {
+              throw new Error(
+                `Invalid value for multiselect. All values must be one of: ${validValues.join(", ")}`
+              );
+            }
+          }
+        }
+        break;
+      case "textpairs":
+        if (!Array.isArray(value)) {
+          throw new Error("textPairs value must be an array of objects");
+        }
+        for (const pair of value) {
+          if (typeof pair !== "object" || pair === null) {
+            throw new Error("Each textPairs item must be an object");
+          }
+        }
+        break;
     }
   }
 
@@ -112,17 +204,30 @@ export class Setting extends BaseModel {
   }
 
   #formatSettingResponse(setting, dbSetting, complete) {
-    const value = this.#parseValue(dbSetting?.value || setting.default, setting.type);
+    const value = this.#parseValue(
+      dbSetting?.value || setting.default,
+      setting.type,
+      setting.options
+    );
 
     if (complete) {
-      return {
+      const response = {
         name: setting.name,
         value,
-        default: this.#parseValue(setting.default, setting.type),
+        default: this.#parseValue(setting.default, setting.type, setting.options),
         type: setting.type,
         description: setting.description,
         category: setting.category
       };
+
+      if (
+        ["switch", "select", "multiselect"].includes(setting.type?.toLowerCase()) &&
+        setting.options
+      ) {
+        response.options = setting.options;
+      }
+
+      return response;
     }
 
     return {
@@ -150,6 +255,10 @@ export class Setting extends BaseModel {
 
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
+
+    // Validate the value before setting
+    this.#validateSettingValue(value, setting.type, setting.options);
+
     let resultSetting;
     const stringifiedValue = this.#stringifyValue(value, setting.type);
 
@@ -170,7 +279,7 @@ export class Setting extends BaseModel {
       }
     }
 
-    const parsedValue = this.#parseValue(resultSetting.value, setting.type);
+    const parsedValue = this.#parseValue(resultSetting.value, setting.type, setting.options);
     return {
       name,
       value: parsedValue
@@ -188,7 +297,7 @@ export class Setting extends BaseModel {
       this.dbSettings = this.dbSettings.filter((s) => s.id !== dbSetting.id);
     }
 
-    const defaultValue = this.#parseValue(setting.default, setting.type);
+    const defaultValue = this.#parseValue(setting.default, setting.type, setting.options);
     return {
       name,
       value: defaultValue

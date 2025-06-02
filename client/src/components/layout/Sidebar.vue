@@ -85,7 +85,7 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <aside :class="['sidebar', settings.sidebarPosition]">
+  <aside :class="['sidebar', settings.sidebarPosition.value]">
     <div class="sidebar-inner inner">
       <ul>
         <li

@@ -1,7 +1,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import BooleanSetting from '@/components/BooleanSetting.vue'
+import ToggleSetting from '@/components/ToggleSetting.vue'
 import InputSetting from '@/components/InputSetting.vue'
+import SwitchSetting from '@/components/SwitchSetting.vue'
 import Button from '@/components/common/Button.vue'
 import { useSettings } from '@/composables/useSettings'
 import api from '@/utils/api'
@@ -19,14 +20,40 @@ const categories = computed(() => {
 })
 
 const hasChanges = computed(() => {
-  return Object.keys(currentValues).some((key) => currentValues[key] !== originalValues[key])
+  return Object.keys(currentValues).some((key) => {
+    const current = currentValues[key]
+    const original = originalValues[key]
+
+    if (Array.isArray(current) && Array.isArray(original)) {
+      return JSON.stringify(current) !== JSON.stringify(original)
+    }
+
+    if (typeof current === 'object' && typeof original === 'object' && current && original) {
+      return JSON.stringify(current) !== JSON.stringify(original)
+    }
+
+    return current !== original
+  })
 })
 
 const changedSettings = computed(() => {
   const changes = {}
   Object.keys(currentValues).forEach((key) => {
-    if (currentValues[key] !== originalValues[key]) {
-      changes[key] = currentValues[key]
+    const current = currentValues[key]
+    const original = originalValues[key]
+
+    let hasChanged = false
+
+    if (Array.isArray(current) && Array.isArray(original)) {
+      hasChanged = JSON.stringify(current) !== JSON.stringify(original)
+    } else if (typeof current === 'object' && typeof original === 'object' && current && original) {
+      hasChanged = JSON.stringify(current) !== JSON.stringify(original)
+    } else {
+      hasChanged = current !== original
+    }
+
+    if (hasChanged) {
+      changes[key] = current
     }
   })
   return changes
@@ -45,7 +72,15 @@ const updateValue = (settingName, newValue) => {
 }
 
 const resetValue = (settingName) => {
-  currentValues[settingName] = originalValues[settingName]
+  const original = originalValues[settingName]
+
+  if (Array.isArray(original)) {
+    currentValues[settingName] = [...original]
+  } else if (typeof original === 'object' && original !== null) {
+    currentValues[settingName] = { ...original }
+  } else {
+    currentValues[settingName] = original
+  }
 }
 
 const resetDefault = async (settingName) => {
@@ -55,8 +90,18 @@ const resetDefault = async (settingName) => {
 
     const setting = settings.value.find((s) => s.name === settingName)
     if (setting) {
-      currentValues[settingName] = setting.default
-      originalValues[settingName] = setting.default
+      const defaultValue = setting.default
+
+      if (Array.isArray(defaultValue)) {
+        currentValues[settingName] = [...defaultValue]
+        originalValues[settingName] = [...defaultValue]
+      } else if (typeof defaultValue === 'object' && defaultValue !== null) {
+        currentValues[settingName] = { ...defaultValue }
+        originalValues[settingName] = { ...defaultValue }
+      } else {
+        currentValues[settingName] = defaultValue
+        originalValues[settingName] = defaultValue
+      }
     }
   } catch (error) {
     console.error('Error resetting setting to default:', error)
@@ -72,7 +117,15 @@ const saveAllChanges = async () => {
     await api.put('/settings', changedSettings.value)
 
     Object.keys(changedSettings.value).forEach((key) => {
-      originalValues[key] = currentValues[key]
+      const current = currentValues[key]
+
+      if (Array.isArray(current)) {
+        originalValues[key] = [...current]
+      } else if (typeof current === 'object' && current !== null) {
+        originalValues[key] = { ...current }
+      } else {
+        originalValues[key] = current
+      }
     })
   } catch (error) {
     console.error('Error saving settings:', error)
@@ -84,7 +137,15 @@ const saveAllChanges = async () => {
 
 const cancelAllChanges = () => {
   Object.keys(currentValues).forEach((key) => {
-    currentValues[key] = originalValues[key]
+    const original = originalValues[key]
+
+    if (Array.isArray(original)) {
+      currentValues[key] = [...original]
+    } else if (typeof original === 'object' && original !== null) {
+      currentValues[key] = { ...original }
+    } else {
+      currentValues[key] = original
+    }
   })
 }
 
@@ -95,8 +156,18 @@ const fetchSettings = async () => {
     settings.value = response.data
 
     settings.value.forEach((setting) => {
-      currentValues[setting.name] = setting.value
-      originalValues[setting.name] = setting.value
+      const value = setting.value
+
+      if (Array.isArray(value)) {
+        currentValues[setting.name] = [...value]
+        originalValues[setting.name] = [...value]
+      } else if (typeof value === 'object' && value !== null) {
+        currentValues[setting.name] = { ...value }
+        originalValues[setting.name] = { ...value }
+      } else {
+        currentValues[setting.name] = value
+        originalValues[setting.name] = value
+      }
     })
   } catch (error) {
     console.error('Error fetching settings:', error)
@@ -118,8 +189,8 @@ onMounted(fetchSettings)
 
         <div class="category-settings">
           <template v-for="setting in getSettingsByCategory(category)" :key="setting.name">
-            <BooleanSetting
-              v-if="setting.type === 'boolean'"
+            <ToggleSetting
+              v-if="setting.type === 'toggle'"
               :setting="setting"
               :current-value="currentValues[setting.name]"
               :original-value="originalValues[setting.name]"
@@ -131,6 +202,7 @@ onMounted(fetchSettings)
 
             <InputSetting
               v-else-if="
+                setting.type === 'text' ||
                 setting.type === 'string' ||
                 setting.type === 'integer' ||
                 setting.type === 'decimal'
@@ -143,6 +215,26 @@ onMounted(fetchSettings)
               @reset="resetValue(setting.name)"
               @reset-default="resetDefault(setting.name)"
             />
+
+            <SwitchSetting
+              v-else-if="setting.type === 'switch'"
+              :setting="setting"
+              :current-value="currentValues[setting.name]"
+              :original-value="originalValues[setting.name]"
+              :is-resetting="isResetting[setting.name] || false"
+              @update="updateValue(setting.name, $event)"
+              @reset="resetValue(setting.name)"
+              @reset-default="resetDefault(setting.name)"
+            />
+
+            <div v-else class="setting-item unknown-type">
+              <div class="setting-info">
+                <span class="name">{{ setting.name }}</span>
+                <span class="description">
+                  {{ setting.description }} (Unsupported type: {{ setting.type }})
+                </span>
+              </div>
+            </div>
           </template>
         </div>
       </div>
@@ -172,12 +264,16 @@ onMounted(fetchSettings)
   height: 100%;
 
   .sections-container {
+    @include flex(column, center);
     flex: 1;
     overflow-y: auto;
     margin-bottom: var(--spacing-6);
-    display: flex;
-    flex-direction: column;
     gap: var(--spacing-6);
+
+    .section {
+      max-width: 40rem;
+      width: 100%;
+    }
 
     .category-settings {
       display: flex;
@@ -202,6 +298,31 @@ onMounted(fetchSettings)
 
     .info {
       margin-right: auto;
+    }
+  }
+
+  .unknown-type {
+    padding: var(--spacing-6);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    opacity: 0.6;
+
+    .setting-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+    }
+
+    .name {
+      @include text('sm');
+      font-weight: var(--font-semibold);
+      color: var(--primary);
+    }
+
+    .description {
+      @include text('sm');
+      font-weight: var(--font-normal);
+      color: var(--muted-foreground);
     }
   }
 }

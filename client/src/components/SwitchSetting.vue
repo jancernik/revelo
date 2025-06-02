@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Input from '@/components/common/Input.vue'
+import Switch from '@/components/common/Switch.vue'
 import Button from '@/components/common/Button.vue'
 import { useDialog } from '@/composables/useDialog'
 
@@ -12,11 +12,11 @@ const props = defineProps({
     required: true
   },
   currentValue: {
-    type: [String, Number],
+    type: [String, Object],
     required: true
   },
   originalValue: {
-    type: [String, Number],
+    type: [String, Object],
     required: true
   },
   isResetting: {
@@ -28,12 +28,63 @@ const props = defineProps({
 const emit = defineEmits(['update', 'reset', 'reset-default'])
 
 const hasChanged = computed(() => {
-  return props.currentValue !== props.originalValue
+  const current =
+    typeof props.currentValue === 'object' ? JSON.stringify(props.currentValue) : props.currentValue
+  const original =
+    typeof props.originalValue === 'object'
+      ? JSON.stringify(props.originalValue)
+      : props.originalValue
+
+  return current !== original
 })
 
 const showResetDefault = computed(() => {
-  return props.originalValue !== props.setting.default
+  const original =
+    typeof props.originalValue === 'object'
+      ? JSON.stringify(props.originalValue)
+      : props.originalValue
+  const defaultVal =
+    typeof props.setting.default === 'object'
+      ? JSON.stringify(props.setting.default)
+      : props.setting.default
+
+  return original !== defaultVal
 })
+
+const switchOptions = computed(() => {
+  if (!props.setting.options) return []
+
+  return props.setting.options.map((option) => {
+    if (typeof option === 'string') {
+      return {
+        value: option,
+        label: option
+      }
+    }
+
+    return {
+      value: option.value || option.id || option.key,
+      label: option.label || option.name || option.value || option.id || option.key,
+      icon: option.icon
+    }
+  })
+})
+
+const currentSwitchValue = computed(() => {
+  if (typeof props.currentValue === 'object') {
+    return props.currentValue.value || props.currentValue.id || props.currentValue.key
+  }
+  return props.currentValue
+})
+
+const handleUpdate = (newValue) => {
+  const originalOption = props.setting.options?.find((opt) => {
+    const optValue = typeof opt === 'object' ? opt.value || opt.id || opt.key : opt
+    return optValue === newValue
+  })
+
+  emit('update', originalOption || newValue)
+}
 
 const showResetDefaultDialog = () => {
   show({
@@ -51,33 +102,6 @@ const showResetDefaultDialog = () => {
     ]
   })
 }
-
-const inputType = computed(() => {
-  return props.setting.type === 'string' ? 'text' : 'number'
-})
-
-const inputStep = computed(() => {
-  return props.setting.type === 'decimal' ? '0.01' : '1'
-})
-
-const parseValue = (value) => {
-  if (value === '' || value === null || value === undefined) return value
-
-  if (props.setting.type === 'integer') {
-    const parsed = parseInt(value, 10)
-    return isNaN(parsed) ? value : parsed
-  } else if (props.setting.type === 'decimal') {
-    const parsed = parseFloat(value)
-    return isNaN(parsed) ? value : parsed
-  }
-
-  return value
-}
-
-const handleUpdate = (newValue) => {
-  const parsedValue = props.setting.type !== 'string' ? parseValue(newValue) : newValue
-  emit('update', parsedValue)
-}
 </script>
 
 <template>
@@ -88,10 +112,9 @@ const handleUpdate = (newValue) => {
     </div>
 
     <div class="setting-control">
-      <Input
-        :model-value="currentValue"
-        :type="inputType"
-        :step="inputStep"
+      <Switch
+        :model-value="currentSwitchValue"
+        :options="switchOptions"
         @update:model-value="handleUpdate"
       />
 
@@ -127,17 +150,16 @@ const handleUpdate = (newValue) => {
   justify-content: space-between;
   display: flex;
   gap: var(--spacing-2);
-  flex-direction: column;
 
   .setting-info {
     display: flex;
     flex-direction: column;
-    gap: 0.25em;
+    gap: var(--spacing-1);
   }
 
   .name {
     @include text('sm');
-    font-weight: var(--font-semibold);
+    font-weight: var(--font-medium);
     color: var(--primary);
   }
 
