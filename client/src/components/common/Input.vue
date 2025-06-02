@@ -74,7 +74,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="r-input">
+  <div class="input">
     <label v-if="label">{{ label }}</label>
     <div
       ref="input-container"
@@ -118,7 +118,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.r-input {
+.input {
   font-family: Geist, Arial, sans-serif;
   display: flex;
   flex-direction: column;
