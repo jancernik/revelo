@@ -29,6 +29,19 @@ onMounted(() => {
   if (!props.modelValue && props.options.length > 0) {
     emit('update:modelValue', props.options[0].value)
   }
+
+  nextTick(() => {
+    if (switchElement.value) {
+      const indicator = switchElement.value
+      indicator.style.setProperty('--transition', 'none')
+
+      updateIndicatorPosition()
+
+      requestAnimationFrame(() => {
+        indicator.style.removeProperty('--transition')
+      })
+    }
+  })
 })
 
 const valueIndex = computed(() =>
@@ -73,7 +86,6 @@ const updateIndicatorPosition = () => {
 }
 
 watch(valueIndex, () => nextTick(updateIndicatorPosition))
-onMounted(() => nextTick(updateIndicatorPosition))
 
 const handleChange = (event) => {
   emit('update:modelValue', event.target.value)
@@ -184,7 +196,7 @@ $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     left: 0.125rem;
     background-color: var(--primary);
     border-radius: calc(var(--radius-md) - 0.125rem);
-    transition: $transition;
+    transition: var(--transition, $transition);
     z-index: 1;
     width: var(--indicator-width);
     height: var(--indicator-height);
