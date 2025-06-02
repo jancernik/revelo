@@ -13,7 +13,7 @@ defineProps({
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .image-card {
   display: flex;
   width: 100%;
@@ -22,11 +22,11 @@ defineProps({
   margin-bottom: var(--spacing-3);
   overflow: hidden;
   transition: 0.15s cubic-bezier(0.86, 0, 0.07, 1);
-}
 
-img {
-  width: 100%;
-  height: 100%;
-  user-select: none;
+  img {
+    width: 100%;
+    height: 100%;
+    user-select: none;
+  }
 }
 </style>

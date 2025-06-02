@@ -71,7 +71,7 @@ onUnmounted(stopAnimation)
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .progress-item {
   display: flex;
   flex-direction: column;

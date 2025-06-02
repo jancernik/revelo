@@ -255,7 +255,7 @@ onMounted(fetchSettings)
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .settings {
   @include fill-parent;
   padding: var(--spacing-6);

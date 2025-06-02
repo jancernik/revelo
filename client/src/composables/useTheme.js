@@ -66,20 +66,88 @@ export function useTheme() {
     return Math.max(...distances)
   }
 
+  const createCleanClone = (element) => {
+    const clone = element.cloneNode(false)
+
+    const vueAttributes = [
+      'data-v-',
+      'v-',
+      '__vue',
+      '__vueParentComponent',
+      '__vueReactivity',
+      '_vei',
+      '_value',
+      '_assign',
+      'data-reactroot'
+    ]
+
+    if (clone.attributes) {
+      Array.from(clone.attributes).forEach((attr) => {
+        if (vueAttributes.some((vueAttr) => attr.name.includes(vueAttr))) {
+          clone.removeAttribute(attr.name)
+        }
+      })
+    }
+
+    const processChildren = (original, cloned) => {
+      for (let i = 0; i < original.children.length; i++) {
+        const originalChild = original.children[i]
+
+        if (
+          originalChild.tagName === 'SCRIPT' ||
+          originalChild.hasAttribute('data-v-inspector') ||
+          originalChild.classList?.contains('vue-portal-target') ||
+          originalChild.id === '__vue-devtools-container__' ||
+          originalChild.id === 'vue-devtools-container'
+        ) {
+          continue
+        }
+
+        const childClone = originalChild.cloneNode(false)
+
+        if (childClone.attributes) {
+          Array.from(childClone.attributes).forEach((attr) => {
+            if (vueAttributes.some((vueAttr) => attr.name.includes(vueAttr))) {
+              childClone.removeAttribute(attr.name)
+            }
+          })
+        }
+
+        if (originalChild.nodeType === Node.TEXT_NODE) {
+          childClone.textContent = originalChild.textContent
+        }
+
+        if (originalChild.children.length > 0) {
+          processChildren(originalChild, childClone)
+        } else if (
+          originalChild.nodeType === Node.TEXT_NODE ||
+          (originalChild.nodeType === Node.ELEMENT_NODE && originalChild.textContent)
+        ) {
+          childClone.textContent = originalChild.textContent
+        }
+
+        cloned.appendChild(childClone)
+      }
+    }
+
+    processChildren(element, clone)
+    return clone
+  }
+
   const animateThemeTransition = async (newThemeClass, origin) => {
     isAnimating.value = true
+    let clonedBody = null
 
     try {
       const body = document.querySelector('body')
       document.documentElement.classList.add('no-transition')
       body.style.pointerEvents = 'none'
 
-      const clonedBody = body.cloneNode(true)
-      clonedBody.className = 'theme-transition-clone'
-
       const scrollableElements = body.querySelectorAll('.scrollable')
       const scrollOffsets = Array.from(scrollableElements).map((el) => el.scrollTop)
-      console.log('scrollOffsets: ', scrollOffsets)
+
+      clonedBody = createCleanClone(body)
+      clonedBody.className = 'theme-transition-clone'
 
       Object.assign(clonedBody.style, {
         position: 'fixed',
@@ -89,7 +157,12 @@ export function useTheme() {
         height: '100%',
         zIndex: '8000',
         pointerEvents: 'none',
-        clipPath: 'circle(0px at ' + origin.x + 'px ' + origin.y + 'px)'
+        clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
+        willChange: 'clip-path',
+        backfaceVisibility: 'hidden',
+        perspective: '1000px',
+        userSelect: 'none',
+        touchAction: 'none'
       })
 
       clonedBody.classList.add(newThemeClass)
@@ -97,7 +170,9 @@ export function useTheme() {
 
       const clonedScrollableElements = clonedBody.querySelectorAll('.scrollable')
       clonedScrollableElements.forEach((el, index) => {
-        el.scrollTop = scrollOffsets[index] || 0
+        if (scrollOffsets[index] !== undefined) {
+          el.scrollTop = scrollOffsets[index]
+        }
       })
 
       await nextTick()
@@ -109,8 +184,9 @@ export function useTheme() {
         ],
         {
           duration: 1500,
-          easing: 'cubic-bezier(0.52,0,0.28,0.93)',
-          fill: 'forwards'
+          easing: 'cubic-bezier(0.52, 0, 0.28, 0.93)',
+          fill: 'forwards',
+          composite: 'replace'
         }
       )
 
@@ -119,14 +195,25 @@ export function useTheme() {
       document.documentElement.classList.remove('light', 'dark')
       document.documentElement.classList.add(newThemeClass)
 
-      document.body.removeChild(clonedBody)
+      if (clonedBody && clonedBody.parentNode) {
+        document.body.removeChild(clonedBody)
+      }
 
       setTimeout(() => {
         document.documentElement.classList.remove('no-transition')
         body.style.pointerEvents = 'all'
       }, 20)
     } catch (error) {
-      console.log(error)
+      console.error('Theme transition error:', error)
+
+      if (clonedBody && clonedBody.parentNode) {
+        try {
+          document.body.removeChild(clonedBody)
+        } catch (cleanupError) {
+          console.error('Cleanup error:', cleanupError)
+        }
+      }
+
       document.documentElement.classList.remove('no-transition')
       document.querySelector('body').style.pointerEvents = 'all'
       document.documentElement.classList.remove('light', 'dark')
@@ -135,8 +222,8 @@ export function useTheme() {
       isAnimating.value = false
     }
   }
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
   const handleSystemChange = (event) => {
     systemPrefersDark.value = event.matches
   }

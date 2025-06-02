@@ -117,7 +117,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .input {
   font-family: Geist, Arial, sans-serif;
   display: flex;
@@ -130,125 +130,125 @@ onMounted(() => {
     font-weight: var(--font-medium);
     color: var(--secondary-foreground);
   }
-}
 
-.input-container {
-  position: relative;
-  width: 100%;
+  .input-container {
+    position: relative;
+    width: 100%;
 
-  &.has-icon-left input {
-    padding-left: 2.5rem;
+    &.has-icon-left input {
+      padding-left: 2.5rem;
+    }
+
+    &.has-icon-right input {
+      padding-right: 2.5rem;
+    }
+
+    &.has-unit-left input {
+      padding-left: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
+    }
+
+    &.has-unit-right input {
+      padding-right: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
+    }
+
+    &.has-icon-left.has-unit-left input {
+      padding-left: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
+    }
+
+    &.has-icon-right.has-unit-right input {
+      padding-right: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
+    }
+
+    &.has-icon-left.has-unit-left .input-unit.unit-left {
+      left: 2.5rem;
+    }
+
+    &.has-icon-right.has-unit-right .input-unit.unit-right {
+      right: 2.5rem;
+    }
+
+    &.has-error input {
+      border-color: var(--danger);
+    }
+
+    &.is-disabled {
+      opacity: 0.7;
+    }
   }
 
-  &.has-icon-right input {
-    padding-right: 2.5rem;
+  input {
+    font-family: Geist, Arial, sans-serif;
+    @include text('sm');
+    font-weight: var(--font-normal);
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background-color: var(--secondary);
+    color: var(--primary);
+    box-sizing: border-box;
+    transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+    line-height: 1.125rem;
+    outline: none;
+
+    &::placeholder {
+      color: var(--input);
+      opacity: 1;
+    }
+
+    &:disabled {
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
   }
 
-  &.has-unit-left input {
-    padding-left: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
-  }
-
-  &.has-unit-right input {
-    padding-right: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
-  }
-
-  &.has-icon-left.has-unit-left input {
-    padding-left: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
-  }
-
-  &.has-icon-right.has-unit-right input {
-    padding-right: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
-  }
-
-  &.has-icon-left.has-unit-left .input-unit.unit-left {
-    left: 2.5rem;
-  }
-
-  &.has-icon-right.has-unit-right .input-unit.unit-right {
-    right: 2.5rem;
-  }
-
-  &.has-error input {
-    border-color: var(--danger);
-  }
-
-  &.is-disabled {
-    opacity: 0.7;
-  }
-}
-
-input {
-  font-family: Geist, Arial, sans-serif;
-  @include text('sm');
-  font-weight: var(--font-normal);
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background-color: var(--secondary);
-  color: var(--primary);
-  box-sizing: border-box;
-  transition: all 0.15s cubic-bezier(0.46, 0.03, 0.52, 0.96);
-  line-height: 1.125rem;
-  outline: none;
-
-  &::placeholder {
+  .input-icon {
+    position: absolute;
     color: var(--input);
-    opacity: 1;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+
+    &.icon-left {
+      left: 0.75rem;
+    }
+
+    &.icon-right {
+      right: 0.75rem;
+    }
   }
 
-  &:disabled {
-    opacity: 0.8;
-    cursor: not-allowed;
-  }
-}
+  .input-unit {
+    position: absolute;
+    color: var(--input);
+    @include text('sm');
+    font-weight: var(--font-normal);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
 
-.input-icon {
-  position: absolute;
-  color: var(--input);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
+    &.unit-left {
+      left: 0.75rem;
+    }
 
-  &.icon-left {
-    left: 0.75rem;
-  }
-
-  &.icon-right {
-    right: 0.75rem;
-  }
-}
-
-.input-unit {
-  position: absolute;
-  color: var(--input);
-  @include text('sm');
-  font-weight: var(--font-normal);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-
-  &.unit-left {
-    left: 0.75rem;
+    &.unit-right {
+      right: 0.75rem;
+    }
   }
 
-  &.unit-right {
-    right: 0.75rem;
+  .error {
+    @include text('xs');
+    color: var(--danger);
+    font-weight: var(--font-normal);
   }
-}
 
-.error {
-  @include text('xs');
-  color: var(--danger);
-  font-weight: var(--font-normal);
-}
-
-.description {
-  @include text('xs');
-  color: var(--input);
-  font-weight: var(--font-normal);
+  .description {
+    @include text('xs');
+    color: var(--input);
+    font-weight: var(--font-normal);
+  }
 }
 </style>

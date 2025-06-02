@@ -166,38 +166,36 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .dev {
   @include fill-parent;
   @include flex-center;
-}
 
-.components {
-  @include fill-parent;
-  @include flex(column, center);
-  @include hide-scrollbar;
-  overflow-y: auto;
-  width: 100%;
-}
-
-section {
-  padding: var(--spacing-6);
-  width: 100%;
-  max-width: 800px;
-
-  h3 {
-    margin-bottom: var(--spacing-4);
+  .components {
+    @include fill-parent;
+    @include flex(column, center);
+    @include hide-scrollbar;
+    overflow-y: auto;
+    width: 100%;
   }
 
-  .example {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-8);
+  section {
+    padding: var(--spacing-6);
+    width: 100%;
+    max-width: 800px;
+
+    h3 {
+      margin-bottom: var(--spacing-4);
+    }
+
+    .example {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-8);
+    }
   }
 }
-</style>
 
-<style lang="scss">
 .examples-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

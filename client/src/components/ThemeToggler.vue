@@ -16,14 +16,14 @@ const toggleTheme = () => {
 </script>
 
 <template>
-  <button ref="button" @click="toggleTheme">
+  <button ref="button" class="theme-toggler" @click="toggleTheme">
     <Icon name="Zap" class="dark-icon" />
     <Icon name="ZapOff" class="light-icon" />
   </button>
 </template>
 
-<style lang="scss" scoped>
-button {
+<style lang="scss">
+.theme-toggler {
   @include flex-center;
   width: 2.25rem;
   height: 2.25rem;

@@ -89,51 +89,51 @@ onMounted(redirectIfAuthenticated)
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .login {
   @include flex-center;
   @include fill-parent;
-}
 
-.login-card {
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 400px;
-  padding: var(--spacing-8);
-  border: 1px solid var(--border);
+  .login-card {
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 400px;
+    padding: var(--spacing-8);
+    border: 1px solid var(--border);
 
-  h3 {
-    text-align: center;
-  }
+    h3 {
+      text-align: center;
+    }
 
-  .error-message {
-    @include text('sm');
-    color: var(--danger);
-    margin-bottom: var(--spacing-6);
-    text-align: center;
-    background-color: var(--danger-background);
-    padding: var(--spacing-2) var(--spacing-4);
-    border-radius: var(--radius-md);
-  }
+    .error-message {
+      @include text('sm');
+      color: var(--danger);
+      margin-bottom: var(--spacing-6);
+      text-align: center;
+      background-color: var(--danger-background);
+      padding: var(--spacing-2) var(--spacing-4);
+      border-radius: var(--radius-md);
+    }
 
-  form {
-    display: flex;
-    gap: var(--spacing-4);
-    flex-direction: column;
-  }
-  .actions {
-    @include flex-center;
-    flex-direction: column;
-    gap: var(--spacing-3);
-    padding-top: var(--spacing-2);
+    form {
+      display: flex;
+      gap: var(--spacing-4);
+      flex-direction: column;
+    }
+    .actions {
+      @include flex-center;
+      flex-direction: column;
+      gap: var(--spacing-3);
+      padding-top: var(--spacing-2);
 
-    button {
+      button {
+        width: 100%;
+      }
+    }
+
+    a {
       width: 100%;
     }
-  }
-
-  a {
-    width: 100%;
   }
 }
 </style>

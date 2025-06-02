@@ -108,11 +108,7 @@ const isActive = (path) => {
   </aside>
 </template>
 
-<style lang="scss" scoped>
-.theme {
-  @include flex-center;
-  margin-top: var(--spacing-4);
-}
+<style lang="scss">
 .sidebar {
   @include flex-center;
   background-color: var(--sidebar-background);
@@ -123,23 +119,27 @@ const isActive = (path) => {
   &.left {
     order: -1;
   }
-}
-ul {
-  list-style: none;
-}
-li.active {
-  background-color: var(--background);
-}
+  .theme {
+    @include flex-center;
+    margin-top: var(--spacing-4);
+  }
+  ul {
+    list-style: none;
+  }
+  li.active {
+    background-color: var(--background);
+  }
 
-button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: var(--spacing-4);
-  gap: var(--spacing-2);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: inherit;
+  button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--spacing-4);
+    gap: var(--spacing-2);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+  }
 }
 </style>

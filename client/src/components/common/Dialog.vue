@@ -49,7 +49,7 @@ const handleAction = (action) => {
   </Transition>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .dialog-overlay {
   @include flex-center;
   @include fill-parent;

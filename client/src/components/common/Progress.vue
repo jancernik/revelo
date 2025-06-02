@@ -22,10 +22,9 @@ const progressStyle = computed(() => {
   <div class="progress" :style="progressStyle"></div>
 </template>
 
-<style lang="scss" scoped>
-$transition: 0.3s ease-in-out;
-
+<style lang="scss">
 .progress {
+  $transition: 0.3s ease-in-out;
   position: relative;
   width: 100%;
   height: 0.5rem;

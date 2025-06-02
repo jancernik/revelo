@@ -33,10 +33,9 @@ const handleToggle = (event) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-$transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
+<style lang="scss">
 .toggle {
+  $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-block;
 
   label {

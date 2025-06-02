@@ -39,7 +39,7 @@ const handleLogout = async () => {
   </header>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 #header {
   height: 6rem;
   display: none;

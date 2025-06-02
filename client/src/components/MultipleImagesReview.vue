@@ -79,7 +79,7 @@ const handleMetadataUpdate = (index, newMetadata) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .multiple-images-review {
   @include fill-parent;
   display: flex;

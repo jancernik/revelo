@@ -67,7 +67,7 @@ const handleAction = (toast) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .toast-container {
   position: fixed;
   top: var(--spacing-3);
@@ -80,97 +80,97 @@ const handleAction = (toast) => {
   max-width: 24rem;
   width: auto;
   pointer-events: none;
-}
 
-.toast-wrapper {
-  pointer-events: auto;
-  width: fit-content;
-  min-width: 200px;
-  max-width: 24rem;
-  margin: 0 auto;
-}
-
-.toast {
-  @include flex(row, space-between, center);
-  position: relative;
-  gap: var(--spacing-2);
-  background-color: var(--background);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-4);
-  width: 100%;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
-
-  .icon {
-    @include flex-center;
-    color: var(--primary);
-    align-self: center;
-    flex-shrink: 0;
+  .toast-wrapper {
+    pointer-events: auto;
+    width: fit-content;
+    min-width: 200px;
+    max-width: 24rem;
+    margin: 0 auto;
   }
 
-  &-success .icon {
-    color: var(--success);
-  }
+  .toast {
+    @include flex(row, space-between, center);
+    position: relative;
+    gap: var(--spacing-2);
+    background-color: var(--background);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
 
-  &-error .icon {
-    color: var(--danger);
-  }
-
-  &-warning .icon {
-    color: var(--warning);
-  }
-
-  .content {
-    display: flex;
-    flex: 1;
-    gap: var(--spacing-3);
-    min-width: 0;
-  }
-
-  .text {
-    flex: 1;
-    min-width: 0;
-
-    .title {
-      @include text('sm');
-      font-weight: var(--font-semibold);
-      word-wrap: break-word;
-      overflow-wrap: break-word;
+    .icon {
+      @include flex-center;
+      color: var(--primary);
+      align-self: center;
+      flex-shrink: 0;
     }
 
-    .description {
-      @include text('xs');
-      font-weight: var(--font-semibold);
+    &-success .icon {
+      color: var(--success);
+    }
+
+    &-error .icon {
+      color: var(--danger);
+    }
+
+    &-warning .icon {
+      color: var(--warning);
+    }
+
+    .content {
+      display: flex;
+      flex: 1;
+      gap: var(--spacing-3);
+      min-width: 0;
+    }
+
+    .text {
+      flex: 1;
+      min-width: 0;
+
+      .title {
+        @include text('sm');
+        font-weight: var(--font-semibold);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .description {
+        @include text('xs');
+        font-weight: var(--font-semibold);
+        color: var(--muted-foreground);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .action {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.5rem;
+      height: 100%;
+    }
+
+    .close {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 0;
       color: var(--muted-foreground);
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      margin-top: 0.25rem;
     }
-  }
-
-  .action {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 0.5rem;
-    height: 100%;
-  }
-
-  .close {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    border-radius: 0;
-    color: var(--muted-foreground);
   }
 }
 

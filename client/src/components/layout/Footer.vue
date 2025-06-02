@@ -6,7 +6,7 @@
   </footer>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 #footer {
   height: 6rem;
   display: none;

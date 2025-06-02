@@ -159,47 +159,47 @@ watch(
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .metadata-editor {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-6);
-}
 
-.image-preview {
-  @include flex-center;
-  flex: 1;
-  min-width: 250px;
+  .image-preview {
+    @include flex-center;
+    flex: 1;
+    min-width: 250px;
 
-  img {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-  }
-}
-
-.metadata-form {
-  flex: 2;
-  min-width: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-
-  .form-row {
-    display: flex;
-    gap: var(--spacing-4);
-
-    .form-group {
-      flex: 1;
+    img {
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: contain;
     }
   }
 
-  .actions {
+  .metadata-form {
+    flex: 2;
+    min-width: 300px;
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--spacing-3);
-    padding-top: var(--spacing-2);
+    flex-direction: column;
+    gap: var(--spacing-4);
+
+    .form-row {
+      display: flex;
+      gap: var(--spacing-4);
+
+      .form-group {
+        flex: 1;
+      }
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-3);
+      padding-top: var(--spacing-2);
+    }
   }
 }
 </style>

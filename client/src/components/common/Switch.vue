@@ -154,10 +154,9 @@ const handleKeyDown = (event) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-$transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
+<style lang="scss">
 .switch {
+  $transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   display: flex;
   border-radius: var(--radius-md);

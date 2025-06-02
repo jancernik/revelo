@@ -25,10 +25,9 @@ defineProps({
   </button>
 </template>
 
-<style lang="scss" scoped>
-$transition: all 0.15s ease-in-out;
-
+<style lang="scss">
 .button {
+  $transition: all 0.15s ease-in-out;
   @include flex-center;
   @include text(sm);
   gap: var(--spacing-2);

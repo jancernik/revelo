@@ -11,6 +11,7 @@ app.use(pinia)
 app.use(router)
 
 const settingsStore = useSettingsStore()
-await settingsStore.initialize()
 
-app.mount('#app')
+settingsStore.initialize().then(() => {
+  app.mount('#app')
+})

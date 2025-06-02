@@ -13,7 +13,7 @@ import Button from '@/components/common/Button.vue'
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .dashboard {
   @include flex-center;
   @include fill-parent;

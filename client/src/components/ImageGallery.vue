@@ -32,7 +32,7 @@ onMounted(fetchImages)
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .image-gallery {
   display: block;
   columns: 200px 4;

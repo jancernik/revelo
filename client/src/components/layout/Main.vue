@@ -10,10 +10,9 @@ import { RouterView } from 'vue-router'
   </main>
 </template>
 
-<style lang="scss" scoped>
-$transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
-
+<style lang="scss">
 #main {
+  $transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1);
   display: flex;
   justify-content: center;
   overflow-x: hidden;

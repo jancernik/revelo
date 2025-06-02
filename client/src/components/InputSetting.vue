@@ -118,7 +118,7 @@ const handleUpdate = (newValue) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .setting-item {
   padding: var(--spacing-6);
   border-radius: var(--radius-lg);

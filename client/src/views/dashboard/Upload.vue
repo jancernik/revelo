@@ -177,58 +177,58 @@ const getImageSrc = (image, type) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .upload-container {
   @include fill-parent;
   display: flex;
   flex-direction: column;
-}
 
-.loading-state {
-  @include flex-center;
-  @include fill-parent;
+  .loading-state {
+    @include flex-center;
+    @include fill-parent;
 
-  .loading-content {
-    text-align: center;
-    max-width: 400px;
-    width: 100%;
-    padding: var(--spacing-6);
-  }
-}
-
-.upload-step,
-.review-step {
-  @include fill-parent;
-}
-
-.complete-step {
-  @include fill-parent;
-  display: flex;
-  flex-direction: column;
-  padding: var(--spacing-6);
-
-  .success-message {
-    text-align: center;
-    margin-bottom: var(--spacing-9);
-
-    .title {
-      margin-bottom: 0.25rem;
-    }
-
-    .subtitle {
-      color: var(--muted-foreground);
+    .loading-content {
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      padding: var(--spacing-6);
     }
   }
 
-  .gallery {
-    overflow-y: auto;
-    height: 100%;
+  .upload-step,
+  .review-step {
+    @include fill-parent;
   }
 
-  .actions {
+  .complete-step {
+    @include fill-parent;
     display: flex;
-    justify-content: center;
-    margin-top: var(--spacing-9);
+    flex-direction: column;
+    padding: var(--spacing-6);
+
+    .success-message {
+      text-align: center;
+      margin-bottom: var(--spacing-9);
+
+      .title {
+        margin-bottom: 0.25rem;
+      }
+
+      .subtitle {
+        color: var(--muted-foreground);
+      }
+    }
+
+    .gallery {
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin-top: var(--spacing-9);
+    }
   }
 }
 </style>
