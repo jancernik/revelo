@@ -31,16 +31,18 @@ onMounted(() => {
   }
 
   nextTick(() => {
-    if (switchElement.value) {
-      const indicator = switchElement.value
-      indicator.style.setProperty('--transition', 'none')
+    setTimeout(() => {
+      if (switchElement.value) {
+        const indicator = switchElement.value
+        indicator.style.setProperty('--transition', 'none')
 
-      updateIndicatorPosition()
+        updateIndicatorPosition()
 
-      requestAnimationFrame(() => {
-        indicator.style.removeProperty('--transition')
-      })
-    }
+        requestAnimationFrame(() => {
+          indicator.style.removeProperty('--transition')
+        })
+      }
+    }, 0)
   })
 })
 
@@ -177,6 +179,10 @@ const handleKeyDown = (event) => {
     }
   }
 
+  &:not(.disabled) .value:hover {
+    color: var(--foreground);
+  }
+
   &.vertical {
     padding-block: 0.125rem;
     flex-direction: column;
@@ -224,10 +230,6 @@ const handleKeyDown = (event) => {
       user-select: none;
       white-space: nowrap;
       z-index: 2;
-
-      &:hover {
-        color: var(--foreground);
-      }
     }
 
     input:checked + .value {

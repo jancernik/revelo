@@ -48,4 +48,5 @@ a:has(> .button) {
 
 .no-transition * {
   transition: none !important;
+  --transition: none !important;
 }
