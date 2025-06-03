@@ -81,7 +81,7 @@ const handleUpdate = (newValue) => {
 </script>
 
 <template>
-  <div class="setting-item">
+  <div class="input-setting-item">
     <div class="setting-info">
       <span class="name">{{ setting.name }}</span>
       <span class="description">{{ setting.description }}</span>
@@ -119,7 +119,7 @@ const handleUpdate = (newValue) => {
 </template>
 
 <style lang="scss">
-.setting-item {
+.input-setting-item {
   padding: var(--spacing-6);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);

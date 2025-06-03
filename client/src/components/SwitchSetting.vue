@@ -105,7 +105,7 @@ const showResetDefaultDialog = () => {
 </script>
 
 <template>
-  <div class="setting-item">
+  <div class="switch-setting-item">
     <div class="setting-info">
       <span class="name">{{ setting.name }}</span>
       <span class="description">{{ setting.description }}</span>
@@ -142,7 +142,7 @@ const showResetDefaultDialog = () => {
 </template>
 
 <style lang="scss">
-.setting-item {
+.switch-setting-item {
   padding: var(--spacing-6);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);

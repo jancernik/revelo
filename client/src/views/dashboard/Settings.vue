@@ -239,7 +239,7 @@ onMounted(fetchSettings)
         </div>
       </div>
     </div>
-    <div v-if="hasChanges" class="actions">
+    <div v-if="hasChanges" class="setting-actions">
       <div class="info">
         <h6>
           {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? 'change' : 'changes' }}
@@ -286,7 +286,7 @@ onMounted(fetchSettings)
     padding-bottom: var(--spacing-3);
   }
 
-  .actions {
+  .setting-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
