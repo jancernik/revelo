@@ -1,6 +1,6 @@
 <script setup>
 import Header from '@/components/layout/Header.vue'
-import Sidebar from '@/components/layout/Sidebar.vue'
+import Menu from '@/components/layout/Menu.vue'
 import Footer from '@/components/layout/Footer.vue'
 import Main from '@/components/layout/Main.vue'
 import Dialog from '@/components/common/Dialog.vue'
@@ -30,7 +30,7 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
       <Main />
       <Footer />
     </div>
-    <Sidebar />
+    <Menu />
     <Toast />
     <Dialog />
   </div>
