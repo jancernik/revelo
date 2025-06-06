@@ -16,6 +16,14 @@ body {
   color: var(--foreground);
 }
 
+html {
+    &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 #app {
   display: flex;
   height: 100svh;

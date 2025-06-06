@@ -19,9 +19,9 @@ defineProps({
   width: 100%;
   height: auto;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--spacing-12);
   overflow: hidden;
-  transition: 0.15s cubic-bezier(0.86, 0, 0.07, 1);
+  // transition: 0.15s cubic-bezier(0.86, 0, 0.07, 1);
 
   img {
     width: 100%;
