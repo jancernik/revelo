@@ -2,7 +2,6 @@
 import { computed, reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
-import Icon from '@/components/common/Icon.vue'
 import { useSettings } from '@/composables/useSettings'
 import ThemeToggler from '@/components/ThemeToggler.vue'
 
@@ -86,7 +85,7 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <aside :class="['menu', settings.sidebarPosition.value]">
+  <aside class="menu">
     <div class="menu-inner inner">
       <ul>
         <li
@@ -114,7 +113,7 @@ const isActive = (path) => {
   background-color: var(--menu-background);
   position: fixed;
   bottom: var(--spacing-4);
-  border-radius: calc(var(--radius-md) + var(--spacing-2) );
+  border-radius: calc(var(--radius-md) + var(--spacing-2));
   .theme {
     @include flex-center;
   }

@@ -12,18 +12,20 @@ showLoginLink:
   default: true
   public: true
 
-sidebarPosition:
-  description: Position of the sidebar
-  category: Layout
-  type: switch
-  options:
-    - { 'value': 'left', 'label': 'Left' }
-    - { 'value': 'right', 'label': 'Right' }
-  default: { 'value': 'right', 'label': 'Right' }
-  public: true
-
 maxAdmins:
   description: The maximum number of admins allowed
   category: Admin
   type: integer
   default: 1
+
+maxUploadFiles:
+  description: The maximum number of files allowed to be uploaded at once
+  category: Admin
+  type: integer
+  default: 10
+
+maxUploadSize:
+  description: The maximum size of upload files allowed in MB
+  category: Admin
+  type: integer
+  default: 50

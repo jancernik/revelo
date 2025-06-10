@@ -13,8 +13,7 @@ import {
   cleanupOrphaned
 } from "../controllers/imageController.js";
 import { requireAuth, loadUser } from "../middlewares/authMiddleware.js";
-
-const router = Router();
+import Setting from "../models/Setting.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -33,18 +32,44 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-const multerUpload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }
-});
+const dynamicSingleUpload = async (req, res, next) => {
+  try {
+    const maxUploadSize = await Setting.get("maxUploadSize", { includeRestricted: true });
 
-const singleUpload = multerUpload.single("image");
-const batchUpload = multerUpload.array("images", 10);
+    const upload = multer({
+      storage,
+      fileFilter,
+      limits: { fileSize: maxUploadSize.value * 1024 * 1024 }
+    }).single("image");
 
-router.post("/upload/review", requireAuth, loadUser, singleUpload, uploadForReview);
+    upload(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const dynamicBatchUpload = async (req, res, next) => {
+  try {
+    const maxUploadSize = await Setting.get("maxUploadSize", { includeRestricted: true });
+    const maxUploadFiles = await Setting.get("maxUploadFiles", { includeRestricted: true });
+
+    const upload = multer({
+      storage,
+      fileFilter,
+      limits: { fileSize: maxUploadSize.value * 1024 * 1024 }
+    }).array("images", maxUploadFiles.value);
+
+    upload(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const router = Router();
+
+router.post("/upload/review", requireAuth, loadUser, dynamicSingleUpload, uploadForReview);
 router.post("/upload/confirm", requireAuth, loadUser, confirmUpload);
-router.post("/upload/batch-review", requireAuth, loadUser, batchUpload, uploadBatchForReview);
+router.post("/upload/batch-review", requireAuth, loadUser, dynamicBatchUpload, uploadBatchForReview);
 router.post("/upload/batch-confirm", requireAuth, loadUser, confirmBatchUpload);
 router.get("/images", fetchAll);
 router.get("/images/:id", fetchById);

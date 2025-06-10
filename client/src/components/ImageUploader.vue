@@ -3,8 +3,11 @@ import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
 import Button from '@/components/common/Button.vue'
 import Icon from '@/components/common/Icon.vue'
+import { useSettings } from '@/composables/useSettings'
 
-const MAX_FILES = 10
+const { settings } = useSettings()
+console.log('settings.maxUploadFiles: ', settings.value.maxUploadFiles)
+const maxFiles = settings.value.maxUploadFiles || 10
 
 const dragActive = ref(false)
 const dropZoneHidden = ref(false)
@@ -12,8 +15,8 @@ const dragCounter = ref(0)
 const selectedFiles = ref([])
 const previewUrls = ref([])
 const hasSelectedImages = computed(() => selectedFiles.value.length > 0)
-const hasExceededFileLimit = computed(() => selectedFiles.value.length > MAX_FILES)
-const canAddMoreFiles = computed(() => selectedFiles.value.length < MAX_FILES)
+const hasExceededFileLimit = computed(() => selectedFiles.value.length > maxFiles)
+const canAddMoreFiles = computed(() => selectedFiles.value.length < maxFiles)
 
 const fileInput = useTemplateRef('file-input')
 const container = useTemplateRef('container')
@@ -161,7 +164,7 @@ onBeforeUnmount(() => {
       <div class="gallery-title">
         <h4>Selected images</h4>
         <span class="file-counter" :class="{ exceeded: hasExceededFileLimit }">
-          {{ selectedFiles.length }}/{{ MAX_FILES }}</span
+          {{ selectedFiles.length }}/{{ maxFiles }}</span
         >
       </div>
 
