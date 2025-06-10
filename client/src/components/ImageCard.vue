@@ -1,7 +1,9 @@
 <script setup>
-defineProps({
-  src: {
-    type: String,
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+
+const props = defineProps({
+  image: {
+    type: Object,
     required: true
   }
 })
@@ -9,7 +11,7 @@ defineProps({
 
 <template>
   <div class="image-card">
-    <img :src="src" alt="" />
+    <img :src="`${apiBaseUrl}/${image.path}`" :height="image.height" :width="image.width" alt="" />
   </div>
 </template>
 
@@ -21,7 +23,6 @@ defineProps({
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-3);
   overflow: hidden;
-  transition: 0.15s cubic-bezier(0.86, 0, 0.07, 1);
 
   img {
     width: 100%;

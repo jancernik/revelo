@@ -18,27 +18,12 @@ body {
 
 #app {
   display: flex;
-  height: 100svh;
   width: 100%;
-
-  > .inner {
-    @include fill-parent;
-    gap: var(--spacing-1);
-    border-radius: 0;
-  }
 }
 
 .app-container {
   @include fill-parent;
   @include flex-center;
-}
-
-.app-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 a:has(> .button) {

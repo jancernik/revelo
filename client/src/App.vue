@@ -1,7 +1,5 @@
 <script setup>
-import Header from '@/components/layout/Header.vue'
 import Menu from '@/components/layout/Menu.vue'
-import Footer from '@/components/layout/Footer.vue'
 import Main from '@/components/layout/Main.vue'
 import Dialog from '@/components/common/Dialog.vue'
 import Toast from '@/components/common/Toast.vue'
@@ -26,9 +24,7 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
 <template>
   <div class="app-container">
     <div class="app-content">
-      <Header />
       <Main />
-      <Footer />
     </div>
     <Menu />
     <Toast />

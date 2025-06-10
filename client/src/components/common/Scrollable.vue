@@ -32,7 +32,7 @@ const initSmoothScroll = () => {
     content: smoothContent.value,
     smooth: props.smoothness,
     smoothTouch: props.smoothTouch,
-    effects: true,
+    effects: true
   })
 }
 const cleanup = () => {
@@ -40,7 +40,7 @@ const cleanup = () => {
     smoother.kill()
   }
 
-  ScrollTrigger.getAll().forEach(trigger => trigger.kill())
+  ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
 }
 
 const scrollTo = (position, smooth = true) => {
@@ -51,7 +51,7 @@ const scrollTo = (position, smooth = true) => {
 
 defineExpose({
   scrollTo,
-  getSmoother: () => smoother,
+  getSmoother: () => smoother
 })
 
 onMounted(() => {

@@ -6,7 +6,6 @@ import Icon from '@/components/common/Icon.vue'
 import { useSettings } from '@/composables/useSettings'
 
 const { settings } = useSettings()
-console.log('settings.maxUploadFiles: ', settings.value.maxUploadFiles)
 const maxFiles = settings.value.maxUploadFiles || 10
 
 const dragActive = ref(false)
