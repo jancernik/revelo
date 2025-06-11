@@ -7,11 +7,26 @@ const props = defineProps({
     required: true
   }
 })
+
+const emit = defineEmits(['load'])
+
+const getImageVersion = (type) => {
+  return props.image?.versions?.find((v) => v.type === type)
+}
+
+const thumbnail = getImageVersion('thumbnail')
 </script>
 
 <template>
   <div class="image-card">
-    <img :src="`${apiBaseUrl}/${image.path}`" :height="image.height" :width="image.width" alt="" />
+    <img
+      :src="`${apiBaseUrl}/${thumbnail.path}`"
+      :height="thumbnail.height"
+      :width="thumbnail.width"
+      alt=""
+      @load="emit('load')"
+      @error="emit('load')"
+    />
   </div>
 </template>
 
@@ -21,7 +36,6 @@ const props = defineProps({
   width: 100%;
   height: auto;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-3);
   overflow: hidden;
 
   img {

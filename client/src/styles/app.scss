@@ -26,6 +26,10 @@ body {
   @include flex-center;
 }
 
+.app-content {
+  @include fill-parent;
+}
+
 a:has(> .button) {
   @include flex-center;
   text-decoration: none;
