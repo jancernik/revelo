@@ -5,7 +5,6 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollSmoother } from 'gsap/ScrollSmoother'
 import api from '@/utils/api'
-import Index from '@/views/dashboard/Index.vue'
 
 const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds
@@ -21,8 +20,7 @@ const BASE_LAG = 0.5 // seconds
 const LAG_SCALE = 0.5 // seconds
 const SMOOTH = 1 // seconds
 const SMOOTH_TOUCH = 0.2 // seconds
-
-const PADDING_BLOCK = `calc(${ENTER_AND_EXIT_DURATION / (ENTER_AND_EXIT_DURATION * 2 + CENTER_DURATION)} * 100vh)`
+const COLUMNS = 7 // number of columns
 
 const imageData = ref([])
 const groupedImages = ref([])
@@ -34,7 +32,8 @@ const imageGallery = useTemplateRef('image-gallery')
 const smoothWrapper = useTemplateRef('smooth-wrapper')
 const smoothContent = useTemplateRef('smooth-content')
 
-const shuffle = (array) => gsap.utils.shuffle(array)
+// const shuffle = (array) => gsap.utils.shuffle(array)
+const shuffle = (array) => array
 
 const fetchImages = async () => {
   try {
@@ -88,58 +87,64 @@ const getHorizontalOrigin = (element) => {
 }
 
 const setupTimelines = () => {
-  const imageCards = imageGallery.value.querySelectorAll('.image-card')
-  imageCards.forEach((card, index) => {
-    const timeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: card,
-        start: () => `${-OFFSET + card.offsetHeight / 2}px ${START}%`,
-        end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
-        scrub: SCRUB,
-      },
-      defaults: {
-        ease: 'power1.inOut'
-      }
-    })
+  const columns = imageGallery.value.querySelectorAll('.gallery-column')
 
-    const yOriginTop = 0
-    const yOriginBottom = card.offsetHeight
-    const yOriginCenter = card.offsetHeight / 2
-    const xOrigin = getHorizontalOrigin(card)
+  columns.forEach((column) => {
+    const imageCards = column.querySelectorAll('.image-card')
 
-    timeline
-      .from(card, {
-        duration: ENTER_AND_EXIT_DURATION,
-        scale: ENTER_AND_EXIT_SCALE,
-        y: OFFSET,
-        transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
-      })
-      .from(
-        card,
-        {
-          duration: ENTER_AND_EXIT_INITIAL_DURATION,
-          opacity: ENTER_AND_EXIT_OPACITY,
-          transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`,
+    imageCards.forEach((card) => {
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: card,
+          start: () => `${-OFFSET + card.offsetHeight / 2}px ${START}%`,
+          end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
+          scrub: SCRUB
         },
-        '<'
-      )
-      .to(card, {
-        duration: CENTER_DURATION,
-        scale: 1,
-        y: 0,
-        opacity: 1,
-        transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`
-      })
-      .to(card, {
-        duration: ENTER_AND_EXIT_DURATION,
-        scale: ENTER_AND_EXIT_SCALE,
-        y: -OFFSET,
-        transformOrigin: () => `${xOrigin}px ${yOriginTop}px`
+        defaults: {
+          ease: 'power1.inOut'
+        }
       })
 
-    timelines.push(timeline)
+      const yOriginTop = 0
+      const yOriginBottom = card.offsetHeight
+      const yOriginCenter = card.offsetHeight / 2
+      const xOrigin = getHorizontalOrigin(card)
+
+      timeline
+        .from(card, {
+          duration: ENTER_AND_EXIT_DURATION,
+          scale: ENTER_AND_EXIT_SCALE,
+          y: OFFSET,
+          transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
+        })
+        .from(
+          card,
+          {
+            duration: ENTER_AND_EXIT_INITIAL_DURATION,
+            opacity: ENTER_AND_EXIT_OPACITY,
+            transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
+          },
+          '<'
+        )
+        .to(card, {
+          duration: CENTER_DURATION,
+          scale: 1,
+          y: 0,
+          opacity: 1,
+          transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`
+        })
+        .to(card, {
+          duration: ENTER_AND_EXIT_DURATION,
+          scale: ENTER_AND_EXIT_SCALE,
+          y: -OFFSET,
+          transformOrigin: () => `${xOrigin}px ${yOriginTop}px`
+        })
+
+      timelines.push(timeline)
+    })
   })
 }
+
 const handleImageLoad = () => {
   loadedImages.value++
   if (loadedImages.value === imageData.value.length) {
@@ -152,9 +157,9 @@ const handleImageLoad = () => {
 
 onMounted(async () => {
   await fetchImages()
-  groupedImages.value = groupImages(imageData.value, 7)
+  groupedImages.value = groupImages(shuffle(imageData.value), COLUMNS)
+  gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
   nextTick(() => {
-    gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
     initSmoother()
   })
 })
@@ -173,6 +178,7 @@ onUnmounted(() => {
           <ImageCard
             v-for="image in group"
             :key="image.id"
+            :identifier="image.id"
             :image="image"
             @load="handleImageLoad"
           />
