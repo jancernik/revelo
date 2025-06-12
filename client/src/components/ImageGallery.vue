@@ -5,6 +5,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollSmoother } from 'gsap/ScrollSmoother'
 import api from '@/utils/api'
+import Index from '@/views/dashboard/Index.vue'
 
 const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds
@@ -92,9 +93,9 @@ const setupTimelines = () => {
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: card,
-        start: () => `${(OFFSET - card.offsetHeight / 2) * -1}px ${START}%`,
-        end: () => `${(OFFSET - card.offsetHeight / 2) * -1}px ${END}%`,
-        scrub: SCRUB
+        start: () => `${-OFFSET + card.offsetHeight / 2}px ${START}%`,
+        end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
+        scrub: SCRUB,
       },
       defaults: {
         ease: 'power1.inOut'
@@ -108,40 +109,33 @@ const setupTimelines = () => {
 
     timeline
       .from(card, {
-        y: OFFSET,
         duration: ENTER_AND_EXIT_DURATION,
         scale: ENTER_AND_EXIT_SCALE,
+        y: OFFSET,
         transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
       })
       .from(
         card,
         {
+          duration: ENTER_AND_EXIT_INITIAL_DURATION,
           opacity: ENTER_AND_EXIT_OPACITY,
-          duration: ENTER_AND_EXIT_INITIAL_DURATION
+          transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`,
         },
         '<'
       )
       .to(card, {
-        y: 0,
         duration: CENTER_DURATION,
         scale: 1,
+        y: 0,
         opacity: 1,
         transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`
       })
       .to(card, {
-        y: -OFFSET,
         duration: ENTER_AND_EXIT_DURATION,
         scale: ENTER_AND_EXIT_SCALE,
+        y: -OFFSET,
         transformOrigin: () => `${xOrigin}px ${yOriginTop}px`
       })
-      .to(
-        card,
-        {
-          opacity: ENTER_AND_EXIT_OPACITY,
-          duration: ENTER_AND_EXIT_INITIAL_DURATION
-        },
-        `>-${ENTER_AND_EXIT_INITIAL_DURATION}`
-      )
 
     timelines.push(timeline)
   })
@@ -158,7 +152,7 @@ const handleImageLoad = () => {
 
 onMounted(async () => {
   await fetchImages()
-  groupedImages.value = groupImages(shuffle(imageData.value), 7)
+  groupedImages.value = groupImages(imageData.value, 7)
   nextTick(() => {
     gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
     initSmoother()
