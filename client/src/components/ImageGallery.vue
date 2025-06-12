@@ -10,6 +10,7 @@ const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds
 const ENTER_AND_EXIT_INITIAL_DURATION = 1 // seconds
 const ENTER_AND_EXIT_SCALE = 0.7 // scale factor
+const TRANSFORM_ORIGIN_SCALE = -0.5 // scale factor
 const ENTER_AND_EXIT_OPACITY = 0 // opacity factor
 const OFFSET = 100 // pixels
 const START = 100 // percent
@@ -65,7 +66,6 @@ const initSmoother = () => {
 }
 
 const setupLagEffect = () => {
-  console.log('smoother.value: ', smoother.value)
   if (!smoother.value) return
   const columns = imageGallery.value.querySelectorAll('.gallery-column')
   const middle = (columns.length - 1) / 2
@@ -77,6 +77,15 @@ const setupLagEffect = () => {
   })
 }
 
+const getHorizontalOrigin = (element) => {
+  const rect = element.getBoundingClientRect()
+  const windowCenter = window.innerWidth / 2
+  const elementCenter = rect.left + element.offsetWidth / 2
+  const distanceFromScreenCenter = elementCenter - windowCenter
+  const scaledDistance = distanceFromScreenCenter * TRANSFORM_ORIGIN_SCALE
+  return element.offsetWidth / 2 - scaledDistance
+}
+
 const setupTimelines = () => {
   const imageCards = imageGallery.value.querySelectorAll('.image-card')
   imageCards.forEach((card, index) => {
@@ -86,14 +95,23 @@ const setupTimelines = () => {
         start: () => `${(OFFSET - card.offsetHeight / 2) * -1}px ${START}%`,
         end: () => `${(OFFSET - card.offsetHeight / 2) * -1}px ${END}%`,
         scrub: SCRUB
+      },
+      defaults: {
+        ease: 'power1.inOut'
       }
     })
+
+    const yOriginTop = 0
+    const yOriginBottom = card.offsetHeight
+    const yOriginCenter = card.offsetHeight / 2
+    const xOrigin = getHorizontalOrigin(card)
 
     timeline
       .from(card, {
         y: OFFSET,
         duration: ENTER_AND_EXIT_DURATION,
-        scale: ENTER_AND_EXIT_SCALE
+        scale: ENTER_AND_EXIT_SCALE,
+        transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
       })
       .from(
         card,
@@ -107,12 +125,14 @@ const setupTimelines = () => {
         y: 0,
         duration: CENTER_DURATION,
         scale: 1,
-        opacity: 1
+        opacity: 1,
+        transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`
       })
       .to(card, {
         y: -OFFSET,
         duration: ENTER_AND_EXIT_DURATION,
-        scale: ENTER_AND_EXIT_SCALE
+        scale: ENTER_AND_EXIT_SCALE,
+        transformOrigin: () => `${xOrigin}px ${yOriginTop}px`
       })
       .to(
         card,
@@ -179,8 +199,5 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-}
-.image-card {
-  transform-origin: bottom !important;
 }
 </style>
