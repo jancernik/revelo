@@ -1,9 +1,11 @@
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, useTemplateRef, onMounted, nextTick, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 import { useSettings } from '@/composables/useSettings'
 import ThemeToggler from '@/components/ThemeToggler.vue'
+import gsap from 'gsap'
+import { cssVar } from '@/utils/ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +15,12 @@ const { settings } = useSettings()
 const isLoggedIn = computed(() => authStore && !!authStore.user)
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 
+const menu = useTemplateRef('menu')
+const menuUl = useTemplateRef('menu-ul')
+
+let enterTimeline = null
+let leaveTimeline = null
+
 async function handleLogout() {
   await authStore.logout()
   router.push('/')
@@ -20,41 +28,22 @@ async function handleLogout() {
 
 const menuConfig = reactive([
   {
-    id: 'home',
-    label: 'Home',
-    icon: 'LayoutPanelLeft',
+    id: 'gallery',
+    label: 'Gallery',
     path: '/',
     visible: true
   },
   {
     id: 'collections',
     label: 'Collections',
-    icon: 'Library',
     path: '/collections',
     visible: true
   },
   {
     id: 'dashboard',
     label: 'Dashboard',
-    icon: 'Shield',
     path: '/dashboard',
     visible: () => isAdmin.value
-  },
-  {
-    id: 'login',
-    label: 'Login',
-    icon: 'LogIn',
-    path: '/login',
-    visible: () => !isLoggedIn.value && settings.value.showLoginLink
-  },
-  {
-    id: 'logout',
-    label: 'Log out',
-    icon: 'LogOut',
-    // visible: () => isLoggedIn.value,
-    visible: false,
-    action: handleLogout,
-    className: 'logout'
   }
 ])
 
@@ -82,12 +71,97 @@ const isActive = (path) => {
   }
   return route?.path.startsWith(path)
 }
+
+const handleMouseEnter = () => {
+  leaveTimeline.pause()
+  enterTimeline.restart()
+}
+
+const handleMouseLeave = () => {
+  enterTimeline.pause()
+  leaveTimeline.restart()
+}
+
+const initAnimation = () => {
+  enterTimeline = gsap.timeline({ paused: true })
+
+  enterTimeline
+    .to(menu.value, {
+      scale: 1.03,
+      y: `-${cssVar('--spacing-6')}`,
+      duration: 0.45,
+      ease: 'back.out(2.2)',
+      borderRadius: `${cssVar('--radius-xl')}`
+    })
+    .to(
+      menuUl.value,
+      {
+        gap: `${cssVar('--spacing-4')}`,
+        duration: 0.15,
+        ease: 'power1.out'
+      },
+      '<'
+    )
+    .to(
+      '.list-item button',
+      {
+        padding: `${cssVar('--spacing-3')} ${cssVar('--spacing-4')}`,
+        duration: 0.15,
+        ease: 'power1.out'
+      },
+      '<'
+    )
+
+  leaveTimeline = gsap.timeline({ paused: true })
+  leaveTimeline
+    .to(menu.value, {
+      scale: 1,
+      y: 0,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      duration: 0.15,
+      ease: 'power2.out'
+    })
+    .to(
+      menuUl.value,
+      {
+        gap: 0,
+        duration: 0.1,
+        ease: 'power1.out'
+      },
+      '<'
+    )
+    .to(
+      '.list-item button',
+      {
+        padding: `${cssVar('--spacing-2')} ${cssVar('--spacing-4')}`,
+        duration: 0.1,
+        ease: 'power4.out'
+      },
+      '<'
+    )
+    .to(
+      menu.value,
+      {
+        duration: 0.07,
+        scaleY: 0.92,
+        scaleX: 1.03,
+        repeat: 1,
+        yoyo: true
+      },
+      '-=0.07'
+    )
+}
+
+onMounted(() => {
+  nextTick(initAnimation)
+})
 </script>
 
 <template>
-  <aside class="menu">
+  <aside ref="menu" class="menu" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <div class="menu-inner inner">
-      <ul>
+      <ul ref="menu-ul">
         <li
           v-for="item in visibleMenuItems"
           :key="item.id"
@@ -112,8 +186,24 @@ const isActive = (path) => {
   @include flex-center;
   background-color: var(--menu-background);
   position: fixed;
-  bottom: var(--spacing-4);
-  border-radius: calc(var(--radius-md) + var(--spacing-2));
+  bottom: -1px;
+  border-radius: calc(var(--radius-lg) + var(--spacing-2));
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  transform-origin: bottom;
+  backdrop-filter: blur(5px);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: calc(-1 * var(--spacing-8));
+    left: calc(-1 * var(--spacing-8));
+    width: calc(100% + var(--spacing-8) * 2);
+    height: 300%;
+    z-index: -1;
+    border-radius: calc(var(--radius-lg) + var(--spacing-2) + var(--spacing-8));
+  }
   .theme {
     @include flex-center;
   }
@@ -128,7 +218,7 @@ const isActive = (path) => {
   }
 
   li.active {
-    background-color: var(--background);
+    background-color: var(--menu-active);
   }
 
   button {
@@ -136,7 +226,7 @@ const isActive = (path) => {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: var(--spacing-3) var(--spacing-6);
+    padding: var(--spacing-2) var(--spacing-4);
     background: none;
     cursor: pointer;
     color: inherit;
