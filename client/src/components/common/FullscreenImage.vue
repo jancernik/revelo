@@ -3,6 +3,9 @@ import { nextTick, watch, onMounted, useTemplateRef, computed } from 'vue'
 import { useFullscreenImage } from '@/composables/useFullscreenImage'
 import { gsap } from 'gsap'
 import { Flip } from 'gsap/Flip'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const { imageData, flipId, isAnimating, hide } = useFullscreenImage()
@@ -21,28 +24,35 @@ const handleClick = () => {
 }
 
 const animateIn = async () => {
-  if (!imageData.value || !flipId.value) return
+  if (!imageData.value) return
 
-  isAnimating.value = true
+  if (flipId.value) {
+    isAnimating.value = true
 
-  const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
-  if (!thumbnailElement) {
-    isAnimating.value = false
-    return
-  }
+    const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
+    if (!thumbnailElement) {
+      isAnimating.value = false
+      return
+    }
 
-  imageElement.value.style.display = 'none'
-  containerElement.value.style.display = 'flex'
+    imageElement.value.style.display = 'flex'
+    containerElement.value.style.display = 'flex'
 
-  const img = imageElement.value.querySelector('img')
-  if (img.complete) {
-    performAnimation(thumbnailElement)
+    if (!flipId.value) return
+
+    const img = imageElement.value.querySelector('img')
+    if (img.complete) {
+      performInAnimation(thumbnailElement)
+    } else {
+      img.onload = () => performInAnimation(thumbnailElement)
+    }
   } else {
-    img.onload = () => performAnimation(thumbnailElement)
+    imageElement.value.style.display = 'flex'
+    containerElement.value.style.display = 'flex'
   }
 }
 
-const performAnimation = (thumbnailElement) => {
+const performInAnimation = (thumbnailElement) => {
   const state = Flip.getState([thumbnailElement, imageElement.value])
 
   imageElement.value.style.display = 'flex'
@@ -54,6 +64,10 @@ const performAnimation = (thumbnailElement) => {
     scale: true,
     onComplete: () => {
       isAnimating.value = false
+      // router.push({
+      //   path: `/image/${imageData.value.id}`,
+      //   replace: true
+      // })
     }
   })
 }
@@ -82,9 +96,13 @@ const animateOut = () => {
     onComplete: () => {
       containerElement.value.style.display = 'none'
       isAnimating.value = false
+      // router.push({
+      //   path: '/',
+      //   replace: true
+      // })
       hide()
     }
-  }).pause(0.4)
+  })
 }
 
 watch(imageData, async (newImageData) => {

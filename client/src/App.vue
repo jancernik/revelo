@@ -2,6 +2,7 @@
 import Menu from '@/components/layout/Menu.vue'
 import Main from '@/components/layout/Main.vue'
 import Dialog from '@/components/common/Dialog.vue'
+import FullscreenImage from '@/components/common/FullscreenImage.vue'
 import Toast from '@/components/common/Toast.vue'
 import { useTheme } from '@/composables/useTheme'
 import { onMounted, watch } from 'vue'
@@ -29,6 +30,7 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
     <Menu />
     <Toast />
     <Dialog />
+    <FullscreenImage />
   </div>
 </template>
 

@@ -6,6 +6,7 @@ import DashboardIndex from '@/views/dashboard/Index.vue'
 import DashboardUpload from '@/views/dashboard/Upload.vue'
 import DashboardSettings from '@/views/dashboard/Settings.vue'
 import DevIndex from '@/views/dev/Index.vue'
+import Image from '@/views/Image.vue'
 import NotFound from '@/views/errors/NotFound.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -47,6 +48,12 @@ const router = createRouter({
           component: DashboardSettings
         }
       ]
+    },
+    {
+      path: '/image/:id',
+      name: 'image',
+      component: Image,
+      props: true
     },
     {
       path: '/dev',
