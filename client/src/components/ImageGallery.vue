@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, useTemplateRef } from 'vue'
 import ImageCard from '@/components/ImageCard.vue'
+import { useFullscreenImage } from '@/composables/useFullscreenImage'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollSmoother } from 'gsap/ScrollSmoother'
@@ -32,8 +33,9 @@ const imageGallery = useTemplateRef('image-gallery')
 const smoothWrapper = useTemplateRef('smooth-wrapper')
 const smoothContent = useTemplateRef('smooth-content')
 
-// const shuffle = (array) => gsap.utils.shuffle(array)
-const shuffle = (array) => array
+const { show } = useFullscreenImage()
+
+const shuffle = (array) => gsap.utils.shuffle(array)
 
 const fetchImages = async () => {
   try {
@@ -109,7 +111,6 @@ const setupTimelines = () => {
       const yOriginBottom = card.offsetHeight
       const yOriginCenter = card.offsetHeight / 2
       const xOrigin = getHorizontalOrigin(card)
-
       timeline
         .from(card, {
           duration: ENTER_AND_EXIT_DURATION,
@@ -155,6 +156,10 @@ const handleImageLoad = () => {
   }
 }
 
+const handleThumbnailClick = (image, flipId) => {
+  show(image, flipId)
+}
+
 onMounted(async () => {
   await fetchImages()
   groupedImages.value = groupImages(shuffle(imageData.value), COLUMNS)
@@ -181,6 +186,7 @@ onUnmounted(() => {
             :identifier="image.id"
             :image="image"
             @load="handleImageLoad"
+            @click="handleThumbnailClick"
           />
         </div>
       </div>

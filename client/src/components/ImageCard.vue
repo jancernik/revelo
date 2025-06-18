@@ -8,17 +8,21 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['load'])
+const emit = defineEmits(['load', 'click'])
 
 const getImageVersion = (type) => {
   return props.image?.versions?.find((v) => v.type === type)
 }
 
 const thumbnail = getImageVersion('thumbnail')
+
+const handleClick = () => {
+  emit('click', props.image, `img-${props.image.id}`)
+}
 </script>
 
 <template>
-  <div class="image-card">
+  <div class="image-card" :data-flip-id="`img-${image.id}`" @click="handleClick">
     <img
       :src="`${apiBaseUrl}/${thumbnail.path}`"
       :height="thumbnail.height"
@@ -37,6 +41,7 @@ const thumbnail = getImageVersion('thumbnail')
   height: auto;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  cursor: pointer;
 
   img {
     width: 100%;
