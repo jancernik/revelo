@@ -1,8 +1,7 @@
 <script setup>
-import { computed, reactive, useTemplateRef, onMounted, nextTick, watch } from 'vue'
+import { computed, reactive, useTemplateRef, onMounted, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
-import { useSettings } from '@/composables/useSettings'
 import ThemeToggler from '@/components/ThemeToggler.vue'
 import gsap from 'gsap'
 import { cssVar } from '@/utils/ui'
@@ -11,8 +10,6 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const { settings } = useSettings()
-const isLoggedIn = computed(() => authStore && !!authStore.user)
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 
 const menu = useTemplateRef('menu')
