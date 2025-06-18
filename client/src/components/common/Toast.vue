@@ -77,16 +77,18 @@ const handleAction = (toast) => {
   flex-direction: column-reverse;
   gap: var(--spacing-2);
   z-index: 1200;
+  width: 24rem;
   max-width: 24rem;
-  width: auto;
+  width: 100%;
   pointer-events: none;
 
   .toast-wrapper {
+    @include flex-center;
     pointer-events: auto;
-    width: fit-content;
+    width: 100%;
     min-width: 200px;
     max-width: 24rem;
-    margin: 0 auto;
+    transform-origin: top center;
   }
 
   .toast {
@@ -96,7 +98,6 @@ const handleAction = (toast) => {
     background-color: var(--background);
     border-radius: var(--radius-md);
     padding: var(--spacing-4);
-    width: 100%;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
 
@@ -174,6 +175,10 @@ const handleAction = (toast) => {
   }
 }
 
+.toast-move {
+  transition: 0.25s cubic-bezier(0.42, 0.06, 0.14, 1);
+}
+
 .toast-enter-active {
   transition: all 0.35s cubic-bezier(0.42, 0.06, 0.14, 1);
 }
@@ -181,10 +186,7 @@ const handleAction = (toast) => {
 .toast-leave-active {
   transition: 0.5s cubic-bezier(0.27, 0.03, 0.3, 1);
   position: absolute;
-}
-
-.toast-move {
-  transition: 0.25s cubic-bezier(0.42, 0.06, 0.14, 1);
+  z-index: -1;
 }
 
 .toast-enter-from {
