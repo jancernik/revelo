@@ -11,7 +11,8 @@ import {
   unique,
   primaryKey,
   vector,
-  index
+  index,
+  uuid
 } from "drizzle-orm/pg-core";
 
 export const UserTables = pgTable("users", {
@@ -33,7 +34,7 @@ export const RevokedTokensTable = pgTable("revoked_tokens", {
 export const ImagesTable = pgTable(
   "images",
   {
-    id: serial("id").primaryKey().notNull(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
     originalFilename: varchar("original_filename", { length: 255 }).notNull(),
     iso: integer("iso"),
     aperture: varchar("aperture", { length: 50 }),
@@ -62,7 +63,7 @@ export const ImageVersionsTable = pgTable(
   "image_versions",
   {
     id: serial("id").primaryKey().notNull(),
-    imageId: serial("image_id")
+    imageId: uuid("image_id")
       .references(() => ImagesTable.id, { onDelete: "cascade" })
       .notNull(),
     mimetype: varchar("mimetype", { length: 100 }).notNull(),
@@ -95,7 +96,7 @@ export const PostImagesTable = pgTable(
     postId: serial("post_id")
       .references(() => PostsTable.id, { onDelete: "cascade" })
       .notNull(),
-    imageId: serial("image_id")
+    imageId: uuid("image_id")
       .references(() => ImagesTable.id, { onDelete: "cascade" })
       .notNull(),
     order: integer("order").notNull(),

@@ -107,7 +107,7 @@ export const fetchById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const image = await Image.findByIdWithVersions(parseInt(id, 10));
+    const image = await Image.findByIdWithVersions(id);
 
     if (!image) {
       return res.status(404).json({ error: "Image not found" });
@@ -125,7 +125,7 @@ export const updateMetadata = async (req, res) => {
     const { id } = req.params;
     const metadata = req.body;
 
-    const image = await imageService.updateImageMetadata(parseInt(id, 10), metadata);
+    const image = await imageService.updateImageMetadata(id, metadata);
 
     res.json({
       message: "Image metadata updated successfully.",
@@ -141,7 +141,7 @@ export const deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await imageService.deleteImage(parseInt(id, 10));
+    await imageService.deleteImage(id);
 
     res.json({
       message: "Image deleted successfully."
