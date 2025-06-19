@@ -157,7 +157,7 @@ const handleImageLoad = () => {
 }
 
 const handleThumbnailClick = (image, flipId) => {
-  show(image, flipId)
+  show(image, { flipId })
 }
 
 onMounted(async () => {

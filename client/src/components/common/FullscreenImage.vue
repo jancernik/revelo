@@ -3,84 +3,70 @@ import { nextTick, watch, onMounted, useTemplateRef, computed } from 'vue'
 import { useFullscreenImage } from '@/composables/useFullscreenImage'
 import { gsap } from 'gsap'
 import { Flip } from 'gsap/Flip'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-const { imageData, flipId, isAnimating, hide } = useFullscreenImage()
+const {
+  imageData,
+  flipId,
+  isAnimating,
+  setPopstateCallback,
+  updateRoute,
+  hide,
+  triggerHide,
+  completeHide
+} = useFullscreenImage()
 
 const imageElement = useTemplateRef('image')
 const containerElement = useTemplateRef('container')
 
-const regularImage = computed(() => {
+const regularImageVersion = computed(() => {
   return imageData.value?.versions?.find((v) => v.type === 'regular') || {}
 })
 
 const handleClick = () => {
-  if (!isAnimating.value) {
-    animateOut()
-  }
+  if (isAnimating.value) return
+  history.pushState({}, '', '/')
+  hide()
 }
 
-const animateIn = async () => {
-  if (!imageData.value) return
-
-  if (flipId.value) {
-    isAnimating.value = true
-
-    const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
-    if (!thumbnailElement) {
-      isAnimating.value = false
-      return
-    }
-
-    imageElement.value.style.display = 'flex'
-    containerElement.value.style.display = 'flex'
-
-    if (!flipId.value) return
-
-    const img = imageElement.value.querySelector('img')
-    if (img.complete) {
-      performInAnimation(thumbnailElement)
-    } else {
-      img.onload = () => performInAnimation(thumbnailElement)
-    }
-  } else {
-    imageElement.value.style.display = 'flex'
-    containerElement.value.style.display = 'flex'
+const showWithFlipAnimation = () => {
+  const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
+  console.log('thumbnailElement: ', thumbnailElement)
+  if (!thumbnailElement) {
+    showWithRegularAnimation()
+    return
   }
-}
-
-const performInAnimation = (thumbnailElement) => {
-  const state = Flip.getState([thumbnailElement, imageElement.value])
 
   imageElement.value.style.display = 'flex'
-  thumbnailElement.style.visibility = 'hidden'
+  containerElement.value.style.display = 'flex'
 
-  Flip.from(state, {
-    duration: 0.8,
-    ease: 'power3.inOut',
-    scale: true,
-    onComplete: () => {
-      isAnimating.value = false
-      // router.push({
-      //   path: `/image/${imageData.value.id}`,
-      //   replace: true
-      // })
-    }
-  })
+  const perform = () => {
+    const state = Flip.getState([thumbnailElement, imageElement.value])
+
+    imageElement.value.style.display = 'flex'
+    thumbnailElement.style.visibility = 'hidden'
+
+    Flip.from(state, {
+      duration: 0.8,
+      ease: 'power3.inOut',
+      scale: true,
+      onComplete: () => {
+        isAnimating.value = false
+      }
+    })
+  }
+
+  const img = imageElement.value.querySelector('img')
+  if (img.complete) {
+    perform()
+  } else {
+    img.onload = () => perform()
+  }
 }
-
-const animateOut = () => {
-  if (!flipId.value) return
-
-  isAnimating.value = true
-
+const hideWithFlipAnimation = () => {
   const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
   if (!thumbnailElement) {
-    hide()
-    isAnimating.value = false
+    hideWithRegularAnimation()
     return
   }
 
@@ -93,21 +79,99 @@ const animateOut = () => {
     duration: 0.8,
     ease: 'power3.inOut',
     scale: true,
+    opacity: 1,
     onComplete: () => {
+      imageElement.value.style.display = 'none'
       containerElement.value.style.display = 'none'
       isAnimating.value = false
-      // router.push({
-      //   path: '/',
-      //   replace: true
-      // })
-      hide()
+      completeHide()
     }
   })
 }
 
-watch(imageData, async (newImageData) => {
-  if (newImageData) {
-    nextTick(animateIn)
+const showWithRegularAnimation = () => {
+  imageElement.value.style.display = 'flex'
+  containerElement.value.style.display = 'flex'
+
+  gsap.fromTo(
+    imageElement.value,
+    {
+      opacity: 0,
+      scale: 0.8
+    },
+    {
+      duration: 0.5,
+      opacity: 1,
+      scale: 1,
+      ease: 'power3.inOut',
+      onComplete: () => {
+        isAnimating.value = false
+      }
+    }
+  )
+}
+
+const hideWithRegularAnimation = () => {
+  gsap.to(imageElement.value, {
+    duration: 0.5,
+    opacity: 0,
+    scale: 0.8,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      imageElement.value.style.display = 'none'
+      containerElement.value.style.display = 'none'
+      isAnimating.value = false
+      completeHide()
+    }
+  })
+}
+
+const showImage = () => {
+  if (isAnimating.value) return
+  isAnimating.value = true
+
+  if (flipId.value) {
+    showWithFlipAnimation()
+  } else {
+    showWithRegularAnimation()
+  }
+}
+
+const hideImage = () => {
+  if (isAnimating.value) return
+  isAnimating.value = true
+
+  if (flipId.value) {
+    hideWithFlipAnimation()
+  } else {
+    hideWithRegularAnimation()
+  }
+}
+
+watch(imageData, () => {
+  if (imageData.value) {
+    if (updateRoute.value) {
+      history.pushState({}, '', `/image/${imageData.value.id}`)
+
+      if (flipId.value) {
+        setPopstateCallback(() => {
+          hideWithFlipAnimation()
+          history.pushState({}, '', '/')
+        })
+      } else {
+        setPopstateCallback(() => {
+          hideWithRegularAnimation()
+          history.pushState({}, '', '/')
+        })
+      }
+    }
+    nextTick(showImage)
+  }
+})
+
+watch(triggerHide, () => {
+  if (triggerHide.value) {
+    nextTick(hideImage)
   }
 })
 
@@ -119,7 +183,7 @@ onMounted(() => {
 <template>
   <div v-show="imageData" ref="container" class="fullscreen-image-container" @click="handleClick">
     <div ref="image" class="fullscreen-image" :data-flip-id="flipId">
-      <img :src="`${apiBaseUrl}/${regularImage.path}`" alt="" />
+      <img :src="`${apiBaseUrl}/${regularImageVersion.path}`" alt="" />
     </div>
   </div>
 </template>
