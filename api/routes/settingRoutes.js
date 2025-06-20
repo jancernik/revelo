@@ -1,12 +1,13 @@
 import { Router } from "express";
+
 import {
-  getSettings,
   getSetting,
-  updateSetting,
+  getSettings,
+  resetSetting,
   updateMultipleSettings,
-  resetSetting
+  updateSetting
 } from "../controllers/settingController.js";
-import { optionalAuth, requireAuth, loadUser } from "../middlewares/authMiddleware.js";
+import { loadUser, optionalAuth, requireAuth } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 

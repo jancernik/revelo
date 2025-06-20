@@ -1,41 +1,42 @@
 <script setup>
-import Input from '@/components/common/Input.vue'
+import { computed, ref, watch } from 'vue'
+
 import Button from '@/components/common/Button.vue'
-import { ref, watch, computed } from 'vue'
+import Input from '@/components/common/Input.vue'
 
 const props = defineProps({
   extractedMetadata: {
-    type: Object,
-    required: true
-  },
-  previewUrl: {
-    type: String,
-    required: true
+    required: true,
+    type: Object
   },
   previewFilename: {
-    type: String,
-    required: true
+    required: true,
+    type: String
+  },
+  previewUrl: {
+    required: true,
+    type: String
   },
   showRemoveButton: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
   },
   showResetButton: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
   }
 })
 
 const emit = defineEmits(['update', 'remove'])
 
 const createDefaultMetadata = () => ({
-  camera: '',
-  lens: '',
-  iso: '',
   aperture: '',
-  shutterSpeed: '',
+  camera: '',
+  date: '',
   focalLength: '',
-  date: ''
+  iso: '',
+  lens: '',
+  shutterSpeed: ''
 })
 
 const metadata = ref({})
@@ -71,7 +72,7 @@ const handleRemove = () => {
 watch(
   () => props.extractedMetadata,
   () => initializeMetadata(),
-  { immediate: true, deep: true }
+  { deep: true, immediate: true }
 )
 
 watch(

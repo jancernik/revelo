@@ -1,21 +1,21 @@
 <script setup>
-import { onMounted, onUnmounted, useTemplateRef, nextTick } from 'vue'
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollSmoother } from 'gsap/ScrollSmoother'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
 const props = defineProps({
   class: {
-    type: String,
-    default: ''
+    default: '',
+    type: String
   },
   smoothness: {
-    type: Number,
-    default: 2
+    default: 2,
+    type: Number
   },
   smoothTouch: {
-    type: Number,
-    default: 0.1
+    default: 0.1,
+    type: Number
   }
 })
 
@@ -28,11 +28,11 @@ const initSmoothScroll = () => {
   gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
 
   smoother = ScrollSmoother.create({
-    wrapper: smoothWrapper.value,
     content: smoothContent.value,
+    effects: true,
     smooth: props.smoothness,
     smoothTouch: props.smoothTouch,
-    effects: true
+    wrapper: smoothWrapper.value
   })
 }
 const cleanup = () => {
@@ -50,8 +50,8 @@ const scrollTo = (position, smooth = true) => {
 }
 
 defineExpose({
-  scrollTo,
-  getSmoother: () => smoother
+  getSmoother: () => smoother,
+  scrollTo
 })
 
 onMounted(() => {

@@ -1,24 +1,26 @@
 <script setup>
 import { ref } from 'vue'
-import MetadataEditor from './MetadataEditor.vue'
+
 import Button from '@/components/common/Button.vue'
+
+import MetadataEditor from './MetadataEditor.vue'
 
 const props = defineProps({
   extractedMetadata: {
-    type: Array,
-    required: true
-  },
-  previewUrls: {
-    type: Array,
-    required: true
+    required: true,
+    type: Array
   },
   previewFilenames: {
-    type: Array,
-    required: true
+    required: true,
+    type: Array
+  },
+  previewUrls: {
+    required: true,
+    type: Array
   },
   sessionIds: {
-    type: Array,
-    required: true
+    required: true,
+    type: Array
   }
 })
 
@@ -28,8 +30,8 @@ const metadataArray = ref(props.extractedMetadata.map((metadata) => ({ ...metada
 
 const handleConfirm = () => {
   const uploadData = props.sessionIds.map((sessionId, index) => ({
-    sessionId,
-    metadata: metadataArray.value[index]
+    metadata: metadataArray.value[index],
+    sessionId
   }))
   emit('confirm', uploadData)
 }

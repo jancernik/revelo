@@ -1,14 +1,15 @@
 import "./drizzle/migrate.js";
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import authRoutes from "./routes/authRoutes.js";
-import settingRoutes from "./routes/settingRoutes.js";
-import imageRoutes from "./routes/imageRoutes.js";
-import { notFoundHandler, errorHandler } from "./middlewares/errorMiddleware.js";
-import { config } from "./config.js";
+import cors from "cors";
+import express from "express";
 import fs from "fs";
+import morgan from "morgan";
+
+import { config } from "./config.js";
+import { errorHandler, notFoundHandler } from "./middlewares/errorMiddleware.js";
+import authRoutes from "./routes/authRoutes.js";
+import imageRoutes from "./routes/imageRoutes.js";
+import settingRoutes from "./routes/settingRoutes.js";
 
 const app = express();
 
@@ -16,7 +17,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-app.use(cors({ origin: config.CLIENT_BASE_URL, credentials: true }));
+app.use(cors({ credentials: true, origin: config.CLIENT_BASE_URL }));
 
 app.use(authRoutes);
 app.use(settingRoutes);

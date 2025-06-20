@@ -1,19 +1,20 @@
 <script setup>
-import { nextTick, watch, onMounted, useTemplateRef, computed } from 'vue'
-import { useFullscreenImage } from '@/composables/useFullscreenImage'
 import { gsap } from 'gsap'
 import { Flip } from 'gsap/Flip'
+import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+
+import { useFullscreenImage } from '@/composables/useFullscreenImage'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const {
-  imageData,
+  completeHide,
   flipId,
+  hide,
+  imageData,
   isAnimating,
   setPopstateCallback,
-  updateRoute,
-  hide,
   triggerHide,
-  completeHide
+  updateRoute
 } = useFullscreenImage()
 
 const imageElement = useTemplateRef('image')
@@ -49,10 +50,10 @@ const showWithFlipAnimation = () => {
     Flip.from(state, {
       duration: 0.8,
       ease: 'power3.inOut',
-      scale: true,
       onComplete: () => {
         isAnimating.value = false
-      }
+      },
+      scale: true
     })
   }
 
@@ -78,14 +79,14 @@ const hideWithFlipAnimation = () => {
   Flip.from(state, {
     duration: 0.8,
     ease: 'power3.inOut',
-    scale: true,
-    opacity: 1,
     onComplete: () => {
       imageElement.value.style.display = 'none'
       containerElement.value.style.display = 'none'
       isAnimating.value = false
       completeHide()
-    }
+    },
+    opacity: 1,
+    scale: true
   })
 }
 
@@ -101,12 +102,12 @@ const showWithRegularAnimation = () => {
     },
     {
       duration: 0.5,
-      opacity: 1,
-      scale: 1,
       ease: 'power3.inOut',
       onComplete: () => {
         isAnimating.value = false
-      }
+      },
+      opacity: 1,
+      scale: 1
     }
   )
 }
@@ -114,15 +115,15 @@ const showWithRegularAnimation = () => {
 const hideWithRegularAnimation = () => {
   gsap.to(imageElement.value, {
     duration: 0.5,
-    opacity: 0,
-    scale: 0.8,
     ease: 'power3.inOut',
     onComplete: () => {
       imageElement.value.style.display = 'none'
       containerElement.value.style.display = 'none'
       isAnimating.value = false
       completeHide()
-    }
+    },
+    opacity: 0,
+    scale: 0.8
   })
 }
 

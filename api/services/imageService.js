@@ -1,10 +1,11 @@
-import Image from "../models/Image.js";
-import path from "path";
-import fs from "fs/promises";
-import { v4 as uuid } from "uuid";
-import exifr from "exifr";
-import sharp from "sharp";
 import { eq } from "drizzle-orm";
+import exifr from "exifr";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+import { v4 as uuid } from "uuid";
+
+import Image from "../models/Image.js";
 
 const uploadsDir = path.join("uploads");
 const tempUploadsDir = path.join("uploads", "temp");
@@ -26,9 +27,9 @@ export const uploadForReview = async (file) => {
     await fs.unlink(file.path);
 
     return {
-      sessionId,
       filePath: tempFilePath,
-      metadata
+      metadata,
+      sessionId
     };
   } catch (error) {
     throw new Error(`Error uploading file for review: ${error.message}`);
@@ -50,20 +51,20 @@ export const confirmUpload = async (sessionId, metadata) => {
       .replace(/\.[^.]+$/, (ext) => ext.toLowerCase());
 
     const imageData = {
-      originalFilename,
-      iso: metadata.iso || null,
       aperture: metadata.aperture || null,
-      shutterSpeed: metadata.shutterSpeed || null,
-      focalLength: metadata.focalLength || null,
       camera: metadata.camera || null,
+      date: metadata.date ? new Date(metadata.date) : null,
+      focalLength: metadata.focalLength || null,
+      iso: metadata.iso || null,
       lens: metadata.lens || null,
-      date: metadata.date ? new Date(metadata.date) : null
+      originalFilename,
+      shutterSpeed: metadata.shutterSpeed || null
     };
 
     const fileObject = {
+      mimetype: `image/${(await sharp(tempFilePath).metadata())?.format?.toLowerCase()}`,
       originalname: originalFilename,
       path: tempFilePath,
-      mimetype: `image/${(await sharp(tempFilePath).metadata())?.format?.toLowerCase()}`,
       size: (await fs.stat(tempFilePath)).size
     };
 
@@ -76,17 +77,17 @@ export const confirmUpload = async (sessionId, metadata) => {
 export const extractMetadata = async (filePath) => {
   const raw = (await exifr.parse(filePath)) || {};
   return {
+    aperture: raw.FNumber?.toString(),
     camera: (raw.Make || raw.Model) && `${raw.Make || ""}${raw.Model ? ` ${raw.Model}` : ""}`,
+    date:
+      (raw.DateTimeOriginal || raw.CreateDate) &&
+      (raw.DateTimeOriginal || raw.CreateDate).toISOString().split("T")[0],
+    focalLength: raw.FocalLength?.toString(),
+    iso: raw.ISO?.toString(),
     lens: raw.LensModel,
     shutterSpeed:
       raw.ExposureTime &&
-      (raw.ExposureTime < 1 ? `1/${Math.round(1 / raw.ExposureTime)}` : `${raw.ExposureTime}`),
-    aperture: raw.FNumber?.toString(),
-    focalLength: raw.FocalLength?.toString(),
-    iso: raw.ISO?.toString(),
-    date:
-      (raw.DateTimeOriginal || raw.CreateDate) &&
-      (raw.DateTimeOriginal || raw.CreateDate).toISOString().split("T")[0]
+      (raw.ExposureTime < 1 ? `1/${Math.round(1 / raw.ExposureTime)}` : `${raw.ExposureTime}`)
   };
 };
 
@@ -97,8 +98,8 @@ export const upload = async (file) => {
 
   const newImage = await Image.create({
     filename: file.filename,
-    path: path.join("uploads", file.filename),
     mimetype: file.mimetype,
+    path: path.join("uploads", file.filename),
     size: file.size.toString()
   });
 
@@ -154,7 +155,7 @@ export const deleteImage = async (id) => {
 
       const imageDir = path.join(uploadsDir, id.toString());
       try {
-        await fs.rm(imageDir, { recursive: true, force: true });
+        await fs.rm(imageDir, { force: true, recursive: true });
       } catch (error) {
         console.error(`Error deleting image files: ${error.message}`);
       }
@@ -193,9 +194,9 @@ export const cleanupTempFiles = async () => {
     }
 
     return {
-      scanned: tempFiles.length,
       deleted: deletedCount,
-      errors: errorCount
+      errors: errorCount,
+      scanned: tempFiles.length
     };
   } catch (error) {
     throw new Error(`Error cleaning up temp files: ${error.message}`);
@@ -230,7 +231,7 @@ export const cleanupOrphanedFiles = async () => {
       if (isNaN(imageId) || !images.some((img) => img.id === imageId)) {
         try {
           const dirPath = path.join(uploadsDir, dir.name);
-          await fs.rm(dirPath, { recursive: true, force: true });
+          await fs.rm(dirPath, { force: true, recursive: true });
           deletedCount++;
         } catch (err) {
           console.error(`Error deleting orphaned directory ${dir.name}: ${err.message}`);
@@ -259,9 +260,9 @@ export const cleanupOrphanedFiles = async () => {
     }
 
     return {
-      scanned: scannedCount,
       deleted: deletedCount,
-      errors: errorCount
+      errors: errorCount,
+      scanned: scannedCount
     };
   } catch (error) {
     throw new Error(`Error cleaning up orphaned files: ${error.message}`);

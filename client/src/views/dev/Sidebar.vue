@@ -1,12 +1,12 @@
 <script setup>
 defineProps({
-  components: {
-    type: Array,
-    required: true
-  },
   activeSection: {
-    type: String,
-    default: ''
+    default: '',
+    type: String
+  },
+  components: {
+    required: true,
+    type: Array
   }
 })
 

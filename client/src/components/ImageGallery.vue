@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, useTemplateRef } from 'vue'
+import { gsap } from 'gsap'
+import { ScrollSmoother } from 'gsap/ScrollSmoother'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+
 import ImageCard from '@/components/ImageCard.vue'
 import { useFullscreenImage } from '@/composables/useFullscreenImage'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ScrollSmoother } from 'gsap/ScrollSmoother'
 import api from '@/utils/api'
 
 const CENTER_DURATION = 1 // seconds
@@ -58,12 +59,12 @@ const groupImages = (images = [], numberOfGroups) => {
 
 const initSmoother = () => {
   smoother.value = ScrollSmoother.create({
+    content: smoothContent.value,
+    effects: true,
+    normalizeScroll: true,
     smooth: SMOOTH,
     smoothTouch: SMOOTH_TOUCH,
-    wrapper: smoothWrapper.value,
-    content: smoothContent.value,
-    normalizeScroll: true,
-    effects: true
+    wrapper: smoothWrapper.value
   })
 }
 
@@ -75,7 +76,7 @@ const setupLagEffect = () => {
   columns.forEach((column, index) => {
     const distance = Math.abs(index - middle)
     const lag = BASE_LAG + distance * LAG_SCALE
-    smoother.value.effects(column, { speed: 1, lag })
+    smoother.value.effects(column, { lag, speed: 1 })
   })
 }
 
@@ -96,14 +97,14 @@ const setupTimelines = () => {
 
     imageCards.forEach((card) => {
       const timeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: card,
-          start: () => `${-OFFSET + card.offsetHeight / 2}px ${START}%`,
-          end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
-          scrub: SCRUB
-        },
         defaults: {
           ease: 'power1.inOut'
+        },
+        scrollTrigger: {
+          end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
+          scrub: SCRUB,
+          start: () => `${-OFFSET + card.offsetHeight / 2}px ${START}%`,
+          trigger: card
         }
       })
 
@@ -115,8 +116,8 @@ const setupTimelines = () => {
         .from(card, {
           duration: ENTER_AND_EXIT_DURATION,
           scale: ENTER_AND_EXIT_SCALE,
-          y: OFFSET,
-          transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
+          transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`,
+          y: OFFSET
         })
         .from(
           card,
@@ -129,16 +130,16 @@ const setupTimelines = () => {
         )
         .to(card, {
           duration: CENTER_DURATION,
-          scale: 1,
-          y: 0,
           opacity: 1,
-          transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`
+          scale: 1,
+          transformOrigin: () => `${xOrigin}px ${yOriginCenter}px`,
+          y: 0
         })
         .to(card, {
           duration: ENTER_AND_EXIT_DURATION,
           scale: ENTER_AND_EXIT_SCALE,
-          y: -OFFSET,
-          transformOrigin: () => `${xOrigin}px ${yOriginTop}px`
+          transformOrigin: () => `${xOrigin}px ${yOriginTop}px`,
+          y: -OFFSET
         })
 
       timelines.push(timeline)

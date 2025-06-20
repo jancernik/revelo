@@ -1,135 +1,135 @@
 <script setup>
-import { useDialog } from '@/composables/useDialog'
 import Button from '@/components/common/Button.vue'
+import { useDialog } from '@/composables/useDialog'
 
 const { show } = useDialog()
 
 const showBasicDialog = () => {
   show({
-    title: 'Basic Dialog',
-    description: 'This is a simple dialog with just a message and a cancel button.',
     actions: [
       {
-        name: 'OK',
-        color: 'primary',
         callback: () => {
           console.log('OK clicked')
-        }
+        },
+        color: 'primary',
+        name: 'OK'
       }
-    ]
+    ],
+    description: 'This is a simple dialog with just a message and a cancel button.',
+    title: 'Basic Dialog'
   })
 }
 
 const showConfirmDialog = () => {
   show({
-    title: 'Delete Account',
-    description: 'Are you sure you want to delete your account? This action cannot be undone.',
     actions: [
       {
-        name: 'Delete',
-        color: 'primary',
-        icon: 'Trash2',
         callback: () => {
           console.log('Account deleted')
-        }
+        },
+        color: 'primary',
+        icon: 'Trash2',
+        name: 'Delete'
       }
-    ]
+    ],
+    description: 'Are you sure you want to delete your account? This action cannot be undone.',
+    title: 'Delete Account'
   })
 }
 
 const showSaveDialog = () => {
   show({
-    title: 'Save Changes',
-    description: 'You have unsaved changes. Do you want to save them before leaving?',
     actions: [
       {
-        name: 'Save',
-        color: 'primary',
-        icon: 'Save',
         callback: () => {
           console.log('Changes saved')
-        }
+        },
+        color: 'primary',
+        icon: 'Save',
+        name: 'Save'
       }
-    ]
+    ],
+    description: 'You have unsaved changes. Do you want to save them before leaving?',
+    title: 'Save Changes'
   })
 }
 
 const showNonDismissibleDialog = () => {
   show({
-    title: 'Processing',
-    description: 'Please wait while we process your request. This may take a few moments.',
-    dismissible: false,
     actions: [
       {
-        name: 'Force Close',
-        color: 'primary',
         callback: () => {
           console.log('Forced close')
-        }
+        },
+        color: 'primary',
+        name: 'Force Close'
       }
-    ]
+    ],
+    description: 'Please wait while we process your request. This may take a few moments.',
+    dismissible: false,
+    title: 'Processing'
   })
 }
 
 const showCustomActionsDialog = () => {
   show({
-    title: 'Choose Action',
-    description: 'What would you like to do with this file?',
     actions: [
       {
-        name: 'Download',
-        color: 'secondary',
         callback: () => {
           console.log('File downloaded')
-        }
+        },
+        color: 'secondary',
+        name: 'Download'
       },
       {
-        name: 'Share',
-        color: 'secondary',
         callback: () => {
           console.log('File shared')
-        }
+        },
+        color: 'secondary',
+        name: 'Share'
       },
       {
-        name: 'Delete',
-        color: 'secondary',
         callback: () => {
           console.log('File deleted')
-        }
+        },
+        color: 'secondary',
+        name: 'Delete'
       }
-    ]
+    ],
+    description: 'What would you like to do with this file?',
+    title: 'Choose Action'
   })
 }
 
 const showTitleOnlyDialog = () => {
   show({
-    title: 'Quick Action',
     actions: [
       {
-        name: 'Execute',
-        color: 'primary',
-        icon: 'Zap',
         callback: () => {
           console.log('Action executed')
-        }
+        },
+        color: 'primary',
+        icon: 'Zap',
+        name: 'Execute'
       }
-    ]
+    ],
+    title: 'Quick Action'
   })
 }
 
 const showDescriptionOnlyDialog = () => {
   show({
-    description:
-      'This is a dialog with only a description and no title. Sometimes you just need to show a message without a formal heading.',
     actions: [
       {
-        name: 'Understood',
-        color: 'primary',
         callback: () => {
           console.log('Message acknowledged')
-        }
+        },
+        color: 'primary',
+        name: 'Understood'
       }
-    ]
+    ],
+    description:
+      'This is a dialog with only a description and no title. Sometimes you just need to show a message without a formal heading.'
   })
 }
 </script>

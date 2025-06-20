@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+
 import Input from '@/components/common/Input.vue'
 
 const basicValue = ref('')

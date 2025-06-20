@@ -1,10 +1,10 @@
 <script setup>
 import { ref } from 'vue'
+
+import Button from '@/components/common/Button.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import MultipleImagesReview from '@/components/MultipleImagesReview.vue'
-
 import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
-import Button from '@/components/common/Button.vue'
 import api from '@/utils/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
@@ -58,7 +58,7 @@ const handleUploadForReview = async (data) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 
-      const { sessionId, metadata } = response.data.data
+      const { metadata, sessionId } = response.data.data
       sessionIds.value.push(sessionId)
       extractedMetadata.value.push(metadata)
       previewUrls.value.push(urls[0])
@@ -84,8 +84,8 @@ const handleConfirm = async (data) => {
       uploadedImages.value = response.data.images
     } else {
       const response = await api.post('/upload/confirm', {
-        sessionId: data[0].sessionId,
-        metadata: data[0].metadata
+        metadata: data[0].metadata,
+        sessionId: data[0].sessionId
       })
       uploadedImages.value.push(response.data.image)
     }

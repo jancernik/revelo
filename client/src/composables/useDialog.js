@@ -1,21 +1,21 @@
 import { reactive } from 'vue'
 
 const dialogState = reactive({
-  isOpen: false,
-  title: '',
+  actions: [],
   description: '',
   dismissible: true,
-  actions: []
+  isOpen: false,
+  title: ''
 })
 
 export function useDialog() {
   const show = (options = {}) => {
     Object.assign(dialogState, {
-      isOpen: true,
-      title: options.title || '',
+      actions: options.actions || [],
       description: options.description || '',
       dismissible: options.dismissible !== false,
-      actions: options.actions || []
+      isOpen: true,
+      title: options.title || ''
     })
   }
 
@@ -29,7 +29,7 @@ export function useDialog() {
 
   return {
     dialogState,
-    show,
-    hide
+    hide,
+    show
   }
 }

@@ -1,24 +1,25 @@
 <script setup>
-import { computed, useTemplateRef, onMounted, nextTick, watch } from 'vue'
+import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+
 import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps({
+  disabled: {
+    default: false,
+    type: Boolean
+  },
   modelValue: {
-    type: [String, Number],
-    default: null
+    default: null,
+    type: [String, Number]
   },
   options: {
-    type: Array,
+    default: () => [],
     required: true,
-    default: () => []
-  },
-  disabled: {
-    type: Boolean,
-    default: false
+    type: Array
   },
   vertical: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
   }
 })
 

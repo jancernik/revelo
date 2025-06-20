@@ -1,9 +1,10 @@
 <script setup>
-import { computed, reactive, useTemplateRef, onMounted, nextTick } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useRouter, useRoute } from 'vue-router'
-import ThemeToggler from '@/components/ThemeToggler.vue'
 import gsap from 'gsap'
+import { computed, nextTick, onMounted, reactive, useTemplateRef } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import ThemeToggler from '@/components/ThemeToggler.vue'
+import { useAuthStore } from '@/stores/auth'
 import { cssVar } from '@/utils/ui'
 
 const route = useRoute()
@@ -84,27 +85,27 @@ const initAnimation = () => {
 
   enterTimeline
     .to(menu.value, {
-      scale: 1.03,
-      y: `-${cssVar('--spacing-6')}`,
+      borderRadius: `${cssVar('--radius-xl')}`,
       duration: 0.45,
       ease: 'back.out(2.2)',
-      borderRadius: `${cssVar('--radius-xl')}`
+      scale: 1.03,
+      y: `-${cssVar('--spacing-6')}`
     })
     .to(
       menuUl.value,
       {
-        gap: `${cssVar('--spacing-4')}`,
         duration: 0.15,
-        ease: 'power1.out'
+        ease: 'power1.out',
+        gap: `${cssVar('--spacing-4')}`
       },
       '<'
     )
     .to(
       '.list-item button',
       {
-        padding: `${cssVar('--spacing-3')} ${cssVar('--spacing-4')}`,
         duration: 0.15,
-        ease: 'power1.out'
+        ease: 'power1.out',
+        padding: `${cssVar('--spacing-3')} ${cssVar('--spacing-4')}`
       },
       '<'
     )
@@ -112,28 +113,28 @@ const initAnimation = () => {
   leaveTimeline = gsap.timeline({ paused: true })
   leaveTimeline
     .to(menu.value, {
-      scale: 1,
-      y: 0,
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
       duration: 0.15,
-      ease: 'power2.out'
+      ease: 'power2.out',
+      scale: 1,
+      y: 0
     })
     .to(
       menuUl.value,
       {
-        gap: 0,
         duration: 0.1,
-        ease: 'power1.out'
+        ease: 'power1.out',
+        gap: 0
       },
       '<'
     )
     .to(
       '.list-item button',
       {
-        padding: `${cssVar('--spacing-2')} ${cssVar('--spacing-4')}`,
         duration: 0.1,
-        ease: 'power4.out'
+        ease: 'power4.out',
+        padding: `${cssVar('--spacing-2')} ${cssVar('--spacing-4')}`
       },
       '<'
     )
@@ -141,9 +142,9 @@ const initAnimation = () => {
       menu.value,
       {
         duration: 0.07,
-        scaleY: 0.92,
-        scaleX: 1.03,
         repeat: 1,
+        scaleX: 1.03,
+        scaleY: 0.92,
         yoyo: true
       },
       '-=0.07'

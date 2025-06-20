@@ -1,9 +1,10 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import ToggleSetting from '@/components/ToggleSetting.vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+
+import Button from '@/components/common/Button.vue'
 import InputSetting from '@/components/InputSetting.vue'
 import SwitchSetting from '@/components/SwitchSetting.vue'
-import Button from '@/components/common/Button.vue'
+import ToggleSetting from '@/components/ToggleSetting.vue'
 import { useSettings } from '@/composables/useSettings'
 import api from '@/utils/api'
 

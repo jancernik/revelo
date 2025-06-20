@@ -3,8 +3,8 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const props = defineProps({
   image: {
-    type: Object,
-    required: true
+    required: true,
+    type: Object
   }
 })
 

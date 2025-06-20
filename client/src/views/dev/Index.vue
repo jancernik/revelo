@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
+import { markRaw, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import Sidebar from '@/views/dev/Sidebar.vue'
 
 const route = useRoute()
@@ -21,9 +22,9 @@ const loadComponents = async () => {
       const component = modules[path].default
 
       componentList.push({
-        name: filename,
+        component: markRaw(component),
         id: filename.toLowerCase(),
-        component: markRaw(component)
+        name: filename
       })
     }
 

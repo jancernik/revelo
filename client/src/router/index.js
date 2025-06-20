@@ -1,68 +1,69 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+import { useAuthStore } from '@/stores/auth'
+import DashboardIndex from '@/views/dashboard/Index.vue'
+import DashboardSettings from '@/views/dashboard/Settings.vue'
+import DashboardUpload from '@/views/dashboard/Upload.vue'
+import DevIndex from '@/views/dev/Index.vue'
+import NotFound from '@/views/errors/NotFound.vue'
 import Home from '@/views/Home.vue'
+import Image from '@/views/Image.vue'
 import Login from '@/views/Login.vue'
 import Signup from '@/views/Signup.vue'
-import DashboardIndex from '@/views/dashboard/Index.vue'
-import DashboardUpload from '@/views/dashboard/Upload.vue'
-import DashboardSettings from '@/views/dashboard/Settings.vue'
-import DevIndex from '@/views/dev/Index.vue'
-import Image from '@/views/Image.vue'
-import NotFound from '@/views/errors/NotFound.vue'
-import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
+      component: Home,
       name: 'home',
-      component: Home
+      path: '/'
     },
     {
-      path: '/login',
+      component: Login,
       name: 'login',
-      component: Login
+      path: '/login'
     },
     {
-      path: '/signup',
+      component: Signup,
       name: 'signup',
-      component: Signup
+      path: '/signup'
     },
     {
-      path: '/dashboard',
-      meta: { requiresAuth: true },
       children: [
         {
-          path: '',
+          component: DashboardIndex,
           name: 'dashboard',
-          component: DashboardIndex
+          path: ''
         },
         {
-          path: 'upload',
+          component: DashboardUpload,
           name: 'upload',
-          component: DashboardUpload
+          path: 'upload'
         },
         {
-          path: 'settings',
+          component: DashboardSettings,
           name: 'settings',
-          component: DashboardSettings
+          path: 'settings'
         }
-      ]
+      ],
+      meta: { requiresAuth: true },
+      path: '/dashboard'
     },
     {
-      path: '/image/:id',
-      name: 'image',
       component: Image,
+      name: 'image',
+      path: '/image/:id',
       props: true
     },
     {
-      path: '/dev',
+      component: DevIndex,
       name: 'dev',
-      component: DevIndex
+      path: '/dev'
     },
     {
-      path: '/:catchAll(.*)',
-      component: NotFound
+      component: NotFound,
+      path: '/:catchAll(.*)'
     }
   ]
 })

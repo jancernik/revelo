@@ -9,14 +9,14 @@ let toastId = 0
 export function useToast() {
   const show = (options = {}) => {
     const toast = {
-      id: ++toastId,
-      type: options.type || 'info',
-      title: options.title || '',
+      action: options.action || null,
       description: options.description || '',
-      duration: options.duration !== undefined ? options.duration : 5000,
-      showIcon: options.showIcon !== false,
       dismissible: options.dismissible !== false,
-      action: options.action || null
+      duration: options.duration !== undefined ? options.duration : 5000,
+      id: ++toastId,
+      showIcon: options.showIcon !== false,
+      title: options.title || '',
+      type: options.type || 'info'
     }
 
     toastState.toasts.push(toast)
@@ -42,9 +42,9 @@ export function useToast() {
   }
 
   return {
-    toastState,
-    show,
+    clear,
     remove,
-    clear
+    show,
+    toastState
   }
 }

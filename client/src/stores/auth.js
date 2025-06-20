@@ -1,26 +1,19 @@
 import { defineStore } from 'pinia'
+
 import api from '@/utils/api'
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    accessToken: localStorage.getItem('accessToken') || null
-  }),
-
   actions: {
-    async signup({ email, username, password }) {
-      try {
-        const response = await api.post('/signup', { email, username, password })
-        this.setUser(response.data)
-      } catch (error) {
-        console.error('Signup failed:', error.response?.data || error)
-        throw error
-      }
+    clearUser() {
+      this.user = null
+      this.accessToken = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('accessToken')
     },
 
-    async login({ username, password }) {
+    async login({ password, username }) {
       try {
-        const response = await api.post('/login', { username, password })
+        const response = await api.post('/login', { password, username })
         this.setUser(response.data)
       } catch (error) {
         console.error('Login failed:', error.response?.data || error)
@@ -57,11 +50,19 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('accessToken', data.accessToken)
     },
 
-    clearUser() {
-      this.user = null
-      this.accessToken = null
-      localStorage.removeItem('user')
-      localStorage.removeItem('accessToken')
+    async signup({ email, password, username }) {
+      try {
+        const response = await api.post('/signup', { email, password, username })
+        this.setUser(response.data)
+      } catch (error) {
+        console.error('Signup failed:', error.response?.data || error)
+        throw error
+      }
     }
-  }
+  },
+
+  state: () => ({
+    accessToken: localStorage.getItem('accessToken') || null,
+    user: JSON.parse(localStorage.getItem('user')) || null
+  })
 })

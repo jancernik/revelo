@@ -1,13 +1,14 @@
 <script setup>
-import Menu from '@/components/layout/Menu.vue'
-import Main from '@/components/layout/Main.vue'
+import { onMounted, watch } from 'vue'
+
 import Dialog from '@/components/common/Dialog.vue'
 import FullscreenImage from '@/components/common/FullscreenImage.vue'
 import Toast from '@/components/common/Toast.vue'
+import Main from '@/components/layout/Main.vue'
+import Menu from '@/components/layout/Menu.vue'
 import { useTheme } from '@/composables/useTheme'
-import { onMounted, watch } from 'vue'
 
-const { themeClass, isAnimating } = useTheme()
+const { isAnimating, themeClass } = useTheme()
 
 const applyThemeToDocument = (theme) => {
   if (!isAnimating.value) {

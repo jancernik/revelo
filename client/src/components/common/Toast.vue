@@ -1,16 +1,16 @@
 <script setup>
-import { useToast } from '@/composables/useToast'
 import Button from '@/components/common/Button.vue'
 import Icon from '@/components/common/Icon.vue'
+import { useToast } from '@/composables/useToast'
 
 const ICONS = {
-  success: 'CheckCircle',
   error: 'AlertCircle',
-  warning: 'AlertTriangle',
-  info: 'Info'
+  info: 'Info',
+  success: 'CheckCircle',
+  warning: 'AlertTriangle'
 }
 
-const { toastState, remove } = useToast()
+const { remove, toastState } = useToast()
 
 const getTypeIcon = (type) => {
   return ICONS[type] || 'info'

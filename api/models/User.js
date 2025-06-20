@@ -1,19 +1,12 @@
-import { eq } from "drizzle-orm";
-import { BaseModel } from "./BaseModel.js";
-import { UserTables } from "../drizzle/schema.js";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+
+import { UserTables } from "../drizzle/schema.js";
+import { BaseModel } from "./BaseModel.js";
 
 export class User extends BaseModel {
   constructor() {
     super(UserTables);
-  }
-
-  async findByEmail(email) {
-    return await this.find(eq(this.table.email, email));
-  }
-
-  async findByUsername(username) {
-    return await this.find(eq(this.table.username, username));
   }
 
   async create(data) {
@@ -22,6 +15,14 @@ export class User extends BaseModel {
     }
 
     return await super.create(data);
+  }
+
+  async findByEmail(email) {
+    return await this.find(eq(this.table.email, email));
+  }
+
+  async findByUsername(username) {
+    return await this.find(eq(this.table.username, username));
   }
 
   async update(id, data) {

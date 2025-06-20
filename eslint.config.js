@@ -1,8 +1,10 @@
 import eslint from '@eslint/js'
 import globals from 'globals'
+import perfectionist from 'eslint-plugin-perfectionist'
 
 export default [
   eslint.configs.recommended,
+  perfectionist.configs['recommended-natural'],
   {
     ignores: ['client/*', 'tests/*', 'dist/*', '**/*.config.js', '**/pnpm-lock.yaml']
   },

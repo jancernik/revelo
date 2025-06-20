@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
-import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+
 import Button from '@/components/common/Button.vue'
 import Icon from '@/components/common/Icon.vue'
+import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
 import { useSettings } from '@/composables/useSettings'
 
 const { settings } = useSettings()

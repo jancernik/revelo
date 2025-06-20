@@ -1,27 +1,28 @@
 <script setup>
 import { computed } from 'vue'
-import Switch from '@/components/common/Switch.vue'
+
 import Button from '@/components/common/Button.vue'
+import Switch from '@/components/common/Switch.vue'
 import { useDialog } from '@/composables/useDialog'
 
 const { show } = useDialog()
 
 const props = defineProps({
-  setting: {
-    type: Object,
-    required: true
-  },
   currentValue: {
-    type: [String, Object],
-    required: true
-  },
-  originalValue: {
-    type: [String, Object],
-    required: true
+    required: true,
+    type: [String, Object]
   },
   isResetting: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
+  },
+  originalValue: {
+    required: true,
+    type: [String, Object]
+  },
+  setting: {
+    required: true,
+    type: Object
   }
 })
 
@@ -57,15 +58,15 @@ const switchOptions = computed(() => {
   return props.setting.options.map((option) => {
     if (typeof option === 'string') {
       return {
-        value: option,
-        label: option
+        label: option,
+        value: option
       }
     }
 
     return {
-      value: option.value || option.id || option.key,
+      icon: option.icon,
       label: option.label || option.name || option.value || option.id || option.key,
-      icon: option.icon
+      value: option.value || option.id || option.key
     }
   })
 })
@@ -88,18 +89,18 @@ const handleUpdate = (newValue) => {
 
 const showResetDefaultDialog = () => {
   show({
-    title: `Reset ${props.setting.name}`,
-    description: `Are you sure you want to reset the setting to its default value?`,
-    dismissible: true,
     actions: [
       {
-        name: 'Reset',
-        color: 'primary',
         callback: () => {
           emit('reset-default')
-        }
+        },
+        color: 'primary',
+        name: 'Reset'
       }
-    ]
+    ],
+    description: `Are you sure you want to reset the setting to its default value?`,
+    dismissible: true,
+    title: `Reset ${props.setting.name}`
   })
 }
 </script>

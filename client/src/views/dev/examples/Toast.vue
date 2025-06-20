@@ -1,177 +1,177 @@
 <script setup>
-import { useToast } from '@/composables/useToast'
 import Button from '@/components/common/Button.vue'
+import { useToast } from '@/composables/useToast'
 
-const { show, clear } = useToast()
+const { clear, show } = useToast()
 
 const showSuccessToast = () => {
   show({
-    type: 'success',
-    title: 'Success!',
     description: 'Your changes have been saved successfully.',
-    duration: 4
+    duration: 4,
+    title: 'Success!',
+    type: 'success'
   })
 }
 
 const showErrorToast = () => {
   show({
-    type: 'error',
-    title: 'Error occurred',
     description: 'Failed to save your changes. Please try again.',
-    duration: 6
+    duration: 6,
+    title: 'Error occurred',
+    type: 'error'
   })
 }
 
 const showWarningToast = () => {
   show({
-    type: 'warning',
-    title: 'Warning',
     description: 'Your session will expire in 5 minutes.',
-    duration: 5
+    duration: 5,
+    title: 'Warning',
+    type: 'warning'
   })
 }
 
 const showInfoToast = () => {
   show({
-    type: 'info',
-    title: 'New feature available',
     description: 'Check out our latest update in the settings panel.',
-    duration: 4
+    duration: 4,
+    title: 'New feature available',
+    type: 'info'
   })
 }
 
 const showTitleOnlyToast = () => {
   show({
-    type: 'success',
-    title: 'File uploaded successfully!',
+    dismissible: false,
     duration: 3,
-    dismissible: false
+    title: 'File uploaded successfully!',
+    type: 'success'
   })
 }
 
 const showDescriptionOnlyToast = () => {
   show({
-    type: 'info',
     description: 'This toast only has a description without a title.',
+    dismissible: false,
     duration: 3,
-    dismissible: false
+    type: 'info'
   })
 }
 
 const showWithActionToast = () => {
   show({
-    type: 'info',
-    title: 'New message',
-    description: 'You have a new message from John Doe.',
-    duration: 8,
-    dismissible: false,
     action: {
-      name: 'View',
-      color: 'primary',
-      icon: 'Eye',
       callback: () => {
         console.log('Viewing message')
-      }
-    }
+      },
+      color: 'primary',
+      icon: 'Eye',
+      name: 'View'
+    },
+    description: 'You have a new message from John Doe.',
+    dismissible: false,
+    duration: 8,
+    title: 'New message',
+    type: 'info'
   })
 }
 
 const showUndoToast = () => {
   show({
-    type: 'info',
-    title: 'Item deleted',
-    description: 'The item has been moved to trash.',
-    duration: 10,
-    dismissible: false,
     action: {
-      name: 'Undo',
-      color: 'secondary',
-      icon: 'Undo',
       callback: () => {
         console.log('Undo delete')
-      }
-    }
+      },
+      color: 'secondary',
+      icon: 'Undo',
+      name: 'Undo'
+    },
+    description: 'The item has been moved to trash.',
+    dismissible: false,
+    duration: 10,
+    title: 'Item deleted',
+    type: 'info'
   })
 }
 
 const showPersistentToast = () => {
   show({
-    type: 'warning',
-    title: 'Persistent notification',
     description: 'This toast will stay until manually dismissed.',
+    dismissible: true,
     duration: 0,
-    dismissible: true
+    title: 'Persistent notification',
+    type: 'warning'
   })
 }
 
 const showNonDismissibleToast = () => {
   show({
-    type: 'info',
-    title: 'Processing...',
-    description: 'Please wait while we process your request.',
-    duration: 0,
-    dismissible: false,
     action: {
-      name: 'Cancel',
-      color: 'secondary',
       callback: () => {
         console.log('Process cancelled')
-      }
-    }
+      },
+      color: 'secondary',
+      name: 'Cancel'
+    },
+    description: 'Please wait while we process your request.',
+    dismissible: false,
+    duration: 0,
+    title: 'Processing...',
+    type: 'info'
   })
 }
 
 const showMultipleToasts = () => {
   show({
-    type: 'info',
-    title: 'First toast',
     description: 'This is the first toast.',
-    duration: 3
+    duration: 3,
+    title: 'First toast',
+    type: 'info'
   })
 
   setTimeout(() => {
     show({
-      type: 'success',
-      title: 'Second toast',
       description: 'This is the second toast.',
-      duration: 3
+      duration: 3,
+      title: 'Second toast',
+      type: 'success'
     })
   }, 500)
 
   setTimeout(() => {
     show({
-      type: 'warning',
-      title: 'Third toast',
       description: 'This is the third toast.',
-      duration: 3
+      duration: 3,
+      title: 'Third toast',
+      type: 'warning'
     })
   }, 1000)
 }
 
 const showLongContentToast = () => {
   show({
-    type: 'info',
-    title: 'Long content example',
+    action: {
+      callback: () => {
+        console.log('Reading more')
+      },
+      color: 'primary',
+      name: 'Read More'
+    },
     description:
       'This is an example of a toast with much longer content to demonstrate how the component handles text wrapping and maintains readability with extended descriptions.',
     duration: 6,
-    action: {
-      name: 'Read More',
-      color: 'primary',
-      callback: () => {
-        console.log('Reading more')
-      }
-    }
+    title: 'Long content example',
+    type: 'info'
   })
 }
 
 const clearAllToasts = () => {
   clear()
   show({
-    type: 'info',
-    title: 'All toasts cleared',
+    dismissible: false,
     duration: 2,
-    dismissible: false
+    title: 'All toasts cleared',
+    type: 'info'
   })
 }
 </script>

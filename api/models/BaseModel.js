@@ -1,10 +1,35 @@
+import { count, eq, sql } from "drizzle-orm";
+
 import { db } from "../db.js";
-import { sql, eq, count } from "drizzle-orm";
 
 export class BaseModel {
   constructor(table) {
     this.table = table;
     this.db = db;
+  }
+
+  async count(where) {
+    const result = await this.db.select({ count: count() }).from(this.table).where(where);
+
+    return parseInt(result[0].count, 10);
+  }
+
+  async create(data) {
+    const results = await this.db.insert(this.table).values(data).returning();
+
+    return results[0] || null;
+  }
+
+  async delete(id) {
+    const results = await this.db.delete(this.table).where(eq(this.table.id, id)).returning();
+
+    return results[0] || null;
+  }
+
+  async find(where) {
+    const results = await this.db.select().from(this.table).where(where).limit(1);
+
+    return results[0] || null;
   }
 
   async findAll(options = {}) {
@@ -37,18 +62,6 @@ export class BaseModel {
     return results[0] || null;
   }
 
-  async find(where) {
-    const results = await this.db.select().from(this.table).where(where).limit(1);
-
-    return results[0] || null;
-  }
-
-  async create(data) {
-    const results = await this.db.insert(this.table).values(data).returning();
-
-    return results[0] || null;
-  }
-
   async update(id, data) {
     const results = await this.db
       .update(this.table)
@@ -57,17 +70,5 @@ export class BaseModel {
       .returning();
 
     return results[0] || null;
-  }
-
-  async delete(id) {
-    const results = await this.db.delete(this.table).where(eq(this.table.id, id)).returning();
-
-    return results[0] || null;
-  }
-
-  async count(where) {
-    const result = await this.db.select({ count: count() }).from(this.table).where(where);
-
-    return parseInt(result[0].count, 10);
   }
 }

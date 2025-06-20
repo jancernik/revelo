@@ -3,19 +3,19 @@ import { setRefreshCookie } from "../utils/tokenUtils.js";
 
 export const signup = async (req, res) => {
   try {
-    const { email, username, password } = req.body;
-    const { newUser, accessToken, refreshToken } = await authService.signup({
+    const { email, password, username } = req.body;
+    const { accessToken, newUser, refreshToken } = await authService.signup({
       email,
-      username,
-      password
+      password,
+      username
     });
 
     setRefreshCookie(res, refreshToken);
 
     res.status(201).json({
+      accessToken,
       message: "User created successfully.",
-      user: { email, username, admin: newUser.admin },
-      accessToken
+      user: { admin: newUser.admin, email, username }
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -24,15 +24,15 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const { user, accessToken, refreshToken } = await authService.login({ username, password });
+    const { password, username } = req.body;
+    const { accessToken, refreshToken, user } = await authService.login({ password, username });
 
     setRefreshCookie(res, refreshToken);
 
     res.json({
+      accessToken,
       message: "Logged in successfully.",
-      user: { email: user.email, username: user.username, admin: user.admin },
-      accessToken
+      user: { admin: user.admin, email: user.email, username: user.username }
     });
   } catch (error) {
     res.status(401).json({ message: error.message });

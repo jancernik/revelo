@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Input from '@/components/common/Input.vue'
+
 import Button from '@/components/common/Button.vue'
+import Input from '@/components/common/Input.vue'
 import { useSettings } from '@/composables/useSettings'
+import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -23,8 +24,8 @@ const handleSignup = async () => {
   try {
     await authStore.signup({
       email: email.value,
-      username: username.value,
-      password: password.value
+      password: password.value,
+      username: username.value
     })
     if (authStore.user?.admin) {
       router.push('/dashboard')

@@ -1,53 +1,54 @@
 <script setup>
-import { useTemplateRef, nextTick, onMounted } from 'vue'
+import { nextTick, onMounted, useTemplateRef } from 'vue'
+
 import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps({
-  modelValue: {
-    type: [String, Number],
-    default: ''
-  },
-  label: {
-    type: String,
-    default: ''
-  },
   description: {
-    type: String,
-    default: ''
-  },
-  placeholder: {
-    type: String,
-    default: ''
-  },
-  type: {
-    type: String,
-    default: 'text'
-  },
-  icon: {
-    type: String,
-    default: ''
-  },
-  iconPosition: {
-    type: String,
-    default: 'left',
-    validator: (value) => ['left', 'right'].includes(value)
-  },
-  unit: {
-    type: String,
-    default: ''
-  },
-  unitPosition: {
-    type: String,
-    default: 'right',
-    validator: (value) => ['left', 'right'].includes(value)
-  },
-  error: {
-    type: String,
-    default: ''
+    default: '',
+    type: String
   },
   disabled: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
+  },
+  error: {
+    default: '',
+    type: String
+  },
+  icon: {
+    default: '',
+    type: String
+  },
+  iconPosition: {
+    default: 'left',
+    type: String,
+    validator: (value) => ['left', 'right'].includes(value)
+  },
+  label: {
+    default: '',
+    type: String
+  },
+  modelValue: {
+    default: '',
+    type: [String, Number]
+  },
+  placeholder: {
+    default: '',
+    type: String
+  },
+  type: {
+    default: 'text',
+    type: String
+  },
+  unit: {
+    default: '',
+    type: String
+  },
+  unitPosition: {
+    default: 'right',
+    type: String,
+    validator: (value) => ['left', 'right'].includes(value)
   }
 })
 

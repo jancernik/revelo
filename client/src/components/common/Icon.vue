@@ -1,26 +1,26 @@
 <script setup>
-import { ref, watch, onMounted, defineAsyncComponent, markRaw } from 'vue'
+import { defineAsyncComponent, markRaw, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  name: {
-    type: String,
-    required: true
-  },
-  size: {
-    type: [String, Number],
-    default: 24
-  },
   color: {
-    type: String,
-    default: 'currentColor'
-  },
-  strokeWidth: {
-    type: Number,
-    default: 2
+    default: 'currentColor',
+    type: String
   },
   defaultClass: {
-    type: String,
-    default: 'r-icon'
+    default: 'r-icon',
+    type: String
+  },
+  name: {
+    required: true,
+    type: String
+  },
+  size: {
+    default: 24,
+    type: [String, Number]
+  },
+  strokeWidth: {
+    default: 2,
+    type: Number
   }
 })
 

@@ -2,16 +2,16 @@
 import Icon from '@/components/common/Icon.vue'
 
 defineProps({
-  icon: {
-    type: String,
-    default: ''
-  },
   color: {
-    type: String,
     default: 'primary',
+    type: String,
     validator: (value) => {
       return ['primary', 'secondary'].includes(value)
     }
+  },
+  icon: {
+    default: '',
+    type: String
   }
 })
 </script>

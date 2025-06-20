@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+
 import RSwitch from '@/components/common/Switch.vue'
 
 const viewMode = ref('grid')
@@ -9,39 +10,39 @@ const verticalTheme = ref('auto')
 const disabledValue = ref('enabled')
 
 const viewOptions = [
-  { value: 'list', icon: 'List' },
-  { value: 'grid', icon: 'Grid3X3' },
-  { value: 'card', icon: 'LayoutGrid' }
+  { icon: 'List', value: 'list' },
+  { icon: 'Grid3X3', value: 'grid' },
+  { icon: 'LayoutGrid', value: 'card' }
 ]
 
 const themeOptions = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'auto', label: 'Auto' }
+  { label: 'Light', value: 'light' },
+  { label: 'Dark', value: 'dark' },
+  { label: 'Auto', value: 'auto' }
 ]
 
 const alignmentOptions = [
-  { value: 'left', icon: 'AlignLeft' },
-  { value: 'center', icon: 'AlignCenter' },
-  { value: 'right', icon: 'AlignRight' },
-  { value: 'justify', icon: 'AlignJustify' }
+  { icon: 'AlignLeft', value: 'left' },
+  { icon: 'AlignCenter', value: 'center' },
+  { icon: 'AlignRight', value: 'right' },
+  { icon: 'AlignJustify', value: 'justify' }
 ]
 
 const verticalOptions = [
-  { value: 'light', label: 'Light Theme' },
-  { value: 'dark', label: 'Dark Theme' },
-  { value: 'auto', label: 'System' }
+  { label: 'Light Theme', value: 'light' },
+  { label: 'Dark Theme', value: 'dark' },
+  { label: 'System', value: 'auto' }
 ]
 
 const disabledOptions = [
-  { value: 'enabled', label: 'Enabled' },
-  { value: 'disabled', label: 'Disabled' }
+  { label: 'Enabled', value: 'enabled' },
+  { label: 'Disabled', value: 'disabled' }
 ]
 
 const mixedOptions = [
-  { value: 'create', icon: 'Plus', label: 'Create' },
-  { value: 'edit', icon: 'Edit', label: 'Edit' },
-  { value: 'delete', icon: 'Trash2', label: 'Delete' }
+  { icon: 'Plus', label: 'Create', value: 'create' },
+  { icon: 'Edit', label: 'Edit', value: 'edit' },
+  { icon: 'Trash2', label: 'Delete', value: 'delete' }
 ]
 
 const mixedValue = ref('create')

@@ -1,50 +1,50 @@
 import { relations } from "drizzle-orm";
 import {
-  pgTable,
-  varchar,
-  timestamp,
-  serial,
-  boolean,
-  integer,
   bigint,
-  pgEnum,
-  unique,
-  primaryKey,
-  vector,
+  boolean,
   index,
-  uuid
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  serial,
+  timestamp,
+  unique,
+  uuid,
+  varchar,
+  vector
 } from "drizzle-orm/pg-core";
 
 export const UserTables = pgTable("users", {
-  id: serial("id").primaryKey().notNull(),
-  email: varchar("email").unique().notNull(),
-  username: varchar("username").unique().notNull(),
-  password: varchar("password").notNull(),
   admin: boolean("admin").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow()
+  email: varchar("email").unique().notNull(),
+  id: serial("id").primaryKey().notNull(),
+  password: varchar("password").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  username: varchar("username").unique().notNull()
 });
 
 export const RevokedTokensTable = pgTable("revoked_tokens", {
-  token: varchar("token").primaryKey().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  token: varchar("token").primaryKey().notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
 export const ImagesTable = pgTable(
   "images",
   {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    originalFilename: varchar("original_filename", { length: 255 }).notNull(),
-    iso: integer("iso"),
     aperture: varchar("aperture", { length: 50 }),
-    shutterSpeed: varchar("shutter_speed", { length: 50 }),
-    focalLength: varchar("focal_length", { length: 50 }),
     camera: varchar("camera", { length: 255 }),
-    lens: varchar("lens", { length: 255 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
     date: timestamp("date"),
     embedding: vector("embedding", { dimensions: 512 }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    focalLength: varchar("focal_length", { length: 50 }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    iso: integer("iso"),
+    lens: varchar("lens", { length: 255 }),
+    originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+    shutterSpeed: varchar("shutter_speed", { length: 50 }),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
   (table) => {
@@ -62,18 +62,18 @@ export const ImageVersionTypes = pgEnum("image_version_types", ["original", "reg
 export const ImageVersionsTable = pgTable(
   "image_versions",
   {
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    height: integer("height").notNull(),
     id: serial("id").primaryKey().notNull(),
     imageId: uuid("image_id")
       .references(() => ImagesTable.id, { onDelete: "cascade" })
       .notNull(),
     mimetype: varchar("mimetype", { length: 100 }).notNull(),
-    size: bigint("size", { mode: "number" }).notNull(),
-    width: integer("width").notNull(),
-    height: integer("height").notNull(),
-    type: ImageVersionTypes("type").notNull(),
     path: varchar("path").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow()
+    size: bigint("size", { mode: "number" }).notNull(),
+    type: ImageVersionTypes("type").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    width: integer("width").notNull()
   },
   (table) => {
     return {
@@ -83,45 +83,45 @@ export const ImageVersionsTable = pgTable(
 );
 
 export const PostsTable = pgTable("posts", {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  description: varchar("description"),
   id: serial("id").primaryKey().notNull(),
   title: varchar("title", { length: 255 }),
-  description: varchar("description"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
 export const PostImagesTable = pgTable(
   "post_images",
   {
-    postId: serial("post_id")
-      .references(() => PostsTable.id, { onDelete: "cascade" })
-      .notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
     imageId: uuid("image_id")
       .references(() => ImagesTable.id, { onDelete: "cascade" })
       .notNull(),
     order: integer("order").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    postId: serial("post_id")
+      .references(() => PostsTable.id, { onDelete: "cascade" })
+      .notNull(),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
   (table) => {
     return {
-      uniqueOrder: unique("unique_order").on(table.imageId, table.postId, table.order),
-      primaryKey: primaryKey({ columns: [table.imageId, table.postId] })
+      primaryKey: primaryKey({ columns: [table.imageId, table.postId] }),
+      uniqueOrder: unique("unique_order").on(table.imageId, table.postId, table.order)
     };
   }
 );
 
 export const SettingsTable = pgTable("settings", {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
   id: serial("id").primaryKey().notNull(),
   name: varchar("name").unique().notNull(),
-  value: varchar("value").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow()
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  value: varchar("value").notNull()
 });
 
 export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
-  versions: many(ImageVersionsTable),
-  postsImages: many(PostImagesTable)
+  postsImages: many(PostImagesTable),
+  versions: many(ImageVersionsTable)
 }));
 
 export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
@@ -136,12 +136,12 @@ export const PostsTableRelations = relations(PostsTable, ({ many }) => ({
 }));
 
 export const PostImagesTableRelations = relations(PostImagesTable, ({ one }) => ({
-  post: one(PostsTable, {
-    fields: [PostImagesTable.postId],
-    references: [PostsTable.id]
-  }),
   image: one(ImagesTable, {
     fields: [PostImagesTable.imageId],
     references: [ImagesTable.id]
+  }),
+  post: one(PostsTable, {
+    fields: [PostImagesTable.postId],
+    references: [PostsTable.id]
   })
 }));

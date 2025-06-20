@@ -1,24 +1,9 @@
 import { defineStore } from 'pinia'
+
 import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
 export const useSettingsStore = defineStore('settings', {
-  state: () => ({
-    settingsArray: [],
-    loading: false,
-    error: null,
-    initialized: false
-  }),
-
-  getters: {
-    settings: (state) => {
-      return state.settingsArray.reduce((map, setting) => {
-        map[setting.name] = setting.value
-        return map
-      }, {})
-    }
-  },
-
   actions: {
     async fetchSettings(force = false) {
       if (this.loading && !force) return
@@ -44,14 +29,30 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
 
-    async refreshSettings() {
-      return this.fetchSettings(true)
-    },
-
     async initialize() {
       if (!this.initialized) {
         await this.fetchSettings()
       }
+    },
+
+    async refreshSettings() {
+      return this.fetchSettings(true)
     }
-  }
+  },
+
+  getters: {
+    settings: (state) => {
+      return state.settingsArray.reduce((map, setting) => {
+        map[setting.name] = setting.value
+        return map
+      }, {})
+    }
+  },
+
+  state: () => ({
+    error: null,
+    initialized: false,
+    loading: false,
+    settingsArray: []
+  })
 })

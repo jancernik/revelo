@@ -1,12 +1,12 @@
-import * as imageService from "../services/imageService.js";
 import Image from "../models/Image.js";
+import * as imageService from "../services/imageService.js";
 
 export const uploadForReview = async (req, res) => {
   try {
     const imageData = await imageService.uploadForReview(req.file);
     res.json({
-      message: "Image uploaded and ready for review.",
-      data: imageData
+      data: imageData,
+      message: "Image uploaded and ready for review."
     });
   } catch (error) {
     console.error("Upload for review error:", error);
@@ -16,7 +16,7 @@ export const uploadForReview = async (req, res) => {
 
 export const confirmUpload = async (req, res) => {
   try {
-    const { sessionId, metadata } = req.body;
+    const { metadata, sessionId } = req.body;
 
     if (!sessionId) {
       return res.status(400).json({ error: "Session ID is required." });
@@ -24,8 +24,8 @@ export const confirmUpload = async (req, res) => {
 
     const image = await imageService.confirmUpload(sessionId, metadata);
     res.json({
-      message: "Image saved successfully.",
-      image
+      image,
+      message: "Image saved successfully."
     });
   } catch (error) {
     console.error("Confirm and save error:", error);
@@ -50,7 +50,7 @@ export const uploadBatchForReview = async (req, res) => {
         ? "Image uploaded and ready for review."
         : `${data.length} images uploaded and ready for review.`;
 
-    res.json({ message, data });
+    res.json({ data, message });
   } catch (error) {
     console.error("Batch upload for review error:", error);
     res.status(400).json({ error: error.message });
@@ -67,7 +67,7 @@ export const confirmBatchUpload = async (req, res) => {
 
     const images = [];
     for (const item of batch) {
-      const { sessionId, metadata } = item;
+      const { metadata, sessionId } = item;
       if (!sessionId) {
         return res.status(400).json({ error: "Session ID is required." });
       }
@@ -77,8 +77,8 @@ export const confirmBatchUpload = async (req, res) => {
     }
 
     res.json({
-      message: `${images.length} images saved successfully.`,
-      images
+      images,
+      message: `${images.length} images saved successfully.`
     });
   } catch (error) {
     console.error("Batch confirm and save error:", error);
@@ -128,8 +128,8 @@ export const updateMetadata = async (req, res) => {
     const image = await imageService.updateImageMetadata(id, metadata);
 
     res.json({
-      message: "Image metadata updated successfully.",
-      image
+      image,
+      message: "Image metadata updated successfully."
     });
   } catch (error) {
     console.error("Update metadata error:", error);

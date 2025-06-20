@@ -3,21 +3,21 @@ import Icon from '@/components/common/Icon.vue'
 const emit = defineEmits(['remove'])
 
 defineProps({
+  allowDelete: {
+    default: false,
+    type: Boolean
+  },
   images: {
-    type: Array,
-    required: true
+    required: true,
+    type: Array
   },
   showFileNames: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
   },
   showFileSizes: {
-    type: Boolean,
-    default: false
-  },
-  allowDelete: {
-    type: Boolean,
-    default: false
+    default: false,
+    type: Boolean
   }
 })
 </script>

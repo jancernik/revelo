@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 const theme = ref(localStorage.getItem('theme') || 'system')
 const systemPrefersDark = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -150,19 +150,19 @@ export function useTheme() {
       clonedBody.className = 'theme-transition-clone'
 
       Object.assign(clonedBody.style, {
+        backfaceVisibility: 'hidden',
+        clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
+        height: '100%',
+        left: '0',
+        perspective: '1000px',
+        pointerEvents: 'none',
         position: 'fixed',
         top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        zIndex: '8000',
-        pointerEvents: 'none',
-        clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
-        willChange: 'clip-path',
-        backfaceVisibility: 'hidden',
-        perspective: '1000px',
+        touchAction: 'none',
         userSelect: 'none',
-        touchAction: 'none'
+        width: '100%',
+        willChange: 'clip-path',
+        zIndex: '8000'
       })
 
       clonedBody.classList.add(newThemeClass)
@@ -183,10 +183,10 @@ export function useTheme() {
           { clipPath: `circle(${calculateClipPathSize(origin)}px at ${origin.x}px ${origin.y}px)` }
         ],
         {
+          composite: 'replace',
           duration: 1500,
           easing: 'cubic-bezier(0.52, 0, 0.28, 0.93)',
-          fill: 'forwards',
-          composite: 'replace'
+          fill: 'forwards'
         }
       )
 
@@ -237,9 +237,9 @@ export function useTheme() {
   })
 
   return {
-    theme,
-    themeClass,
+    isAnimating,
     setTheme,
-    isAnimating
+    theme,
+    themeClass
   }
 }

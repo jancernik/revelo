@@ -28,10 +28,10 @@ if (missingEnvVars.length > 0) {
 }
 
 export const config = {
-  ENV: ENV,
-  PORT: process.env.PORT,
+  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
   DB_URL: process.env.DB_URL,
-  JWT_SECRET: process.env.JWT_SECRET,
+  ENV: ENV,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL
+  JWT_SECRET: process.env.JWT_SECRET,
+  PORT: process.env.PORT
 };

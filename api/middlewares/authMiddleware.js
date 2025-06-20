@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+
 import { config } from "../config.js";
 import User from "../models/User.js";
 
@@ -59,8 +60,8 @@ export const loadUser = async (req, res, next) => {
     next();
   } catch (error) {
     return res.status(500).json({
-      message: "Error loading user data",
-      error: error.message
+      error: error.message,
+      message: "Error loading user data"
     });
   }
 };
@@ -71,9 +72,9 @@ export const currentUser = async (req, res) => {
   } else {
     res.status(200).json({
       user: {
+        admin: req.user.admin,
         email: req.user.email,
-        username: req.user.username,
-        admin: req.user.admin
+        username: req.user.username
       }
     });
   }

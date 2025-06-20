@@ -1,6 +1,7 @@
 import eslint from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
 import { includeIgnoreFile } from "@eslint/compat";
+import perfectionist from "eslint-plugin-perfectionist";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -44,4 +45,5 @@ export default [
       ]
     },
   },
+  perfectionist.configs['recommended-natural'],
 ];

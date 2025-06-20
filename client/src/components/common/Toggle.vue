@@ -1,16 +1,16 @@
 <script setup>
 defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false
+  disabled: {
+    default: false,
+    type: Boolean
   },
   label: {
-    type: String,
-    default: ''
+    default: '',
+    type: String
   },
-  disabled: {
-    type: Boolean,
-    default: false
+  modelValue: {
+    default: false,
+    type: Boolean
   }
 })
 

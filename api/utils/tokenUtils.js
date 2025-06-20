@@ -1,5 +1,6 @@
-import { config } from "../config.js";
 import jwt from "jsonwebtoken";
+
+import { config } from "../config.js";
 
 const ACCESS_EXPIRATION = 15; // minutes
 const REFRESH_EXPIRATION = 90; // days
@@ -17,9 +18,9 @@ export const generateRefresh = (user) => {
 export const setRefreshCookie = (res, refreshToken) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: config.ENV === "production",
+    maxAge: REFRESH_EXPIRATION * 24 * 60 * 60 * 1000,
     sameSite: "Strict",
-    maxAge: REFRESH_EXPIRATION * 24 * 60 * 60 * 1000
+    secure: config.ENV === "production"
   });
 };
 

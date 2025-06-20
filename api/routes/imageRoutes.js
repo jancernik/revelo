@@ -1,18 +1,19 @@
 import { Router } from "express";
 import multer from "multer";
+
 import {
-  uploadForReview,
+  cleanupOrphaned,
+  cleanupTemp,
+  confirmBatchUpload,
   confirmUpload,
+  deleteImage,
   fetchAll,
   fetchById,
-  uploadBatchForReview,
-  confirmBatchUpload,
   updateMetadata,
-  deleteImage,
-  cleanupTemp,
-  cleanupOrphaned
+  uploadBatchForReview,
+  uploadForReview
 } from "../controllers/imageController.js";
-import { requireAuth, loadUser } from "../middlewares/authMiddleware.js";
+import { loadUser, requireAuth } from "../middlewares/authMiddleware.js";
 import Setting from "../models/Setting.js";
 
 const storage = multer.diskStorage({
@@ -37,9 +38,9 @@ const dynamicSingleUpload = async (req, res, next) => {
     const maxUploadSize = await Setting.get("maxUploadSize", { includeRestricted: true });
 
     const upload = multer({
-      storage,
       fileFilter,
-      limits: { fileSize: maxUploadSize.value * 1024 * 1024 }
+      limits: { fileSize: maxUploadSize.value * 1024 * 1024 },
+      storage
     }).single("image");
 
     upload(req, res, next);
@@ -54,9 +55,9 @@ const dynamicBatchUpload = async (req, res, next) => {
     const maxUploadFiles = await Setting.get("maxUploadFiles", { includeRestricted: true });
 
     const upload = multer({
-      storage,
       fileFilter,
-      limits: { fileSize: maxUploadSize.value * 1024 * 1024 }
+      limits: { fileSize: maxUploadSize.value * 1024 * 1024 },
+      storage
     }).array("images", maxUploadFiles.value);
 
     upload(req, res, next);

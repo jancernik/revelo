@@ -1,6 +1,6 @@
 <script setup>
-import { useDialog } from '@/composables/useDialog'
 import Button from '@/components/common/Button.vue'
+import { useDialog } from '@/composables/useDialog'
 
 const { dialogState, hide } = useDialog()
 

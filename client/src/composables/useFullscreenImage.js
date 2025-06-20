@@ -1,4 +1,4 @@
-import { shallowRef, ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 const imageData = shallowRef(null)
 const isAnimating = ref(false)
@@ -65,15 +65,15 @@ export function useFullscreenImage() {
   }
 
   return {
-    show,
-    hide,
     completeHide,
+    flipId,
+    hide,
     imageData,
     isAnimating,
     setPopstateCallback,
-    flipId,
+    show,
     smoother,
-    updateRoute,
-    triggerHide
+    triggerHide,
+    updateRoute
   }
 }

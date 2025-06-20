@@ -57,8 +57,8 @@ export const updateMultipleSettings = async (settingsData) => {
       results.push(result);
     } catch (error) {
       errors.push({
-        name,
-        error: error.message
+        error: error.message,
+        name
       });
     }
   }
@@ -66,7 +66,7 @@ export const updateMultipleSettings = async (settingsData) => {
   if (errors.length > 0) {
     const errorMessage = `Failed to update some settings: ${errors.map((e) => `${e.name}: ${e.error}`).join(", ")}`;
     const error = new Error(errorMessage);
-    error.details = { successful: results, failed: errors };
+    error.details = { failed: errors, successful: results };
     throw error;
   }
 

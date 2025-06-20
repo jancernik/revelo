@@ -13,8 +13,8 @@ export const getSettings = async (req, res) => {
     return res.json(settings);
   } catch (error) {
     return res.status(500).json({
-      message: "Failed to retrieve settings",
-      error: error.message
+      error: error.message,
+      message: "Failed to retrieve settings"
     });
   }
 };
@@ -33,8 +33,8 @@ export const getSetting = async (req, res) => {
     return res.json(setting);
   } catch (error) {
     return res.status(500).json({
-      message: `Failed to retrieve setting '${req.params.name}'`,
-      error: error.message
+      error: error.message,
+      message: `Failed to retrieve setting '${req.params.name}'`
     });
   }
 };
@@ -52,8 +52,8 @@ export const updateSetting = async (req, res) => {
     return res.json(result);
   } catch (error) {
     return res.status(500).json({
-      message: `Failed to update setting '${req.params.name}'`,
-      error: error.message
+      error: error.message,
+      message: `Failed to update setting '${req.params.name}'`
     });
   }
 };
@@ -81,15 +81,15 @@ export const updateMultipleSettings = async (req, res) => {
   } catch (error) {
     if (error.details) {
       return res.status(207).json({
+        failed: error.details.failed,
         message: error.message,
-        successful: error.details.successful,
-        failed: error.details.failed
+        successful: error.details.successful
       });
     }
 
     return res.status(500).json({
-      message: "Failed to update settings",
-      error: error.message
+      error: error.message,
+      message: "Failed to update settings"
     });
   }
 };
@@ -105,8 +105,8 @@ export const resetSetting = async (req, res) => {
     return res.json(result);
   } catch (error) {
     return res.status(500).json({
-      message: `Failed to reset setting '${req.params.name}'`,
-      error: error.message
+      error: error.message,
+      message: `Failed to reset setting '${req.params.name}'`
     });
   }
 };

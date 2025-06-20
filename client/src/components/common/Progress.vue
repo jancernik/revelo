@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 const props = defineProps({
   value: {
-    type: [Number, String],
     required: true,
+    type: [Number, String],
     validator: (value) => parseFloat(value) >= 0 && parseFloat(value) <= 100
   }
 })

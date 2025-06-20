@@ -1,11 +1,12 @@
 <script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted, onUnmounted } from 'vue'
+
 import { useFullscreenImage } from '@/composables/useFullscreenImage'
 import { useToast } from '@/composables/useToast'
 import api from '@/utils/api'
 
-const { show: showFullscreenImage, hide: hideFullscreenImage } = useFullscreenImage()
+const { hide: hideFullscreenImage, show: showFullscreenImage } = useFullscreenImage()
 const { show: showToast } = useToast()
 const router = useRouter()
 const route = useRoute()
@@ -18,10 +19,10 @@ const fetchImage = async () => {
   } catch (error) {
     router.push('/')
     showToast({
-      type: 'error',
-      title: 'Error fetching image',
       description: error.message,
-      duration: 5
+      duration: 5,
+      title: 'Error fetching image',
+      type: 'error'
     })
   }
 }

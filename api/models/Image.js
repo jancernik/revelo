@@ -1,15 +1,66 @@
-import { BaseModel } from "./BaseModel.js";
-import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js";
-import path from "path";
-import fs from "fs/promises";
-import sharp from "sharp";
 import { eq } from "drizzle-orm";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+
+import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js";
+import { BaseModel } from "./BaseModel.js";
 
 const uploadsDir = path.join("uploads");
 
 export class Image extends BaseModel {
   constructor() {
     super(ImagesTable);
+  }
+
+  async createWithVersions(file, data) {
+    return await this.db.transaction(async (tx) => {
+      const result = await tx.insert(this.table).values(data).returning();
+      const image = result[0];
+
+      const imageDir = path.join(uploadsDir, image.id.toString());
+      await fs.mkdir(imageDir, { recursive: true });
+
+      const versions = await this.#createImageVersions(tx, file, image.id, imageDir);
+
+      return {
+        ...image,
+        versions
+      };
+    });
+  }
+
+  async findAllWithVersions(options = {}) {
+    const { limit, offset, orderBy, where } = options;
+
+    let query = this.db.query.ImagesTable.findMany({
+      orderBy: orderBy || undefined,
+      where: where || undefined,
+      with: {
+        versions: true
+      }
+    });
+
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
+
+    return await query;
+  }
+
+  async findByIdWithVersions(id) {
+    const result = await this.db.query.ImagesTable.findFirst({
+      where: eq(this.table.id, id),
+      with: {
+        versions: true
+      }
+    });
+
+    return result || null;
   }
 
   async #createImageVersions(tx, file, imageId, imageDir) {
@@ -48,9 +99,9 @@ export class Image extends BaseModel {
       } else {
         await sharp(originalOutputPath)
           .resize({
-            width: size.width,
-            height: size.height,
             fit: "inside",
+            height: size.height,
+            width: size.width,
             withoutEnlargement: true
           })
           .toFile(outputPath);
@@ -60,13 +111,13 @@ export class Image extends BaseModel {
       const outputMeta = await sharp(outputPath).metadata();
 
       const versionData = {
+        height: outputMeta.height,
         imageId,
         mimetype: file.mimetype,
+        path: outputPath,
         size: stats.size,
-        width: outputMeta.width,
-        height: outputMeta.height,
         type,
-        path: outputPath
+        width: outputMeta.width
       };
 
       const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning();
@@ -82,56 +133,6 @@ export class Image extends BaseModel {
     }
 
     return versions;
-  }
-
-  async createWithVersions(file, data) {
-    return await this.db.transaction(async (tx) => {
-      const result = await tx.insert(this.table).values(data).returning();
-      const image = result[0];
-
-      const imageDir = path.join(uploadsDir, image.id.toString());
-      await fs.mkdir(imageDir, { recursive: true });
-
-      const versions = await this.#createImageVersions(tx, file, image.id, imageDir);
-
-      return {
-        ...image,
-        versions
-      };
-    });
-  }
-
-  async findAllWithVersions(options = {}) {
-    const { limit, offset, orderBy, where } = options;
-
-    let query = this.db.query.ImagesTable.findMany({
-      with: {
-        versions: true
-      },
-      where: where || undefined,
-      orderBy: orderBy || undefined
-    });
-
-    if (limit !== undefined) {
-      query = query.limit(limit);
-    }
-
-    if (offset !== undefined) {
-      query = query.offset(offset);
-    }
-
-    return await query;
-  }
-
-  async findByIdWithVersions(id) {
-    const result = await this.db.query.ImagesTable.findFirst({
-      where: eq(this.table.id, id),
-      with: {
-        versions: true
-      }
-    });
-
-    return result || null;
   }
 }
 

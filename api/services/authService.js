@@ -1,10 +1,11 @@
-import User from "../models/User.js";
-import Setting from "../models/Setting.js";
-import RevokedToken from "../models/RevokedToken.js";
-import { generateAccess, generateRefresh, verifyRefresh } from "../utils/tokenUtils.js";
 import { eq } from "drizzle-orm";
 
-export const signup = async ({ email, username, password }) => {
+import RevokedToken from "../models/RevokedToken.js";
+import Setting from "../models/Setting.js";
+import User from "../models/User.js";
+import { generateAccess, generateRefresh, verifyRefresh } from "../utils/tokenUtils.js";
+
+export const signup = async ({ email, password, username }) => {
   const enableSignups = await Setting.get("enableSignups");
   if (!enableSignups) {
     throw new Error("Signup is disabled.");
@@ -29,19 +30,19 @@ export const signup = async ({ email, username, password }) => {
   const isAdmin = adminCount < maxAdmins;
 
   const newUser = await User.create({
+    admin: isAdmin,
     email,
-    username,
     password,
-    admin: isAdmin
+    username
   });
 
   const accessToken = generateAccess(newUser);
   const refreshToken = generateRefresh(newUser);
 
-  return { newUser, accessToken, refreshToken };
+  return { accessToken, newUser, refreshToken };
 };
 
-export const login = async ({ username, password }) => {
+export const login = async ({ password, username }) => {
   if (!username || !password) {
     throw new Error("Missing fields.");
   }
@@ -59,7 +60,7 @@ export const login = async ({ username, password }) => {
   const accessToken = generateAccess(user);
   const refreshToken = generateRefresh(user);
 
-  return { user, accessToken, refreshToken };
+  return { accessToken, refreshToken, user };
 };
 
 export const logout = async (refreshToken) => {
