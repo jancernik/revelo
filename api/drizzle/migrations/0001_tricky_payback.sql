@@ -1,0 +1,1 @@
+ALTER TYPE "public"."image_version_types" ADD VALUE 'tiny';

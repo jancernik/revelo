@@ -57,7 +57,12 @@ export const ImagesTable = pgTable(
   }
 );
 
-export const ImageVersionTypes = pgEnum("image_version_types", ["original", "regular", "thumbnail"]);
+export const ImageVersionTypes = pgEnum("image_version_types", [
+  "original",
+  "regular",
+  "thumbnail",
+  "tiny"
+]);
 
 export const ImageVersionsTable = pgTable(
   "image_versions",

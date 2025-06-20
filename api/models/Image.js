@@ -85,6 +85,10 @@ export class Image extends BaseModel {
       thumbnail: {
         height: isVertical ? Math.round(800 * (metadata.height / metadata.width)) : 800,
         width: isVertical ? 800 : Math.round(800 * (metadata.width / metadata.height))
+      },
+      tiny: {
+        height: isVertical ? Math.round(150 * (metadata.height / metadata.width)) : 150,
+        width: isVertical ? 150 : Math.round(150 * (metadata.width / metadata.height))
       }
     };
 
