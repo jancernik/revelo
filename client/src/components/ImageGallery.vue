@@ -13,7 +13,7 @@ const ENTER_AND_EXIT_DURATION = 2 // seconds
 const ENTER_AND_EXIT_INITIAL_DURATION = 1 // seconds
 const ENTER_AND_EXIT_SCALE = 0.7 // scale factor
 const TRANSFORM_ORIGIN_SCALE = -0.5 // scale factor
-const ENTER_AND_EXIT_OPACITY = 0 // opacity factor
+const ENTER_AND_EXIT_OPACITY = 1 // opacity factor
 const OFFSET = 100 // pixels
 const START = 100 // percent
 const END = 0 // percent
@@ -28,6 +28,7 @@ const imageData = ref([])
 const groupedImages = ref([])
 const smoother = ref(null)
 const timelines = []
+const columnScrollTriggers = []
 const loadedImages = ref(0)
 
 const imageGallery = useTemplateRef('image-gallery')
@@ -76,7 +77,8 @@ const setupLagEffect = () => {
   columns.forEach((column, index) => {
     const distance = Math.abs(index - middle)
     const lag = BASE_LAG + distance * LAG_SCALE
-    smoother.value.effects(column, { lag, speed: 1 })
+    const instance = smoother.value.effects(column, { lag, speed: 1 })
+    columnScrollTriggers.push(instance[0])
   })
 }
 
@@ -158,7 +160,7 @@ const handleImageLoad = () => {
 }
 
 const handleThumbnailClick = (image, flipId) => {
-  show(image, { flipId })
+  show(image, { columnScrollTriggers, flipId, smoother: smoother.value })
 }
 
 onMounted(async () => {

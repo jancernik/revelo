@@ -6,6 +6,7 @@ const flipId = ref(null)
 const smoother = ref(null)
 const updateRoute = ref(true)
 const triggerHide = ref(false)
+const columnScrollTriggers = ref([])
 
 let popstateHandler = null
 let popstateCallback = null
@@ -17,6 +18,7 @@ export function useFullscreenImage() {
     flipId.value = options.flipId || null
     smoother.value = options.smoother || null
     updateRoute.value = options.updateRoute ?? true
+    columnScrollTriggers.value = options.columnScrollTriggers ?? []
 
     imageData.value = image
     triggerHide.value = false
@@ -32,6 +34,7 @@ export function useFullscreenImage() {
     flipId.value = null
     smoother.value = null
     updateRoute.value = true
+    columnScrollTriggers.value = []
 
     imageData.value = null
     triggerHide.value = false
@@ -65,6 +68,7 @@ export function useFullscreenImage() {
   }
 
   return {
+    columnScrollTriggers,
     completeHide,
     flipId,
     hide,
