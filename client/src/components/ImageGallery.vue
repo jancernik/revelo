@@ -51,10 +51,39 @@ const fetchImages = async () => {
 const groupImages = (images = [], numberOfGroups) => {
   if (images.length === 0) return []
   if (!numberOfGroups || numberOfGroups <= 0) return images
-  const groups = Array.from({ length: numberOfGroups }, () => [])
-  images.forEach((image, index) => {
-    groups[index % numberOfGroups].push(image)
+
+  const imagesWithWeights = images.map((image) => {
+    const regularVersion = image?.versions?.find((v) => v.type === 'regular') || {}
+    const height = regularVersion.height || 0
+    const width = regularVersion.width || 0
+    const aspectRatio = width > 0 ? height / width : 0
+
+    return {
+      ...image,
+      _weight: aspectRatio
+    }
   })
+
+  imagesWithWeights.sort((a, b) => b._weight - a._weight)
+
+  const groups = Array.from({ length: numberOfGroups }, () => [])
+  const weightTrack = Array.from({ length: numberOfGroups }, () => 0)
+
+  imagesWithWeights.forEach((image) => {
+    let minIndex = 0
+    for (let i = 1; i < weightTrack.length; i++) {
+      if (weightTrack[i] < weightTrack[minIndex]) {
+        minIndex = i
+      }
+    }
+
+    const { _weight, ...cleanImage } = image
+    weightTrack[minIndex] += _weight
+    groups[minIndex].push(cleanImage)
+  })
+
+  groups.map((group) => shuffle(group))
+
   return groups
 }
 
