@@ -9,6 +9,7 @@ import {
   deleteImage,
   fetchAll,
   fetchById,
+  fetchTiny,
   updateMetadata,
   uploadBatchForReview,
   uploadForReview
@@ -73,6 +74,7 @@ router.post("/upload/confirm", requireAuth, loadUser, confirmUpload);
 router.post("/upload/batch-review", requireAuth, loadUser, dynamicBatchUpload, uploadBatchForReview);
 router.post("/upload/batch-confirm", requireAuth, loadUser, confirmBatchUpload);
 router.get("/images", fetchAll);
+router.get("/tiny-images", fetchTiny);
 router.get("/images/:id", fetchById);
 router.put("/images/:id/metadata", requireAuth, loadUser, updateMetadata);
 router.delete("/images/:id", requireAuth, loadUser, deleteImage);

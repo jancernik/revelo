@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+
 import Image from "../models/Image.js";
 import * as imageService from "../services/imageService.js";
 
@@ -99,6 +101,23 @@ export const fetchAll = async (req, res) => {
     res.json(images);
   } catch (error) {
     console.error("Fetch all error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const fetchTiny = async (req, res) => {
+  try {
+    const images = await Image.findAllByVersion("tiny", {
+      columns: {
+        path: true
+      },
+      limit: 30,
+      orderBy: sql`random()`
+    });
+
+    res.json(images.map((image) => image.path));
+  } catch (error) {
+    console.error("Fetch tiny images error:", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -30,6 +30,19 @@ export class Image extends BaseModel {
     });
   }
 
+  async findAllByVersion(version, options = {}) {
+    const { columns, limit, orderBy } = options;
+
+    const query = this.db.query.ImageVersionsTable.findMany({
+      columns: columns || undefined,
+      limit: limit || undefined,
+      orderBy: orderBy || undefined,
+      where: eq(ImageVersionsTable.type, version)
+    });
+
+    return await query;
+  }
+
   async findAllWithVersions(options = {}) {
     const { limit, offset, orderBy, where } = options;
 
