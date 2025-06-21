@@ -145,6 +145,7 @@ const handleAction = (toast) => {
         word-wrap: break-word;
         overflow-wrap: break-word;
         margin-top: 0.25rem;
+        white-space: pre-line;
       }
     }
 
