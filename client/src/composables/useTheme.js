@@ -52,20 +52,6 @@ export function useTheme() {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   }
 
-  const calculateClipPathSize = (origin) => {
-    const width = window.innerWidth
-    const height = window.innerHeight
-
-    const corners = [
-      { x: 0, y: 0 },
-      { x: width, y: 0 },
-      { x: width, y: height },
-      { x: 0, y: height }
-    ]
-    const distances = corners.map((c) => linearDistance(origin.x, origin.y, c.x, c.y))
-    return Math.max(...distances)
-  }
-
   const createCleanClone = (element) => {
     const clone = element.cloneNode(false)
 
@@ -134,6 +120,36 @@ export function useTheme() {
     return clone
   }
 
+  let dissolveMask = document.querySelector('svg[data-dissolve-progress]')
+
+  function setDissolveProgress(progress) {
+    dissolveMask ||= document.querySelector('svg[data-dissolve-progress]')
+    if (dissolveMask) {
+      dissolveMask.setAttribute('data-dissolve-progress', progress.toString())
+    }
+  }
+
+  async function animateDissolve(duration = 3000) {
+    return new Promise((resolve) => {
+      const startTime = performance.now()
+
+      function animate() {
+        const elapsed = performance.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+
+        setDissolveProgress(progress)
+
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          resolve()
+        }
+      }
+
+      requestAnimationFrame(animate)
+    })
+  }
+
   const animateThemeTransition = async (newThemeClass, origin) => {
     isAnimating.value = true
     let clonedBody = null
@@ -151,9 +167,11 @@ export function useTheme() {
 
       Object.assign(clonedBody.style, {
         backfaceVisibility: 'hidden',
-        clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
+        // mask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, transparent, black)`,
         height: '100%',
         left: '0',
+        // clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
+        mask: 'url(#dissolve)',
         perspective: '1000px',
         pointerEvents: 'none',
         position: 'fixed',
@@ -161,7 +179,7 @@ export function useTheme() {
         touchAction: 'none',
         userSelect: 'none',
         width: '100%',
-        willChange: 'clip-path',
+        willChange: 'mask',
         zIndex: '8000'
       })
 
@@ -177,20 +195,7 @@ export function useTheme() {
 
       await nextTick()
 
-      const animation = clonedBody.animate(
-        [
-          { clipPath: `circle(0px at ${origin.x}px ${origin.y}px)` },
-          { clipPath: `circle(${calculateClipPathSize(origin)}px at ${origin.x}px ${origin.y}px)` }
-        ],
-        {
-          composite: 'replace',
-          duration: 1500,
-          easing: 'cubic-bezier(0.52, 0, 0.28, 0.93)',
-          fill: 'forwards'
-        }
-      )
-
-      await animation.finished
+      await animateDissolve(2000)
 
       document.documentElement.classList.remove('light', 'dark')
       document.documentElement.classList.add(newThemeClass)
