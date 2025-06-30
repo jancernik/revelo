@@ -109,13 +109,24 @@ export const fetchTiny = async (req, res) => {
   try {
     const images = await Image.findAllByVersion("tiny", {
       columns: {
-        path: true
+        height: true,
+        path: true,
+        size: true,
+        width: true
       },
-      limit: 30,
+      limit: 24,
       orderBy: sql`random()`
     });
 
-    res.json(images.map((image) => image.path));
+    const querySize = images.reduce((accumulator, image) => {
+      return accumulator + image.size;
+    }, 0);
+
+    const querySizeKb = (querySize / 1024).toFixed(2);
+
+    // eslint-disable-next-line no-console
+    console.log(`Total size of ${images.length} tiny images: ${querySizeKb}`);
+    res.json(images);
   } catch (error) {
     console.error("Fetch tiny images error:", error);
     res.status(500).json({ error: error.message });
