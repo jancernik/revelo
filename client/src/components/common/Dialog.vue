@@ -26,9 +26,7 @@ const handleAction = (action) => {
           <h5 v-if="dialogState.title">
             {{ dialogState.title }}
           </h5>
-          <p>
-            {{ dialogState.description }}
-          </p>
+          <p v-html="dialogState.description"></p>
         </div>
 
         <div class="dialog-footer">
