@@ -26,6 +26,7 @@ const handleAction = (action) => {
           <h5 v-if="dialogState.title">
             {{ dialogState.title }}
           </h5>
+          <!-- eslint-disable-next-line vue/no-v-html -->
           <p v-html="dialogState.description"></p>
         </div>
 
