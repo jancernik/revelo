@@ -15,6 +15,13 @@
       "when": 1750458659607,
       "tag": "0001_tricky_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751593530106,
+      "tag": "0002_spooky_lester",
+      "breakpoints": true
     }
   ]
 }

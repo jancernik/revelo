@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 
+import EmailVerificationToken from "../models/EmailVerificationToken.js";
 import RevokedToken from "../models/RevokedToken.js";
 import Setting from "../models/Setting.js";
 import User from "../models/User.js";
 import { generateAccess, generateRefresh, verifyRefresh } from "../utils/tokenUtils.js";
+import { sendVerificationEmail, sendWelcomeEmail } from "./emailService.js";
 
 export const signup = async ({ email, password, username }) => {
   const enableSignups = await Setting.get("enableSignups");
@@ -27,7 +29,7 @@ export const signup = async ({ email, password, username }) => {
 
   const adminCount = await User.count(eq(User.table.admin, true));
   const maxAdmins = await Setting.get("maxAdmins", { includeRestricted: true });
-  const isAdmin = adminCount < maxAdmins;
+  const isAdmin = adminCount < maxAdmins?.value;
 
   const newUser = await User.create({
     admin: isAdmin,
@@ -36,10 +38,77 @@ export const signup = async ({ email, password, username }) => {
     username
   });
 
-  const accessToken = generateAccess(newUser);
-  const refreshToken = generateRefresh(newUser);
+  const verificationToken = await EmailVerificationToken.createToken(newUser.id, email);
 
-  return { accessToken, newUser, refreshToken };
+  try {
+    sendVerificationEmail(email, verificationToken.token, username);
+  } catch (error) {
+    console.error("Failed to send verification email:", error);
+  }
+
+  return {
+    requiresVerification: true,
+    user: newUser
+  };
+};
+
+export const verifyEmail = async (token) => {
+  if (!token) {
+    throw new Error("Verification token is required.");
+  }
+
+  const verificationToken = await EmailVerificationToken.findValidToken(token);
+  if (!verificationToken) {
+    throw new Error("Invalid or expired verification token.");
+  }
+
+  const user = await User.findById(verificationToken.userId);
+  if (!user) {
+    throw new Error("User not found.");
+  }
+
+  if (user.emailVerified) {
+    throw new Error("Email is already verified.");
+  }
+
+  await User.markEmailVerified(user.id);
+  await EmailVerificationToken.markTokenUsed(token);
+
+  try {
+    sendWelcomeEmail(user.email, user.username);
+  } catch (error) {
+    console.error("Failed to send welcome email:", error);
+  }
+
+  const updatedUser = { ...user, emailVerified: true };
+  const accessToken = generateAccess(updatedUser);
+  const refreshToken = generateRefresh(updatedUser);
+
+  return {
+    accessToken,
+    refreshToken,
+    user: updatedUser
+  };
+};
+
+export const resendVerificationEmail = async (email) => {
+  if (!email) {
+    throw new Error("Email is required.");
+  }
+
+  const user = await User.findByEmail(email);
+  if (!user) {
+    throw new Error("User not found.");
+  }
+
+  if (user.emailVerified) {
+    throw new Error("Email is already verified.");
+  }
+
+  const verificationToken = await EmailVerificationToken.createToken(user.id, email);
+  await sendVerificationEmail(email, verificationToken.token, user.username);
+
+  return { message: "Verification email sent!" };
 };
 
 export const login = async ({ password, username }) => {
@@ -47,7 +116,7 @@ export const login = async ({ password, username }) => {
     throw new Error("Missing fields.");
   }
 
-  const user = await await User.findByUsername(username);
+  const user = await User.findByUsername(username);
   if (!user) {
     throw new Error("Invalid credentials.");
   }
@@ -55,6 +124,13 @@ export const login = async ({ password, username }) => {
   const match = await User.verifyPassword(user, password);
   if (!match) {
     throw new Error("Invalid credentials.");
+  }
+
+  if (!user.emailVerified) {
+    const error = new Error("Email not verified.");
+    error.user = user;
+    error.requiresVerification = true;
+    throw error;
   }
 
   const accessToken = generateAccess(user);
@@ -67,7 +143,6 @@ export const logout = async (refreshToken) => {
   if (!refreshToken) {
     throw new Error("Missing refresh token.");
   }
-
   await RevokedToken.create({ token: refreshToken });
 };
 
@@ -77,7 +152,6 @@ export const refresh = async (refreshToken) => {
   }
 
   const revokedToken = await RevokedToken.find(eq(RevokedToken.table.token, refreshToken));
-
   if (revokedToken) {
     throw new Error("Invalid refresh token.");
   }

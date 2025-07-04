@@ -4,19 +4,49 @@ import { setRefreshCookie } from "../utils/tokenUtils.js";
 export const signup = async (req, res) => {
   try {
     const { email, password, username } = req.body;
-    const { accessToken, newUser, refreshToken } = await authService.signup({
-      email,
-      password,
-      username
+    const { user } = await authService.signup({ email, password, username });
+    res.status(201).json({
+      message: "User created successfully.",
+      requiresVerification: true,
+      user: {
+        admin: user.admin,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        username: user.username
+      }
     });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const { accessToken, refreshToken, user } = await authService.verifyEmail(token);
 
     setRefreshCookie(res, refreshToken);
 
-    res.status(201).json({
+    res.status(200).json({
       accessToken,
-      message: "User created successfully.",
-      user: { admin: newUser.admin, email, username }
+      message: "Email verified successfully",
+      user: {
+        admin: user.admin,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        username: user.username
+      }
     });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await authService.resendVerificationEmail(email);
+    res.status(200).json({ message: result.message });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -32,10 +62,26 @@ export const login = async (req, res) => {
     res.json({
       accessToken,
       message: "Logged in successfully.",
-      user: { admin: user.admin, email: user.email, username: user.username }
+      user: {
+        admin: user.admin,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        username: user.username
+      }
     });
   } catch (error) {
-    res.status(401).json({ message: error.message });
+    if (error.requiresVerification) {
+      const user = {
+        admin: error.user.admin,
+        email: error.user.email,
+        emailVerified: error.user.emailVerified,
+        username: error.user.username
+      };
+
+      res.status(401).json({ message: error.message, requiresVerification: true, user });
+    } else {
+      res.status(401).json({ message: error.message });
+    }
   }
 };
 

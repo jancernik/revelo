@@ -25,6 +25,13 @@ export class User extends BaseModel {
     return await this.find(eq(this.table.username, username));
   }
 
+  async markEmailVerified(id) {
+    return await this.update(id, {
+      emailVerified: true,
+      emailVerifiedAt: new Date()
+    });
+  }
+
   async update(id, data) {
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
@@ -41,4 +48,5 @@ export class User extends BaseModel {
     return await bcrypt.compare(password, user.password);
   }
 }
+
 export default new User();

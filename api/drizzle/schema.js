@@ -19,10 +19,25 @@ export const UserTables = pgTable("users", {
   admin: boolean("admin").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   email: varchar("email").unique().notNull(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerifiedAt: timestamp("email_verified_at"),
   id: serial("id").primaryKey().notNull(),
   password: varchar("password").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   username: varchar("username").unique().notNull()
+});
+
+export const EmailVerificationTokensTable = pgTable("email_verification_tokens", {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  email: varchar("email").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  id: serial("id").primaryKey().notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  used: boolean("used").notNull().default(false),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => UserTables.id, { onDelete: "cascade" })
 });
 
 export const RevokedTokensTable = pgTable("revoked_tokens", {
