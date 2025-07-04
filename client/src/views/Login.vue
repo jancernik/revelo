@@ -9,13 +9,14 @@ import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const { settings } = useSettings()
+
 const username = ref('')
 const password = ref('')
 const loginError = ref('')
 const isLoading = ref(false)
 const showLoginForm = ref(false)
 const showSignupButton = ref(false)
-const { settings } = useSettings()
 
 const handleLogin = async () => {
   loginError.value = ''
@@ -29,7 +30,12 @@ const handleLogin = async () => {
       router.push('/')
     }
   } catch (error) {
-    loginError.value = 'Invalid username or password.'
+    if (error.response?.data?.requiresVerification) {
+      authStore.setUser(error.response.data)
+      router.push('/verification-pending')
+    } else {
+      loginError.value = 'Invalid username or password.'
+    }
     console.error(error)
   } finally {
     isLoading.value = false
@@ -47,8 +53,13 @@ const checkIfSignupsAreEnabled = async () => {
 }
 
 const redirectIfAuthenticated = () => {
-  if (authStore.user) {
+  if (!authStore.user?.emailVerified) {
+    return
+  }
+  if (authStore.user?.admin) {
     router.push('/dashboard')
+  } else {
+    router.push('/')
   }
 }
 
@@ -109,7 +120,7 @@ onMounted(redirectIfAuthenticated)
     .error-message {
       @include text('sm');
       color: var(--danger);
-      margin-bottom: var(--spacing-6);
+      margin-block: var(--spacing-4);
       text-align: center;
       background-color: var(--danger-background);
       padding: var(--spacing-2) var(--spacing-4);

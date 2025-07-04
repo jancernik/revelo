@@ -15,7 +15,8 @@ export const useSettingsStore = defineStore('settings', {
       try {
         const authStore = useAuthStore()
         const isAdmin = authStore.user?.admin === true
-        const endpoint = isAdmin ? '/settings' : '/public-settings'
+        const emailVerified = authStore.user?.emailVerified === true
+        const endpoint = isAdmin && emailVerified ? '/settings' : '/public-settings'
         const response = await api.get(endpoint)
 
         this.settingsArray = response.data

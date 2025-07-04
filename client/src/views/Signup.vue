@@ -22,18 +22,17 @@ const handleSignup = async () => {
   isLoading.value = true
 
   try {
-    await authStore.signup({
+    const result = await authStore.signup({
       email: email.value,
       password: password.value,
       username: username.value
     })
-    if (authStore.user?.admin) {
-      router.push('/dashboard')
-    } else {
-      router.push('/')
+
+    if (result.requiresVerification) {
+      router.push('verification-pending')
     }
   } catch (error) {
-    signupError.value = 'Signup failed. Please try again.'
+    signupError.value = error.response?.data?.message || 'Signup failed. Please try again.'
     console.error(error)
   } finally {
     isLoading.value = false
@@ -54,8 +53,13 @@ const checkIfSignupsAreEnabled = async () => {
 }
 
 const redirectIfAuthenticated = () => {
-  if (authStore.user) {
+  if (!authStore.user?.emailVerified) {
+    return
+  }
+  if (authStore.user?.admin) {
     router.push('/dashboard')
+  } else {
+    router.push('/')
   }
 }
 
@@ -124,7 +128,7 @@ onMounted(redirectIfAuthenticated)
     .error-message {
       @include text('sm');
       color: var(--danger);
-      margin-bottom: var(--spacing-6);
+      margin-block: var(--spacing-4);
       text-align: center;
       background-color: var(--danger-background);
       padding: var(--spacing-2) var(--spacing-4);

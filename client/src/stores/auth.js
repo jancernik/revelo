@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.post('/login', { password, username })
         this.setUser(response.data)
+        return response.data
       } catch (error) {
         console.error('Login failed:', error.response?.data || error)
         throw error
@@ -23,7 +24,8 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        await api.post('/logout')
+        const response = await api.post('/logout')
+        return response.data
       } catch (error) {
         console.error('Logout failed:', error.response?.data || error)
       } finally {
@@ -36,9 +38,20 @@ export const useAuthStore = defineStore('auth', {
         const response = await api.post('/refresh')
         this.accessToken = response.data.accessToken
         localStorage.setItem('accessToken', this.accessToken)
+        return response.data
       } catch (error) {
         console.error('Token refresh failed:', error.response?.data || error)
         this.clearUser()
+        throw error
+      }
+    },
+
+    async resendVerificationEmail(email) {
+      try {
+        const response = await api.post('/resend-verification', { email })
+        return response.data
+      } catch (error) {
+        console.error('Resend verification failed:', error.response?.data || error)
         throw error
       }
     },
@@ -54,8 +67,20 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.post('/signup', { email, password, username })
         this.setUser(response.data)
+        return response.data
       } catch (error) {
         console.error('Signup failed:', error.response?.data || error)
+        throw error
+      }
+    },
+
+    async verifyEmail(token) {
+      try {
+        const response = await api.post('/verify-email', { token })
+        this.setUser(response.data)
+        return response.data
+      } catch (error) {
+        console.error('Email verification failed:', error.response?.data || error)
         throw error
       }
     }

@@ -10,6 +10,8 @@ import Home from '@/views/Home.vue'
 import Image from '@/views/Image.vue'
 import Login from '@/views/Login.vue'
 import Signup from '@/views/Signup.vue'
+import VerificationPending from '@/views/VerificationPending.vue'
+import VerifyEmail from '@/views/VerifyEmail.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +30,16 @@ const router = createRouter({
       component: Signup,
       name: 'signup',
       path: '/signup'
+    },
+    {
+      component: VerificationPending,
+      name: 'verification-pending',
+      path: '/verification-pending'
+    },
+    {
+      component: VerifyEmail,
+      name: 'verify-email',
+      path: '/verify-email'
     },
     {
       children: [
