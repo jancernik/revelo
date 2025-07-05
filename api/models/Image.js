@@ -47,10 +47,27 @@ export class Image extends BaseModel {
     const { limit, offset, orderBy, where } = options;
 
     let query = this.db.query.ImagesTable.findMany({
+      columns: {
+        aperture: true,
+        camera: true,
+        date: true,
+        focalLength: true,
+        id: true,
+        iso: true,
+        lens: true,
+        shutterSpeed: true
+      },
       orderBy: orderBy || undefined,
       where: where || undefined,
       with: {
-        versions: true
+        versions: {
+          columns: {
+            height: true,
+            path: true,
+            type: true,
+            width: true
+          }
+        }
       }
     });
 
@@ -67,9 +84,26 @@ export class Image extends BaseModel {
 
   async findByIdWithVersions(id) {
     const result = await this.db.query.ImagesTable.findFirst({
+      columns: {
+        aperture: true,
+        camera: true,
+        date: true,
+        focalLength: true,
+        id: true,
+        iso: true,
+        lens: true,
+        shutterSpeed: true
+      },
       where: eq(this.table.id, id),
       with: {
-        versions: true
+        versions: {
+          columns: {
+            height: true,
+            path: true,
+            type: true,
+            width: true
+          }
+        }
       }
     });
 
