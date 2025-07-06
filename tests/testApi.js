@@ -5,7 +5,7 @@ import { createApi } from '../api/createApi.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export function createTestServer() {
+export function createTestApi() {
   const testUploadsDir = path.join(__dirname, '../test-uploads')
 
   return createApi({
