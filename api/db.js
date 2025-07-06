@@ -4,4 +4,11 @@ import postgres from "postgres";
 import * as schema from "./drizzle/schema.js";
 
 const client = postgres(process.env.DB_URL);
-export const db = drizzle(client, { logger: true, schema });
+export const db = drizzle(client, {
+  logger: process.env.NODE_ENV !== "test",
+  schema
+});
+
+export async function closeDb() {
+  await client.end();
+}

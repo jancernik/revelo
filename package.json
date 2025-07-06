@@ -18,7 +18,7 @@
     "format:api": "prettier --write .",
     "format:client": "cd client && pnpm run format",
     "style": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run format:client ; pnpm run lint:client\" \"pnpm run format:api ; pnpm run lint:api\"",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' NODE_ENV=test jest"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' NODE_ENV=test jest --silent"
   },
   "keywords": [],
   "author": "",
