@@ -5,12 +5,10 @@ import postgres from "postgres";
 
 const migrationClient = postgres(process.env.DB_URL, { max: 1 });
 
-async function main() {
+export async function migrateDb() {
   await migrate(drizzle(migrationClient), {
     migrationsFolder: "api/drizzle/migrations"
   });
 
   await migrationClient.end();
 }
-
-main();

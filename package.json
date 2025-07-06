@@ -2,9 +2,9 @@
   "name": "revelo-api",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "api.js",
   "scripts": {
-    "dev:api": "nodemon api/index",
+    "dev:api": "nodemon api/api",
     "dev:client": "cd client && pnpm run dev",
     "dev": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run dev:client\" \"pnpm run dev:api\"",
     "install:api": "pnpm install --ignore-scripts",
@@ -17,7 +17,8 @@
     "lint:client": "cd client && pnpm run lint",
     "format:api": "prettier --write .",
     "format:client": "cd client && pnpm run format",
-    "style": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run format:client ; pnpm run lint:client\" \"pnpm run format:api ; pnpm run lint:api\""
+    "style": "concurrently -n \"Vue,Node\" -c \"#41b883,#00a0df\" \"pnpm run format:client ; pnpm run lint:client\" \"pnpm run format:api ; pnpm run lint:api\"",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' NODE_ENV=test jest"
   },
   "keywords": [],
   "author": "",
