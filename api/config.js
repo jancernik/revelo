@@ -1,40 +1,49 @@
+/* eslint-disable no-console */
 import "dotenv/config";
 
 const ENV = process.env.NODE_ENV || "development";
 
-const loadEnvironment = async () => {
+const loadEnvironment = async (envType = ENV) => {
+  if (envType === "dev") envType = "development";
+  if (envType === "prod") envType = "production";
+
   const dotenvFiles = {
-    development: ".env",
-    production: ".env",
+    development: ".env.dev",
+    production: ".env.prod",
     test: ".env.test"
   };
-  const envFile = dotenvFiles[ENV];
+  const envFile = dotenvFiles[envType];
   if (envFile) {
     const dotenv = await import("dotenv");
-    dotenv.config({ path: envFile });
+    dotenv.config({ path: envFile, quiet: true });
+    console.log(`Loaded environment variables from ${envFile}\n`);
   }
 };
 
-loadEnvironment();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  await loadEnvironment();
 
-const requiredEnvVars = [
-  "PORT",
-  "DB_URL",
-  "JWT_SECRET",
-  "JWT_REFRESH_SECRET",
-  "CLIENT_BASE_URL",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_USER",
-  "SMTP_PASS",
-  "FROM_EMAIL"
-];
+  const requiredEnvVars = [
+    "PORT",
+    "DB_URL",
+    "JWT_SECRET",
+    "JWT_REFRESH_SECRET",
+    "CLIENT_BASE_URL",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "FROM_EMAIL"
+  ];
 
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
-if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
-  process.exit(1);
+  const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+  if (missingEnvVars.length > 0) {
+    console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
+    process.exit(1);
+  }
 }
+
+export { loadEnvironment };
 
 export const config = {
   CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
