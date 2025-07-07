@@ -1,9 +1,9 @@
 import { describe, it, expect } from '@jest/globals'
 import request from 'supertest'
-import { createTestServer } from '../testServer.js'
+import { createTestApi } from '../testApi.js'
 import { createImages } from '../testHelpers.js'
 
-const app = createTestServer()
+const app = createTestApi()
 
 describe('Image Endpoints', () => {
   describe('GET /images', () => {
