@@ -1,56 +1,46 @@
 /* eslint-disable no-console */
-import "dotenv/config";
+import dotenv from "dotenv";
 
-const ENV = process.env.NODE_ENV || "development";
+let envType = process.env.NODE_ENV || "development";
+if (envType === "dev") envType = "development";
+if (envType === "prod") envType = "production";
 
-const loadEnvironment = async (envType = ENV, quiet = false) => {
-  if (envType === "dev") envType = "development";
-  if (envType === "prod") envType = "production";
-
-  const dotenvFiles = {
-    development: ".env.dev",
-    production: ".env.prod",
-    test: ".env.test"
-  };
-  const envFile = dotenvFiles[envType];
-  if (envFile) {
-    const dotenv = await import("dotenv");
-    dotenv.config({ path: envFile, quiet: true });
-    if (!quiet) {
-      console.log(`Loaded environment variables from ${envFile}\n`);
-    }
-  }
+const dotenvFiles = {
+  development: ".env.dev",
+  production: ".env.prod",
+  test: ".env.test"
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  await loadEnvironment();
-
-  const requiredEnvVars = [
-    "PORT",
-    "DB_URL",
-    "JWT_SECRET",
-    "JWT_REFRESH_SECRET",
-    "CLIENT_BASE_URL",
-    "SMTP_HOST",
-    "SMTP_PORT",
-    "SMTP_USER",
-    "SMTP_PASS",
-    "FROM_EMAIL"
-  ];
-
-  const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
-  if (missingEnvVars.length > 0) {
-    console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
-    process.exit(1);
-  }
+const envFile = dotenvFiles[envType];
+if (envFile) {
+  dotenv.config({ path: envFile, quiet: true });
+  console.log(`Loaded environment variables from ${envFile}`);
 }
 
-export { loadEnvironment };
+const requiredEnvVars = [
+  "NODE_ENV",
+  "PORT",
+  "DB_URL",
+  "JWT_SECRET",
+  "JWT_REFRESH_SECRET",
+  "CLIENT_BASE_URL",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "FROM_EMAIL"
+];
+
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+if (missingEnvVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
+  process.exit(1);
+}
 
 export const config = {
   CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
   DB_URL: process.env.DB_URL,
-  ENV: ENV,
+  ENV: envType,
   FROM_EMAIL: process.env.FROM_EMAIL,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   JWT_SECRET: process.env.JWT_SECRET,
@@ -60,3 +50,16 @@ export const config = {
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER
 };
+
+export async function loadEnvironment(overrideEnvType) {
+  if (overrideEnvType && overrideEnvType !== envType) {
+    if (overrideEnvType === "dev") overrideEnvType = "development";
+    if (overrideEnvType === "prod") overrideEnvType = "production";
+
+    const overrideFile = dotenvFiles[overrideEnvType];
+    if (overrideFile) {
+      dotenv.config({ override: true, path: overrideFile, quiet: true });
+      console.log(`Loaded environment variables from ${overrideFile} (override)`);
+    }
+  }
+}

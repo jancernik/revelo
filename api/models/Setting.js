@@ -320,14 +320,4 @@ export class Setting extends BaseModel {
   }
 }
 
-const SettingInstance = new Setting();
-export default SettingInstance
-;(async () => {
-  try {
-    await SettingInstance.initialize();
-    // eslint-disable-next-line no-console
-    console.log("Settings initialized successfully");
-  } catch (error) {
-    console.error("Error initializing settings.", error);
-  }
-})();
+export default new Setting();
