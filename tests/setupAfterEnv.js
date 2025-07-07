@@ -7,6 +7,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await clearTables()
   await disconnect()
   await closeDb()
 })
