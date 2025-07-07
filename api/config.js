@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const ENV = process.env.NODE_ENV || "development";
 
-const loadEnvironment = async (envType = ENV) => {
+const loadEnvironment = async (envType = ENV, quiet = false) => {
   if (envType === "dev") envType = "development";
   if (envType === "prod") envType = "production";
 
@@ -16,7 +16,9 @@ const loadEnvironment = async (envType = ENV) => {
   if (envFile) {
     const dotenv = await import("dotenv");
     dotenv.config({ path: envFile, quiet: true });
-    console.log(`Loaded environment variables from ${envFile}\n`);
+    if (!quiet) {
+      console.log(`Loaded environment variables from ${envFile}\n`);
+    }
   }
 };
 

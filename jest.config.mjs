@@ -5,7 +5,6 @@ const config = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
   globalSetup: '<rootDir>/tests/globalSetup.js',
-  globalTeardown: '<rootDir>/tests/globalTeardown.js',
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },

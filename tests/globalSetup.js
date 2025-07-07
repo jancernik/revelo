@@ -1,7 +1,5 @@
-import { createDatabase } from '../api/drizzle/create.js'
-import { migrateDb } from '../api/drizzle/migrate.js'
+import { loadEnvironment } from '../api/config.js'
 
 export default async function globalSetup() {
-  await createDatabase('test')
-  await migrateDb('test')
+  await loadEnvironment('test', true)
 }
