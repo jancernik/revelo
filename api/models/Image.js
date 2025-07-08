@@ -4,7 +4,7 @@ import path from "path";
 import sharp from "sharp";
 
 import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js";
-import { BaseModel } from "./BaseModel.js";
+import BaseModel from "./BaseModel.js";
 
 const WITH_VERSIONS_QUERY = {
   columns: {
@@ -31,7 +31,7 @@ const WITH_VERSIONS_QUERY = {
 
 const uploadsDir = path.join("uploads");
 
-export class Image extends BaseModel {
+class Image extends BaseModel {
   constructor() {
     super(ImagesTable);
   }

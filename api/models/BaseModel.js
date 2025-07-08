@@ -2,7 +2,7 @@ import { count, eq, sql } from "drizzle-orm";
 
 import { db } from "../db.js";
 
-export class BaseModel {
+export default class BaseModel {
   constructor(table) {
     this.table = table;
     this.db = db;

@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 import { UserTables } from "../drizzle/schema.js";
-import { BaseModel } from "./BaseModel.js";
+import BaseModel from "./BaseModel.js";
 
-export class User extends BaseModel {
+class User extends BaseModel {
   constructor() {
     super(UserTables);
   }

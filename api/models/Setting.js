@@ -3,9 +3,9 @@ import yaml from "js-yaml";
 import path from "path";
 
 import { SettingsTable } from "../drizzle/schema.js";
-import { BaseModel } from "./BaseModel.js";
+import BaseModel from "./BaseModel.js";
 
-export class Setting extends BaseModel {
+class Setting extends BaseModel {
   constructor() {
     super(SettingsTable);
 

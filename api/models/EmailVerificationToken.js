@@ -2,9 +2,9 @@ import crypto from "crypto";
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 
 import { EmailVerificationTokensTable } from "../drizzle/schema.js";
-import { BaseModel } from "./BaseModel.js";
+import BaseModel from "./BaseModel.js";
 
-export class EmailVerificationToken extends BaseModel {
+class EmailVerificationToken extends BaseModel {
   constructor() {
     super(EmailVerificationTokensTable);
   }
