@@ -4,6 +4,7 @@ const config = {
   collectCoverage: false,
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
+  maxWorkers: 1,
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
