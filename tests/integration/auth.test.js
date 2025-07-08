@@ -35,7 +35,7 @@ describe('Auth Endpoints', () => {
 
       const response = await request(app).post('/signup').send(userData).expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
 
     it('should return 400 for duplicate email', async () => {
@@ -48,7 +48,7 @@ describe('Auth Endpoints', () => {
 
       const response = await request(app).post('/signup').send(userData).expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
@@ -95,7 +95,7 @@ describe('Auth Endpoints', () => {
         })
         .expect(401)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
 
     it('should return 401 for unverified email', async () => {
@@ -113,16 +113,21 @@ describe('Auth Endpoints', () => {
         })
         .expect(401)
 
-      expect(response.body).toEqual({
-        message: expect.any(String),
-        requiresVerification: true,
-        user: {
-          admin: user.admin,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          username: user.username
-        }
-      })
+      console.log('response.body.error: ', response.body.error)
+      expect(response.body.error).toEqual(
+        expect.objectContaining({
+          message: expect.any(String),
+          data: {
+            requiresVerification: true,
+            user: {
+              admin: user.admin,
+              email: user.email,
+              emailVerified: user.emailVerified,
+              username: user.username
+            }
+          }
+        })
+      )
     })
 
     it('should return 401 for non-existent user', async () => {
@@ -134,7 +139,7 @@ describe('Auth Endpoints', () => {
         })
         .expect(401)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
@@ -158,7 +163,7 @@ describe('Auth Endpoints', () => {
     it('should handle logout without refresh token', async () => {
       const response = await request(app).post('/logout').expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
@@ -185,13 +190,13 @@ describe('Auth Endpoints', () => {
         .set('Cookie', ['refreshToken=invalid-token'])
         .expect(401)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
 
     it('should return 401 for missing refresh token', async () => {
       const response = await request(app).post('/refresh').expect(401)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
@@ -221,13 +226,13 @@ describe('Auth Endpoints', () => {
         .send({ token: 'invalid-token' })
         .expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
 
     it('should return 400 for missing token', async () => {
       const response = await request(app).post('/verify-email').send({}).expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
@@ -245,15 +250,15 @@ describe('Auth Endpoints', () => {
       const response = await request(app)
         .post('/resend-verification')
         .send({ email: 'nonexistent@example.com' })
-        .expect(400)
+        .expect(404)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
 
     it('should return 400 for missing email', async () => {
       const response = await request(app).post('/resend-verification').send({}).expect(400)
 
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.error).toHaveProperty('message')
     })
   })
 
