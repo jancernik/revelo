@@ -6,6 +6,29 @@ import sharp from "sharp";
 import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js";
 import { BaseModel } from "./BaseModel.js";
 
+const WITH_VERSIONS_QUERY = {
+  columns: {
+    aperture: true,
+    camera: true,
+    date: true,
+    focalLength: true,
+    id: true,
+    iso: true,
+    lens: true,
+    shutterSpeed: true
+  },
+  with: {
+    versions: {
+      columns: {
+        height: true,
+        path: true,
+        type: true,
+        width: true
+      }
+    }
+  }
+};
+
 const uploadsDir = path.join("uploads");
 
 export class Image extends BaseModel {
@@ -47,28 +70,9 @@ export class Image extends BaseModel {
     const { limit, offset, orderBy, where } = options;
 
     let query = this.db.query.ImagesTable.findMany({
-      columns: {
-        aperture: true,
-        camera: true,
-        date: true,
-        focalLength: true,
-        id: true,
-        iso: true,
-        lens: true,
-        shutterSpeed: true
-      },
+      ...WITH_VERSIONS_QUERY,
       orderBy: orderBy || undefined,
-      where: where || undefined,
-      with: {
-        versions: {
-          columns: {
-            height: true,
-            path: true,
-            type: true,
-            width: true
-          }
-        }
-      }
+      where: where || undefined
     });
 
     if (limit !== undefined) {
@@ -84,27 +88,8 @@ export class Image extends BaseModel {
 
   async findByIdWithVersions(id) {
     const result = await this.db.query.ImagesTable.findFirst({
-      columns: {
-        aperture: true,
-        camera: true,
-        date: true,
-        focalLength: true,
-        id: true,
-        iso: true,
-        lens: true,
-        shutterSpeed: true
-      },
-      where: eq(this.table.id, id),
-      with: {
-        versions: {
-          columns: {
-            height: true,
-            path: true,
-            type: true,
-            width: true
-          }
-        }
-      }
+      ...WITH_VERSIONS_QUERY,
+      where: eq(this.table.id, id)
     });
 
     return result || null;
