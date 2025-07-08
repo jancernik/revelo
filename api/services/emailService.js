@@ -4,6 +4,16 @@ import { config } from "../config.js";
 
 let transporter = null;
 
+const sendEmail = async (transporter, mailOptions) => {
+  if (config.NODE_ENV === "test") return;
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return info;
+  } catch (error) {
+    console.error("Failed to send email:", error);
+  }
+};
+
 const initializeTransporter = () => {
   if (!transporter) {
     transporter = nodemailer.createTransport({
@@ -42,13 +52,7 @@ export const sendVerificationEmail = async (email, token, username) => {
     to: email
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    console.error("Failed to send verification email:", error);
-    throw new Error("Failed to send verification email.");
-  }
+  await sendEmail(transporter, mailOptions);
 };
 
 export const sendWelcomeEmail = async (email, username) => {
@@ -69,13 +73,7 @@ export const sendWelcomeEmail = async (email, username) => {
     to: email
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    console.error("Failed to send welcome email:", error);
-    return null;
-  }
+  await sendEmail(transporter, mailOptions);
 };
 
 export const testEmailConnection = async () => {

@@ -44,6 +44,7 @@ export const config = {
   FROM_EMAIL: process.env.FROM_EMAIL,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   JWT_SECRET: process.env.JWT_SECRET,
+  NODE_ENV: envType,
   PORT: process.env.PORT,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PASS: process.env.SMTP_PASS,
