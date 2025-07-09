@@ -4,7 +4,7 @@ import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } fro
 import EmailVerificationToken from "../models/EmailVerificationToken.js";
 import RevokedToken from "../models/RevokedToken.js";
 import Setting from "../models/Setting.js";
-import User from "../models/User.js";
+import User, { userSerializer } from "../models/User.js";
 import { generateAccess, generateRefresh, verifyRefresh } from "../utils/tokenUtils.js";
 import { sendVerificationEmail, sendWelcomeEmail } from "./emailService.js";
 
@@ -128,15 +128,8 @@ export const login = async ({ password, username }) => {
   }
 
   if (!user.emailVerified) {
-    const userData = {
-      admin: user.admin,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      username: user.username
-    };
-
     throw new UnauthorizedError("Email not verified.", {
-      data: { requiresVerification: true, user: userData }
+      data: { requiresVerification: true, user: userSerializer(user) }
     });
   }
 

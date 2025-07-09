@@ -1,3 +1,4 @@
+import { userSerializer } from "../models/User.js";
 import * as authService from "../services/authService.js";
 import { setRefreshCookie } from "../utils/tokenUtils.js";
 
@@ -7,12 +8,7 @@ export const signup = async (req, res) => {
   res.status(201).json({
     message: "User created successfully.",
     requiresVerification: true,
-    user: {
-      admin: user.admin,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      username: user.username
-    }
+    user: userSerializer(user)
   });
 };
 
@@ -25,12 +21,7 @@ export const verifyEmail = async (req, res) => {
   res.status(200).json({
     accessToken,
     message: "Email verified successfully",
-    user: {
-      admin: user.admin,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      username: user.username
-    }
+    user: userSerializer(user)
   });
 };
 
@@ -49,12 +40,7 @@ export const login = async (req, res) => {
   res.json({
     accessToken,
     message: "Logged in successfully.",
-    user: {
-      admin: user.admin,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      username: user.username
-    }
+    user: userSerializer(user)
   });
 };
 

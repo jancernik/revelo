@@ -50,3 +50,14 @@ class User extends BaseModel {
 }
 
 export default new User();
+
+export const userSerializer = (user) => {
+  if (!user) return null;
+
+  return {
+    admin: user.admin,
+    email: user.email,
+    emailVerified: user.emailVerified,
+    username: user.username
+  };
+};
