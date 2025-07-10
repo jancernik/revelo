@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 import { config } from "../config.js";
+import { UnauthorizedError } from "../errors.js";
 
 const ACCESS_EXPIRATION = 15; // minutes
 const REFRESH_EXPIRATION = 90; // days
@@ -24,11 +25,14 @@ export const setRefreshCookie = (res, refreshToken) => {
   });
 };
 
-export const verifyRefresh = (token, callback) => {
-  jwt.verify(token, config.JWT_REFRESH_SECRET, (error, user) => {
-    if (error) {
-      return callback(error, null);
-    }
-    callback(null, user);
+export const verifyRefresh = async (token) => {
+  return await new Promise((resolve, reject) => {
+    jwt.verify(token, config.JWT_REFRESH_SECRET, (error, user) => {
+      if (error) {
+        reject(new UnauthorizedError("Session expired."));
+      } else {
+        resolve(user);
+      }
+    });
   });
 };

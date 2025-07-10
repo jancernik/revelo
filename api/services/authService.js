@@ -147,23 +147,12 @@ export const logout = async (refreshToken) => {
 };
 
 export const refresh = async (refreshToken) => {
-  if (!refreshToken) {
-    throw new UnauthorizedError("Invalid credentials.");
-  }
-
   const revokedToken = await RevokedToken.find(eq(RevokedToken.table.token, refreshToken));
   if (revokedToken) {
     throw new UnauthorizedError("Invalid refresh token.");
   }
 
-  return new Promise((resolve, reject) => {
-    verifyRefresh(refreshToken, (error, user) => {
-      if (error) {
-        reject(new UnauthorizedError("Session expired."));
-      } else {
-        const accessToken = generateAccess(user);
-        resolve(accessToken);
-      }
-    });
-  });
+  const user = await verifyRefresh(refreshToken);
+  const accessToken = generateAccess(user);
+  return accessToken;
 };
