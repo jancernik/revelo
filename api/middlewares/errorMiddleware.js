@@ -1,9 +1,10 @@
+import { config } from "../config.js";
 import { NotFoundError } from "../errors.js";
 
 export const errorHandler = (error, req, res, _next) => {
   const statusCode = error.statusCode || 500;
   const message =
-    process.env.NODE_ENV === "production" && !error.isOperational
+    config.ENV === "production" && !error.isOperational
       ? "Something went wrong"
       : error.message || "Internal server error";
 
@@ -18,17 +19,17 @@ export const errorHandler = (error, req, res, _next) => {
   }
 
   const response = {
-    error: {
-      message,
-      statusCode
-    },
-    success: false
+    status: error.isOperational ? "fail" : "error"
   };
 
-  if (error.data) response.error.data = error.data;
+  if (!error.isOperational) {
+    response.message = message;
+  }
 
-  if (process.env.NODE_ENV !== "production") {
-    response.error.stack = error.stack;
+  if (error.isOperational) {
+    response.data = error.data || null;
+  } else if (error.data) {
+    response.data = error.data;
   }
 
   res.status(statusCode).json(response);
