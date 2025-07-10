@@ -14,10 +14,6 @@ export const signup = async ({ email, password, username }) => {
     throw new ForbiddenError("Signup is disabled.");
   }
 
-  if (!email || !username || !password) {
-    throw new ValidationError("Missing fields.");
-  }
-
   const emailExists = await User.findByEmail(email);
   if (emailExists) {
     throw new ValidationError("Email already used.");
@@ -47,17 +43,10 @@ export const signup = async ({ email, password, username }) => {
     console.error("Failed to send verification email:", error);
   }
 
-  return {
-    requiresVerification: true,
-    user: newUser
-  };
+  return { user: newUser };
 };
 
 export const verifyEmail = async (token) => {
-  if (!token) {
-    throw new ValidationError("Verification token is required.");
-  }
-
   const verificationToken = await EmailVerificationToken.findValidToken(token);
   if (!verificationToken) {
     throw new ValidationError("Invalid or expired verification token.");
@@ -93,10 +82,6 @@ export const verifyEmail = async (token) => {
 };
 
 export const resendVerificationEmail = async (email) => {
-  if (!email) {
-    throw new ValidationError("Email is required.");
-  }
-
   const user = await User.findByEmail(email);
   if (!user) {
     throw new NotFoundError("User not found.");
@@ -108,15 +93,9 @@ export const resendVerificationEmail = async (email) => {
 
   const verificationToken = await EmailVerificationToken.createToken(user.id, email);
   await sendVerificationEmail(email, verificationToken.token, user.username);
-
-  return { message: "Verification email sent!" };
 };
 
 export const login = async ({ password, username }) => {
-  if (!username || !password) {
-    throw new ValidationError("Missing fields.");
-  }
-
   const user = await User.findByUsername(username);
   if (!user) {
     throw new UnauthorizedError("Invalid credentials.");
@@ -129,7 +108,7 @@ export const login = async ({ password, username }) => {
 
   if (!user.emailVerified) {
     throw new UnauthorizedError("Email not verified.", {
-      data: { requiresVerification: true, user: userSerializer(user) }
+      data: { user: userSerializer(user) }
     });
   }
 
@@ -140,13 +119,16 @@ export const login = async ({ password, username }) => {
 };
 
 export const logout = async (refreshToken) => {
-  if (!refreshToken) {
-    throw new ValidationError("Missing refresh token.");
+  if (refreshToken) {
+    await RevokedToken.create({ token: refreshToken });
   }
-  await RevokedToken.create({ token: refreshToken });
 };
 
 export const refresh = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new ValidationError("Missing refresh token.");
+  }
+
   const revokedToken = await RevokedToken.find(eq(RevokedToken.table.token, refreshToken));
   if (revokedToken) {
     throw new UnauthorizedError("Invalid refresh token.");

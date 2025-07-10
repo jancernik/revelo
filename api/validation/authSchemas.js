@@ -6,8 +6,7 @@ const passwordSchema = z
   .max(128, "Password must be less than 128 characters")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number")
-  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+  .regex(/[0-9]/, "Password must contain at least one number");
 
 const usernameSchema = z
   .string()
@@ -25,6 +24,11 @@ const emailSchema = z
   .max(254, "Email must be less than 254 characters")
   .toLowerCase();
 
+const tokenSchema = z
+  .string()
+  .min(1, "Token is required")
+  .regex(/^[a-zA-Z0-9]+$/, "Invalid token format");
+
 export const signupSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
@@ -37,10 +41,7 @@ export const loginSchema = z.object({
 });
 
 export const verifyEmailSchema = z.object({
-  token: z
-    .string()
-    .min(1, "Token is required")
-    .regex(/^[a-zA-Z0-9]+$/, "Invalid token format")
+  token: tokenSchema
 });
 
 export const resendVerificationSchema = z.object({
@@ -53,8 +54,5 @@ export const resetPasswordSchema = z.object({
 
 export const confirmResetPasswordSchema = z.object({
   password: passwordSchema,
-  token: z
-    .string()
-    .min(1, "Token is required")
-    .regex(/^[a-zA-Z0-9]+$/, "Invalid token format")
+  token: tokenSchema
 });

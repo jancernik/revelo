@@ -5,10 +5,10 @@ import { setRefreshCookie } from "../utils/tokenUtils.js";
 export const signup = async (req, res) => {
   const { email, password, username } = req.body;
   const { user } = await authService.signup({ email, password, username });
+
   res.status(201).json({
-    message: "User created successfully.",
-    requiresVerification: true,
-    user: userSerializer(user)
+    data: { user: userSerializer(user) },
+    status: "success"
   });
 };
 
@@ -19,16 +19,19 @@ export const verifyEmail = async (req, res) => {
   setRefreshCookie(res, refreshToken);
 
   res.status(200).json({
-    accessToken,
-    message: "Email verified successfully",
-    user: userSerializer(user)
+    data: { accessToken, user: userSerializer(user) },
+    status: "success"
   });
 };
 
 export const resendVerificationEmail = async (req, res) => {
   const { email } = req.body;
-  const result = await authService.resendVerificationEmail(email);
-  res.status(200).json({ message: result.message });
+  await authService.resendVerificationEmail(email);
+
+  res.status(200).json({
+    data: null,
+    status: "success"
+  });
 };
 
 export const login = async (req, res) => {
@@ -37,10 +40,9 @@ export const login = async (req, res) => {
 
   setRefreshCookie(res, refreshToken);
 
-  res.json({
-    accessToken,
-    message: "Logged in successfully.",
-    user: userSerializer(user)
+  res.status(200).json({
+    data: { accessToken, user: userSerializer(user) },
+    status: "success"
   });
 };
 
@@ -49,12 +51,19 @@ export const logout = async (req, res) => {
   await authService.logout(refreshToken);
 
   res.clearCookie("refreshToken");
-  res.json({ message: "Logged out successfully." });
+
+  res.status(200).json({
+    data: null,
+    status: "success"
+  });
 };
 
 export const refresh = async (req, res) => {
   const { refreshToken } = req.cookies;
   const accessToken = await authService.refresh(refreshToken);
 
-  res.json({ accessToken });
+  res.status(200).json({
+    data: { accessToken },
+    status: "success"
+  });
 };

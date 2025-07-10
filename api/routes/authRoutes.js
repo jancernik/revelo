@@ -8,7 +8,6 @@ import {
   signup,
   verifyEmail
 } from "../controllers/authController.js";
-import { currentUser, loadUser, optionalAuth } from "../middlewares/authMiddleware.js";
 import { validate } from "../middlewares/validationMiddleware.js";
 import {
   loginSchema,
@@ -25,6 +24,5 @@ router.post("/logout", logout);
 router.post("/refresh", refresh);
 router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
 router.post("/resend-verification", validate(resendVerificationSchema), resendVerificationEmail);
-router.get("/current-user", optionalAuth, loadUser, currentUser);
 
 export default router;

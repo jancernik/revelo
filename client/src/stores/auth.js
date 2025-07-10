@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
     async login({ password, username }) {
       try {
         const response = await api.post('/login', { password, username })
-        this.setUser(response.data)
+        this.setUser(response.data.data)
         return response.data
       } catch (error) {
         console.error('Login failed:', error.response?.data || error)
@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', {
     async refreshToken() {
       try {
         const response = await api.post('/refresh')
-        this.accessToken = response.data.accessToken
+        this.accessToken = response.data.data.accessToken
         localStorage.setItem('accessToken', this.accessToken)
         return response.data
       } catch (error) {
@@ -66,7 +66,7 @@ export const useAuthStore = defineStore('auth', {
     async signup({ email, password, username }) {
       try {
         const response = await api.post('/signup', { email, password, username })
-        this.setUser(response.data)
+        this.setUser(response.data.data)
         return response.data
       } catch (error) {
         console.error('Signup failed:', error.response?.data || error)
@@ -77,7 +77,7 @@ export const useAuthStore = defineStore('auth', {
     async verifyEmail(token) {
       try {
         const response = await api.post('/verify-email', { token })
-        this.setUser(response.data)
+        this.setUser(response.data.data)
         return response.data
       } catch (error) {
         console.error('Email verification failed:', error.response?.data || error)
