@@ -7,7 +7,15 @@ const ACCESS_EXPIRATION = 15; // minutes
 const REFRESH_EXPIRATION = 90; // days
 
 export const generateAccess = (user) => {
-  return jwt.sign({ id: user.id }, config.JWT_SECRET, { expiresIn: `${ACCESS_EXPIRATION}m` });
+  return jwt.sign(
+    {
+      admin: user.admin,
+      email: user.email,
+      id: user.id
+    },
+    config.JWT_SECRET,
+    { expiresIn: `${ACCESS_EXPIRATION}m` }
+  );
 };
 
 export const generateRefresh = (user) => {

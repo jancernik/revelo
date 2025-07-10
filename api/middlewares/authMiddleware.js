@@ -1,81 +1,88 @@
 import jwt from "jsonwebtoken";
 
 import { config } from "../config.js";
-import User from "../models/User.js";
+import { NotFoundError, UnauthorizedError } from "../errors.js";
+import User, { userSerializer } from "../models/User.js";
 
-export const optionalAuth = (req, res, next) => {
+const extractToken = (req) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    req.user = null;
-    return next();
+    return null;
   }
-
-  const token = authHeader.split(" ")[1];
-
-  jwt.verify(token, config.JWT_SECRET, (error, decoded) => {
-    if (error) {
-      req.user = null;
-    } else {
-      req.decoded = decoded;
-    }
-    next();
-  });
+  return authHeader.split(" ")[1];
 };
 
-export const requireAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Authorization required" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  jwt.verify(token, config.JWT_SECRET, (error, decoded) => {
-    if (error) {
-      return res.status(401).json({ message: "Invalid or expired token" });
-    }
-
-    req.decoded = decoded;
-    next();
-  });
-};
-
-export const loadUser = async (req, res, next) => {
-  if (!req.decoded) {
-    return next();
-  }
-
+const verifyAndDecodeToken = (token) => {
   try {
-    const user = await User.findById(req.decoded.id);
-    User;
-
-    if (!user) {
-      req.user = null;
-      return next();
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(500).json({
-      error: error.message,
-      message: "Error loading user data"
-    });
+    return jwt.verify(token, config.JWT_SECRET);
+  } catch {
+    return null;
   }
 };
 
-export const currentUser = async (req, res) => {
-  if (!req.user) {
-    return res.status(200).json({ user: {} });
-  } else {
-    res.status(200).json({
-      user: {
-        admin: req.user.admin,
-        email: req.user.email,
-        username: req.user.username
+export const auth = {
+  optional:
+    (loadFullUser = false) =>
+    async (req, res, next) => {
+      const token = extractToken(req);
+
+      if (!token) {
+        req.user = null;
+        return next();
       }
-    });
-  }
+
+      const decoded = verifyAndDecodeToken(token);
+      if (!decoded) {
+        req.user = null;
+        return next();
+      }
+
+      req.user = {
+        admin: decoded.admin,
+        email: decoded.email,
+        id: decoded.id
+      };
+
+      if (loadFullUser) {
+        const user = await User.findById(decoded.id);
+        if (!user) {
+          req.user = null;
+          return next();
+        }
+        req.user = userSerializer(user);
+      }
+
+      next();
+    },
+
+  required:
+    (loadFullUser = false) =>
+    async (req, res, next) => {
+      const token = extractToken(req);
+
+      if (!token) {
+        throw new UnauthorizedError("Authorization required.");
+      }
+
+      const decoded = verifyAndDecodeToken(token);
+      if (!decoded) {
+        throw new UnauthorizedError("Invalid or expired token.");
+      }
+
+      req.user = {
+        admin: decoded.admin,
+        email: decoded.email,
+        id: decoded.id
+      };
+
+      if (loadFullUser) {
+        const user = await User.findById(decoded.id);
+        if (!user) {
+          throw new NotFoundError("User not found.");
+        }
+        req.user = userSerializer(user);
+      }
+
+      next();
+    }
 };

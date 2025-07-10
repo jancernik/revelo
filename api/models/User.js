@@ -58,6 +58,7 @@ export const userSerializer = (user) => {
     admin: user.admin,
     email: user.email,
     emailVerified: user.emailVerified,
+    id: user.id,
     username: user.username
   };
 };

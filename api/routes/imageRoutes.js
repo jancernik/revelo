@@ -14,7 +14,7 @@ import {
   uploadBatchForReview,
   uploadForReview
 } from "../controllers/imageController.js";
-import { loadUser, requireAuth } from "../middlewares/authMiddleware.js";
+import { auth } from "../middlewares/authMiddleware.js";
 import Setting from "../models/Setting.js";
 
 const storage = multer.diskStorage({
@@ -69,16 +69,16 @@ const dynamicBatchUpload = async (req, res, next) => {
 
 const router = Router();
 
-router.post("/upload/review", requireAuth, loadUser, dynamicSingleUpload, uploadForReview);
-router.post("/upload/confirm", requireAuth, loadUser, confirmUpload);
-router.post("/upload/batch-review", requireAuth, loadUser, dynamicBatchUpload, uploadBatchForReview);
-router.post("/upload/batch-confirm", requireAuth, loadUser, confirmBatchUpload);
+router.post("/upload/review", auth.required(), dynamicSingleUpload, uploadForReview);
+router.post("/upload/confirm", auth.required(), confirmUpload);
+router.post("/upload/batch-review", auth.required(), dynamicBatchUpload, uploadBatchForReview);
+router.post("/upload/batch-confirm", auth.required(), confirmBatchUpload);
 router.get("/images", fetchAll);
 router.get("/tiny-images", fetchTiny);
 router.get("/images/:id", fetchById);
-router.put("/images/:id/metadata", requireAuth, loadUser, updateMetadata);
-router.delete("/images/:id", requireAuth, loadUser, deleteImage);
-router.post("/maintenance/cleanup-temp", requireAuth, loadUser, cleanupTemp);
-router.post("/maintenance/cleanup-orphaned", requireAuth, loadUser, cleanupOrphaned);
+router.put("/images/:id/metadata", auth.required(), updateMetadata);
+router.delete("/images/:id", auth.required(), deleteImage);
+router.post("/maintenance/cleanup-temp", auth.required(), cleanupTemp);
+router.post("/maintenance/cleanup-orphaned", auth.required(), cleanupOrphaned);
 
 export default router;
