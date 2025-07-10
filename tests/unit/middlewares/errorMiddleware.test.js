@@ -17,10 +17,12 @@ describe('Error Middleware', () => {
     }
     next = jest.fn()
     console.error = jest.fn()
+
+    jest.clearAllMocks()
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('errorHandler', () => {
