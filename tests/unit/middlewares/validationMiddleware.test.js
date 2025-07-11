@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { validate } from '../../../api/middlewares/validationMiddleware.js'
+import { validateBody } from '../../../api/middlewares/validationMiddleware.js'
 import { ValidationError } from '../../../api/errors.js'
 import { z } from 'zod'
 
@@ -30,21 +30,22 @@ describe('Validation Middleware', () => {
         password: 'password123'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
     })
 
-    it('should throw ValidationError when validation fails', () => {
+    it('should call next with ValidationError when validation fails', () => {
       req.body = {
         email: 'invalid-email',
         password: '123'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow(ValidationError)
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
     it('should include formatted error messages in ValidationError', () => {
@@ -53,10 +54,13 @@ describe('Validation Middleware', () => {
         password: '123'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow(
-        'Invalid email, String must contain at least 6 character(s)'
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Invalid email')
+        })
       )
     })
 
@@ -66,7 +70,7 @@ describe('Validation Middleware', () => {
         password: '123'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
 
       try {
         middleware(req, res, next)
@@ -81,9 +85,10 @@ describe('Validation Middleware', () => {
     it('should handle empty request body', () => {
       req.body = {}
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow(ValidationError)
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
     it('should handle missing fields', () => {
@@ -91,9 +96,14 @@ describe('Validation Middleware', () => {
         email: 'test@example.com'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow('Required')
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('expected string, received undefined')
+        })
+      )
     })
 
     it('should handle extra fields (should pass with strict schema)', () => {
@@ -103,7 +113,7 @@ describe('Validation Middleware', () => {
         extraField: 'should be ignored'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
@@ -116,7 +126,7 @@ describe('Validation Middleware', () => {
 
       req.body = { age: 25 }
 
-      const middleware = validate(numberSchema)
+      const middleware = validateBody(numberSchema)
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
@@ -129,7 +139,7 @@ describe('Validation Middleware', () => {
 
       req.body = { tags: ['tag1', 'tag2'] }
 
-      const middleware = validate(arraySchema)
+      const middleware = validateBody(arraySchema)
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
@@ -150,35 +160,36 @@ describe('Validation Middleware', () => {
         }
       }
 
-      const middleware = validate(nestedSchema)
+      const middleware = validateBody(nestedSchema)
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
     })
 
-    it('should re-throw non-zod errors', () => {
+    it('should call next with non-zod errors', () => {
       const mockSchema = {
         parse: jest.fn(() => {
           throw new Error('Some other error')
         })
       }
 
-      const middleware = validate(mockSchema)
+      const middleware = validateBody(mockSchema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow('Some other error')
-      expect(() => middleware(req, res, next)).not.toThrow(ValidationError)
+      expect(next).toHaveBeenCalledWith(expect.any(Error))
+      expect(next).not.toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
-    it('should not call next when validation fails', () => {
+    it('should call next with error when validation fails', () => {
       req.body = {
         email: 'invalid-email',
         password: '123'
       }
 
-      const middleware = validate(schema)
+      const middleware = validateBody(schema)
+      middleware(req, res, next)
 
-      expect(() => middleware(req, res, next)).toThrow()
-      expect(next).not.toHaveBeenCalled()
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
   })
 })

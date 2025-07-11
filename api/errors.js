@@ -9,6 +9,13 @@ export class AppError extends Error {
   }
 }
 
+export class FileProcessingError extends AppError {
+  constructor(message = "File processing failed", options = {}) {
+    super(message, { statusCode: 422, ...options });
+    this.name = "FileProcessingError";
+  }
+}
+
 export class ForbiddenError extends AppError {
   constructor(message = "Forbidden", options = {}) {
     super(message, { statusCode: 403, ...options });
