@@ -8,7 +8,7 @@ export async function createUser(userData = {}) {
   const random = Math.floor(Math.random() * 10000)
   const defaultUser = {
     email: `test-${timestamp}-${random}@example.com`,
-    password: 'password123',
+    password: 'Password123',
     username: `testuser-${timestamp}-${random}`,
     admin: false,
     emailVerified: true
@@ -17,9 +17,7 @@ export async function createUser(userData = {}) {
   const user = { ...defaultUser, ...userData }
   const plainPassword = user.password
 
-  if (user.password) {
-    user.password = await bcrypt.hash(user.password, 12)
-  }
+  user.password = await bcrypt.hash(plainPassword, 10)
 
   const db = getDb()
   const result = await db.insert(UserTables).values(user).returning()

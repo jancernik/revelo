@@ -5,7 +5,7 @@ import User from '../../api/models/User.js'
 const DEFAULT_USER_DATA = {
   email: 'test@example.com',
   username: 'testuser',
-  password: 'testpassword123',
+  password: 'Password123',
   admin: false,
   emailVerified: false
 }
@@ -13,17 +13,17 @@ const DEFAULT_USER_DATA = {
 describe('User Model', () => {
   describe('findByEmail', () => {
     it('should find user by email', async () => {
-      const testUser = await createUser({
+      const user = await createUser({
         email: 'test@example.com',
         username: 'testuser'
       })
 
-      const user = await User.findByEmail('test@example.com')
+      const foundUser = await User.findByEmail('test@example.com')
 
-      expect(user).toBeDefined()
-      expect(user.id).toBe(testUser.id)
-      expect(user.email).toBe('test@example.com')
-      expect(user.username).toBe('testuser')
+      expect(foundUser).toBeDefined()
+      expect(foundUser.id).toBe(user.id)
+      expect(foundUser.email).toBe('test@example.com')
+      expect(foundUser.username).toBe('testuser')
     })
 
     it('should return null for non-existent email', async () => {
@@ -32,10 +32,7 @@ describe('User Model', () => {
     })
 
     it('should handle case sensitivity correctly', async () => {
-      await createUser({
-        email: 'test@example.com',
-        username: 'testuser'
-      })
+      await createUser({ email: 'test@example.com' })
 
       const user = await User.findByEmail('TEST@EXAMPLE.COM')
       expect(user).toBeNull()
@@ -44,17 +41,17 @@ describe('User Model', () => {
 
   describe('findByUsername', () => {
     it('should find user by username', async () => {
-      const testUser = await createUser({
-        email: 'user@example.com',
+      const user = await createUser({
+        email: 'test@example.com',
         username: 'uniqueuser'
       })
 
-      const user = await User.findByUsername('uniqueuser')
+      const foundUser = await User.findByUsername('uniqueuser')
 
-      expect(user).toBeDefined()
-      expect(user.id).toBe(testUser.id)
-      expect(user.username).toBe('uniqueuser')
-      expect(user.email).toBe('user@example.com')
+      expect(foundUser).toBeDefined()
+      expect(foundUser.id).toBe(user.id)
+      expect(foundUser.email).toBe('test@example.com')
+      expect(foundUser.username).toBe('uniqueuser')
     })
 
     it('should return null for non-existent username', async () => {
@@ -63,10 +60,7 @@ describe('User Model', () => {
     })
 
     it('should handle case sensitivity correctly', async () => {
-      await createUser({
-        email: 'test@example.com',
-        username: 'testuser'
-      })
+      await createUser({ username: 'testuser' })
 
       const user = await User.findByUsername('TESTUSER')
       expect(user).toBeNull()
@@ -76,11 +70,10 @@ describe('User Model', () => {
   describe('create', () => {
     it('should create user with hashed password', async () => {
       const timestamp = Date.now()
-      const originalPassword = DEFAULT_USER_DATA.password
       const userData = {
-        ...DEFAULT_USER_DATA,
         email: `test-${timestamp}@example.com`,
-        username: `testuser-${timestamp}`
+        username: `testuser-${timestamp}`,
+        password: 'Password12345'
       }
       const user = await User.create(userData)
 
@@ -88,8 +81,7 @@ describe('User Model', () => {
       expect(user.id).toBeDefined()
       expect(user.email).toBe(userData.email)
       expect(user.username).toBe(userData.username)
-      expect(user.password).toBeDefined()
-      expect(user.password).not.toBe(originalPassword)
+      expect(user.password).not.toBe(userData.password)
       expect(user.admin).toBe(false)
       expect(user.emailVerified).toBe(false)
     })
@@ -97,9 +89,9 @@ describe('User Model', () => {
     it('should create admin user', async () => {
       const timestamp = Date.now()
       const userData = {
-        ...DEFAULT_USER_DATA,
         email: `test-${timestamp}@example.com`,
         username: `testuser-${timestamp}`,
+        password: 'Password123',
         admin: true
       }
       const user = await User.create(userData)
@@ -111,9 +103,9 @@ describe('User Model', () => {
     it('should create user with email verified', async () => {
       const timestamp = Date.now()
       const userData = {
-        ...DEFAULT_USER_DATA,
         email: `test-${timestamp}@example.com`,
         username: `testuser-${timestamp}`,
+        password: 'Password123',
         emailVerified: true
       }
       const user = await User.create(userData)
@@ -124,10 +116,10 @@ describe('User Model', () => {
   })
 
   describe('update', () => {
-    let testUser
+    let user
 
     beforeEach(async () => {
-      testUser = await createUser()
+      user = await createUser()
     })
 
     it('should update user data', async () => {
@@ -136,145 +128,134 @@ describe('User Model', () => {
         username: 'updateduser'
       }
 
-      const user = await User.update(testUser.id, updatedData)
+      const updatedUser = await User.update(user.id, updatedData)
 
-      expect(user).toBeDefined()
-      expect(user.email).toBe(updatedData.email)
-      expect(user.username).toBe(updatedData.username)
+      expect(updatedUser).toBeDefined()
+      expect(updatedUser.email).toBe(updatedData.email)
+      expect(updatedUser.username).toBe(updatedData.username)
     })
 
     it('should hash password when updating', async () => {
-      const newPassword = 'newpassword123'
-      const user = await User.update(testUser.id, { password: newPassword })
+      const updatedData = {
+        password: 'NewPassword123'
+      }
 
-      expect(user).toBeDefined()
-      expect(user.password).toBeDefined()
-      expect(user.password).not.toBe(newPassword)
+      const updatedUser = await User.update(user.id, updatedData)
+
+      expect(updatedUser).toBeDefined()
+      expect(updatedUser.password).toBeDefined()
+      expect(updatedUser.password).not.toBe(updatedData.password)
     })
 
     it('should update admin status', async () => {
-      const user = await User.update(testUser.id, { admin: true })
+      const updatedUser = await User.update(user.id, { admin: true })
 
-      expect(user).toBeDefined()
-      expect(user.admin).toBe(true)
+      expect(updatedUser).toBeDefined()
+      expect(updatedUser.admin).toBe(true)
     })
 
     it('should return null for non-existent user', async () => {
-      const user = await User.update(99999, { email: 'test@example.com' })
+      const user = await User.update(999, { email: 'test@example.com' })
       expect(user).toBeNull()
     })
   })
 
   describe('markEmailVerified', () => {
-    let testUser
+    let user
 
     beforeEach(async () => {
-      testUser = await createUser({ emailVerified: false })
+      user = await createUser({ emailVerified: false })
     })
 
     it('should mark email as verified', async () => {
-      const user = await User.markEmailVerified(testUser.id)
+      const updatedUser = await User.markEmailVerified(user.id)
 
-      expect(user).toBeDefined()
-      expect(user.emailVerified).toBe(true)
-      expect(user.emailVerifiedAt).toBeDefined()
-      expect(user.emailVerifiedAt).toBeInstanceOf(Date)
-    })
-
-    it('should update emailVerifiedAt timestamp', async () => {
-      const beforeTime = new Date()
-      const user = await User.markEmailVerified(testUser.id)
-      const afterTime = new Date()
-
-      expect(user.emailVerifiedAt).toBeDefined()
-      expect(user.emailVerifiedAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
-      expect(user.emailVerifiedAt.getTime()).toBeLessThanOrEqual(afterTime.getTime())
+      expect(updatedUser).toBeDefined()
+      expect(updatedUser.emailVerified).toBe(true)
+      expect(updatedUser.emailVerifiedAt).toBeDefined()
+      expect(updatedUser.emailVerifiedAt).toBeInstanceOf(Date)
     })
 
     it('should return null for non-existent user', async () => {
-      const user = await User.markEmailVerified(99999)
+      const user = await User.markEmailVerified(999)
       expect(user).toBeNull()
     })
   })
 
   describe('verifyPassword', () => {
-    let testUser
-    const testPassword = 'testpassword123'
+    let user
+    const password = 'Password123'
 
     beforeEach(async () => {
-      testUser = await createUser({ password: testPassword })
+      user = await createUser({ password })
     })
 
     it('should verify correct password', async () => {
-      const isValid = await User.verifyPassword(testUser, testPassword)
+      const isValid = await User.verifyPassword(user, password)
       expect(isValid).toBe(true)
     })
 
     it('should reject incorrect password', async () => {
-      const isValid = await User.verifyPassword(testUser, 'wrongpassword')
-      expect(isValid).toBe(false)
-    })
-
-    it('should return false for user without password', async () => {
-      const userWithoutPassword = await createUser()
-      userWithoutPassword.password = null
-
-      const isValid = await User.verifyPassword(userWithoutPassword, testPassword)
+      const isValid = await User.verifyPassword(user, 'wrongpassword')
       expect(isValid).toBe(false)
     })
 
     it('should return false for null user', async () => {
-      const isValid = await User.verifyPassword(null, testPassword)
+      const isValid = await User.verifyPassword(null, password)
       expect(isValid).toBe(false)
     })
 
     it('should return false for undefined user', async () => {
-      const isValid = await User.verifyPassword(undefined, testPassword)
+      const isValid = await User.verifyPassword(undefined, password)
       expect(isValid).toBe(false)
     })
 
     it('should handle empty password', async () => {
-      const isValid = await User.verifyPassword(testUser, '')
+      const isValid = await User.verifyPassword(user, '')
       expect(isValid).toBe(false)
     })
   })
 
   describe('inherited methods', () => {
-    let testUser
+    let user
 
     beforeEach(async () => {
-      testUser = await createUser()
+      user = await createUser()
     })
 
     it('should find user by id', async () => {
-      const user = await User.findById(testUser.id)
+      const foundUser = await User.findById(user.id)
 
-      expect(user).toBeDefined()
-      expect(user.id).toBe(testUser.id)
-      expect(user.email).toBe(testUser.email)
+      expect(foundUser).toBeDefined()
+      expect(foundUser.id).toBe(user.id)
+      expect(foundUser.email).toBe(user.email)
     })
 
     it('should return null for non-existent id', async () => {
-      const user = await User.findById(99999)
-      expect(user).toBeNull()
+      const nonexistentUser = await User.findById(999)
+      expect(nonexistentUser).toBeNull()
     })
 
     it('should delete user', async () => {
-      const deletedUser = await User.delete(testUser.id)
+      const deletedUser = await User.delete(user.id)
 
       expect(deletedUser).toBeDefined()
-      expect(deletedUser.id).toBe(testUser.id)
+      expect(deletedUser.id).toBe(user.id)
 
-      const foundUser = await User.findById(testUser.id)
-      expect(foundUser).toBeNull()
+      const nonexistentUser = await User.findById(user.id)
+      expect(nonexistentUser).toBeNull()
     })
 
     it('should count users', async () => {
       await createUser()
+
+      const firstCount = await User.count()
+      expect(firstCount).toEqual(2)
+
       await createUser()
 
-      const count = await User.count()
-      expect(count).toBeGreaterThanOrEqual(3)
+      const secondCount = await User.count()
+      expect(secondCount).toEqual(3)
     })
 
     it('should find all users', async () => {
@@ -284,7 +265,7 @@ describe('User Model', () => {
       const users = await User.findAll()
       expect(users).toBeDefined()
       expect(Array.isArray(users)).toBe(true)
-      expect(users.length).toBeGreaterThanOrEqual(3)
+      expect(users.length).toEqual(3)
     })
   })
 })

@@ -10,11 +10,13 @@ class User extends BaseModel {
   }
 
   async create(data) {
+    const userData = { ...data };
+
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      userData.password = await bcrypt.hash(data.password, 10);
     }
 
-    return await super.create(data);
+    return await super.create(userData);
   }
 
   async findByEmail(email) {
@@ -33,11 +35,13 @@ class User extends BaseModel {
   }
 
   async update(id, data) {
+    const userData = { ...data };
+
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      userData.password = await bcrypt.hash(data.password, 10);
     }
 
-    return await super.update(id, data);
+    return await super.update(id, userData);
   }
 
   async verifyPassword(user, password) {

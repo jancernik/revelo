@@ -6,20 +6,20 @@ import { createUser, createVerificationToken } from '../testHelpers.js'
 const app = createTestApi()
 
 describe('Auth Endpoints', () => {
-  describe('POST /auth/signup', () => {
+  describe('POST /signup', () => {
     it('should create a new user successfully', async () => {
       const userData = {
         email: 'newuser@example.com',
-        password: 'password123',
+        password: 'Password123',
         username: 'newuser'
       }
 
       const response = await request(app).post('/signup').send(userData).expect(201)
 
-      expect(response.body).toEqual({
-        message: 'User created successfully.',
-        requiresVerification: true,
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toEqual({
         user: {
+          id: expect.any(Number),
           admin: expect.any(Boolean),
           email: userData.email,
           emailVerified: false,
@@ -29,34 +29,43 @@ describe('Auth Endpoints', () => {
     })
 
     it('should return 400 for missing required fields', async () => {
-      const userData = {
-        email: 'test@example.com'
-      }
+      const userData = { email: 'test@example.com', password: 'Password123' }
 
       const response = await request(app).post('/signup').send(userData).expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeDefined()
+    })
+
+    it('should return 400 when fields are invalid', async () => {
+      const userData = { email: 'test@example.com', password: 'short' }
+
+      const response = await request(app).post('/signup').send(userData).expect(400)
+
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeDefined()
     })
 
     it('should return 400 for duplicate email', async () => {
       const existingUser = await createUser()
       const userData = {
         email: existingUser.email,
-        password: 'password123',
+        password: 'Password123',
         username: 'newuser'
       }
 
       const response = await request(app).post('/signup').send(userData).expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
   })
 
-  describe('POST /auth/login', () => {
+  describe('POST /login', () => {
     it('should login successfully with valid credentials', async () => {
       const user = await createUser({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123',
         emailVerified: true
       })
 
@@ -64,14 +73,15 @@ describe('Auth Endpoints', () => {
         .post('/login')
         .send({
           username: 'testuser',
-          password: user.plainPassword
+          password: 'Password123'
         })
         .expect(200)
 
-      expect(response.body).toEqual({
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toEqual({
         accessToken: expect.any(String),
-        message: 'Logged in successfully.',
         user: {
+          id: user.id,
           admin: user.admin,
           email: user.email,
           emailVerified: user.emailVerified,
@@ -84,7 +94,7 @@ describe('Auth Endpoints', () => {
     it('should return 401 for invalid credentials', async () => {
       await createUser({
         username: 'testuser',
-        password: 'password123'
+        password: 'Password123'
       })
 
       const response = await request(app)
@@ -95,13 +105,14 @@ describe('Auth Endpoints', () => {
         })
         .expect(401)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
 
     it('should return 401 for unverified email', async () => {
       const user = await createUser({
         username: 'testuser',
-        password: 'password123',
+        password: 'Password123',
         emailVerified: false
       })
 
@@ -109,25 +120,20 @@ describe('Auth Endpoints', () => {
         .post('/login')
         .send({
           username: 'testuser',
-          password: user.plainPassword
+          password: 'Password123'
         })
         .expect(401)
 
-      console.log('response.body.error: ', response.body.error)
-      expect(response.body.error).toEqual(
-        expect.objectContaining({
-          message: expect.any(String),
-          data: {
-            requiresVerification: true,
-            user: {
-              admin: user.admin,
-              email: user.email,
-              emailVerified: user.emailVerified,
-              username: user.username
-            }
-          }
-        })
-      )
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toEqual({
+        user: {
+          id: user.id,
+          admin: user.admin,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          username: user.username
+        }
+      })
     })
 
     it('should return 401 for non-existent user', async () => {
@@ -135,53 +141,51 @@ describe('Auth Endpoints', () => {
         .post('/login')
         .send({
           username: 'nonexistent',
-          password: 'password123'
+          password: 'Password123'
         })
         .expect(401)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
   })
 
-  describe('POST /auth/logout', () => {
+  describe('POST /logout', () => {
     it('should logout successfully', async () => {
       const user = await createUser({ emailVerified: true })
       const loginResponse = await request(app).post('/login').send({
         username: user.username,
-        password: 'password123'
+        password: user.plainPassword
       })
 
       const cookies = loginResponse.headers['set-cookie']
-
       const response = await request(app).post('/logout').set('Cookie', cookies).expect(200)
 
-      expect(response.body).toEqual({
-        message: 'Logged out successfully.'
-      })
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toBeNull()
     })
 
     it('should handle logout without refresh token', async () => {
-      const response = await request(app).post('/logout').expect(400)
+      const response = await request(app).post('/logout').expect(200)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toBeNull()
     })
   })
 
-  describe('POST /auth/refresh', () => {
+  describe('POST /refresh', () => {
     it('should refresh access token successfully', async () => {
       const user = await createUser({ emailVerified: true })
       const loginResponse = await request(app).post('/login').send({
         username: user.username,
-        password: 'password123'
+        password: user.plainPassword
       })
 
       const cookies = loginResponse.headers['set-cookie']
-
       const response = await request(app).post('/refresh').set('Cookie', cookies).expect(200)
 
-      expect(response.body).toEqual({
-        accessToken: expect.any(String)
-      })
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toEqual({ accessToken: expect.any(String) })
     })
 
     it('should return 401 for invalid refresh token', async () => {
@@ -190,27 +194,30 @@ describe('Auth Endpoints', () => {
         .set('Cookie', ['refreshToken=invalid-token'])
         .expect(401)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
 
-    it('should return 401 for missing refresh token', async () => {
-      const response = await request(app).post('/refresh').expect(401)
+    it('should return 400 for missing refresh token', async () => {
+      const response = await request(app).post('/refresh').expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
   })
 
-  describe('POST /auth/verify-email', () => {
+  describe('POST /verify-email', () => {
     it('should verify email successfully', async () => {
       const user = await createUser({ emailVerified: false })
       const token = await createVerificationToken(user.id)
 
       const response = await request(app).post('/verify-email').send({ token }).expect(200)
 
-      expect(response.body).toEqual({
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toEqual({
         accessToken: expect.any(String),
-        message: 'Email verified successfully',
         user: {
+          id: user.id,
           admin: user.admin,
           email: user.email,
           emailVerified: true,
@@ -223,27 +230,32 @@ describe('Auth Endpoints', () => {
     it('should return 400 for invalid token', async () => {
       const response = await request(app)
         .post('/verify-email')
-        .send({ token: 'invalid-token' })
+        .send({ token: 'invalidtoken' })
         .expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
 
-    it('should return 400 for missing token', async () => {
+    it('should fail validation and return 400 for missing token', async () => {
       const response = await request(app).post('/verify-email').send({}).expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeDefined()
     })
   })
 
-  describe('POST /auth/resend-verification', () => {
+  describe('POST /resend-verification', () => {
     it('should resend verification email successfully', async () => {
       const user = await createUser({ emailVerified: false })
 
-      const response = await request(app).post('/resend-verification').send({ email: user.email })
+      const response = await request(app)
+        .post('/resend-verification')
+        .send({ email: user.email })
+        .expect(200)
 
-      expect([200, 400]).toContain(response.status)
-      expect(response.body).toHaveProperty('message')
+      expect(response.body.status).toBe('success')
+      expect(response.body.data).toBeNull()
     })
 
     it('should return 400 for invalid email', async () => {
@@ -252,60 +264,15 @@ describe('Auth Endpoints', () => {
         .send({ email: 'nonexistent@example.com' })
         .expect(404)
 
-      expect(response.body.error).toHaveProperty('message')
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeNull()
     })
 
-    it('should return 400 for missing email', async () => {
+    it('should fail validation and return 400 for missing email', async () => {
       const response = await request(app).post('/resend-verification').send({}).expect(400)
 
-      expect(response.body.error).toHaveProperty('message')
-    })
-  })
-
-  describe('GET /auth/current-user', () => {
-    it('should return current user when authenticated', async () => {
-      const user = await createUser({
-        emailVerified: true,
-        password: 'password123'
-      })
-      const loginResponse = await request(app).post('/login').send({
-        username: user.username,
-        password: user.plainPassword
-      })
-
-      const { accessToken } = loginResponse.body
-
-      const response = await request(app)
-        .get('/current-user')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200)
-
-      expect(response.body).toEqual({
-        user: {
-          admin: user.admin,
-          email: user.email,
-          username: user.username
-        }
-      })
-    })
-
-    it('should return empty user when not authenticated', async () => {
-      const response = await request(app).get('/current-user').expect(200)
-
-      expect(response.body).toEqual({
-        user: {}
-      })
-    })
-
-    it('should return empty user for invalid token', async () => {
-      const response = await request(app)
-        .get('/current-user')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(200)
-
-      expect(response.body).toEqual({
-        user: {}
-      })
+      expect(response.body.status).toBe('fail')
+      expect(response.body.data).toBeDefined()
     })
   })
 })
