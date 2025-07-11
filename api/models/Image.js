@@ -15,6 +15,7 @@ const WITH_VERSIONS_QUERY = {
     id: true,
     iso: true,
     lens: true,
+    originalFilename: true,
     shutterSpeed: true
   },
   with: {
@@ -69,21 +70,21 @@ class Image extends BaseModel {
   async findAllWithVersions(options = {}) {
     const { limit, offset, orderBy, where } = options;
 
-    let query = this.db.query.ImagesTable.findMany({
+    const queryOptions = {
       ...WITH_VERSIONS_QUERY,
       orderBy: orderBy || undefined,
       where: where || undefined
-    });
+    };
 
     if (limit !== undefined) {
-      query = query.limit(limit);
+      queryOptions.limit = limit;
     }
 
     if (offset !== undefined) {
-      query = query.offset(offset);
+      queryOptions.offset = offset;
     }
 
-    return await query;
+    return await this.db.query.ImagesTable.findMany(queryOptions);
   }
 
   async findByIdWithVersions(id) {
