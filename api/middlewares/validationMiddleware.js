@@ -4,7 +4,12 @@ const validate = (targetProperty) => {
   return (schema) => {
     return (req, res, next) => {
       try {
-        schema.parse(req[targetProperty]);
+        const parsed = schema.parse(req[targetProperty]);
+        if (targetProperty === "query") {
+          req.parsedQuery = parsed;
+        } else {
+          req[targetProperty] = parsed;
+        }
         next();
       } catch (error) {
         if (error.issues) {
