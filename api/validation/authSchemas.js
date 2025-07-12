@@ -29,30 +29,42 @@ const tokenSchema = z
   .min(1, "Token is required")
   .regex(/^[a-zA-Z0-9]+$/, "Invalid token format");
 
-export const signupSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  username: usernameSchema
-});
+export const signupSchemas = {
+  body: z.object({
+    email: emailSchema,
+    password: passwordSchema,
+    username: usernameSchema
+  })
+};
 
-export const loginSchema = z.object({
-  password: z.string().min(1, "Password is required"),
-  username: z.string().min(1, "Username is required").trim()
-});
+export const loginSchemas = {
+  body: z.object({
+    password: z.string().min(1, "Password is required"),
+    username: z.string().min(1, "Username is required").trim()
+  })
+};
 
-export const verifyEmailSchema = z.object({
-  token: tokenSchema
-});
+export const verifyEmailSchemas = {
+  body: z.object({
+    token: tokenSchema
+  })
+};
 
-export const resendVerificationSchema = z.object({
-  email: emailSchema
-});
+export const resendVerificationEmailSchemas = {
+  body: z.object({
+    email: emailSchema
+  })
+};
 
-export const resetPasswordSchema = z.object({
-  email: emailSchema
-});
+export const resetPasswordSchemas = {
+  body: z.object({
+    email: emailSchema
+  })
+};
 
-export const confirmResetPasswordSchema = z.object({
-  password: passwordSchema,
-  token: tokenSchema
-});
+export const confirmResetPasswordSchemas = {
+  body: z.object({
+    password: passwordSchema,
+    token: tokenSchema
+  })
+};

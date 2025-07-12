@@ -13,29 +13,24 @@ import {
 } from "../controllers/imageController.js";
 import { auth } from "../middlewares/authMiddleware.js";
 import { uploadImages } from "../middlewares/uploadMiddleware.js";
-import { validateBody, validateParams, validateQuery } from "../middlewares/validationMiddleware.js";
+import { validate } from "../middlewares/validationMiddleware.js";
 import {
-  confirmUploadSchema,
-  fetchImageSchema,
-  fetchImagesSchema,
-  updateMetadataSchema
+  confirmUploadSchemas,
+  deleteImageSchemas,
+  fetchAllSchemas,
+  fetchByIdSchemas,
+  updateMetadataSchemas
 } from "../validation/imageSchemas.js";
 
 const router = Router();
 
 router.post("/upload/review", auth.required(), uploadImages, uploadForReview);
-router.post("/upload/confirm", auth.required(), validateBody(confirmUploadSchema), confirmUpload);
-router.get("/images", validateQuery(fetchImagesSchema), fetchAll);
+router.post("/upload/confirm", auth.required(), validate(confirmUploadSchemas), confirmUpload);
+router.get("/images", validate(fetchAllSchemas), fetchAll);
 router.get("/tiny-images", fetchTiny);
-router.get("/images/:id", validateParams(fetchImageSchema), fetchById);
-router.put(
-  "/images/:id/metadata",
-  auth.required(),
-  validateParams(fetchImageSchema),
-  validateBody(updateMetadataSchema),
-  updateMetadata
-);
-router.delete("/images/:id", auth.required(), validateParams(fetchImageSchema), deleteImage);
+router.get("/images/:id", validate(fetchByIdSchemas), fetchById);
+router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchemas), updateMetadata);
+router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage);
 router.post("/maintenance/cleanup-temp", auth.required(), cleanupTemp);
 router.post("/maintenance/cleanup-orphaned", auth.required(), cleanupOrphaned);
 

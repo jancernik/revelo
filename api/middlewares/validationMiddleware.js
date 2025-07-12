@@ -1,29 +1,34 @@
 import { ValidationError } from "../errors.js";
 
-const validate = (targetProperty) => {
-  return (schema) => {
-    return (req, res, next) => {
-      try {
-        const parsed = schema.parse(req[targetProperty]);
-        if (targetProperty === "query") {
-          req.parsedQuery = parsed;
-        } else {
-          req[targetProperty] = parsed;
-        }
-        next();
-      } catch (error) {
-        if (error.issues) {
-          const issues = error.issues;
-          const errorMessage = issues.map((err) => err.message).join(", ");
-          const validationError = new ValidationError(errorMessage, { data: issues });
-          return next(validationError);
-        }
-        next(error);
+export const validate = (schemas) => {
+  return (req, res, next) => {
+    const errors = [];
+    const validated = {};
+
+    for (const [key, schema] of Object.entries(schemas)) {
+      const target = req[key];
+      const result = schema.safeParse(target);
+
+      if (result.success) {
+        validated[key] = result.data;
+      } else {
+        errors.push(...result.error.issues);
       }
-    };
+    }
+
+    if (errors.length > 0) {
+      const message = errors.map((error) => error.message).join(", ");
+      return next(new ValidationError(message, { data: errors }));
+    }
+
+    for (const [key, data] of Object.entries(validated)) {
+      if (key === "query") {
+        req.parsedQuery = data;
+      } else {
+        req[key] = data;
+      }
+    }
+
+    next();
   };
 };
-
-export const validateBody = validate("body");
-export const validateParams = validate("params");
-export const validateQuery = validate("query");

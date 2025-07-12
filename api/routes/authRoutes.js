@@ -8,21 +8,25 @@ import {
   signup,
   verifyEmail
 } from "../controllers/authController.js";
-import { validateBody } from "../middlewares/validationMiddleware.js";
+import { validate } from "../middlewares/validationMiddleware.js";
 import {
-  loginSchema,
-  resendVerificationSchema,
-  signupSchema,
-  verifyEmailSchema
+  loginSchemas,
+  resendVerificationEmailSchemas,
+  signupSchemas,
+  verifyEmailSchemas
 } from "../validation/authSchemas.js";
 
 const router = Router();
 
-router.post("/signup", validateBody(signupSchema), signup);
-router.post("/login", validateBody(loginSchema), login);
+router.post("/signup", validate(signupSchemas), signup);
+router.post("/login", validate(loginSchemas), login);
 router.post("/logout", logout);
 router.post("/refresh", refresh);
-router.post("/verify-email", validateBody(verifyEmailSchema), verifyEmail);
-router.post("/resend-verification", validateBody(resendVerificationSchema), resendVerificationEmail);
+router.post("/verify-email", validate(verifyEmailSchemas), verifyEmail);
+router.post(
+  "/resend-verification",
+  validate(resendVerificationEmailSchemas),
+  resendVerificationEmail
+);
 
 export default router;

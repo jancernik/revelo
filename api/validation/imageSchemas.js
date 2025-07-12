@@ -20,17 +20,34 @@ const imageUploadSchema = z.object({
   sessionId: sessionIdSchema
 });
 
-export const confirmUploadSchema = z.object({
-  images: z.array(imageUploadSchema).min(1, "At least one image is required")
-});
+export const confirmUploadSchemas = {
+  body: z.object({
+    images: z.array(imageUploadSchema).min(1, "At least one image is required")
+  })
+};
 
-export const updateMetadataSchema = metadataSchema;
+export const updateMetadataSchemas = {
+  body: metadataSchema,
+  params: z.object({
+    id: imageIdSchema
+  })
+};
 
-export const fetchImagesSchema = z.object({
-  limit: limit.optional(),
-  offset: offset.optional()
-});
+export const fetchAllSchemas = {
+  query: z.object({
+    limit: limit.optional(),
+    offset: offset.optional()
+  })
+};
 
-export const fetchImageSchema = z.object({
-  id: imageIdSchema
-});
+export const fetchByIdSchemas = {
+  params: z.object({
+    id: imageIdSchema
+  })
+};
+
+export const deleteImageSchemas = {
+  params: z.object({
+    id: imageIdSchema
+  })
+};

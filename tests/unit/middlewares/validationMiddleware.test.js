@@ -1,18 +1,32 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { validateBody } from '../../../api/middlewares/validationMiddleware.js'
+import { validate } from '../../../api/middlewares/validationMiddleware.js'
 import { ValidationError } from '../../../api/errors.js'
 import { z } from 'zod'
 
 describe('Validation Middleware', () => {
   let req, res, next
 
-  const schema = z.object({
+  const bodySchema = z.object({
     email: z.string().email(),
     password: z.string().min(6)
   })
 
+  const querySchema = z.object({
+    limit: z.string().transform(Number).optional(),
+    offset: z.string().transform(Number).optional()
+  })
+
+  const paramsSchema = z.object({
+    id: z.string().uuid()
+  })
+
   beforeEach(() => {
-    req = { body: {} }
+    req = {
+      body: {},
+      query: {},
+      params: {},
+      headers: {}
+    }
     res = {}
     next = jest.fn()
 
@@ -24,25 +38,77 @@ describe('Validation Middleware', () => {
   })
 
   describe('validate', () => {
-    it('should call next when validation passes', () => {
+    it('should validate body when body schema is provided', () => {
       req.body = {
         email: 'test@example.com',
         password: 'password123'
       }
 
-      const middleware = validateBody(schema)
+      const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
+      expect(req.body.email).toBe('test@example.com')
     })
 
-    it('should call next with ValidationError when validation fails', () => {
+    it('should validate query when query schema is provided', () => {
+      req.query = {
+        limit: '10',
+        offset: '20'
+      }
+
+      const middleware = validate({ query: querySchema })
+      middleware(req, res, next)
+
+      expect(next).toHaveBeenCalled()
+      expect(req.parsedQuery.limit).toBe(10)
+      expect(req.parsedQuery.offset).toBe(20)
+    })
+
+    it('should validate params when params schema is provided', () => {
+      req.params = {
+        id: '123e4567-e89b-12d3-a456-426614174000'
+      }
+
+      const middleware = validate({ params: paramsSchema })
+      middleware(req, res, next)
+
+      expect(next).toHaveBeenCalled()
+      expect(req.params.id).toBe('123e4567-e89b-12d3-a456-426614174000')
+    })
+
+    it('should validate multiple parts simultaneously', () => {
+      req.body = {
+        email: 'test@example.com',
+        password: 'password123'
+      }
+      req.query = {
+        limit: '10'
+      }
+      req.params = {
+        id: '123e4567-e89b-12d3-a456-426614174000'
+      }
+
+      const middleware = validate({
+        body: bodySchema,
+        query: querySchema,
+        params: paramsSchema
+      })
+      middleware(req, res, next)
+
+      expect(next).toHaveBeenCalled()
+      expect(req.body.email).toBe('test@example.com')
+      expect(req.parsedQuery.limit).toBe(10)
+      expect(req.params.id).toBe('123e4567-e89b-12d3-a456-426614174000')
+    })
+
+    it('should call next with ValidationError when body validation fails', () => {
       req.body = {
         email: 'invalid-email',
         password: '123'
       }
 
-      const middleware = validateBody(schema)
+      const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
@@ -54,7 +120,7 @@ describe('Validation Middleware', () => {
         password: '123'
       }
 
-      const middleware = validateBody(schema)
+      const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalledWith(
@@ -64,132 +130,63 @@ describe('Validation Middleware', () => {
       )
     })
 
-    it('should include error data in ValidationError', () => {
-      req.body = {
-        email: 'invalid-email',
-        password: '123'
-      }
-
-      const middleware = validateBody(schema)
-
-      try {
-        middleware(req, res, next)
-      } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError)
-        expect(error.data).toBeDefined()
-        expect(Array.isArray(error.data)).toBe(true)
-        expect(error.data.length).toBeGreaterThan(0)
-      }
-    })
-
     it('should handle empty request body', () => {
       req.body = {}
 
-      const middleware = validateBody(schema)
+      const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
-    it('should handle missing fields', () => {
-      req.body = {
-        email: 'test@example.com'
-      }
-
-      const middleware = validateBody(schema)
+    it('should skip validation when no schemas provided', () => {
+      const middleware = validate({})
       middleware(req, res, next)
 
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining('expected string, received undefined')
-        })
-      )
+      expect(next).toHaveBeenCalled()
     })
 
-    it('should handle extra fields (should pass with strict schema)', () => {
+    it('should only validate provided schemas', () => {
       req.body = {
         email: 'test@example.com',
-        password: 'password123',
-        extraField: 'should be ignored'
+        password: 'password123'
       }
+      req.query = { invalidQuery: 'should not be validated' }
 
-      const middleware = validateBody(schema)
+      const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
+      expect(req.body.email).toBe('test@example.com')
+      expect(req.query.invalidQuery).toBe('should not be validated')
     })
 
-    it('should work with different schema types', () => {
-      const numberSchema = z.object({
-        age: z.number().min(0).max(150)
-      })
-
-      req.body = { age: 25 }
-
-      const middleware = validateBody(numberSchema)
-      middleware(req, res, next)
-
-      expect(next).toHaveBeenCalled()
-    })
-
-    it('should handle array schemas', () => {
-      const arraySchema = z.object({
-        tags: z.array(z.string())
-      })
-
-      req.body = { tags: ['tag1', 'tag2'] }
-
-      const middleware = validateBody(arraySchema)
-      middleware(req, res, next)
-
-      expect(next).toHaveBeenCalled()
-    })
-
-    it('should handle nested object schemas', () => {
-      const nestedSchema = z.object({
-        user: z.object({
-          name: z.string(),
-          email: z.string().email()
-        })
-      })
-
-      req.body = {
-        user: {
-          name: 'John Doe',
-          email: 'john@example.com'
-        }
-      }
-
-      const middleware = validateBody(nestedSchema)
-      middleware(req, res, next)
-
-      expect(next).toHaveBeenCalled()
-    })
-
-    it('should call next with non-zod errors', () => {
-      const mockSchema = {
-        parse: jest.fn(() => {
-          throw new Error('Some other error')
-        })
-      }
-
-      const middleware = validateBody(mockSchema)
-      middleware(req, res, next)
-
-      expect(next).toHaveBeenCalledWith(expect.any(Error))
-      expect(next).not.toHaveBeenCalledWith(expect.any(ValidationError))
-    })
-
-    it('should call next with error when validation fails', () => {
+    it('should collect validation errors from multiple schemas', () => {
       req.body = {
         email: 'invalid-email',
         password: '123'
       }
+      req.query = {
+        limit: 'not-a-number'
+      }
+      req.params = {
+        id: 'not-a-uuid'
+      }
 
-      const middleware = validateBody(schema)
+      const middleware = validate({
+        body: bodySchema,
+        query: querySchema,
+        params: paramsSchema
+      })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
+
+      const error = next.mock.calls[0][0]
+      expect(error.data.length).toBeGreaterThan(1)
+      expect(error.message).toContain('Invalid email')
+      expect(error.message).toContain('Too small')
+      expect(error.message).toContain('Invalid UUID')
     })
   })
 })
