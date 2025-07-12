@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 
-import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
 export const useSettingsStore = defineStore('settings', {
@@ -13,11 +12,7 @@ export const useSettingsStore = defineStore('settings', {
       this.error = null
 
       try {
-        const authStore = useAuthStore()
-        const isAdmin = authStore.user?.admin === true
-        const emailVerified = authStore.user?.emailVerified === true
-        const endpoint = isAdmin && emailVerified ? '/settings' : '/public-settings'
-        const response = await api.get(endpoint)
+        const response = await api.get('/settings')
 
         this.settingsArray = response.data
         this.initialized = true
