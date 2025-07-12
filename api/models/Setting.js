@@ -3,6 +3,7 @@ import yaml from "js-yaml";
 import path from "path";
 
 import { SettingsTable } from "../drizzle/schema.js";
+import { AppError, NotFoundError } from "../errors.js";
 import BaseModel from "./BaseModel.js";
 
 class Setting extends BaseModel {
@@ -16,17 +17,17 @@ class Setting extends BaseModel {
   }
 
   async get(name, opts = {}) {
-    const { complete } = opts;
+    const { complete, includeRestricted } = opts;
     await this.initialize();
 
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
 
-    if (!setting.public && !opts.includeRestricted) {
-      throw new Error(`Setting '${name}' does not exist.`);
+    if (!setting.public && !includeRestricted) {
+      throw new NotFoundError(`Setting '${name}' does not exist.`);
     }
 
-    return this.#formatSettingResponse(setting, dbSetting, complete);
+    return this.#formatSetting(setting, dbSetting, complete);
   }
 
   async getAll(opts = {}) {
@@ -39,7 +40,7 @@ class Setting extends BaseModel {
 
     return filteredSettings.map((setting) => {
       const dbSetting = this.#getDbSetting(setting.name);
-      return this.#formatSettingResponse(setting, dbSetting, complete);
+      return this.#formatSetting(setting, dbSetting, complete);
     });
   }
 
@@ -50,7 +51,7 @@ class Setting extends BaseModel {
       return this.initializationPromise;
     }
 
-    this.initializationPromise = this.#doInitialize();
+    this.initializationPromise = this.#performInitialization();
 
     try {
       await this.initializationPromise;
@@ -60,7 +61,8 @@ class Setting extends BaseModel {
     }
   }
 
-  async reset(name) {
+  async reset(name, opts = {}) {
+    const { complete } = opts;
     await this.initialize();
 
     const setting = this.#getFileSetting(name);
@@ -71,69 +73,37 @@ class Setting extends BaseModel {
       this.dbSettings = this.dbSettings.filter((s) => s.id !== dbSetting.id);
     }
 
-    const defaultValue = this.#parseValue(setting.default, setting.type, setting.options);
-    return {
-      name,
-      value: defaultValue
-    };
+    return this.#formatSetting(setting, null, complete);
   }
 
-  async set(name, value) {
+  async set(name, value, opts = {}) {
+    const { complete } = opts;
     await this.initialize();
 
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
 
-    // Validate the value before setting
     this.#validateSettingValue(value, setting.type, setting.options);
 
-    let resultSetting;
+    let updatedSetting;
     const stringifiedValue = this.#stringifyValue(value, setting.type);
 
     if (!dbSetting) {
-      resultSetting = await this.create({
-        name,
-        value: stringifiedValue
-      });
-      this.dbSettings.push(resultSetting);
+      updatedSetting = await this.create({ name, value: stringifiedValue });
+      this.dbSettings.push(updatedSetting);
     } else {
-      resultSetting = await this.update(dbSetting.id, {
-        value: stringifiedValue
-      });
+      updatedSetting = await this.update(dbSetting.id, { value: stringifiedValue });
 
       const index = this.dbSettings.findIndex((s) => s.id === dbSetting.id);
       if (index !== -1) {
-        this.dbSettings[index] = resultSetting;
+        this.dbSettings[index] = updatedSetting;
       }
     }
 
-    const parsedValue = this.#parseValue(resultSetting.value, setting.type, setting.options);
-    return {
-      name,
-      value: parsedValue
-    };
+    return this.#formatSetting(setting, updatedSetting, complete);
   }
 
-  async #doInitialize() {
-    const fileSettings = this.#loadConfigFile();
-
-    this.fileSettings = Object.entries(fileSettings).map(([name, settingData]) => {
-      const defaultValue = this.#stringifyValue(settingData.default, settingData.type);
-      const isPublic = settingData.public === true;
-
-      return {
-        name,
-        ...settingData,
-        default: defaultValue,
-        public: isPublic
-      };
-    });
-
-    this.dbSettings = await this.findAll();
-    this.initialized = true;
-  }
-
-  #formatSettingResponse(setting, dbSetting, complete) {
+  #formatSetting(setting, dbSetting, complete) {
     const value = this.#parseValue(
       dbSetting?.value || setting.default,
       setting.type,
@@ -180,13 +150,20 @@ class Setting extends BaseModel {
   }
 
   #loadConfigFile() {
+    const settingsFilename = "settings.yml";
     try {
-      const settingsPath = path.resolve(process.cwd(), "settings.yml");
+      const settingsPath = path.resolve(process.cwd(), settingsFilename);
       const fileContents = fs.readFileSync(settingsPath, "utf8");
       return yaml.load(fileContents);
     } catch (error) {
-      console.error("Error loading settings file.", error);
-      return {};
+      if (error.code === "ENOENT") {
+        const settingsPath = path.resolve(process.cwd(), settingsFilename);
+        throw new AppError("Settings file not found", 500, { path: settingsPath }, false);
+      }
+      if (error.name === "YAMLException") {
+        throw new AppError("Invalid YAML in settings file", 500, { error: error.message }, false);
+      }
+      throw new AppError("Failed to load settings file", 500, { error: error.message }, false);
     }
   }
 
@@ -241,6 +218,25 @@ class Setting extends BaseModel {
       default:
         return value.toString();
     }
+  }
+
+  async #performInitialization() {
+    const fileSettings = this.#loadConfigFile();
+
+    this.fileSettings = Object.entries(fileSettings).map(([name, settingData]) => {
+      const defaultValue = this.#stringifyValue(settingData.default, settingData.type);
+      const isPublic = settingData.public === true;
+
+      return {
+        name,
+        ...settingData,
+        default: defaultValue,
+        public: isPublic
+      };
+    });
+
+    this.dbSettings = await this.findAll();
+    this.initialized = true;
   }
 
   #stringifyValue(value, type) {

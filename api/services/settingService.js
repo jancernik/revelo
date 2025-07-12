@@ -1,87 +1,46 @@
+import { NotFoundError, ValidationError } from "../errors.js";
 import Setting from "../models/Setting.js";
 
-export const getSettings = async (opts = {}) => {
-  try {
-    return await Setting.getAll(opts);
-  } catch (error) {
-    throw new Error(`Failed to get settings: ${error.message}`);
-  }
+export const getSettings = async (opts) => {
+  return await Setting.getAll(opts);
 };
 
-export const getSetting = async (name, opts = {}) => {
-  if (!name) {
-    throw new Error("Failed to get setting: Setting name is required");
-  }
-
-  try {
-    return await Setting.get(name, opts);
-  } catch (error) {
-    throw new Error(`Failed to get setting '${name}': ${error.message}`);
-  }
+export const getSetting = async (name, opts) => {
+  return await Setting.get(name, opts);
 };
 
-export const updateSetting = async (name, value) => {
-  if (!name) {
-    throw new Error("Failed to update setting: Setting name is required");
-  }
+export const updateSettings = async (settings, opts) => {
+  const updatedSettings = [];
+  const notFoundErrors = [];
+  const validationErrors = [];
 
-  if (value === undefined) {
-    throw new Error(`Failed to update setting '${name}': Setting value is required`);
-  }
-
-  try {
-    await Setting.get(name, { includeRestricted: true });
-    return await Setting.set(name, value);
-  } catch (error) {
-    throw new Error(`Failed to update setting '${name}': ${error.message}`);
-  }
-};
-
-export const updateMultipleSettings = async (settingsData) => {
-  if (!settingsData || typeof settingsData !== "object") {
-    throw new Error("Failed to update settings: Settings data is required and must be an object");
-  }
-
-  const settingNames = Object.keys(settingsData);
-  if (settingNames.length === 0) {
-    throw new Error("Failed to update settings: At least one setting must be provided");
-  }
-
-  const results = [];
-  const errors = [];
-
-  for (const name of settingNames) {
+  for (const setting of settings) {
     try {
-      await Setting.get(name, { includeRestricted: true });
-      const result = await Setting.set(name, settingsData[name]);
-      results.push(result);
+      await Setting.get(setting.name, { includeRestricted: true });
+      const updatedSetting = await Setting.set(setting.name, setting.value, opts);
+      updatedSettings.push(updatedSetting);
     } catch (error) {
-      errors.push({
-        error: error.message,
-        name
-      });
+      if (!error.isOperational) throw error;
+      if (error.statusCode === 404) {
+        notFoundErrors.push(setting.name);
+      }
+      if (error.statusCode === 400) {
+        validationErrors.push({ name: setting.name });
+      }
     }
   }
 
-  if (errors.length > 0) {
-    const errorMessage = `Failed to update some settings: ${errors.map((e) => `${e.name}: ${e.error}`).join(", ")}`;
-    const error = new Error(errorMessage);
-    error.details = { failed: errors, successful: results };
-    throw error;
+  if (notFoundErrors.length > 0) {
+    throw new NotFoundError(`Settings not found: ${notFoundErrors.join(", ")}`);
+  }
+  if (validationErrors.length > 0) {
+    throw new ValidationError(`Validation failed for settings: ${validationErrors.join(", ")}`);
   }
 
-  return results;
+  return updatedSettings;
 };
 
-export const resetSetting = async (name) => {
-  if (!name) {
-    throw new Error("Failed to reset setting: Setting name is required");
-  }
-
-  try {
-    await Setting.get(name, { includeRestricted: true });
-    return await Setting.reset(name);
-  } catch (error) {
-    throw new Error(`Failed to reset setting '${name}': ${error.message}`);
-  }
+export const resetSetting = async (name, opts) => {
+  await Setting.get(name, { includeRestricted: true });
+  return await Setting.reset(name, opts);
 };
