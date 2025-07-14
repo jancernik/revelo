@@ -3,7 +3,8 @@ import yaml from "js-yaml";
 import path from "path";
 
 import { SettingsTable } from "../drizzle/schema.js";
-import { AppError, NotFoundError } from "../errors.js";
+import { AppError, NotFoundError, ValidationError } from "../errors.js";
+import { createSettingValueSchema } from "../validation/settingSchemas.js";
 import BaseModel from "./BaseModel.js";
 
 class Setting extends BaseModel {
@@ -11,7 +12,7 @@ class Setting extends BaseModel {
     super(SettingsTable);
 
     this.fileSettings = [];
-    this.dbSettings = null;
+    this.dbSettings = [];
     this.initialized = false;
     this.initializationPromise = null;
   }
@@ -24,7 +25,7 @@ class Setting extends BaseModel {
     const dbSetting = this.#getDbSetting(name);
 
     if (!setting.public && !includeRestricted) {
-      throw new NotFoundError(`Setting '${name}' does not exist.`);
+      throw new NotFoundError(`Setting '${name}' does not exist`, { data: { settingName: name } });
     }
 
     return this.#formatSetting(setting, dbSetting, complete);
@@ -70,7 +71,7 @@ class Setting extends BaseModel {
 
     if (dbSetting) {
       await this.delete(dbSetting.id);
-      this.dbSettings = this.dbSettings.filter((s) => s.id !== dbSetting.id);
+      this.dbSettings = this.dbSettings.filter((s) => s && s.id !== dbSetting.id);
     }
 
     return this.#formatSetting(setting, null, complete);
@@ -83,10 +84,10 @@ class Setting extends BaseModel {
     const setting = this.#getFileSetting(name);
     const dbSetting = this.#getDbSetting(name);
 
-    this.#validateSettingValue(value, setting.type, setting.options);
+    const validatedValue = this.#validateSettingValue(value, setting.type, setting.options, name);
 
     let updatedSetting;
-    const stringifiedValue = this.#stringifyValue(value, setting.type);
+    const stringifiedValue = this.#stringifyValue(validatedValue, setting.type);
 
     if (!dbSetting) {
       updatedSetting = await this.create({ name, value: stringifiedValue });
@@ -94,7 +95,7 @@ class Setting extends BaseModel {
     } else {
       updatedSetting = await this.update(dbSetting.id, { value: stringifiedValue });
 
-      const index = this.dbSettings.findIndex((s) => s.id === dbSetting.id);
+      const index = this.dbSettings.findIndex((s) => s && s.id === dbSetting.id);
       if (index !== -1) {
         this.dbSettings[index] = updatedSetting;
       }
@@ -137,7 +138,7 @@ class Setting extends BaseModel {
   }
 
   #getDbSetting(name) {
-    return this.dbSettings.find((s) => s.name === name);
+    return this.dbSettings.find((s) => s && s.name === name);
   }
 
   #getFileSetting(name) {
@@ -146,24 +147,24 @@ class Setting extends BaseModel {
       return setting;
     }
 
-    throw new Error(`Setting '${name}' does not exist.`);
+    throw new NotFoundError(`Setting '${name}' does not exist`, {
+      data: { settingName: name }
+    });
   }
 
   #loadConfigFile() {
-    const settingsFilename = "settings.yml";
     try {
-      const settingsPath = path.resolve(process.cwd(), settingsFilename);
+      const settingsPath = path.resolve(process.cwd(), "settings.yml");
       const fileContents = fs.readFileSync(settingsPath, "utf8");
       return yaml.load(fileContents);
     } catch (error) {
       if (error.code === "ENOENT") {
-        const settingsPath = path.resolve(process.cwd(), settingsFilename);
-        throw new AppError("Settings file not found", 500, { path: settingsPath }, false);
+        throw new AppError("Settings file not found", { isOperational: false });
       }
       if (error.name === "YAMLException") {
-        throw new AppError("Invalid YAML in settings file", 500, { error: error.message }, false);
+        throw new AppError("Invalid YAML in settings file", { isOperational: false });
       }
-      throw new AppError("Failed to load settings file", 500, { error: error.message }, false);
+      throw new AppError("Failed to load settings file", { isOperational: false });
     }
   }
 
@@ -235,7 +236,7 @@ class Setting extends BaseModel {
       };
     });
 
-    this.dbSettings = await this.findAll();
+    this.dbSettings = (await this.findAll()).filter((s) => s !== null && s !== undefined);
     this.initialized = true;
   }
 
@@ -268,51 +269,20 @@ class Setting extends BaseModel {
     }
   }
 
-  #validateSettingValue(value, type, options = null) {
-    switch (type.toLowerCase()) {
-      case "multiselect":
-        if (options && Array.isArray(options)) {
-          const validValues = options.map((opt) =>
-            typeof opt === "object" ? opt.value || opt.key || opt.id : opt
-          );
-          const valuesToCheck = Array.isArray(value) ? value : [value];
+  #validateSettingValue(value, type, options = null, settingName) {
+    const schema = createSettingValueSchema(type, options);
+    const result = schema.safeParse(value);
 
-          for (const val of valuesToCheck) {
-            const checkValue = typeof val === "object" ? val.value || val.key || val.id : val;
-
-            if (!validValues.includes(checkValue)) {
-              throw new Error(
-                `Invalid value for multiselect. All values must be one of: ${validValues.join(", ")}`
-              );
-            }
-          }
+    if (!result.success) {
+      throw new ValidationError(`Validation failed for setting '${settingName}'`, {
+        data: {
+          settingName,
+          validation: result.error.errors
         }
-        break;
-      case "select":
-      case "switch":
-        if (options && Array.isArray(options)) {
-          const validValues = options.map((opt) =>
-            typeof opt === "object" ? opt.value || opt.key || opt.id : opt
-          );
-          const checkValue =
-            typeof value === "object" ? value.value || value.key || value.id : value;
-
-          if (!validValues.includes(checkValue)) {
-            throw new Error(`Invalid value for ${type}. Must be one of: ${validValues.join(", ")}`);
-          }
-        }
-        break;
-      case "textpairs":
-        if (!Array.isArray(value)) {
-          throw new Error("textPairs value must be an array of objects");
-        }
-        for (const pair of value) {
-          if (typeof pair !== "object" || pair === null) {
-            throw new Error("Each textPairs item must be an object");
-          }
-        }
-        break;
+      });
     }
+
+    return result.data;
   }
 }
 

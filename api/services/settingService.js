@@ -13,6 +13,7 @@ export const updateSettings = async (settings, opts) => {
   const updatedSettings = [];
   const notFoundErrors = [];
   const validationErrors = [];
+  const unknownErrors = [];
 
   for (const setting of settings) {
     try {
@@ -22,19 +23,35 @@ export const updateSettings = async (settings, opts) => {
     } catch (error) {
       if (!error.isOperational) throw error;
       if (error.statusCode === 404) {
-        notFoundErrors.push(setting.name);
-      }
-      if (error.statusCode === 400) {
-        validationErrors.push({ name: setting.name });
+        notFoundErrors.push({ data: error.data });
+      } else if (error.statusCode === 400) {
+        validationErrors.push({ data: error.data });
+      } else {
+        unknownErrors.push({ data: error.data });
       }
     }
   }
 
+  const errors = [...notFoundErrors, ...validationErrors, ...unknownErrors];
+
   if (notFoundErrors.length > 0) {
-    throw new NotFoundError(`Settings not found: ${notFoundErrors.join(", ")}`);
+    throw new NotFoundError(
+      `Settings not found: ${notFoundErrors.map((e) => e.settingName).join(", ")}`,
+      { data: { errors: notFoundErrors } }
+    );
   }
+
   if (validationErrors.length > 0) {
-    throw new ValidationError(`Validation failed for settings: ${validationErrors.join(", ")}`);
+    throw new ValidationError(
+      `Validation failed for settings: ${validationErrors.map((e) => e.settingName).join(", ")}`,
+      { data: { errors: validationErrors } }
+    );
+  }
+
+  if (errors.length > 0) {
+    throw new ValidationError("Multiple errors occurred while updating settings", {
+      data: { errors }
+    });
   }
 
   return updatedSettings;
