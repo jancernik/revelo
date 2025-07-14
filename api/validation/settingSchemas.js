@@ -111,13 +111,13 @@ export const createSettingValueSchema = (type, options = null) => {
       }
 
     case "text":
-      return z.coerce.string("Value must be a string");
+      return z.string("Value must be a string");
 
     case "textpairs":
       return z.array(z.array(z.string()).length(2, "Each pair must contain exactly two strings"));
 
     case "toggle":
-      return z.coerce.boolean();
+      return z.boolean();
 
     default:
       return z.any();
