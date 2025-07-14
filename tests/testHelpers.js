@@ -2,32 +2,43 @@ import { getDb } from './testDb.js'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { UserTables, ImagesTable, EmailVerificationTokensTable } from '../api/drizzle/schema.js'
+import { generateAccess } from '../api/utils/tokenUtils.js'
 
-export async function createUser(userData = {}) {
+const baseUserData = (data = {}) => {
   const timestamp = Date.now()
-  const random = Math.floor(Math.random() * 10000)
-  const defaultUser = {
-    email: `test-${timestamp}-${random}@example.com`,
+  const random = Math.floor(Math.random() * 1000)
+  const uniqueSuffix = `${timestamp}-${random}`
+  return {
+    email: `user-${uniqueSuffix}@example.com`,
     password: 'Password123',
-    username: `testuser-${timestamp}-${random}`,
+    username: `user-${uniqueSuffix}`,
     admin: false,
-    emailVerified: true
+    emailVerified: true,
+    ...data
   }
+}
 
-  const user = { ...defaultUser, ...userData }
-  const plainPassword = user.password
+export async function createUser(data) {
+  const userData = baseUserData(data)
+  const plainPassword = userData.password
 
-  user.password = await bcrypt.hash(plainPassword, 10)
+  userData.password = await bcrypt.hash(plainPassword, 10)
 
   const db = getDb()
-  const result = await db.insert(UserTables).values(user).returning()
+  const result = await db.insert(UserTables).values(userData).returning()
   const createdUser = result[0] || null
 
-  if (createdUser) {
-    createdUser.plainPassword = plainPassword
-  }
+  if (createdUser) createdUser.plainPassword = plainPassword
 
   return createdUser
+}
+
+export async function createAdminUser(data) {
+  return createUser({ admin: true, ...data })
+}
+
+export async function createRegularUser(data) {
+  return createUser({ admin: false, ...data })
 }
 
 export async function createImage(imageData = {}) {
@@ -75,4 +86,9 @@ export async function createVerificationToken(userId, email = null) {
     .returning()
 
   return result[0]?.token || token
+}
+
+export function createAccessToken(user) {
+  const { admin, email, id } = user
+  return generateAccess({ admin, email, id })
 }
