@@ -183,7 +183,7 @@ describe('Validation Middleware', () => {
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
 
       const error = next.mock.calls[0][0]
-      expect(error.data.length).toBeGreaterThan(1)
+      expect(error.data.validation.length).toBeGreaterThan(1)
       expect(error.message).toContain('Invalid email')
       expect(error.message).toContain('Too small')
       expect(error.message).toContain('Invalid UUID')

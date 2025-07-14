@@ -18,7 +18,7 @@ export const validate = (schemas) => {
 
     if (errors.length > 0) {
       const message = errors.map((error) => error.message).join(", ");
-      return next(new ValidationError(message, { data: errors }));
+      return next(new ValidationError(message, { data: { validation: errors } }));
     }
 
     for (const [key, data] of Object.entries(validated)) {
