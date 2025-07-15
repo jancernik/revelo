@@ -1,11 +1,11 @@
 <script setup>
-import gsap from 'gsap'
-import { computed, nextTick, onMounted, reactive, useTemplateRef } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import gsap from "gsap"
+import { computed, nextTick, onMounted, reactive, useTemplateRef } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
-import ThemeToggler from '@/components/ThemeToggler.vue'
-import { useAuthStore } from '@/stores/auth'
-import { cssVar } from '@/utils/ui'
+import ThemeToggler from "@/components/ThemeToggler.vue"
+import { useAuthStore } from "@/stores/auth"
+import { cssVar } from "@/utils/ui"
 
 const route = useRoute()
 const router = useRouter()
@@ -13,41 +13,41 @@ const authStore = useAuthStore()
 
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 
-const menu = useTemplateRef('menu')
-const menuUl = useTemplateRef('menu-ul')
+const menu = useTemplateRef("menu")
+const menuUl = useTemplateRef("menu-ul")
 
 let enterTimeline = null
 let leaveTimeline = null
 
 async function handleLogout() {
   await authStore.logout()
-  router.push('/')
+  router.push("/")
 }
 
 const menuConfig = reactive([
   {
-    id: 'gallery',
-    label: 'Gallery',
-    path: '/',
+    id: "gallery",
+    label: "Gallery",
+    path: "/",
     visible: true
   },
   {
-    id: 'collections',
-    label: 'Collections',
-    path: '/collections',
+    id: "collections",
+    label: "Collections",
+    path: "/collections",
     visible: true
   },
   {
-    id: 'dashboard',
-    label: 'Dashboard',
-    path: '/dashboard',
+    id: "dashboard",
+    label: "Dashboard",
+    path: "/dashboard",
     visible: () => isAdmin.value
   }
 ])
 
 const visibleMenuItems = computed(() => {
   return menuConfig.filter((item) => {
-    if (typeof item.visible === 'function') {
+    if (typeof item.visible === "function") {
       return item.visible()
     }
     return item.visible
@@ -64,7 +64,7 @@ const handleItemClick = (item) => {
 
 const isActive = (path) => {
   if (!path) return false
-  if (path === '/') {
+  if (path === "/") {
     return route?.path === path
   }
   return route?.path.startsWith(path)
@@ -85,29 +85,29 @@ const initAnimation = () => {
 
   enterTimeline
     .to(menu.value, {
-      borderRadius: `${cssVar('--radius-xl')}`,
+      borderRadius: `${cssVar("--radius-xl")}`,
       duration: 0.45,
-      ease: 'back.out(2.2)',
+      ease: "back.out(2.2)",
       scale: 1.03,
-      y: `-${cssVar('--spacing-6')}`
+      y: `-${cssVar("--spacing-6")}`
     })
     .to(
       menuUl.value,
       {
         duration: 0.15,
-        ease: 'power1.out',
-        gap: `${cssVar('--spacing-4')}`
+        ease: "power1.out",
+        gap: `${cssVar("--spacing-4")}`
       },
-      '<'
+      "<"
     )
     .to(
-      '.list-item button',
+      ".list-item button",
       {
         duration: 0.15,
-        ease: 'power1.out',
-        padding: `${cssVar('--spacing-3')} ${cssVar('--spacing-4')}`
+        ease: "power1.out",
+        padding: `${cssVar("--spacing-3")} ${cssVar("--spacing-4")}`
       },
-      '<'
+      "<"
     )
 
   leaveTimeline = gsap.timeline({ paused: true })
@@ -116,7 +116,7 @@ const initAnimation = () => {
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
       duration: 0.15,
-      ease: 'power2.out',
+      ease: "power2.out",
       scale: 1,
       y: 0
     })
@@ -124,19 +124,19 @@ const initAnimation = () => {
       menuUl.value,
       {
         duration: 0.1,
-        ease: 'power1.out',
+        ease: "power1.out",
         gap: 0
       },
-      '<'
+      "<"
     )
     .to(
-      '.list-item button',
+      ".list-item button",
       {
         duration: 0.1,
-        ease: 'power4.out',
-        padding: `${cssVar('--spacing-2')} ${cssVar('--spacing-4')}`
+        ease: "power4.out",
+        padding: `${cssVar("--spacing-2")} ${cssVar("--spacing-4")}`
       },
-      '<'
+      "<"
     )
     .to(
       menu.value,
@@ -147,7 +147,7 @@ const initAnimation = () => {
         scaleY: 0.92,
         yoyo: true
       },
-      '-=0.07'
+      "-=0.07"
     )
 }
 
@@ -193,7 +193,7 @@ onMounted(() => {
   backdrop-filter: blur(5px);
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: calc(-1 * var(--spacing-8));
     left: calc(-1 * var(--spacing-8));
@@ -228,7 +228,7 @@ onMounted(() => {
     background: none;
     cursor: pointer;
     color: inherit;
-    @include text('base');
+    @include text("base");
     font-weight: var(--font-normal);
     text-transform: uppercase;
   }

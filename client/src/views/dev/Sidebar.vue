@@ -1,7 +1,7 @@
 <script setup>
 defineProps({
   activeSection: {
-    default: '',
+    default: "",
     type: String
   },
   components: {
@@ -10,7 +10,7 @@ defineProps({
   }
 })
 
-defineEmits(['navigate'])
+defineEmits(["navigate"])
 </script>
 
 <template>
@@ -51,7 +51,7 @@ defineEmits(['navigate'])
   }
 
   button {
-    @include text('base');
+    @include text("base");
     font-weight: var(--font-medium);
     width: 100%;
     padding: var(--spacing-2) var(--spacing-4);

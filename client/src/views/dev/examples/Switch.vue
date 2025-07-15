@@ -1,51 +1,51 @@
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue"
 
-import RSwitch from '@/components/common/Switch.vue'
+import RSwitch from "@/components/common/Switch.vue"
 
-const viewMode = ref('grid')
-const theme = ref('light')
-const alignment = ref('left')
-const verticalTheme = ref('auto')
-const disabledValue = ref('enabled')
+const viewMode = ref("grid")
+const theme = ref("light")
+const alignment = ref("left")
+const verticalTheme = ref("auto")
+const disabledValue = ref("enabled")
 
 const viewOptions = [
-  { icon: 'List', value: 'list' },
-  { icon: 'Grid3X3', value: 'grid' },
-  { icon: 'LayoutGrid', value: 'card' }
+  { icon: "List", value: "list" },
+  { icon: "Grid3X3", value: "grid" },
+  { icon: "LayoutGrid", value: "card" }
 ]
 
 const themeOptions = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'Auto', value: 'auto' }
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+  { label: "Auto", value: "auto" }
 ]
 
 const alignmentOptions = [
-  { icon: 'AlignLeft', value: 'left' },
-  { icon: 'AlignCenter', value: 'center' },
-  { icon: 'AlignRight', value: 'right' },
-  { icon: 'AlignJustify', value: 'justify' }
+  { icon: "AlignLeft", value: "left" },
+  { icon: "AlignCenter", value: "center" },
+  { icon: "AlignRight", value: "right" },
+  { icon: "AlignJustify", value: "justify" }
 ]
 
 const verticalOptions = [
-  { label: 'Light Theme', value: 'light' },
-  { label: 'Dark Theme', value: 'dark' },
-  { label: 'System', value: 'auto' }
+  { label: "Light Theme", value: "light" },
+  { label: "Dark Theme", value: "dark" },
+  { label: "System", value: "auto" }
 ]
 
 const disabledOptions = [
-  { label: 'Enabled', value: 'enabled' },
-  { label: 'Disabled', value: 'disabled' }
+  { label: "Enabled", value: "enabled" },
+  { label: "Disabled", value: "disabled" }
 ]
 
 const mixedOptions = [
-  { icon: 'Plus', label: 'Create', value: 'create' },
-  { icon: 'Edit', label: 'Edit', value: 'edit' },
-  { icon: 'Trash2', label: 'Delete', value: 'delete' }
+  { icon: "Plus", label: "Create", value: "create" },
+  { icon: "Edit", label: "Edit", value: "edit" },
+  { icon: "Trash2", label: "Delete", value: "delete" }
 ]
 
-const mixedValue = ref('create')
+const mixedValue = ref("create")
 </script>
 
 <template>

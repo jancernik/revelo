@@ -1,12 +1,12 @@
 <script setup>
-import { gsap } from 'gsap'
-import { ScrollSmoother } from 'gsap/ScrollSmoother'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { gsap } from "gsap"
+import { ScrollSmoother } from "gsap/ScrollSmoother"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 
-import ImageCard from '@/components/ImageCard.vue'
-import { useFullscreenImage } from '@/composables/useFullscreenImage'
-import api from '@/utils/api'
+import ImageCard from "@/components/ImageCard.vue"
+import { useFullscreenImage } from "@/composables/useFullscreenImage"
+import api from "@/utils/api"
 
 const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds
@@ -31,9 +31,9 @@ const timelines = []
 const columnScrollTriggers = []
 const loadedImages = ref(0)
 
-const imageGallery = useTemplateRef('image-gallery')
-const smoothWrapper = useTemplateRef('smooth-wrapper')
-const smoothContent = useTemplateRef('smooth-content')
+const imageGallery = useTemplateRef("image-gallery")
+const smoothWrapper = useTemplateRef("smooth-wrapper")
+const smoothContent = useTemplateRef("smooth-content")
 
 const { show } = useFullscreenImage()
 
@@ -41,10 +41,10 @@ const shuffle = (array) => gsap.utils.shuffle(array)
 
 const fetchImages = async () => {
   try {
-    const response = await api.get('/images')
+    const response = await api.get("/images")
     imageData.value = response.data
   } catch (error) {
-    console.error('Error fetching images:', error)
+    console.error("Error fetching images:", error)
   }
 }
 
@@ -53,7 +53,7 @@ const groupImages = (images = [], numberOfGroups) => {
   if (!numberOfGroups || numberOfGroups <= 0) return images
 
   const imagesWithWeights = images.map((image) => {
-    const regularVersion = image?.versions?.find((v) => v.type === 'regular') || {}
+    const regularVersion = image?.versions?.find((v) => v.type === "regular") || {}
     const height = regularVersion.height || 0
     const width = regularVersion.width || 0
     const aspectRatio = width > 0 ? height / width : 0
@@ -100,7 +100,7 @@ const initSmoother = () => {
 
 const setupLagEffect = () => {
   if (!smoother.value) return
-  const columns = imageGallery.value.querySelectorAll('.gallery-column')
+  const columns = imageGallery.value.querySelectorAll(".gallery-column")
   const middle = (columns.length - 1) / 2
 
   columns.forEach((column, index) => {
@@ -121,15 +121,15 @@ const getHorizontalOrigin = (element) => {
 }
 
 const setupTimelines = () => {
-  const columns = imageGallery.value.querySelectorAll('.gallery-column')
+  const columns = imageGallery.value.querySelectorAll(".gallery-column")
 
   columns.forEach((column) => {
-    const imageCards = column.querySelectorAll('.image-card')
+    const imageCards = column.querySelectorAll(".image-card")
 
     imageCards.forEach((card) => {
       const timeline = gsap.timeline({
         defaults: {
-          ease: 'power1.inOut'
+          ease: "power1.inOut"
         },
         scrollTrigger: {
           end: () => `${-OFFSET + card.offsetHeight / 2}px ${END}%`,
@@ -157,7 +157,7 @@ const setupTimelines = () => {
             opacity: ENTER_AND_EXIT_OPACITY,
             transformOrigin: () => `${xOrigin}px ${yOriginBottom}px`
           },
-          '<'
+          "<"
         )
         .to(card, {
           duration: CENTER_DURATION,

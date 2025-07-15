@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import ImageUploader from '@/components/ImageUploader.vue'
-import MultipleImagesReview from '@/components/MultipleImagesReview.vue'
-import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
-import api from '@/utils/api'
+import Button from "@/components/common/Button.vue"
+import ImageUploader from "@/components/ImageUploader.vue"
+import MultipleImagesReview from "@/components/MultipleImagesReview.vue"
+import SimpleImageGrid from "@/components/SimpleImageGrid.vue"
+import api from "@/utils/api"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 
@@ -16,7 +16,7 @@ const previewUrls = ref([])
 const previewFilenames = ref([])
 const uploadedImages = ref([])
 const isLoading = ref(false)
-const processingStep = ref('')
+const processingStep = ref("")
 
 const resetState = () => {
   sessionIds.value = []
@@ -25,23 +25,23 @@ const resetState = () => {
   previewFilenames.value = []
   uploadedImages.value = []
   isLoading.value = false
-  processingStep.value = ''
+  processingStep.value = ""
 }
 
 const handleUploadForReview = async (data) => {
   try {
     isLoading.value = true
-    processingStep.value = 'extracting'
+    processingStep.value = "extracting"
     resetState()
 
     const { images, previewUrls: urls } = data
 
     if (images.length > 1) {
       const formData = new FormData()
-      images.forEach((image) => formData.append('images', image))
+      images.forEach((image) => formData.append("images", image))
 
-      const response = await api.post('/upload/batch-review', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await api.post("/upload/batch-review", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       })
 
       response.data.data.forEach((result, index) => {
@@ -52,10 +52,10 @@ const handleUploadForReview = async (data) => {
       })
     } else {
       const formData = new FormData()
-      formData.append('image', images[0])
+      formData.append("image", images[0])
 
-      const response = await api.post('/upload/review', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await api.post("/upload/review", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       })
 
       const { metadata, sessionId } = response.data.data
@@ -67,23 +67,23 @@ const handleUploadForReview = async (data) => {
 
     step.value = 2
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error("Upload error:", error)
   } finally {
     isLoading.value = false
-    processingStep.value = ''
+    processingStep.value = ""
   }
 }
 
 const handleConfirm = async (data) => {
   try {
     isLoading.value = true
-    processingStep.value = 'uploading'
+    processingStep.value = "uploading"
 
     if (data.length > 1) {
-      const response = await api.post('/upload/batch-confirm', { batch: data })
+      const response = await api.post("/upload/batch-confirm", { batch: data })
       uploadedImages.value = response.data.images
     } else {
-      const response = await api.post('/upload/confirm', {
+      const response = await api.post("/upload/confirm", {
         metadata: data[0].metadata,
         sessionId: data[0].sessionId
       })
@@ -92,10 +92,10 @@ const handleConfirm = async (data) => {
 
     step.value = 3
   } catch (error) {
-    console.error('Confirm error:', error)
+    console.error("Confirm error:", error)
   } finally {
     isLoading.value = false
-    processingStep.value = ''
+    processingStep.value = ""
     sessionIds.value = []
     extractedMetadata.value = []
     previewUrls.value = []
@@ -121,7 +121,7 @@ const handleCancel = () => {
 
 const getImageSrc = (image, type) => {
   const version = image.versions.find((v) => v.type === type)
-  return version ? `${apiBaseUrl}/${version.path}` : ''
+  return version ? `${apiBaseUrl}/${version.path}` : ""
 }
 </script>
 
@@ -130,7 +130,7 @@ const getImageSrc = (image, type) => {
     <div v-if="isLoading" class="loading-state">
       <div class="loading-content">
         <h5 class="loading-title">
-          {{ processingStep === 'extracting' ? 'Extracting metadata...' : 'Uploading images...' }}
+          {{ processingStep === "extracting" ? "Extracting metadata..." : "Uploading images..." }}
         </h5>
       </div>
     </div>
@@ -156,7 +156,7 @@ const getImageSrc = (image, type) => {
         <h5 class="title">Upload Complete</h5>
         <p class="subtitle">
           Successfully uploaded {{ uploadedImages.length }}
-          {{ uploadedImages.length === 1 ? 'image' : 'images' }}
+          {{ uploadedImages.length === 1 ? "image" : "images" }}
         </p>
       </div>
       <div class="gallery">

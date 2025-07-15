@@ -1,6 +1,6 @@
-import axios from 'axios'
+import axios from "axios"
 
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from "@/stores/auth"
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -22,13 +22,13 @@ api.interceptors.response.use(
     const authStore = useAuthStore()
     const originalRequest = error.config
 
-    if (originalRequest.url.includes('/refresh')) {
+    if (originalRequest.url.includes("/refresh")) {
       authStore.logout()
       return Promise.reject(error)
     }
 
     const isAuthRoute =
-      originalRequest.url.includes('/login') || originalRequest.url.includes('/signup')
+      originalRequest.url.includes("/login") || originalRequest.url.includes("/signup")
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true

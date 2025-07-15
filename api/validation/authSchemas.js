@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod"
 
 const passwordSchema = z
   .string()
@@ -6,7 +6,7 @@ const passwordSchema = z
   .max(128, "Password must be less than 128 characters")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number");
+  .regex(/[0-9]/, "Password must contain at least one number")
 
 const usernameSchema = z
   .string()
@@ -16,18 +16,18 @@ const usernameSchema = z
   .refine(
     (val) => !val.startsWith("_") && !val.endsWith("_"),
     "Username cannot start or end with underscore"
-  );
+  )
 
 const emailSchema = z
   .string()
   .email("Invalid email address")
   .max(254, "Email must be less than 254 characters")
-  .toLowerCase();
+  .toLowerCase()
 
 const tokenSchema = z
   .string()
   .min(1, "Token is required")
-  .regex(/^[a-zA-Z0-9]+$/, "Invalid token format");
+  .regex(/^[a-zA-Z0-9]+$/, "Invalid token format")
 
 export const signupSchemas = {
   body: z.object({
@@ -35,36 +35,36 @@ export const signupSchemas = {
     password: passwordSchema,
     username: usernameSchema
   })
-};
+}
 
 export const loginSchemas = {
   body: z.object({
     password: z.string().min(1, "Password is required"),
     username: z.string().min(1, "Username is required").trim()
   })
-};
+}
 
 export const verifyEmailSchemas = {
   body: z.object({
     token: tokenSchema
   })
-};
+}
 
 export const resendVerificationEmailSchemas = {
   body: z.object({
     email: emailSchema
   })
-};
+}
 
 export const resetPasswordSchemas = {
   body: z.object({
     email: emailSchema
   })
-};
+}
 
 export const confirmResetPasswordSchemas = {
   body: z.object({
     password: passwordSchema,
     token: tokenSchema
   })
-};
+}

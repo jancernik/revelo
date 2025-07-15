@@ -1,24 +1,24 @@
 <script setup>
-import { markRaw, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
-import Sidebar from '@/views/dev/Sidebar.vue'
+import Sidebar from "@/views/dev/Sidebar.vue"
 
 const route = useRoute()
 const router = useRouter()
 
 const components = ref([])
-const activeSection = ref('')
+const activeSection = ref("")
 const observer = ref(null)
 let userClicked = false
 
 const loadComponents = async () => {
   try {
-    const modules = import.meta.glob('@/views/dev/examples/*.vue', { eager: true })
+    const modules = import.meta.glob("@/views/dev/examples/*.vue", { eager: true })
     const componentList = []
 
     for (const path in modules) {
-      const filename = path.split('/').pop().replace('.vue', '')
+      const filename = path.split("/").pop().replace(".vue", "")
       const component = modules[path].default
 
       componentList.push({
@@ -37,13 +37,13 @@ const loadComponents = async () => {
       scrollToSection(route.hash.substring(1))
     }
   } catch (error) {
-    console.error('Error loading components:', error)
+    console.error("Error loading components:", error)
   }
 }
 
 const setupIntersectionObserver = () => {
   const options = {
-    rootMargin: '-20% 0px -70% 0px',
+    rootMargin: "-20% 0px -70% 0px",
     threshold: 0
   }
 
@@ -65,16 +65,16 @@ const setupIntersectionObserver = () => {
     }
   })
 
-  const componentsContainer = document.querySelector('.components')
+  const componentsContainer = document.querySelector(".components")
   if (componentsContainer) {
-    componentsContainer.addEventListener('scroll', handleScroll)
+    componentsContainer.addEventListener("scroll", handleScroll)
   }
 }
 
 const handleScroll = () => {
   if (userClicked) return
 
-  const componentsContainer = document.querySelector('.components')
+  const componentsContainer = document.querySelector(".components")
   const scrollTop = componentsContainer.scrollTop
   const scrollHeight = componentsContainer.scrollHeight
   const clientHeight = componentsContainer.clientHeight
@@ -101,8 +101,8 @@ const scrollToSection = (id) => {
   const element = document.getElementById(id)
   if (element) {
     element.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
+      behavior: "smooth",
+      block: "start"
     })
   }
 }
@@ -111,19 +111,19 @@ const navigateToSection = (id) => {
   userClicked = true
   updateActiveSection(id)
 
-  const componentsContainer = document.querySelector('.components')
+  const componentsContainer = document.querySelector(".components")
   let scrollEndTimer
 
   const checkScrollEnd = () => {
     clearTimeout(scrollEndTimer)
     scrollEndTimer = setTimeout(() => {
       userClicked = false
-      componentsContainer.removeEventListener('scroll', checkScrollEnd)
+      componentsContainer.removeEventListener("scroll", checkScrollEnd)
     }, 150)
   }
 
   if (componentsContainer) {
-    componentsContainer.addEventListener('scroll', checkScrollEnd)
+    componentsContainer.addEventListener("scroll", checkScrollEnd)
   }
 
   scrollToSection(id)
@@ -141,9 +141,9 @@ onUnmounted(() => {
     observer.value.disconnect()
   }
 
-  const componentsContainer = document.querySelector('.components')
+  const componentsContainer = document.querySelector(".components")
   if (componentsContainer) {
-    componentsContainer.removeEventListener('scroll', handleScroll)
+    componentsContainer.removeEventListener("scroll", handleScroll)
   }
 })
 </script>

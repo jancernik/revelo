@@ -1,16 +1,16 @@
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
-const theme = ref(localStorage.getItem('theme') || 'system')
-const systemPrefersDark = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
+const theme = ref(localStorage.getItem("theme") || "system")
+const systemPrefersDark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches)
 const isAnimating = ref(false)
 
 export function useTheme() {
   const themeClass = computed(() => {
-    if (theme.value !== 'system') {
+    if (theme.value !== "system") {
       return theme.value
     }
 
-    return systemPrefersDark.value ? 'dark' : 'light'
+    return systemPrefersDark.value ? "dark" : "light"
   })
 
   const setTheme = async (newTheme, opts) => {
@@ -23,27 +23,27 @@ export function useTheme() {
     }
     const oldTheme = themeClass.value
     const newThemeClass =
-      newTheme !== 'system' ? newTheme : systemPrefersDark.value ? 'dark' : 'light'
+      newTheme !== "system" ? newTheme : systemPrefersDark.value ? "dark" : "light"
 
     if (oldTheme === newThemeClass) {
       theme.value = newTheme
-      localStorage.setItem('theme', newTheme)
+      localStorage.setItem("theme", newTheme)
       return
     }
 
     if (options.animate) {
       await animateThemeTransition(newThemeClass, options.origin)
       theme.value = newTheme
-      localStorage.setItem('theme', newTheme)
+      localStorage.setItem("theme", newTheme)
     } else {
-      document.documentElement.classList.add('no-transition')
-      document.querySelector('body').style.pointerEvents = 'none'
+      document.documentElement.classList.add("no-transition")
+      document.querySelector("body").style.pointerEvents = "none"
       await nextTick()
       theme.value = newTheme
-      localStorage.setItem('theme', newTheme)
+      localStorage.setItem("theme", newTheme)
       setTimeout(() => {
-        document.documentElement.classList.remove('no-transition')
-        document.querySelector('body').style.pointerEvents = 'all'
+        document.documentElement.classList.remove("no-transition")
+        document.querySelector("body").style.pointerEvents = "all"
       }, 20)
     }
   }
@@ -56,15 +56,15 @@ export function useTheme() {
     const clone = element.cloneNode(false)
 
     const vueAttributes = [
-      'data-v-',
-      'v-',
-      '__vue',
-      '__vueParentComponent',
-      '__vueReactivity',
-      '_vei',
-      '_value',
-      '_assign',
-      'data-reactroot'
+      "data-v-",
+      "v-",
+      "__vue",
+      "__vueParentComponent",
+      "__vueReactivity",
+      "_vei",
+      "_value",
+      "_assign",
+      "data-reactroot"
     ]
 
     if (clone.attributes) {
@@ -80,11 +80,11 @@ export function useTheme() {
         const originalChild = original.children[i]
 
         if (
-          originalChild.tagName === 'SCRIPT' ||
-          originalChild.hasAttribute('data-v-inspector') ||
-          originalChild.classList?.contains('vue-portal-target') ||
-          originalChild.id === '__vue-devtools-container__' ||
-          originalChild.id === 'vue-devtools-container'
+          originalChild.tagName === "SCRIPT" ||
+          originalChild.hasAttribute("data-v-inspector") ||
+          originalChild.classList?.contains("vue-portal-target") ||
+          originalChild.id === "__vue-devtools-container__" ||
+          originalChild.id === "vue-devtools-container"
         ) {
           continue
         }
@@ -120,12 +120,12 @@ export function useTheme() {
     return clone
   }
 
-  let dissolveMask = document.querySelector('svg[data-dissolve-progress]')
+  let dissolveMask = document.querySelector("svg[data-dissolve-progress]")
 
   function setDissolveProgress(progress) {
-    dissolveMask ||= document.querySelector('svg[data-dissolve-progress]')
+    dissolveMask ||= document.querySelector("svg[data-dissolve-progress]")
     if (dissolveMask) {
-      dissolveMask.setAttribute('data-dissolve-progress', progress.toString())
+      dissolveMask.setAttribute("data-dissolve-progress", progress.toString())
     }
   }
 
@@ -155,38 +155,38 @@ export function useTheme() {
     let clonedBody = null
 
     try {
-      const body = document.querySelector('body')
-      document.documentElement.classList.add('no-transition')
-      body.style.pointerEvents = 'none'
+      const body = document.querySelector("body")
+      document.documentElement.classList.add("no-transition")
+      body.style.pointerEvents = "none"
 
-      const scrollableElements = body.querySelectorAll('.scrollable')
+      const scrollableElements = body.querySelectorAll(".scrollable")
       const scrollOffsets = Array.from(scrollableElements).map((el) => el.scrollTop)
 
       clonedBody = createCleanClone(body)
-      clonedBody.className = 'theme-transition-clone'
+      clonedBody.className = "theme-transition-clone"
 
       Object.assign(clonedBody.style, {
-        backfaceVisibility: 'hidden',
+        backfaceVisibility: "hidden",
         // mask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, transparent, black)`,
-        height: '100%',
-        left: '0',
+        height: "100%",
+        left: "0",
         // clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
-        mask: 'url(#dissolve)',
-        perspective: '1000px',
-        pointerEvents: 'none',
-        position: 'fixed',
-        top: '0',
-        touchAction: 'none',
-        userSelect: 'none',
-        width: '100%',
-        willChange: 'mask',
-        zIndex: '8000'
+        mask: "url(#dissolve)",
+        perspective: "1000px",
+        pointerEvents: "none",
+        position: "fixed",
+        top: "0",
+        touchAction: "none",
+        userSelect: "none",
+        width: "100%",
+        willChange: "mask",
+        zIndex: "8000"
       })
 
       clonedBody.classList.add(newThemeClass)
       document.body.appendChild(clonedBody)
 
-      const clonedScrollableElements = clonedBody.querySelectorAll('.scrollable')
+      const clonedScrollableElements = clonedBody.querySelectorAll(".scrollable")
       clonedScrollableElements.forEach((el, index) => {
         if (scrollOffsets[index] !== undefined) {
           el.scrollTop = scrollOffsets[index]
@@ -197,7 +197,7 @@ export function useTheme() {
 
       await animateDissolve(2000)
 
-      document.documentElement.classList.remove('light', 'dark')
+      document.documentElement.classList.remove("light", "dark")
       document.documentElement.classList.add(newThemeClass)
 
       if (clonedBody && clonedBody.parentNode) {
@@ -205,40 +205,40 @@ export function useTheme() {
       }
 
       setTimeout(() => {
-        document.documentElement.classList.remove('no-transition')
-        body.style.pointerEvents = 'all'
+        document.documentElement.classList.remove("no-transition")
+        body.style.pointerEvents = "all"
       }, 20)
     } catch (error) {
-      console.error('Theme transition error:', error)
+      console.error("Theme transition error:", error)
 
       if (clonedBody && clonedBody.parentNode) {
         try {
           document.body.removeChild(clonedBody)
         } catch (cleanupError) {
-          console.error('Cleanup error:', cleanupError)
+          console.error("Cleanup error:", cleanupError)
         }
       }
 
-      document.documentElement.classList.remove('no-transition')
-      document.querySelector('body').style.pointerEvents = 'all'
-      document.documentElement.classList.remove('light', 'dark')
+      document.documentElement.classList.remove("no-transition")
+      document.querySelector("body").style.pointerEvents = "all"
+      document.documentElement.classList.remove("light", "dark")
       document.documentElement.classList.add(newThemeClass)
     } finally {
       isAnimating.value = false
     }
   }
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
   const handleSystemChange = (event) => {
     systemPrefersDark.value = event.matches
   }
 
   onMounted(() => {
-    mediaQuery.addEventListener('change', handleSystemChange)
+    mediaQuery.addEventListener("change", handleSystemChange)
   })
 
   onUnmounted(() => {
-    mediaQuery.removeEventListener('change', handleSystemChange)
+    mediaQuery.removeEventListener("change", handleSystemChange)
   })
 
   return {

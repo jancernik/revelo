@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive } from "vue"
 
 const toastState = reactive({
   toasts: []
@@ -10,13 +10,13 @@ export function useToast() {
   const show = (options = {}) => {
     const toast = {
       action: options.action || null,
-      description: options.description || '',
+      description: options.description || "",
       dismissible: options.dismissible !== false,
       duration: options.duration !== undefined ? options.duration : 5000,
       id: ++toastId,
       showIcon: options.showIcon !== false,
-      title: options.title || '',
-      type: options.type || 'info'
+      title: options.title || "",
+      type: options.type || "info"
     }
 
     toastState.toasts.push(toast)

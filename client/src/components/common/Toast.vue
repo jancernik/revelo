@@ -1,19 +1,19 @@
 <script setup>
-import Button from '@/components/common/Button.vue'
-import Icon from '@/components/common/Icon.vue'
-import { useToast } from '@/composables/useToast'
+import Button from "@/components/common/Button.vue"
+import Icon from "@/components/common/Icon.vue"
+import { useToast } from "@/composables/useToast"
 
 const ICONS = {
-  error: 'AlertCircle',
-  info: 'Info',
-  success: 'CheckCircle',
-  warning: 'AlertTriangle'
+  error: "AlertCircle",
+  info: "Info",
+  success: "CheckCircle",
+  warning: "AlertTriangle"
 }
 
 const { remove, toastState } = useToast()
 
 const getTypeIcon = (type) => {
-  return ICONS[type] || 'info'
+  return ICONS[type] || "info"
 }
 
 const handleAction = (toast) => {
@@ -132,14 +132,14 @@ const handleAction = (toast) => {
       min-width: 0;
 
       .title {
-        @include text('sm');
+        @include text("sm");
         font-weight: var(--font-semibold);
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
 
       .description {
-        @include text('xs');
+        @include text("xs");
         font-weight: var(--font-semibold);
         color: var(--muted-foreground);
         word-wrap: break-word;

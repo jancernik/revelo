@@ -1,9 +1,9 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
-import { validate } from '../../../api/middlewares/validationMiddleware.js'
-import { ValidationError } from '../../../api/errors.js'
-import { z } from 'zod'
+import { describe, it, expect, jest, beforeEach } from "@jest/globals"
+import { validate } from "../../../middlewares/validationMiddleware.js"
+import { ValidationError } from "../../../errors.js"
+import { z } from "zod"
 
-describe('Validation Middleware', () => {
+describe("Validation Middleware", () => {
   let req, res, next
 
   const bodySchema = z.object({
@@ -37,24 +37,24 @@ describe('Validation Middleware', () => {
     jest.restoreAllMocks()
   })
 
-  describe('validate', () => {
-    it('should validate body when body schema is provided', () => {
+  describe("validate", () => {
+    it("should validate body when body schema is provided", () => {
       req.body = {
-        email: 'test@example.com',
-        password: 'password123'
+        email: "test@example.com",
+        password: "password123"
       }
 
       const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
-      expect(req.body.email).toBe('test@example.com')
+      expect(req.body.email).toBe("test@example.com")
     })
 
-    it('should validate query when query schema is provided', () => {
+    it("should validate query when query schema is provided", () => {
       req.query = {
-        limit: '10',
-        offset: '20'
+        limit: "10",
+        offset: "20"
       }
 
       const middleware = validate({ query: querySchema })
@@ -65,28 +65,28 @@ describe('Validation Middleware', () => {
       expect(req.parsedQuery.offset).toBe(20)
     })
 
-    it('should validate params when params schema is provided', () => {
+    it("should validate params when params schema is provided", () => {
       req.params = {
-        id: '123e4567-e89b-12d3-a456-426614174000'
+        id: "123e4567-e89b-12d3-a456-426614174000"
       }
 
       const middleware = validate({ params: paramsSchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
-      expect(req.params.id).toBe('123e4567-e89b-12d3-a456-426614174000')
+      expect(req.params.id).toBe("123e4567-e89b-12d3-a456-426614174000")
     })
 
-    it('should validate multiple parts simultaneously', () => {
+    it("should validate multiple parts simultaneously", () => {
       req.body = {
-        email: 'test@example.com',
-        password: 'password123'
+        email: "test@example.com",
+        password: "password123"
       }
       req.query = {
-        limit: '10'
+        limit: "10"
       }
       req.params = {
-        id: '123e4567-e89b-12d3-a456-426614174000'
+        id: "123e4567-e89b-12d3-a456-426614174000"
       }
 
       const middleware = validate({
@@ -97,15 +97,15 @@ describe('Validation Middleware', () => {
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
-      expect(req.body.email).toBe('test@example.com')
+      expect(req.body.email).toBe("test@example.com")
       expect(req.parsedQuery.limit).toBe(10)
-      expect(req.params.id).toBe('123e4567-e89b-12d3-a456-426614174000')
+      expect(req.params.id).toBe("123e4567-e89b-12d3-a456-426614174000")
     })
 
-    it('should call next with ValidationError when body validation fails', () => {
+    it("should call next with ValidationError when body validation fails", () => {
       req.body = {
-        email: 'invalid-email',
-        password: '123'
+        email: "invalid-email",
+        password: "123"
       }
 
       const middleware = validate({ body: bodySchema })
@@ -114,10 +114,10 @@ describe('Validation Middleware', () => {
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
-    it('should include formatted error messages in ValidationError', () => {
+    it("should include formatted error messages in ValidationError", () => {
       req.body = {
-        email: 'invalid-email',
-        password: '123'
+        email: "invalid-email",
+        password: "123"
       }
 
       const middleware = validate({ body: bodySchema })
@@ -125,12 +125,12 @@ describe('Validation Middleware', () => {
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.stringContaining('Invalid email')
+          message: expect.stringContaining("Invalid email")
         })
       )
     })
 
-    it('should handle empty request body', () => {
+    it("should handle empty request body", () => {
       req.body = {}
 
       const middleware = validate({ body: bodySchema })
@@ -139,38 +139,38 @@ describe('Validation Middleware', () => {
       expect(next).toHaveBeenCalledWith(expect.any(ValidationError))
     })
 
-    it('should skip validation when no schemas provided', () => {
+    it("should skip validation when no schemas provided", () => {
       const middleware = validate({})
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
     })
 
-    it('should only validate provided schemas', () => {
+    it("should only validate provided schemas", () => {
       req.body = {
-        email: 'test@example.com',
-        password: 'password123'
+        email: "test@example.com",
+        password: "password123"
       }
-      req.query = { invalidQuery: 'should not be validated' }
+      req.query = { invalidQuery: "should not be validated" }
 
       const middleware = validate({ body: bodySchema })
       middleware(req, res, next)
 
       expect(next).toHaveBeenCalled()
-      expect(req.body.email).toBe('test@example.com')
-      expect(req.query.invalidQuery).toBe('should not be validated')
+      expect(req.body.email).toBe("test@example.com")
+      expect(req.query.invalidQuery).toBe("should not be validated")
     })
 
-    it('should collect validation errors from multiple schemas', () => {
+    it("should collect validation errors from multiple schemas", () => {
       req.body = {
-        email: 'invalid-email',
-        password: '123'
+        email: "invalid-email",
+        password: "123"
       }
       req.query = {
-        limit: 'not-a-number'
+        limit: "not-a-number"
       }
       req.params = {
-        id: 'not-a-uuid'
+        id: "not-a-uuid"
       }
 
       const middleware = validate({
@@ -184,9 +184,9 @@ describe('Validation Middleware', () => {
 
       const error = next.mock.calls[0][0]
       expect(error.data.validation.length).toBeGreaterThan(1)
-      expect(error.message).toContain('Invalid email')
-      expect(error.message).toContain('Too small')
-      expect(error.message).toContain('Invalid UUID')
+      expect(error.message).toContain("Invalid email")
+      expect(error.message).toContain("Too small")
+      expect(error.message).toContain("Invalid UUID")
     })
   })
 })

@@ -1,8 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import Input from '@/components/common/Input.vue'
+import Button from "@/components/common/Button.vue"
+import Input from "@/components/common/Input.vue"
 
 const props = defineProps({
   extractedMetadata: {
@@ -27,16 +27,16 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'remove'])
+const emit = defineEmits(["update", "remove"])
 
 const createDefaultMetadata = () => ({
-  aperture: '',
-  camera: '',
-  date: '',
-  focalLength: '',
-  iso: '',
-  lens: '',
-  shutterSpeed: ''
+  aperture: "",
+  camera: "",
+  date: "",
+  focalLength: "",
+  iso: "",
+  lens: "",
+  shutterSpeed: ""
 })
 
 const metadata = ref({})
@@ -66,7 +66,7 @@ const handleReset = () => {
 }
 
 const handleRemove = () => {
-  emit('remove')
+  emit("remove")
 }
 
 watch(
@@ -78,7 +78,7 @@ watch(
 watch(
   metadata,
   (newMetadata) => {
-    emit('update', newMetadata)
+    emit("update", newMetadata)
   },
   { deep: true }
 )

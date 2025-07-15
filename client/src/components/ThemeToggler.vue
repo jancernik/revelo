@@ -1,17 +1,17 @@
 <script setup>
-import { useTemplateRef } from 'vue'
+import { useTemplateRef } from "vue"
 
-import Icon from '@/components/common/Icon.vue'
-import { useTheme } from '@/composables/useTheme'
+import Icon from "@/components/common/Icon.vue"
+import { useTheme } from "@/composables/useTheme"
 
 const { setTheme, themeClass } = useTheme()
-const button = useTemplateRef('button')
+const button = useTemplateRef("button")
 
 const toggleTheme = () => {
   const rect = button.value.getBoundingClientRect()
   const x = rect.left + rect.width / 2
   const y = rect.top + rect.height / 2
-  const newTheme = themeClass.value === 'dark' ? 'light' : 'dark'
+  const newTheme = themeClass.value === "dark" ? "light" : "dark"
   setTheme(newTheme, { origin: { x, y } })
 }
 </script>

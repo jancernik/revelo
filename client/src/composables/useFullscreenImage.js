@@ -1,4 +1,4 @@
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef } from "vue"
 
 const imageData = shallowRef(null)
 const isAnimating = ref(false)
@@ -55,14 +55,14 @@ export function useFullscreenImage() {
       }
     }
 
-    window.addEventListener('popstate', popstateHandler)
+    window.addEventListener("popstate", popstateHandler)
   }
 
   const cleanup = () => {
     popstateCallback = null
 
     if (popstateHandler) {
-      window.removeEventListener('popstate', popstateHandler)
+      window.removeEventListener("popstate", popstateHandler)
       popstateHandler = null
     }
   }

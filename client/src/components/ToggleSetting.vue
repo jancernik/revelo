@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import Toggle from '@/components/common/Toggle.vue'
-import { useDialog } from '@/composables/useDialog'
+import Button from "@/components/common/Button.vue"
+import Toggle from "@/components/common/Toggle.vue"
+import { useDialog } from "@/composables/useDialog"
 
 const { show } = useDialog()
 
@@ -26,7 +26,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'reset', 'reset-default'])
+const emit = defineEmits(["update", "reset", "reset-default"])
 
 const hasChanged = computed(() => {
   return props.currentValue !== props.originalValue
@@ -37,7 +37,7 @@ const showResetDefault = computed(() => {
 })
 
 const handleUpdate = (newValue) => {
-  emit('update', newValue)
+  emit("update", newValue)
 }
 
 const showResetDefaultDialog = () => {
@@ -45,10 +45,10 @@ const showResetDefaultDialog = () => {
     actions: [
       {
         callback: () => {
-          emit('reset-default')
+          emit("reset-default")
         },
-        color: 'primary',
-        name: 'Reset'
+        color: "primary",
+        name: "Reset"
       }
     ],
     description: `Are you sure you want to reset the setting to its default value?`,
@@ -107,13 +107,13 @@ const showResetDefaultDialog = () => {
     gap: var(--spacing-1);
   }
   .name {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-medium);
     color: var(--primary);
   }
 
   .description {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-normal);
     color: var(--muted-foreground);
   }

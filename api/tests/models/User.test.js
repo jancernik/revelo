@@ -1,70 +1,70 @@
-import { createUser } from '../testHelpers.js'
-import User from '../../api/models/User.js'
+import { createUser } from "../testHelpers.js"
+import User from "../../models/User.js"
 
-describe('User Model', () => {
-  describe('findByEmail', () => {
-    it('should find user by email', async () => {
+describe("User Model", () => {
+  describe("findByEmail", () => {
+    it("should find user by email", async () => {
       const user = await createUser({
-        email: 'test@example.com',
-        username: 'testuser'
+        email: "test@example.com",
+        username: "testuser"
       })
 
-      const foundUser = await User.findByEmail('test@example.com')
+      const foundUser = await User.findByEmail("test@example.com")
 
       expect(foundUser).toBeDefined()
       expect(foundUser.id).toBe(user.id)
-      expect(foundUser.email).toBe('test@example.com')
-      expect(foundUser.username).toBe('testuser')
+      expect(foundUser.email).toBe("test@example.com")
+      expect(foundUser.username).toBe("testuser")
     })
 
-    it('should return null for non-existent email', async () => {
-      const user = await User.findByEmail('nonexistent@example.com')
+    it("should return null for non-existent email", async () => {
+      const user = await User.findByEmail("nonexistent@example.com")
       expect(user).toBeNull()
     })
 
-    it('should handle case sensitivity correctly', async () => {
-      await createUser({ email: 'test@example.com' })
+    it("should handle case sensitivity correctly", async () => {
+      await createUser({ email: "test@example.com" })
 
-      const user = await User.findByEmail('TEST@EXAMPLE.COM')
+      const user = await User.findByEmail("TEST@EXAMPLE.COM")
       expect(user).toBeNull()
     })
   })
 
-  describe('findByUsername', () => {
-    it('should find user by username', async () => {
+  describe("findByUsername", () => {
+    it("should find user by username", async () => {
       const user = await createUser({
-        email: 'test@example.com',
-        username: 'uniqueuser'
+        email: "test@example.com",
+        username: "uniqueuser"
       })
 
-      const foundUser = await User.findByUsername('uniqueuser')
+      const foundUser = await User.findByUsername("uniqueuser")
 
       expect(foundUser).toBeDefined()
       expect(foundUser.id).toBe(user.id)
-      expect(foundUser.email).toBe('test@example.com')
-      expect(foundUser.username).toBe('uniqueuser')
+      expect(foundUser.email).toBe("test@example.com")
+      expect(foundUser.username).toBe("uniqueuser")
     })
 
-    it('should return null for non-existent username', async () => {
-      const user = await User.findByUsername('nonexistent')
+    it("should return null for non-existent username", async () => {
+      const user = await User.findByUsername("nonexistent")
       expect(user).toBeNull()
     })
 
-    it('should handle case sensitivity correctly', async () => {
-      await createUser({ username: 'testuser' })
+    it("should handle case sensitivity correctly", async () => {
+      await createUser({ username: "testuser" })
 
-      const user = await User.findByUsername('TESTUSER')
+      const user = await User.findByUsername("TESTUSER")
       expect(user).toBeNull()
     })
   })
 
-  describe('create', () => {
-    it('should create user with hashed password', async () => {
+  describe("create", () => {
+    it("should create user with hashed password", async () => {
       const timestamp = Date.now()
       const userData = {
         email: `test-${timestamp}@example.com`,
         username: `testuser-${timestamp}`,
-        password: 'Password12345'
+        password: "Password12345"
       }
       const user = await User.create(userData)
 
@@ -77,12 +77,12 @@ describe('User Model', () => {
       expect(user.emailVerified).toBe(false)
     })
 
-    it('should create admin user', async () => {
+    it("should create admin user", async () => {
       const timestamp = Date.now()
       const userData = {
         email: `test-${timestamp}@example.com`,
         username: `testuser-${timestamp}`,
-        password: 'Password123',
+        password: "Password123",
         admin: true
       }
       const user = await User.create(userData)
@@ -91,12 +91,12 @@ describe('User Model', () => {
       expect(user.admin).toBe(true)
     })
 
-    it('should create user with email verified', async () => {
+    it("should create user with email verified", async () => {
       const timestamp = Date.now()
       const userData = {
         email: `test-${timestamp}@example.com`,
         username: `testuser-${timestamp}`,
-        password: 'Password123',
+        password: "Password123",
         emailVerified: true
       }
       const user = await User.create(userData)
@@ -106,17 +106,17 @@ describe('User Model', () => {
     })
   })
 
-  describe('update', () => {
+  describe("update", () => {
     let user
 
     beforeEach(async () => {
       user = await createUser()
     })
 
-    it('should update user data', async () => {
+    it("should update user data", async () => {
       const updatedData = {
-        email: 'updated@example.com',
-        username: 'updateduser'
+        email: "updated@example.com",
+        username: "updateduser"
       }
 
       const updatedUser = await User.update(user.id, updatedData)
@@ -126,9 +126,9 @@ describe('User Model', () => {
       expect(updatedUser.username).toBe(updatedData.username)
     })
 
-    it('should hash password when updating', async () => {
+    it("should hash password when updating", async () => {
       const updatedData = {
-        password: 'NewPassword123'
+        password: "NewPassword123"
       }
 
       const updatedUser = await User.update(user.id, updatedData)
@@ -138,27 +138,27 @@ describe('User Model', () => {
       expect(updatedUser.password).not.toBe(updatedData.password)
     })
 
-    it('should update admin status', async () => {
+    it("should update admin status", async () => {
       const updatedUser = await User.update(user.id, { admin: true })
 
       expect(updatedUser).toBeDefined()
       expect(updatedUser.admin).toBe(true)
     })
 
-    it('should return null for non-existent user', async () => {
-      const user = await User.update(999, { email: 'test@example.com' })
+    it("should return null for non-existent user", async () => {
+      const user = await User.update(999, { email: "test@example.com" })
       expect(user).toBeNull()
     })
   })
 
-  describe('markEmailVerified', () => {
+  describe("markEmailVerified", () => {
     let user
 
     beforeEach(async () => {
       user = await createUser({ emailVerified: false })
     })
 
-    it('should mark email as verified', async () => {
+    it("should mark email as verified", async () => {
       const updatedUser = await User.markEmailVerified(user.id)
 
       expect(updatedUser).toBeDefined()
@@ -167,54 +167,54 @@ describe('User Model', () => {
       expect(updatedUser.emailVerifiedAt).toBeInstanceOf(Date)
     })
 
-    it('should return null for non-existent user', async () => {
+    it("should return null for non-existent user", async () => {
       const user = await User.markEmailVerified(999)
       expect(user).toBeNull()
     })
   })
 
-  describe('verifyPassword', () => {
+  describe("verifyPassword", () => {
     let user
-    const password = 'Password123'
+    const password = "Password123"
 
     beforeEach(async () => {
       user = await createUser({ password })
     })
 
-    it('should verify correct password', async () => {
+    it("should verify correct password", async () => {
       const isValid = await User.verifyPassword(user, password)
       expect(isValid).toBe(true)
     })
 
-    it('should reject incorrect password', async () => {
-      const isValid = await User.verifyPassword(user, 'wrongpassword')
+    it("should reject incorrect password", async () => {
+      const isValid = await User.verifyPassword(user, "wrongpassword")
       expect(isValid).toBe(false)
     })
 
-    it('should return false for null user', async () => {
+    it("should return false for null user", async () => {
       const isValid = await User.verifyPassword(null, password)
       expect(isValid).toBe(false)
     })
 
-    it('should return false for undefined user', async () => {
+    it("should return false for undefined user", async () => {
       const isValid = await User.verifyPassword(undefined, password)
       expect(isValid).toBe(false)
     })
 
-    it('should handle empty password', async () => {
-      const isValid = await User.verifyPassword(user, '')
+    it("should handle empty password", async () => {
+      const isValid = await User.verifyPassword(user, "")
       expect(isValid).toBe(false)
     })
   })
 
-  describe('inherited methods', () => {
+  describe("inherited methods", () => {
     let user
 
     beforeEach(async () => {
       user = await createUser()
     })
 
-    it('should find user by id', async () => {
+    it("should find user by id", async () => {
       const foundUser = await User.findById(user.id)
 
       expect(foundUser).toBeDefined()
@@ -222,12 +222,12 @@ describe('User Model', () => {
       expect(foundUser.email).toBe(user.email)
     })
 
-    it('should return null for non-existent id', async () => {
+    it("should return null for non-existent id", async () => {
       const nonexistentUser = await User.findById(999)
       expect(nonexistentUser).toBeNull()
     })
 
-    it('should delete user', async () => {
+    it("should delete user", async () => {
       const deletedUser = await User.delete(user.id)
 
       expect(deletedUser).toBeDefined()
@@ -237,7 +237,7 @@ describe('User Model', () => {
       expect(nonexistentUser).toBeNull()
     })
 
-    it('should count users', async () => {
+    it("should count users", async () => {
       await createUser()
 
       const firstCount = await User.count()
@@ -249,7 +249,7 @@ describe('User Model', () => {
       expect(secondCount).toEqual(3)
     })
 
-    it('should find all users', async () => {
+    it("should find all users", async () => {
       await createUser()
       await createUser()
 

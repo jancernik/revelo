@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted } from "vue"
+import { useRouter } from "vue-router"
 
-import Button from '@/components/common/Button.vue'
-import Icon from '@/components/common/Icon.vue'
-import { useToast } from '@/composables/useToast'
-import { useAuthStore } from '@/stores/auth'
+import Button from "@/components/common/Button.vue"
+import Icon from "@/components/common/Icon.vue"
+import { useToast } from "@/composables/useToast"
+import { useAuthStore } from "@/stores/auth"
 const { show: showToast } = useToast()
 
 const authStore = useAuthStore()
@@ -15,33 +15,33 @@ const handleRequestVerificationEmail = async () => {
   try {
     await authStore.resendVerificationEmail(authStore.user?.email)
     showToast({
-      description: 'Email sent. Please check your inbox.',
+      description: "Email sent. Please check your inbox.",
       duration: 3,
-      title: 'Verification Email Sent',
-      type: 'success'
+      title: "Verification Email Sent",
+      type: "success"
     })
   } catch (error) {
-    console.log('error: ', error)
+    console.log("error: ", error)
     showToast({
-      description: 'There was an error sending the verification email.',
+      description: "There was an error sending the verification email.",
       duration: 3,
-      title: 'Error Sending Email',
-      type: 'error'
+      title: "Error Sending Email",
+      type: "error"
     })
   }
 }
 
 const redirectIfNotAuthenticated = () => {
   if (!authStore.user) {
-    router.push('/signup')
+    router.push("/signup")
   } else {
     if (authStore.user.emailVerified === false) {
       return
     }
     if (authStore.user?.admin) {
-      router.push('/dashboard')
+      router.push("/dashboard")
     } else {
-      router.push('/')
+      router.push("/")
     }
   }
 }

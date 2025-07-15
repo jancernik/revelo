@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
-import Button from '@/components/common/Button.vue'
-import Icon from '@/components/common/Icon.vue'
-import { useAuthStore } from '@/stores/auth'
+import Button from "@/components/common/Button.vue"
+import Icon from "@/components/common/Icon.vue"
+import { useAuthStore } from "@/stores/auth"
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -34,14 +34,14 @@ const verifyEmail = async () => {
 
     setTimeout(() => {
       if (authStore.user?.admin) {
-        router.push('/dashboard')
+        router.push("/dashboard")
       } else {
-        router.push('/')
+        router.push("/")
       }
     }, 3000)
   } catch (err) {
     error.value = true
-    console.error('Email verification failed:', err)
+    console.error("Email verification failed:", err)
   } finally {
     isLoading.value = false
   }
@@ -52,9 +52,9 @@ const redirectIfAuthenticated = () => {
     return
   }
   if (authStore.user?.admin) {
-    router.push('/dashboard')
+    router.push("/dashboard")
   } else {
-    router.push('/')
+    router.push("/")
   }
 }
 

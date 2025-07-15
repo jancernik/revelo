@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations } from "drizzle-orm"
 import {
   bigint,
   boolean,
@@ -13,7 +13,7 @@ import {
   uuid,
   varchar,
   vector
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/pg-core"
 
 export const UserTables = pgTable("users", {
   admin: boolean("admin").notNull().default(false),
@@ -25,7 +25,7 @@ export const UserTables = pgTable("users", {
   password: varchar("password").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   username: varchar("username").unique().notNull()
-});
+})
 
 export const EmailVerificationTokensTable = pgTable("email_verification_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -38,13 +38,13 @@ export const EmailVerificationTokensTable = pgTable("email_verification_tokens",
   userId: integer("user_id")
     .notNull()
     .references(() => UserTables.id, { onDelete: "cascade" })
-});
+})
 
 export const RevokedTokensTable = pgTable("revoked_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   token: varchar("token").primaryKey().notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
-});
+})
 
 export const ImagesTable = pgTable(
   "images",
@@ -68,16 +68,16 @@ export const ImagesTable = pgTable(
         "hnsw",
         table.embedding.op("vector_cosine_ops")
       )
-    };
+    }
   }
-);
+)
 
 export const ImageVersionTypes = pgEnum("image_version_types", [
   "original",
   "regular",
   "thumbnail",
   "tiny"
-]);
+])
 
 export const ImageVersionsTable = pgTable(
   "image_versions",
@@ -98,9 +98,9 @@ export const ImageVersionsTable = pgTable(
   (table) => {
     return {
       uniqueImageVersion: unique("unique_image_version").on(table.imageId, table.type)
-    };
+    }
   }
-);
+)
 
 export const PostsTable = pgTable("posts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -108,7 +108,7 @@ export const PostsTable = pgTable("posts", {
   id: serial("id").primaryKey().notNull(),
   title: varchar("title", { length: 255 }),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
-});
+})
 
 export const PostImagesTable = pgTable(
   "post_images",
@@ -127,9 +127,9 @@ export const PostImagesTable = pgTable(
     return {
       primaryKey: primaryKey({ columns: [table.imageId, table.postId] }),
       uniqueOrder: unique("unique_order").on(table.imageId, table.postId, table.order)
-    };
+    }
   }
-);
+)
 
 export const SettingsTable = pgTable("settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -137,23 +137,23 @@ export const SettingsTable = pgTable("settings", {
   name: varchar("name").unique().notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   value: varchar("value").notNull()
-});
+})
 
 export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
   postsImages: many(PostImagesTable),
   versions: many(ImageVersionsTable)
-}));
+}))
 
 export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
   image: one(ImagesTable, {
     fields: [ImageVersionsTable.imageId],
     references: [ImagesTable.id]
   })
-}));
+}))
 
 export const PostsTableRelations = relations(PostsTable, ({ many }) => ({
   images: many(PostImagesTable)
-}));
+}))
 
 export const PostImagesTableRelations = relations(PostImagesTable, ({ one }) => ({
   image: one(ImagesTable, {
@@ -164,4 +164,4 @@ export const PostImagesTableRelations = relations(PostImagesTable, ({ one }) => 
     fields: [PostImagesTable.postId],
     references: [PostsTable.id]
   })
-}));
+}))

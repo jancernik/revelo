@@ -1,24 +1,24 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 
-import Button from '@/components/common/Button.vue'
-import Input from '@/components/common/Input.vue'
-import { useSettings } from '@/composables/useSettings'
-import { useAuthStore } from '@/stores/auth'
+import Button from "@/components/common/Button.vue"
+import Input from "@/components/common/Input.vue"
+import { useSettings } from "@/composables/useSettings"
+import { useAuthStore } from "@/stores/auth"
 
 const authStore = useAuthStore()
 const router = useRouter()
-const email = ref('')
-const username = ref('')
-const password = ref('')
-const signupError = ref('')
+const email = ref("")
+const username = ref("")
+const password = ref("")
+const signupError = ref("")
 const isLoading = ref(false)
 const showSignupForm = ref(false)
 const { settings } = useSettings()
 
 const handleSignup = async () => {
-  signupError.value = ''
+  signupError.value = ""
   isLoading.value = true
 
   try {
@@ -29,10 +29,10 @@ const handleSignup = async () => {
     })
 
     if (result.requiresVerification) {
-      router.push('verification-pending')
+      router.push("verification-pending")
     }
   } catch (error) {
-    signupError.value = error.response?.data?.message || 'Signup failed. Please try again.'
+    signupError.value = error.response?.data?.message || "Signup failed. Please try again."
     console.error(error)
   } finally {
     isLoading.value = false
@@ -44,11 +44,11 @@ const checkIfSignupsAreEnabled = async () => {
     if (settings.value.enableSignups) {
       showSignupForm.value = true
     } else {
-      router.push('/login')
+      router.push("/login")
     }
   } catch (error) {
-    console.error('Error getting config.', error)
-    router.push('/')
+    console.error("Error getting config.", error)
+    router.push("/")
   }
 }
 
@@ -57,9 +57,9 @@ const redirectIfAuthenticated = () => {
     return
   }
   if (authStore.user?.admin) {
-    router.push('/dashboard')
+    router.push("/dashboard")
   } else {
-    router.push('/')
+    router.push("/")
   }
 }
 
@@ -126,7 +126,7 @@ onMounted(redirectIfAuthenticated)
     }
 
     .error-message {
-      @include text('sm');
+      @include text("sm");
       color: var(--danger);
       margin-block: var(--spacing-4);
       text-align: center;
