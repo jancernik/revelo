@@ -32,10 +32,7 @@ describe('Auth Middleware', () => {
   describe('auth.required', () => {
     describe('without loadFullUser', () => {
       it('should authenticate valid token and set basic user info', async () => {
-        const token = jwt.sign(
-          { id: 1, email: 'test@example.com', admin: false },
-          config.JWT_SECRET
-        )
+        const token = jwt.sign({ id: 1, email: 'test@example.com', admin: true }, config.JWT_SECRET)
         req.headers.authorization = `Bearer ${token}`
 
         await auth.required()(req, res, next)
@@ -43,7 +40,7 @@ describe('Auth Middleware', () => {
         expect(req.user).toEqual({
           id: 1,
           email: 'test@example.com',
-          admin: false
+          admin: true
         })
         expect(User.findById).not.toHaveBeenCalled()
         expect(next).toHaveBeenCalled()
@@ -88,10 +85,7 @@ describe('Auth Middleware', () => {
 
     describe('with loadFullUser = true', () => {
       it('should load full user from database', async () => {
-        const token = jwt.sign(
-          { id: 1, email: 'test@example.com', admin: false },
-          config.JWT_SECRET
-        )
+        const token = jwt.sign({ id: 1, email: 'test@example.com', admin: true }, config.JWT_SECRET)
         req.headers.authorization = `Bearer ${token}`
 
         await auth.required(true)(req, res, next)
@@ -103,7 +97,7 @@ describe('Auth Middleware', () => {
 
       it('should throw NotFoundError when user not found in database', async () => {
         const token = jwt.sign(
-          { id: 999, email: 'nonexistent@example.com', admin: false },
+          { id: 999, email: 'nonexistent@example.com', admin: true },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`

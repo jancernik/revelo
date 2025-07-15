@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from '@jest/globals'
 import request from 'supertest'
 import { createTestApi } from '../testApi.js'
-import { createRegularUser, createAdminUser, createAccessToken } from '../testHelpers.js'
+import { createRegularUser, createAdminUser, createAccessToken } from '../helpers/authHelpers.js'
 import { TEST_SETTINGS } from '../testFixtures.js'
 import { createTestSettingsFile, cleanupTestSettingsFile } from '../helpers/settingHelpers.js'
 import path from 'path'

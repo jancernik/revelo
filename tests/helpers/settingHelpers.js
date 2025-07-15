@@ -4,7 +4,7 @@ import { getDb } from '../testDb.js'
 import { SettingsTable } from '../../api/drizzle/schema.js'
 import { eq } from 'drizzle-orm'
 
-export const createTestSettingsFile = async (content) => {
+export async function createTestSettingsFile(content) {
   const tempDir = path.join(process.cwd(), 'temp')
   await fs.mkdir(tempDir, { recursive: true })
   const settingsPath = path.join(tempDir, 'settings.yml')
@@ -12,21 +12,21 @@ export const createTestSettingsFile = async (content) => {
   return settingsPath
 }
 
-export const cleanupTestSettingsFile = async (filePath) => {
+export async function cleanupTestSettingsFile(filePath) {
   try {
     const tempDir = path.dirname(filePath)
     await fs.rm(tempDir, { recursive: true, force: true })
   } catch {}
 }
 
-export const overrideSetting = async (name, value) => {
+export async function overrideSetting(name, value) {
   const db = getDb()
   const results = await db.insert(SettingsTable).values({ name, value }).returning()
 
   return results[0] || null
 }
 
-export const getSettingByName = async (name) => {
+export async function getSettingByName(name) {
   const db = getDb()
   const results = await db.select().from(SettingsTable).where(eq(SettingsTable.name, name)).limit(1)
 
