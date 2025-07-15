@@ -2,14 +2,6 @@ import { describe, it, expect, beforeEach } from '@jest/globals'
 import { createUser } from '../testHelpers.js'
 import User from '../../api/models/User.js'
 
-const DEFAULT_USER_DATA = {
-  email: 'test@example.com',
-  username: 'testuser',
-  password: 'Password123',
-  admin: false,
-  emailVerified: false
-}
-
 describe('User Model', () => {
   describe('findByEmail', () => {
     it('should find user by email', async () => {

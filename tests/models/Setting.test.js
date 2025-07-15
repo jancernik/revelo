@@ -1,25 +1,14 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/globals'
-import fs from 'fs/promises'
 import path from 'path'
 import Setting from '../../api/models/Setting.js'
 import { NotFoundError, ValidationError, AppError } from '../../api/errors.js'
 import { TEST_SETTINGS } from '../testFixtures.js'
-import { overrideSetting, getSettingByName } from '../testHelpers.js'
-
-const createTestSettingsFile = async () => {
-  const tempDir = path.join(process.cwd(), 'temp')
-  await fs.mkdir(tempDir, { recursive: true })
-  const settingsPath = path.join(tempDir, 'settings.yml')
-  await fs.writeFile(settingsPath, TEST_SETTINGS)
-  return settingsPath
-}
-
-const cleanupTestSettingsFile = async (filePath) => {
-  try {
-    const tempDir = path.dirname(filePath)
-    await fs.rm(tempDir, { recursive: true, force: true })
-  } catch {}
-}
+import {
+  createTestSettingsFile,
+  cleanupTestSettingsFile,
+  overrideSetting,
+  getSettingByName
+} from '../helpers/settingHelpers.js'
 
 describe('Setting Model', () => {
   let testSettingsPath
@@ -27,7 +16,7 @@ describe('Setting Model', () => {
 
   beforeAll(async () => {
     originalCwd = process.cwd
-    testSettingsPath = await createTestSettingsFile()
+    testSettingsPath = await createTestSettingsFile(TEST_SETTINGS)
   })
 
   afterAll(async () => {

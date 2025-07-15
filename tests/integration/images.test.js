@@ -9,7 +9,7 @@ import { v4 as uuid } from 'uuid'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const app = createTestApi()
+const api = createTestApi()
 
 const mockImageBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
@@ -22,7 +22,7 @@ describe('Image Endpoints', () => {
 
   beforeEach(async () => {
     authenticatedUser = await createUser({ emailVerified: true })
-    const loginResponse = await request(app).post('/login').send({
+    const loginResponse = await request(api).post('/login').send({
       username: authenticatedUser.username,
       password: authenticatedUser.plainPassword
     })
@@ -33,7 +33,7 @@ describe('Image Endpoints', () => {
     it('should get images successfully', async () => {
       await createImages(3)
 
-      const response = await request(app).get('/images').expect(200)
+      const response = await request(api).get('/images').expect(200)
 
       expect(response.body.status).toBe('success')
       expect(Array.isArray(response.body.data.images)).toBe(true)
@@ -43,7 +43,7 @@ describe('Image Endpoints', () => {
     it('should get images with limit', async () => {
       await createImages(5)
 
-      const response = await request(app).get('/images?limit=2').expect(200)
+      const response = await request(api).get('/images?limit=2').expect(200)
 
       expect(response.body.status).toBe('success')
       expect(Array.isArray(response.body.data.images)).toBe(true)
@@ -53,7 +53,7 @@ describe('Image Endpoints', () => {
     it('should get images with offset', async () => {
       await createImages(5)
 
-      const response = await request(app).get('/images?offset=2').expect(200)
+      const response = await request(api).get('/images?offset=2').expect(200)
 
       expect(response.body.status).toBe('success')
       expect(Array.isArray(response.body.data.images)).toBe(true)
@@ -65,7 +65,7 @@ describe('Image Endpoints', () => {
     it('should get tiny images successfully', async () => {
       await createImages(2)
 
-      const response = await request(app).get('/tiny-images').expect(200)
+      const response = await request(api).get('/tiny-images').expect(200)
 
       expect(response.body.status).toBe('success')
       expect(Array.isArray(response.body.data.images)).toBe(true)
@@ -76,7 +76,7 @@ describe('Image Endpoints', () => {
     it('should get image by id successfully', async () => {
       const image = await createImage()
 
-      const response = await request(app).get(`/images/${image.id}`).expect(200)
+      const response = await request(api).get(`/images/${image.id}`).expect(200)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data.image).toEqual({
@@ -94,7 +94,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 404 for non-existent image', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .get('/images/550e8400-e29b-41d4-a716-446655440000')
         .expect(404)
 
@@ -103,7 +103,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 400 for invalid image id', async () => {
-      const response = await request(app).get('/images/invalid').expect(400)
+      const response = await request(api).get('/images/invalid').expect(400)
 
       expect(response.body.status).toBe('fail')
     })
@@ -111,7 +111,7 @@ describe('Image Endpoints', () => {
 
   describe('POST /upload/review', () => {
     it('should upload single image for review', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/review')
         .set('Authorization', `Bearer ${authToken}`)
         .attach('images', mockImageBuffer, 'test.png')
@@ -126,7 +126,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should upload multiple images for review', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/review')
         .set('Authorization', `Bearer ${authToken}`)
         .attach('images', mockImageBuffer, 'test1.png')
@@ -141,7 +141,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 400 for no files uploaded', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/review')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400)
@@ -151,7 +151,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/review')
         .attach('image', mockImageBuffer, 'test.png')
         .expect(401)
@@ -164,7 +164,7 @@ describe('Image Endpoints', () => {
     let sessionId
 
     beforeEach(async () => {
-      const uploadResponse = await request(app)
+      const uploadResponse = await request(api)
         .post('/upload/review')
         .set('Authorization', `Bearer ${authToken}`)
         .attach('images', mockImageBuffer, 'test.png')
@@ -181,7 +181,7 @@ describe('Image Endpoints', () => {
         focalLength: '50mm'
       }
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ images: [{ sessionId, metadata }] })
@@ -204,7 +204,7 @@ describe('Image Endpoints', () => {
         }
       }
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ images: [imageData] })
@@ -218,7 +218,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should confirm multiple images upload with images array', async () => {
-      const uploadResponse2 = await request(app)
+      const uploadResponse2 = await request(api)
         .post('/upload/review')
         .set('Authorization', `Bearer ${authToken}`)
         .attach('images', mockImageBuffer, 'test2.png')
@@ -235,7 +235,7 @@ describe('Image Endpoints', () => {
         }
       ]
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ images: imagesData })
@@ -249,7 +249,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 400 for missing required fields', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({})
@@ -261,7 +261,7 @@ describe('Image Endpoints', () => {
     it('should return 404 for expired session', async () => {
       const fakeSessionId = uuid()
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
@@ -279,7 +279,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/upload/confirm')
         .send({
           images: [{ sessionId, metadata: {} }]
@@ -305,7 +305,7 @@ describe('Image Endpoints', () => {
         iso: '800'
       }
 
-      const response = await request(app)
+      const response = await request(api)
         .put(`/images/${image.id}/metadata`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(newMetadata)
@@ -319,7 +319,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 404 for non-existent image', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .put('/images/550e8400-e29b-41d4-a716-446655440000/metadata')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ camera: 'Test Camera' })
@@ -330,7 +330,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .put(`/images/${image.id}/metadata`)
         .send({ camera: 'Test Camera' })
         .expect(401)
@@ -347,7 +347,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should delete image successfully', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .delete(`/images/${image.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
@@ -355,12 +355,12 @@ describe('Image Endpoints', () => {
       expect(response.body.status).toBe('success')
       expect(response.body.data).toBeNull()
 
-      const fetchResponse = await request(app).get(`/images/${image.id}`).expect(404)
+      const fetchResponse = await request(api).get(`/images/${image.id}`).expect(404)
       expect(fetchResponse.body.status).toBe('fail')
     })
 
     it('should return 404 for non-existent image', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .delete('/images/550e8400-e29b-41d4-a716-446655440000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404)
@@ -370,7 +370,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app).delete(`/images/${image.id}`).expect(401)
+      const response = await request(api).delete(`/images/${image.id}`).expect(401)
 
       expect(response.body.status).toBe('fail')
     })
@@ -378,7 +378,7 @@ describe('Image Endpoints', () => {
 
   describe('POST /maintenance/cleanup-temp', () => {
     it('should cleanup temp files successfully', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/maintenance/cleanup-temp')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
@@ -390,7 +390,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app).post('/maintenance/cleanup-temp').expect(401)
+      const response = await request(api).post('/maintenance/cleanup-temp').expect(401)
 
       expect(response.body.status).toBe('fail')
     })
@@ -398,7 +398,7 @@ describe('Image Endpoints', () => {
 
   describe('POST /maintenance/cleanup-orphaned', () => {
     it('should cleanup orphaned files successfully', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/maintenance/cleanup-orphaned')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
@@ -410,7 +410,7 @@ describe('Image Endpoints', () => {
     })
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await request(app).post('/maintenance/cleanup-orphaned').expect(401)
+      const response = await request(api).post('/maintenance/cleanup-orphaned').expect(401)
 
       expect(response.body.status).toBe('fail')
     })

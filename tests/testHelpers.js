@@ -1,14 +1,8 @@
 import { getDb } from './testDb.js'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import {
-  UserTables,
-  SettingsTable,
-  ImagesTable,
-  EmailVerificationTokensTable
-} from '../api/drizzle/schema.js'
+import { UserTables, ImagesTable, EmailVerificationTokensTable } from '../api/drizzle/schema.js'
 import { generateAccess } from '../api/utils/tokenUtils.js'
-import { eq } from 'drizzle-orm'
 
 const baseUserData = (data = {}) => {
   const timestamp = Date.now()
@@ -97,18 +91,4 @@ export async function createVerificationToken(userId, email = null) {
 export function createAccessToken(user) {
   const { admin, email, id } = user
   return generateAccess({ admin, email, id })
-}
-
-export async function overrideSetting(name, value) {
-  const db = getDb()
-  const results = await db.insert(SettingsTable).values({ name, value }).returning()
-
-  return results[0] || null
-}
-
-export async function getSettingByName(name) {
-  const db = getDb()
-  const results = await db.select().from(SettingsTable).where(eq(SettingsTable.name, name)).limit(1)
-
-  return results[0] || null
 }

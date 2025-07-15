@@ -3,7 +3,7 @@ import request from 'supertest'
 import { createTestApi } from '../testApi.js'
 import { createUser, createVerificationToken } from '../testHelpers.js'
 
-const app = createTestApi()
+const api = createTestApi()
 
 describe('Auth Endpoints', () => {
   describe('POST /signup', () => {
@@ -14,7 +14,7 @@ describe('Auth Endpoints', () => {
         username: 'newuser'
       }
 
-      const response = await request(app).post('/signup').send(userData).expect(201)
+      const response = await request(api).post('/signup').send(userData).expect(201)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data).toEqual({
@@ -31,7 +31,7 @@ describe('Auth Endpoints', () => {
     it('should return 400 for missing required fields', async () => {
       const userData = { email: 'test@example.com', password: 'Password123' }
 
-      const response = await request(app).post('/signup').send(userData).expect(400)
+      const response = await request(api).post('/signup').send(userData).expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeDefined()
@@ -40,7 +40,7 @@ describe('Auth Endpoints', () => {
     it('should return 400 when fields are invalid', async () => {
       const userData = { email: 'test@example.com', password: 'short' }
 
-      const response = await request(app).post('/signup').send(userData).expect(400)
+      const response = await request(api).post('/signup').send(userData).expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeDefined()
@@ -54,7 +54,7 @@ describe('Auth Endpoints', () => {
         username: 'newuser'
       }
 
-      const response = await request(app).post('/signup').send(userData).expect(400)
+      const response = await request(api).post('/signup').send(userData).expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeNull()
@@ -69,7 +69,7 @@ describe('Auth Endpoints', () => {
         emailVerified: true
       })
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/login')
         .send({
           username: 'testuser',
@@ -97,7 +97,7 @@ describe('Auth Endpoints', () => {
         password: 'Password123'
       })
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/login')
         .send({
           username: 'testuser',
@@ -116,7 +116,7 @@ describe('Auth Endpoints', () => {
         emailVerified: false
       })
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/login')
         .send({
           username: 'testuser',
@@ -137,7 +137,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should return 401 for non-existent user', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/login')
         .send({
           username: 'nonexistent',
@@ -153,20 +153,20 @@ describe('Auth Endpoints', () => {
   describe('POST /logout', () => {
     it('should logout successfully', async () => {
       const user = await createUser({ emailVerified: true })
-      const loginResponse = await request(app).post('/login').send({
+      const loginResponse = await request(api).post('/login').send({
         username: user.username,
         password: user.plainPassword
       })
 
       const cookies = loginResponse.headers['set-cookie']
-      const response = await request(app).post('/logout').set('Cookie', cookies).expect(200)
+      const response = await request(api).post('/logout').set('Cookie', cookies).expect(200)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data).toBeNull()
     })
 
     it('should handle logout without refresh token', async () => {
-      const response = await request(app).post('/logout').expect(200)
+      const response = await request(api).post('/logout').expect(200)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data).toBeNull()
@@ -176,20 +176,20 @@ describe('Auth Endpoints', () => {
   describe('POST /refresh', () => {
     it('should refresh access token successfully', async () => {
       const user = await createUser({ emailVerified: true })
-      const loginResponse = await request(app).post('/login').send({
+      const loginResponse = await request(api).post('/login').send({
         username: user.username,
         password: user.plainPassword
       })
 
       const cookies = loginResponse.headers['set-cookie']
-      const response = await request(app).post('/refresh').set('Cookie', cookies).expect(200)
+      const response = await request(api).post('/refresh').set('Cookie', cookies).expect(200)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data).toEqual({ accessToken: expect.any(String) })
     })
 
     it('should return 401 for invalid refresh token', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/refresh')
         .set('Cookie', ['refreshToken=invalid-token'])
         .expect(401)
@@ -199,7 +199,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should return 400 for missing refresh token', async () => {
-      const response = await request(app).post('/refresh').expect(400)
+      const response = await request(api).post('/refresh').expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeNull()
@@ -211,7 +211,7 @@ describe('Auth Endpoints', () => {
       const user = await createUser({ emailVerified: false })
       const token = await createVerificationToken(user.id)
 
-      const response = await request(app).post('/verify-email').send({ token }).expect(200)
+      const response = await request(api).post('/verify-email').send({ token }).expect(200)
 
       expect(response.body.status).toBe('success')
       expect(response.body.data).toEqual({
@@ -228,7 +228,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should return 400 for invalid token', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/verify-email')
         .send({ token: 'invalidtoken' })
         .expect(400)
@@ -238,7 +238,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should fail validation and return 400 for missing token', async () => {
-      const response = await request(app).post('/verify-email').send({}).expect(400)
+      const response = await request(api).post('/verify-email').send({}).expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeDefined()
@@ -249,7 +249,7 @@ describe('Auth Endpoints', () => {
     it('should resend verification email successfully', async () => {
       const user = await createUser({ emailVerified: false })
 
-      const response = await request(app)
+      const response = await request(api)
         .post('/resend-verification')
         .send({ email: user.email })
         .expect(200)
@@ -259,7 +259,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should return 400 for invalid email', async () => {
-      const response = await request(app)
+      const response = await request(api)
         .post('/resend-verification')
         .send({ email: 'nonexistent@example.com' })
         .expect(404)
@@ -269,7 +269,7 @@ describe('Auth Endpoints', () => {
     })
 
     it('should fail validation and return 400 for missing email', async () => {
-      const response = await request(app).post('/resend-verification').send({}).expect(400)
+      const response = await request(api).post('/resend-verification').send({}).expect(400)
 
       expect(response.body.status).toBe('fail')
       expect(response.body.data).toBeDefined()

@@ -69,6 +69,10 @@ export const auth = {
         throw new UnauthorizedError("Invalid or expired token.");
       }
 
+      if (!decoded.admin) {
+        throw new UnauthorizedError("Authorization required.");
+      }
+
       req.user = {
         admin: decoded.admin,
         email: decoded.email,
