@@ -1,6 +1,5 @@
-import { defineStore } from "pinia"
-
 import api from "#src/utils/api"
+import { defineStore } from "pinia"
 
 export const useSettingsStore = defineStore("settings", {
   actions: {

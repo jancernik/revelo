@@ -1,8 +1,7 @@
 <script setup>
-import { useTemplateRef } from "vue"
-
 import Icon from "#src/components/common/Icon.vue"
 import { useTheme } from "#src/composables/useTheme"
+import { useTemplateRef } from "vue"
 
 const { setTheme, themeClass } = useTheme()
 const button = useTemplateRef("button")

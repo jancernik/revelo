@@ -1,7 +1,6 @@
 <script setup>
-import { nextTick, onMounted, useTemplateRef } from "vue"
-
 import Icon from "#src/components/common/Icon.vue"
+import { nextTick, onMounted, useTemplateRef } from "vue"
 
 const props = defineProps({
   description: {

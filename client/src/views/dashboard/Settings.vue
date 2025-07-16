@@ -1,12 +1,11 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue"
-
 import Button from "#src/components/common/Button.vue"
 import InputSetting from "#src/components/InputSetting.vue"
 import SwitchSetting from "#src/components/SwitchSetting.vue"
 import ToggleSetting from "#src/components/ToggleSetting.vue"
 import { useSettings } from "#src/composables/useSettings"
 import api from "#src/utils/api"
+import { computed, onMounted, reactive, ref } from "vue"
 
 const settings = ref([])
 const currentValues = reactive({})

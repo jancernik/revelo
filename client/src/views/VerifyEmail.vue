@@ -1,10 +1,9 @@
 <script setup>
-import { onMounted, ref } from "vue"
-import { useRoute, useRouter } from "vue-router"
-
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useAuthStore } from "#src/stores/auth"
+import { onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
 const authStore = useAuthStore()
 const route = useRoute()

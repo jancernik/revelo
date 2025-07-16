@@ -1,5 +1,3 @@
-import { createRouter, createWebHistory } from "vue-router"
-
 import { useAuthStore } from "#src/stores/auth"
 import DashboardIndex from "#src/views/dashboard/Index.vue"
 import DashboardSettings from "#src/views/dashboard/Settings.vue"
@@ -12,6 +10,7 @@ import Login from "#src/views/Login.vue"
 import Signup from "#src/views/Signup.vue"
 import VerificationPending from "#src/views/VerificationPending.vue"
 import VerifyEmail from "#src/views/VerifyEmail.vue"
+import { createRouter, createWebHistory } from "vue-router"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

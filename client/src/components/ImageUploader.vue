@@ -1,10 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
-
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import SimpleImageGrid from "#src/components/SimpleImageGrid.vue"
 import { useSettings } from "#src/composables/useSettings"
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
 
 const { settings } = useSettings()
 const maxFiles = settings.value.maxUploadFiles || 10

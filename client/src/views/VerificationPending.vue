@@ -1,11 +1,10 @@
 <script setup>
-import { onMounted } from "vue"
-import { useRouter } from "vue-router"
-
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth"
+import { onMounted } from "vue"
+import { useRouter } from "vue-router"
 const { show: showToast } = useToast()
 
 const authStore = useAuthStore()

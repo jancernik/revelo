@@ -1,9 +1,8 @@
 <script setup>
-import { computed } from "vue"
-
 import Button from "#src/components/common/Button.vue"
 import Switch from "#src/components/common/Switch.vue"
 import { useDialog } from "#src/composables/useDialog"
+import { computed } from "vue"
 
 const { show } = useDialog()
 
