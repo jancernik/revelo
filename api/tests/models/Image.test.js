@@ -12,14 +12,14 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const DEFAULT_IMAGE_DATA = {
-  originalFilename: "test-image.jpg",
-  camera: "Test Camera",
-  lens: "Test Lens",
   aperture: "f/2.8",
-  shutterSpeed: "1/125",
-  iso: 200,
+  camera: "Test Camera",
+  date: new Date("2023-01-01"),
   focalLength: "50mm",
-  date: new Date("2023-01-01")
+  iso: 200,
+  lens: "Test Lens",
+  originalFilename: "test-image.jpg",
+  shutterSpeed: "1/125"
 }
 
 const createMockFile = (filename = "test.jpg") => {
@@ -32,11 +32,11 @@ const createMockFile = (filename = "test.jpg") => {
   const tempFilePath = path.join(tempDir, filename)
 
   return {
+    buffer: mockImageBuffer,
+    mimetype: "image/png",
     originalname: filename,
     path: tempFilePath,
-    size: mockImageBuffer.length,
-    mimetype: "image/png",
-    buffer: mockImageBuffer
+    size: mockImageBuffer.length
   }
 }
 
@@ -49,7 +49,7 @@ const createTempFile = async (file) => {
 const cleanupTempFiles = async () => {
   const tempDir = path.join(process.cwd(), "temp")
   try {
-    await fs.rm(tempDir, { recursive: true, force: true })
+    await fs.rm(tempDir, { force: true, recursive: true })
   } catch {}
 }
 
@@ -183,9 +183,9 @@ describe("Image Model", () => {
     it("should respect column selection", async () => {
       const regularVersions = await Image.findAllByVersion("regular", {
         columns: {
+          height: true,
           id: true,
           type: true,
-          height: true,
           width: true
         }
       })
@@ -230,8 +230,8 @@ describe("Image Model", () => {
         await createTempFile(file)
         await Image.createWithVersions(file, {
           ...DEFAULT_IMAGE_DATA,
-          originalFilename: `versions-test-${i}.jpg`,
-          camera: `Test Camera ${i}`
+          camera: `Test Camera ${i}`,
+          originalFilename: `versions-test-${i}.jpg`
         })
       }
     })
@@ -359,14 +359,14 @@ describe("Image Model", () => {
     describe("create", () => {
       it("should create basic image without versions", async () => {
         const imageData = {
-          originalFilename: "basic-create.jpg",
-          camera: "Basic Camera",
-          lens: "Basic Lens",
           aperture: "f/4",
-          shutterSpeed: "1/60",
-          iso: 400,
+          camera: "Basic Camera",
+          date: new Date("2023-06-01"),
           focalLength: "35mm",
-          date: new Date("2023-06-01")
+          iso: 400,
+          lens: "Basic Lens",
+          originalFilename: "basic-create.jpg",
+          shutterSpeed: "1/60"
         }
 
         const createdImage = await Image.create(imageData)
@@ -404,10 +404,10 @@ describe("Image Model", () => {
     describe("update", () => {
       it("should update image metadata", async () => {
         const updateData = {
-          camera: "Updated Camera Model",
-          lens: "Updated Lens Model",
           aperture: "f/1.8",
-          iso: 800
+          camera: "Updated Camera Model",
+          iso: 800,
+          lens: "Updated Lens Model"
         }
 
         const updatedImage = await Image.update(testImage.id, updateData)
@@ -568,14 +568,14 @@ describe("Image Model", () => {
 
     it("should handle null metadata fields correctly", async () => {
       const imageData = {
-        originalFilename: "null-metadata.jpg",
-        camera: null,
-        lens: null,
         aperture: null,
-        shutterSpeed: null,
-        iso: null,
+        camera: null,
+        date: null,
         focalLength: null,
-        date: null
+        iso: null,
+        lens: null,
+        originalFilename: "null-metadata.jpg",
+        shutterSpeed: null
       }
 
       const createdImage = await Image.create(imageData)
@@ -594,8 +594,8 @@ describe("Image Model", () => {
     it("should handle very large ISO values", async () => {
       const imageData = {
         ...DEFAULT_IMAGE_DATA,
-        originalFilename: "high-iso.jpg",
-        iso: 102400
+        iso: 102400,
+        originalFilename: "high-iso.jpg"
       }
 
       const createdImage = await Image.create(imageData)
@@ -608,8 +608,8 @@ describe("Image Model", () => {
       const futureDate = new Date("2030-12-31")
       const imageData = {
         ...DEFAULT_IMAGE_DATA,
-        originalFilename: "future-date.jpg",
-        date: futureDate
+        date: futureDate,
+        originalFilename: "future-date.jpg"
       }
 
       const createdImage = await Image.create(imageData)

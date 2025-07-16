@@ -75,11 +75,11 @@ describe("Image Endpoints", () => {
 
       expect(response.body.status).toBe("success")
       expect(response.body.data.image).toEqual({
-        id: image.id,
         aperture: image.aperture,
         camera: image.camera,
         date: image.date.toISOString(),
         focalLength: image.focalLength,
+        id: image.id,
         iso: image.iso,
         lens: image.lens,
         originalFilename: image.originalFilename,
@@ -168,18 +168,18 @@ describe("Image Endpoints", () => {
 
     it("should confirm single image upload with sessionId and metadata", async () => {
       const metadata = {
-        camera: "Canon EOS R5",
-        lens: "24-70mm f/2.8",
         aperture: "f/4",
-        shutterSpeed: "1/60",
+        camera: "Canon EOS R5",
+        focalLength: "50mm",
         iso: "400",
-        focalLength: "50mm"
+        lens: "24-70mm f/2.8",
+        shutterSpeed: "1/60"
       }
 
       const response = await request(api)
         .post("/upload/confirm")
         .set("Authorization", `Bearer ${adminUserToken}`)
-        .send({ images: [{ sessionId, metadata }] })
+        .send({ images: [{ metadata, sessionId }] })
         .expect(201)
 
       expect(response.body.status).toBe("success")
@@ -192,11 +192,11 @@ describe("Image Endpoints", () => {
 
     it("should confirm single image upload with image object", async () => {
       const imageData = {
-        sessionId,
         metadata: {
           camera: "Sony A7R V",
           iso: "200"
-        }
+        },
+        sessionId
       }
 
       const response = await request(api)
@@ -221,12 +221,12 @@ describe("Image Endpoints", () => {
 
       const imagesData = [
         {
-          sessionId,
-          metadata: { camera: "Canon EOS R5" }
+          metadata: { camera: "Canon EOS R5" },
+          sessionId
         },
         {
-          sessionId: sessionId2,
-          metadata: { camera: "Sony A7R V" }
+          metadata: { camera: "Sony A7R V" },
+          sessionId: sessionId2
         }
       ]
 
@@ -262,8 +262,8 @@ describe("Image Endpoints", () => {
         .send({
           images: [
             {
-              sessionId: fakeSessionId,
-              metadata: {}
+              metadata: {},
+              sessionId: fakeSessionId
             }
           ]
         })
@@ -277,7 +277,7 @@ describe("Image Endpoints", () => {
       const response = await request(api)
         .post("/upload/confirm")
         .send({
-          images: [{ sessionId, metadata: {} }]
+          images: [{ metadata: {}, sessionId }]
         })
         .expect(401)
 
@@ -294,10 +294,10 @@ describe("Image Endpoints", () => {
 
     it("should update image metadata successfully", async () => {
       const newMetadata = {
-        camera: "Updated Camera",
-        lens: "Updated Lens",
         aperture: "f/1.4",
-        iso: "800"
+        camera: "Updated Camera",
+        iso: "800",
+        lens: "Updated Lens"
       }
 
       const response = await request(api)

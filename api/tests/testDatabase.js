@@ -7,28 +7,6 @@ import * as schema from "../src/database/schema.js"
 let client = null
 let db = null
 
-export async function connect() {
-  if (client) return
-
-  client = postgres(process.env.DB_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 10
-  })
-
-  db = drizzle(client, { schema })
-
-  await setupDatabase()
-}
-
-async function setupDatabase() {
-  try {
-    await db.execute(sql`SELECT 1`)
-  } catch (error) {
-    throw new Error(`Test database connection failed: ${error.message}`)
-  }
-}
-
 export async function clearTables() {
   if (!db) return
 
@@ -50,6 +28,20 @@ export async function clearTables() {
   }
 }
 
+export async function connect() {
+  if (client) return
+
+  client = postgres(process.env.DB_URL, {
+    connect_timeout: 10,
+    idle_timeout: 20,
+    max: 1
+  })
+
+  db = drizzle(client, { schema })
+
+  await setupDatabase()
+}
+
 export async function disconnect() {
   if (client) {
     await client.end()
@@ -60,4 +52,12 @@ export async function disconnect() {
 
 export function getDb() {
   return db
+}
+
+async function setupDatabase() {
+  try {
+    await db.execute(sql`SELECT 1`)
+  } catch (error) {
+    throw new Error(`Test database connection failed: ${error.message}`)
+  }
 }

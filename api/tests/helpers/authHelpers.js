@@ -10,13 +10,26 @@ const baseUserData = (data = {}) => {
   const random = Math.floor(Math.random() * 1000)
   const uniqueSuffix = `${timestamp}-${random}`
   return {
+    admin: false,
     email: `user-${uniqueSuffix}@example.com`,
+    emailVerified: true,
     password: "Password123",
     username: `user-${uniqueSuffix}`,
-    admin: false,
-    emailVerified: true,
     ...data
   }
+}
+
+export function createAccessToken(user) {
+  const { admin, email, id } = user
+  return generateAccess({ admin, email, id })
+}
+
+export async function createAdminUser(data) {
+  return createUser({ admin: true, ...data })
+}
+
+export async function createRegularUser(data) {
+  return createUser({ admin: false, ...data })
 }
 
 export async function createUser(data) {
@@ -34,19 +47,6 @@ export async function createUser(data) {
   return createdUser
 }
 
-export async function createAdminUser(data) {
-  return createUser({ admin: true, ...data })
-}
-
-export async function createRegularUser(data) {
-  return createUser({ admin: false, ...data })
-}
-
-export function createAccessToken(user) {
-  const { admin, email, id } = user
-  return generateAccess({ admin, email, id })
-}
-
 export async function createVerificationToken(userId, email = null) {
   const token = crypto.randomBytes(32).toString("hex")
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -55,11 +55,11 @@ export async function createVerificationToken(userId, email = null) {
   const result = await db
     .insert(EmailVerificationTokensTable)
     .values({
-      userId,
       email: email || `test-${userId}@example.com`,
-      token,
       expiresAt,
-      used: false
+      token,
+      used: false,
+      userId
     })
     .returning()
 

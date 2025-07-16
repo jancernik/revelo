@@ -7,14 +7,14 @@ import { auth } from "../../../src/middlewares/authMiddleware.js"
 import User from "../../../src/models/User.js"
 
 describe("Auth Middleware", () => {
-  let req, res, next
+  let next, req, res
 
   const mockUser = {
-    id: 1,
-    email: "test@example.com",
     admin: false,
-    username: "testuser",
-    emailVerified: true
+    email: "test@example.com",
+    emailVerified: true,
+    id: 1,
+    username: "testuser"
   }
 
   beforeEach(() => {
@@ -33,15 +33,15 @@ describe("Auth Middleware", () => {
   describe("auth.required", () => {
     describe("without loadFullUser", () => {
       it("should authenticate valid token and set basic user info", async () => {
-        const token = jwt.sign({ id: 1, email: "test@example.com", admin: true }, config.JWT_SECRET)
+        const token = jwt.sign({ admin: true, email: "test@example.com", id: 1 }, config.JWT_SECRET)
         req.headers.authorization = `Bearer ${token}`
 
         await auth.required()(req, res, next)
 
         expect(req.user).toEqual({
-          id: 1,
+          admin: true,
           email: "test@example.com",
-          admin: true
+          id: 1
         })
         expect(User.findById).not.toHaveBeenCalled()
         expect(next).toHaveBeenCalled()
@@ -68,7 +68,7 @@ describe("Auth Middleware", () => {
 
       it("should handle admin users correctly", async () => {
         const token = jwt.sign(
-          { id: 1, email: "admin@example.com", admin: true },
+          { admin: true, email: "admin@example.com", id: 1 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -76,9 +76,9 @@ describe("Auth Middleware", () => {
         await auth.required()(req, res, next)
 
         expect(req.user).toEqual({
-          id: 1,
+          admin: true,
           email: "admin@example.com",
-          admin: true
+          id: 1
         })
         expect(next).toHaveBeenCalled()
       })
@@ -86,7 +86,7 @@ describe("Auth Middleware", () => {
 
     describe("with loadFullUser = true", () => {
       it("should load full user from database", async () => {
-        const token = jwt.sign({ id: 1, email: "test@example.com", admin: true }, config.JWT_SECRET)
+        const token = jwt.sign({ admin: true, email: "test@example.com", id: 1 }, config.JWT_SECRET)
         req.headers.authorization = `Bearer ${token}`
 
         await auth.required(true)(req, res, next)
@@ -98,7 +98,7 @@ describe("Auth Middleware", () => {
 
       it("should throw NotFoundError when user not found in database", async () => {
         const token = jwt.sign(
-          { id: 999, email: "nonexistent@example.com", admin: true },
+          { admin: true, email: "nonexistent@example.com", id: 999 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -114,7 +114,7 @@ describe("Auth Middleware", () => {
     describe("without loadFullUser", () => {
       it("should authenticate valid token and set basic user info", async () => {
         const token = jwt.sign(
-          { id: 1, email: "test@example.com", admin: false },
+          { admin: false, email: "test@example.com", id: 1 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -122,9 +122,9 @@ describe("Auth Middleware", () => {
         await auth.optional()(req, res, next)
 
         expect(req.user).toEqual({
-          id: 1,
+          admin: false,
           email: "test@example.com",
-          admin: false
+          id: 1
         })
         expect(User.findById).not.toHaveBeenCalled()
         expect(next).toHaveBeenCalled()
@@ -159,7 +159,7 @@ describe("Auth Middleware", () => {
 
       it("should handle admin users correctly", async () => {
         const token = jwt.sign(
-          { id: 1, email: "admin@example.com", admin: true },
+          { admin: true, email: "admin@example.com", id: 1 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -167,9 +167,9 @@ describe("Auth Middleware", () => {
         await auth.optional()(req, res, next)
 
         expect(req.user).toEqual({
-          id: 1,
+          admin: true,
           email: "admin@example.com",
-          admin: true
+          id: 1
         })
         expect(next).toHaveBeenCalled()
       })
@@ -178,7 +178,7 @@ describe("Auth Middleware", () => {
     describe("with loadFullUser = true", () => {
       it("should load full user from database when valid token", async () => {
         const token = jwt.sign(
-          { id: 1, email: "test@example.com", admin: false },
+          { admin: false, email: "test@example.com", id: 1 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -192,7 +192,7 @@ describe("Auth Middleware", () => {
 
       it("should set user to null when user not found in database", async () => {
         const token = jwt.sign(
-          { id: 999, email: "nonexistent@example.com", admin: false },
+          { admin: false, email: "nonexistent@example.com", id: 999 },
           config.JWT_SECRET
         )
         req.headers.authorization = `Bearer ${token}`
@@ -247,41 +247,41 @@ describe("Auth Middleware", () => {
 
   describe("JWT payload validation", () => {
     it("should handle token with missing id", async () => {
-      const token = jwt.sign({ email: "test@example.com", admin: false }, config.JWT_SECRET)
+      const token = jwt.sign({ admin: false, email: "test@example.com" }, config.JWT_SECRET)
       req.headers.authorization = `Bearer ${token}`
 
       await auth.optional()(req, res, next)
 
       expect(req.user).toEqual({
-        id: undefined,
+        admin: false,
         email: "test@example.com",
-        admin: false
+        id: undefined
       })
     })
 
     it("should handle token with missing email", async () => {
-      const token = jwt.sign({ id: 1, admin: false }, config.JWT_SECRET)
+      const token = jwt.sign({ admin: false, id: 1 }, config.JWT_SECRET)
       req.headers.authorization = `Bearer ${token}`
 
       await auth.optional()(req, res, next)
 
       expect(req.user).toEqual({
-        id: 1,
+        admin: false,
         email: undefined,
-        admin: false
+        id: 1
       })
     })
 
     it("should handle token with missing admin field", async () => {
-      const token = jwt.sign({ id: 1, email: "test@example.com" }, config.JWT_SECRET)
+      const token = jwt.sign({ email: "test@example.com", id: 1 }, config.JWT_SECRET)
       req.headers.authorization = `Bearer ${token}`
 
       await auth.optional()(req, res, next)
 
       expect(req.user).toEqual({
-        id: 1,
+        admin: undefined,
         email: "test@example.com",
-        admin: undefined
+        id: 1
       })
     })
   })

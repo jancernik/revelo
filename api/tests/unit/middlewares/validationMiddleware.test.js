@@ -5,7 +5,7 @@ import { ValidationError } from "../../../src/core/errors.js"
 import { validate } from "../../../src/middlewares/validationMiddleware.js"
 
 describe("Validation Middleware", () => {
-  let req, res, next
+  let next, req, res
 
   const bodySchema = z.object({
     email: z.string().email(),
@@ -24,9 +24,9 @@ describe("Validation Middleware", () => {
   beforeEach(() => {
     req = {
       body: {},
-      query: {},
+      headers: {},
       params: {},
-      headers: {}
+      query: {}
     }
     res = {}
     next = jest.fn()
@@ -92,8 +92,8 @@ describe("Validation Middleware", () => {
 
       const middleware = validate({
         body: bodySchema,
-        query: querySchema,
-        params: paramsSchema
+        params: paramsSchema,
+        query: querySchema
       })
       middleware(req, res, next)
 
@@ -176,8 +176,8 @@ describe("Validation Middleware", () => {
 
       const middleware = validate({
         body: bodySchema,
-        query: querySchema,
-        params: paramsSchema
+        params: paramsSchema,
+        query: querySchema
       })
       middleware(req, res, next)
 

@@ -299,13 +299,13 @@ describe("Settings Endpoints", () => {
           default: { label: "Viewer", value: "viewer" },
           description: "Default role assigned to new users",
           name: "userRole",
-          type: "select",
-          value: { label: "Admin", value: "admin" },
           options: [
             { label: "Viewer", value: "viewer" },
             { label: "Editor", value: "editor" },
             { label: "Admin", value: "admin" }
-          ]
+          ],
+          type: "select",
+          value: { label: "Admin", value: "admin" }
         },
         {
           category: "Features",

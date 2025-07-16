@@ -478,12 +478,12 @@ describe("Setting Model", () => {
 
       settings.forEach((setting) => {
         expect(setting).toMatchObject({
-          name: expect.any(String),
-          value: expect.anything(),
-          description: expect.any(String),
           category: expect.any(String),
+          default: expect.anything(),
+          description: expect.any(String),
+          name: expect.any(String),
           type: expect.any(String),
-          default: expect.anything()
+          value: expect.anything()
         })
       })
     })
@@ -524,12 +524,12 @@ describe("Setting Model", () => {
 
       settings.forEach((setting) => {
         expect(setting).toMatchObject({
-          name: expect.any(String),
-          value: expect.anything(),
-          description: expect.any(String),
           category: expect.any(String),
+          default: expect.anything(),
+          description: expect.any(String),
+          name: expect.any(String),
           type: expect.any(String),
-          default: expect.anything()
+          value: expect.anything()
         })
       })
     })

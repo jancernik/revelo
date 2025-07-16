@@ -1,8 +1,8 @@
-import globals from "globals"
 import pluginJs from "@eslint/js"
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import perfectionist from "eslint-plugin-perfectionist"
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import pluginVue from "eslint-plugin-vue"
+import globals from "globals"
 
 export default [
   {
@@ -10,20 +10,15 @@ export default [
   },
 
   pluginJs.configs.recommended,
+  perfectionist.configs["recommended-natural"],
+  ...pluginVue.configs["flat/recommended"],
 
   {
     files: ["api/**/*.js"],
     languageOptions: {
-      globals: globals.node,
       ecmaVersion: 2022,
+      globals: globals.node,
       sourceType: "module"
-    },
-    plugins: {
-      perfectionist
-    },
-    rules: {
-      "perfectionist/sort-imports": "warn",
-      "perfectionist/sort-named-imports": "warn"
     }
   },
 
@@ -37,12 +32,11 @@ export default [
     }
   },
 
-  ...pluginVue.configs["flat/recommended"],
   {
     files: ["client/**/*.{js,vue}"],
     languageOptions: {
-      globals: globals.browser,
       ecmaVersion: 2022,
+      globals: globals.browser,
       sourceType: "module"
     },
     rules: {

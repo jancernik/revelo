@@ -63,8 +63,8 @@ describe("User Model", () => {
       const timestamp = Date.now()
       const userData = {
         email: `test-${timestamp}@example.com`,
-        username: `testuser-${timestamp}`,
-        password: "Password12345"
+        password: "Password12345",
+        username: `testuser-${timestamp}`
       }
       const user = await User.create(userData)
 
@@ -80,10 +80,10 @@ describe("User Model", () => {
     it("should create admin user", async () => {
       const timestamp = Date.now()
       const userData = {
+        admin: true,
         email: `test-${timestamp}@example.com`,
-        username: `testuser-${timestamp}`,
         password: "Password123",
-        admin: true
+        username: `testuser-${timestamp}`
       }
       const user = await User.create(userData)
 
@@ -95,9 +95,9 @@ describe("User Model", () => {
       const timestamp = Date.now()
       const userData = {
         email: `test-${timestamp}@example.com`,
-        username: `testuser-${timestamp}`,
+        emailVerified: true,
         password: "Password123",
-        emailVerified: true
+        username: `testuser-${timestamp}`
       }
       const user = await User.create(userData)
 

@@ -5,7 +5,7 @@ import { NotFoundError } from "../../../src/core/errors.js"
 import { errorHandler, notFoundHandler } from "../../../src/middlewares/errorMiddleware.js"
 
 describe("Error Middleware", () => {
-  let req, res, next
+  let next, req, res
 
   beforeEach(() => {
     req = {
@@ -13,8 +13,8 @@ describe("Error Middleware", () => {
       originalUrl: "/test"
     }
     res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis()
     }
     next = jest.fn()
     console.error = jest.fn()
@@ -29,77 +29,77 @@ describe("Error Middleware", () => {
   describe("errorHandler", () => {
     it("should respond with \"status: 'fail'\" and a data key for operational errors", () => {
       const error = {
-        statusCode: 400,
+        isOperational: true,
         message: "Bad request",
-        isOperational: true
+        statusCode: 400
       }
 
       errorHandler(error, req, res, next)
 
       expect(res.status).toHaveBeenCalledWith(400)
       expect(res.json).toHaveBeenCalledWith({
-        status: "fail",
-        data: null
+        data: null,
+        status: "fail"
       })
     })
 
     it("should respond with \"status: 'error'\" and a message key for non-operational errors", () => {
       const error = {
-        statusCode: 500,
+        isOperational: false,
         message: "Some error message",
-        isOperational: false
+        statusCode: 500
       }
 
       errorHandler(error, req, res, next)
 
       expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith({
-        status: "error",
-        message: "Some error message"
+        message: "Some error message",
+        status: "error"
       })
     })
 
     it("should include error data when present in operational errors", () => {
       const error = {
-        statusCode: 422,
-        message: "Validation error",
+        data: { field: "email", issue: "required" },
         isOperational: true,
-        data: { field: "email", issue: "required" }
+        message: "Validation error",
+        statusCode: 422
       }
 
       errorHandler(error, req, res, next)
 
       expect(res.status).toHaveBeenCalledWith(422)
       expect(res.json).toHaveBeenCalledWith({
-        status: "fail",
-        data: { field: "email", issue: "required" }
+        data: { field: "email", issue: "required" },
+        status: "fail"
       })
     })
 
     it("should include error data when present in non-operational errors", () => {
       const error = {
-        statusCode: 500,
-        message: "Database error",
+        data: { connection: "failed" },
         isOperational: false,
-        data: { connection: "failed" }
+        message: "Database error",
+        statusCode: 500
       }
 
       errorHandler(error, req, res, next)
 
       expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith({
-        status: "error",
+        data: { connection: "failed" },
         message: "Database error",
-        data: { connection: "failed" }
+        status: "error"
       })
     })
 
     it("should log server errors (5xx)", () => {
       const error = {
-        statusCode: 500,
+        isOperational: false,
         message: "Database connection failed",
         stack: "Error stack trace",
-        isOperational: false
+        statusCode: 500
       }
 
       errorHandler(error, req, res, next)
@@ -116,9 +116,9 @@ describe("Error Middleware", () => {
 
     it("should not log client errors (4xx)", () => {
       const error = {
-        statusCode: 404,
+        isOperational: true,
         message: "Not found",
-        isOperational: true
+        statusCode: 404
       }
 
       errorHandler(error, req, res, next)
@@ -132,16 +132,16 @@ describe("Error Middleware", () => {
       config.ENV = "production"
 
       const error = {
-        statusCode: 500,
+        isOperational: false,
         message: "Internal error details",
-        isOperational: false
+        statusCode: 500
       }
 
       errorHandler(error, req, res, next)
 
       expect(res.json).toHaveBeenCalledWith({
-        status: "error",
-        message: "Something went wrong"
+        message: "Something went wrong",
+        status: "error"
       })
 
       config.ENV = originalEnv
@@ -154,8 +154,8 @@ describe("Error Middleware", () => {
 
       expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith({
-        status: "error",
-        message: "Internal server error"
+        message: "Internal server error",
+        status: "error"
       })
     })
   })

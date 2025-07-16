@@ -20,10 +20,10 @@ describe("Auth Endpoints", () => {
       expect(response.body.status).toBe("success")
       expect(response.body.data).toEqual({
         user: {
-          id: expect.any(Number),
           admin: expect.any(Boolean),
           email: userData.email,
           emailVerified: false,
+          id: expect.any(Number),
           username: userData.username
         }
       })
@@ -65,16 +65,16 @@ describe("Auth Endpoints", () => {
   describe("POST /login", () => {
     it("should login successfully with valid credentials", async () => {
       const user = await createUser({
-        username: "testuser",
+        emailVerified: true,
         password: "Password123",
-        emailVerified: true
+        username: "testuser"
       })
 
       const response = await request(api)
         .post("/login")
         .send({
-          username: "testuser",
-          password: "Password123"
+          password: "Password123",
+          username: "testuser"
         })
         .expect(200)
 
@@ -82,10 +82,10 @@ describe("Auth Endpoints", () => {
       expect(response.body.data).toEqual({
         accessToken: expect.any(String),
         user: {
-          id: user.id,
           admin: user.admin,
           email: user.email,
           emailVerified: user.emailVerified,
+          id: user.id,
           username: user.username
         }
       })
@@ -94,15 +94,15 @@ describe("Auth Endpoints", () => {
 
     it("should return 401 for invalid credentials", async () => {
       await createUser({
-        username: "testuser",
-        password: "Password123"
+        password: "Password123",
+        username: "testuser"
       })
 
       const response = await request(api)
         .post("/login")
         .send({
-          username: "testuser",
-          password: "wrongpassword"
+          password: "wrongpassword",
+          username: "testuser"
         })
         .expect(401)
 
@@ -112,26 +112,26 @@ describe("Auth Endpoints", () => {
 
     it("should return 401 for unverified email", async () => {
       const user = await createUser({
-        username: "testuser",
+        emailVerified: false,
         password: "Password123",
-        emailVerified: false
+        username: "testuser"
       })
 
       const response = await request(api)
         .post("/login")
         .send({
-          username: "testuser",
-          password: "Password123"
+          password: "Password123",
+          username: "testuser"
         })
         .expect(401)
 
       expect(response.body.status).toBe("fail")
       expect(response.body.data).toEqual({
         user: {
-          id: user.id,
           admin: user.admin,
           email: user.email,
           emailVerified: user.emailVerified,
+          id: user.id,
           username: user.username
         }
       })
@@ -141,8 +141,8 @@ describe("Auth Endpoints", () => {
       const response = await request(api)
         .post("/login")
         .send({
-          username: "nonexistent",
-          password: "Password123"
+          password: "Password123",
+          username: "nonexistent"
         })
         .expect(401)
 
@@ -155,8 +155,8 @@ describe("Auth Endpoints", () => {
     it("should logout successfully", async () => {
       const user = await createUser({ emailVerified: true })
       const loginResponse = await request(api).post("/login").send({
-        username: user.username,
-        password: user.plainPassword
+        password: user.plainPassword,
+        username: user.username
       })
 
       const cookies = loginResponse.headers["set-cookie"]
@@ -178,8 +178,8 @@ describe("Auth Endpoints", () => {
     it("should refresh access token successfully", async () => {
       const user = await createUser({ emailVerified: true })
       const loginResponse = await request(api).post("/login").send({
-        username: user.username,
-        password: user.plainPassword
+        password: user.plainPassword,
+        username: user.username
       })
 
       const cookies = loginResponse.headers["set-cookie"]
@@ -218,10 +218,10 @@ describe("Auth Endpoints", () => {
       expect(response.body.data).toEqual({
         accessToken: expect.any(String),
         user: {
-          id: user.id,
           admin: user.admin,
           email: user.email,
           emailVerified: true,
+          id: user.id,
           username: user.username
         }
       })
