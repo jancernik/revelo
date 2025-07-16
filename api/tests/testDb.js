@@ -1,7 +1,7 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import { sql } from 'drizzle-orm'
-import * as schema from '../api/drizzle/schema.js'
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
+import { sql } from "drizzle-orm"
+import * as schema from "../drizzle/schema.js"
 
 let client = null
 let db = null
@@ -45,7 +45,7 @@ export async function clearTables() {
       RESTART IDENTITY CASCADE
     `)
   } catch (error) {
-    console.warn('Warning: Could not clear tables:', error.message)
+    console.warn("Warning: Could not clear tables:", error.message)
   }
 }
 

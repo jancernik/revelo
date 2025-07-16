@@ -1,6 +1,6 @@
 <script setup>
-import Icon from '@/components/common/Icon.vue'
-const emit = defineEmits(['remove'])
+import Icon from "@/components/common/Icon.vue"
+const emit = defineEmits(["remove"])
 
 defineProps({
   allowDelete: {
@@ -109,7 +109,7 @@ defineProps({
     }
 
     .file-size {
-      @include text('sm');
+      @include text("sm");
       color: var(--muted-foreground);
     }
   }

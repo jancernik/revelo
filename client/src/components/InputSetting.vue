@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import Input from '@/components/common/Input.vue'
-import { useDialog } from '@/composables/useDialog'
+import Button from "@/components/common/Button.vue"
+import Input from "@/components/common/Input.vue"
+import { useDialog } from "@/composables/useDialog"
 
 const { show } = useDialog()
 
@@ -26,7 +26,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'reset', 'reset-default'])
+const emit = defineEmits(["update", "reset", "reset-default"])
 
 const hasChanged = computed(() => {
   return props.currentValue !== props.originalValue
@@ -41,10 +41,10 @@ const showResetDefaultDialog = () => {
     actions: [
       {
         callback: () => {
-          emit('reset-default')
+          emit("reset-default")
         },
-        color: 'primary',
-        name: 'Reset'
+        color: "primary",
+        name: "Reset"
       }
     ],
     description: `Are you sure you want to reset the setting to its default value?`,
@@ -54,20 +54,20 @@ const showResetDefaultDialog = () => {
 }
 
 const inputType = computed(() => {
-  return props.setting.type === 'string' ? 'text' : 'number'
+  return props.setting.type === "string" ? "text" : "number"
 })
 
 const inputStep = computed(() => {
-  return props.setting.type === 'decimal' ? '0.01' : '1'
+  return props.setting.type === "decimal" ? "0.01" : "1"
 })
 
 const parseValue = (value) => {
-  if (value === '' || value === null || value === undefined) return value
+  if (value === "" || value === null || value === undefined) return value
 
-  if (props.setting.type === 'integer') {
+  if (props.setting.type === "integer") {
     const parsed = parseInt(value, 10)
     return isNaN(parsed) ? value : parsed
-  } else if (props.setting.type === 'decimal') {
+  } else if (props.setting.type === "decimal") {
     const parsed = parseFloat(value)
     return isNaN(parsed) ? value : parsed
   }
@@ -76,8 +76,8 @@ const parseValue = (value) => {
 }
 
 const handleUpdate = (newValue) => {
-  const parsedValue = props.setting.type !== 'string' ? parseValue(newValue) : newValue
-  emit('update', parsedValue)
+  const parsedValue = props.setting.type !== "string" ? parseValue(newValue) : newValue
+  emit("update", parsedValue)
 }
 </script>
 
@@ -137,13 +137,13 @@ const handleUpdate = (newValue) => {
   }
 
   .name {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-semibold);
     color: var(--primary);
   }
 
   .description {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-normal);
     color: var(--muted-foreground);
   }

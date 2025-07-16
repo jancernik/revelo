@@ -1,8 +1,8 @@
-import { getDb } from './testDb.js'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import { UserTables, ImagesTable, EmailVerificationTokensTable } from '../api/drizzle/schema.js'
-import { generateAccess } from '../api/utils/tokenUtils.js'
+import { getDb } from "./testDb.js"
+import bcrypt from "bcryptjs"
+import crypto from "crypto"
+import { UserTables, ImagesTable, EmailVerificationTokensTable } from "../drizzle/schema.js"
+import { generateAccess } from "../utils/tokenUtils.js"
 
 const baseUserData = (data = {}) => {
   const timestamp = Date.now()
@@ -10,7 +10,7 @@ const baseUserData = (data = {}) => {
   const uniqueSuffix = `${timestamp}-${random}`
   return {
     email: `user-${uniqueSuffix}@example.com`,
-    password: 'Password123',
+    password: "Password123",
     username: `user-${uniqueSuffix}`,
     admin: false,
     emailVerified: true,
@@ -43,13 +43,13 @@ export async function createRegularUser(data) {
 
 export async function createImage(imageData = {}) {
   const defaultImage = {
-    originalFilename: 'test-image.jpg',
-    camera: 'Test Camera',
-    lens: 'Test Lens',
-    aperture: 'f/2.8',
-    shutterSpeed: '1/125',
+    originalFilename: "test-image.jpg",
+    camera: "Test Camera",
+    lens: "Test Lens",
+    aperture: "f/2.8",
+    shutterSpeed: "1/125",
     iso: 200,
-    focalLength: '50mm',
+    focalLength: "50mm",
     date: new Date()
   }
 
@@ -70,7 +70,7 @@ export async function createImages(count = 5) {
 }
 
 export async function createVerificationToken(userId, email = null) {
-  const token = crypto.randomBytes(32).toString('hex')
+  const token = crypto.randomBytes(32).toString("hex")
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
   const db = getDb()

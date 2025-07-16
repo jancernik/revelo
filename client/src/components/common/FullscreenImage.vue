@@ -1,10 +1,10 @@
 <script setup>
-import { gsap } from 'gsap'
-import { Flip } from 'gsap/Flip'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { gsap } from "gsap"
+import { Flip } from "gsap/Flip"
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
 
-import { useFullscreenImage } from '@/composables/useFullscreenImage'
-import { getVisibleElements, orderElementsByDistance } from '@/utils/ui'
+import { useFullscreenImage } from "@/composables/useFullscreenImage"
+import { getVisibleElements, orderElementsByDistance } from "@/utils/ui"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const {
@@ -20,18 +20,18 @@ const {
   updateRoute
 } = useFullscreenImage()
 
-const imageElement = useTemplateRef('image')
-const containerElement = useTemplateRef('container')
+const imageElement = useTemplateRef("image")
+const containerElement = useTemplateRef("container")
 
 const regularImageVersion = computed(() => {
-  return imageData.value?.versions?.find((v) => v.type === 'regular') || {}
+  return imageData.value?.versions?.find((v) => v.type === "regular") || {}
 })
 
 const hiddenElements = ref([])
 
 const handleClick = () => {
   if (isAnimating.value) return
-  history.pushState({}, '', '/')
+  history.pushState({}, "", "/")
   hide()
 }
 
@@ -43,11 +43,11 @@ const showWithFlipAnimation = () => {
     return
   }
 
-  imageElement.value.style.display = 'flex'
-  containerElement.value.style.display = 'flex'
+  imageElement.value.style.display = "flex"
+  containerElement.value.style.display = "flex"
 
   gsap.set(imageElement.value, { opacity: 0 })
-  gsap.set(imageElement.value.querySelector('img'), { visibility: 'hidden' })
+  gsap.set(imageElement.value.querySelector("img"), { visibility: "hidden" })
 
   for (const trigger of columnScrollTriggers.value) {
     if (trigger.enabled) {
@@ -55,7 +55,7 @@ const showWithFlipAnimation = () => {
     }
   }
 
-  const visibleCards = getVisibleElements('.image-card')
+  const visibleCards = getVisibleElements(".image-card")
   const orderedCards = orderElementsByDistance(visibleCards, thumbnailElement)
 
   const otherCards = orderedCards.filter((card) => card !== thumbnailElement)
@@ -63,7 +63,7 @@ const showWithFlipAnimation = () => {
 
   gsap.to(otherCards, {
     duration: 0.6,
-    ease: 'power2.out',
+    ease: "power2.out",
     opacity: 0,
     overwrite: true,
     scale: 0.8,
@@ -73,14 +73,14 @@ const showWithFlipAnimation = () => {
   const perform = () => {
     const state = Flip.getState([thumbnailElement, imageElement.value])
 
-    thumbnailElement.style.visibility = 'hidden'
+    thumbnailElement.style.visibility = "hidden"
     gsap.set(imageElement.value, { opacity: 1 })
-    gsap.set(imageElement.value.querySelector('img'), { visibility: 'visible' })
+    gsap.set(imageElement.value.querySelector("img"), { visibility: "visible" })
 
     Flip.from(state, {
       delay: 0.2,
       duration: 0.8,
-      ease: 'power3.inOut',
+      ease: "power3.inOut",
       onComplete: () => {
         isAnimating.value = false
       },
@@ -88,7 +88,7 @@ const showWithFlipAnimation = () => {
     })
   }
 
-  const img = imageElement.value.querySelector('img')
+  const img = imageElement.value.querySelector("img")
   if (img.complete) {
     perform()
   } else {
@@ -105,8 +105,8 @@ const hideWithFlipAnimation = () => {
 
   const state = Flip.getState([thumbnailElement, imageElement.value])
 
-  imageElement.value.style.display = 'none'
-  thumbnailElement.style.visibility = 'visible'
+  imageElement.value.style.display = "none"
+  thumbnailElement.style.visibility = "visible"
 
   for (const trigger of columnScrollTriggers.value) {
     if (!trigger.enabled) {
@@ -118,7 +118,7 @@ const hideWithFlipAnimation = () => {
     gsap.to(hiddenElements.value.reverse(), {
       delay: 0.2,
       duration: 0.6,
-      ease: 'power2.out',
+      ease: "power2.out",
       onComplete: () => {
         hiddenElements.value = []
       },
@@ -131,10 +131,10 @@ const hideWithFlipAnimation = () => {
 
   Flip.from(state, {
     duration: 0.8,
-    ease: 'power3.inOut',
+    ease: "power3.inOut",
     onComplete: () => {
-      imageElement.value.style.display = 'none'
-      containerElement.value.style.display = 'none'
+      imageElement.value.style.display = "none"
+      containerElement.value.style.display = "none"
       isAnimating.value = false
       smoother.value?.paused(false)
       completeHide()
@@ -145,10 +145,10 @@ const hideWithFlipAnimation = () => {
 }
 
 const showWithRegularAnimation = () => {
-  imageElement.value.style.display = 'flex'
-  containerElement.value.style.display = 'flex'
+  imageElement.value.style.display = "flex"
+  containerElement.value.style.display = "flex"
 
-  gsap.set(imageElement.value.querySelector('img'), { visibility: 'visible' })
+  gsap.set(imageElement.value.querySelector("img"), { visibility: "visible" })
 
   gsap.fromTo(
     imageElement.value,
@@ -158,7 +158,7 @@ const showWithRegularAnimation = () => {
     },
     {
       duration: 0.5,
-      ease: 'power3.inOut',
+      ease: "power3.inOut",
       onComplete: () => {
         isAnimating.value = false
       },
@@ -171,10 +171,10 @@ const showWithRegularAnimation = () => {
 const hideWithRegularAnimation = () => {
   gsap.to(imageElement.value, {
     duration: 0.5,
-    ease: 'power3.inOut',
+    ease: "power3.inOut",
     onComplete: () => {
-      imageElement.value.style.display = 'none'
-      containerElement.value.style.display = 'none'
+      imageElement.value.style.display = "none"
+      containerElement.value.style.display = "none"
       isAnimating.value = false
       completeHide()
     },
@@ -208,17 +208,17 @@ const hideImage = () => {
 watch(imageData, () => {
   if (imageData.value) {
     if (updateRoute.value) {
-      history.pushState({}, '', `/image/${imageData.value.id}`)
+      history.pushState({}, "", `/image/${imageData.value.id}`)
 
       if (flipId.value) {
         setPopstateCallback(() => {
           hideWithFlipAnimation()
-          history.pushState({}, '', '/')
+          history.pushState({}, "", "/")
         })
       } else {
         setPopstateCallback(() => {
           hideWithRegularAnimation()
-          history.pushState({}, '', '/')
+          history.pushState({}, "", "/")
         })
       }
     }

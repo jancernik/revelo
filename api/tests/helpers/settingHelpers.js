@@ -1,13 +1,13 @@
-import fs from 'fs/promises'
-import path from 'path'
-import { getDb } from '../testDb.js'
-import { SettingsTable } from '../../api/drizzle/schema.js'
-import { eq } from 'drizzle-orm'
+import fs from "fs/promises"
+import path from "path"
+import { getDb } from "../testDb.js"
+import { SettingsTable } from "../../drizzle/schema.js"
+import { eq } from "drizzle-orm"
 
 export async function createTestSettingsFile(content) {
-  const tempDir = path.join(process.cwd(), 'temp')
+  const tempDir = path.join(process.cwd(), "temp")
   await fs.mkdir(tempDir, { recursive: true })
-  const settingsPath = path.join(tempDir, 'settings.yml')
+  const settingsPath = path.join(tempDir, "settings.yml")
   await fs.writeFile(settingsPath, content)
   return settingsPath
 }

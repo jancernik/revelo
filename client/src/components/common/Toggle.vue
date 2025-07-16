@@ -5,7 +5,7 @@ defineProps({
     type: Boolean
   },
   label: {
-    default: '',
+    default: "",
     type: String
   },
   modelValue: {
@@ -14,10 +14,10 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(["update:modelValue"])
 
 const handleToggle = (event) => {
-  emit('update:modelValue', event.target.checked)
+  emit("update:modelValue", event.target.checked)
 }
 </script>
 
@@ -96,7 +96,7 @@ const handleToggle = (event) => {
   }
 
   .label-text {
-    @include text('sm');
+    @include text("sm");
     color: var(--foreground);
     transition: $transition;
   }

@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia"
 
-import api from '@/utils/api'
+import api from "@/utils/api"
 
-export const useSettingsStore = defineStore('settings', {
+export const useSettingsStore = defineStore("settings", {
   actions: {
     async fetchSettings(force = false) {
       if (this.loading && !force) return
@@ -12,13 +12,13 @@ export const useSettingsStore = defineStore('settings', {
       this.error = null
 
       try {
-        const response = await api.get('/settings')
+        const response = await api.get("/settings")
 
         this.settingsArray = response.data
         this.initialized = true
       } catch (error) {
         this.error = error.response?.data?.message || error.message
-        console.error('Failed to fetch settings:', error)
+        console.error("Failed to fetch settings:", error)
         throw error
       } finally {
         this.loading = false

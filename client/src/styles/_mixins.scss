@@ -1,6 +1,6 @@
-@use './variables' as *;
-@use 'sass:list';
-@use 'sass:map';
+@use "./variables" as *;
+@use "sass:list";
+@use "sass:map";
 
 @mixin flex($direction: row, $x: flex-start, $y: flex-start) {
   display: flex;
@@ -24,7 +24,7 @@
   height: 100%;
 }
 
-@mixin text($size: 'base') {
+@mixin text($size: "base") {
   $font-data: map.get($font-sizes, $size);
   font-size: list.nth($font-data, 1);
   line-height: list.nth($font-data, 2);

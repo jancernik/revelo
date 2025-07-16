@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
-import fs from "fs/promises";
-import path from "path";
-import sharp from "sharp";
+import { eq } from "drizzle-orm"
+import fs from "fs/promises"
+import path from "path"
+import sharp from "sharp"
 
-import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js";
-import BaseModel from "./BaseModel.js";
+import { ImagesTable, ImageVersionsTable } from "../drizzle/schema.js"
+import BaseModel from "./BaseModel.js"
 
 const WITH_VERSIONS_QUERY = {
   columns: {
@@ -28,83 +28,83 @@ const WITH_VERSIONS_QUERY = {
       }
     }
   }
-};
+}
 
-const uploadsDir = path.join("uploads");
+const uploadsDir = path.join("uploads")
 
 class Image extends BaseModel {
   constructor() {
-    super(ImagesTable);
+    super(ImagesTable)
   }
 
   async createWithVersions(file, data) {
     return await this.db.transaction(async (tx) => {
-      const result = await tx.insert(this.table).values(data).returning();
-      const image = result[0];
+      const result = await tx.insert(this.table).values(data).returning()
+      const image = result[0]
 
-      const imageDir = path.join(uploadsDir, image.id.toString());
-      await fs.mkdir(imageDir, { recursive: true });
+      const imageDir = path.join(uploadsDir, image.id.toString())
+      await fs.mkdir(imageDir, { recursive: true })
 
-      const versions = await this.#createImageVersions(tx, file, image.id, imageDir);
+      const versions = await this.#createImageVersions(tx, file, image.id, imageDir)
 
       return {
         ...image,
         versions
-      };
-    });
+      }
+    })
   }
 
   async findAllByVersion(version, options = {}) {
-    const { columns, limit, orderBy } = options;
+    const { columns, limit, orderBy } = options
 
     const query = this.db.query.ImageVersionsTable.findMany({
       columns: columns || undefined,
       limit: limit || undefined,
       orderBy: orderBy || undefined,
       where: eq(ImageVersionsTable.type, version)
-    });
+    })
 
-    return await query;
+    return await query
   }
 
   async findAllWithVersions(options = {}) {
-    const { limit, offset, orderBy, where } = options;
+    const { limit, offset, orderBy, where } = options
 
     const queryOptions = {
       ...WITH_VERSIONS_QUERY,
       orderBy: orderBy || undefined,
       where: where || undefined
-    };
+    }
 
     if (limit !== undefined) {
-      queryOptions.limit = limit;
+      queryOptions.limit = limit
     }
 
     if (offset !== undefined) {
-      queryOptions.offset = offset;
+      queryOptions.offset = offset
     }
 
-    return await this.db.query.ImagesTable.findMany(queryOptions);
+    return await this.db.query.ImagesTable.findMany(queryOptions)
   }
 
   async findByIdWithVersions(id) {
     const result = await this.db.query.ImagesTable.findFirst({
       ...WITH_VERSIONS_QUERY,
       where: eq(this.table.id, id)
-    });
+    })
 
-    return result || null;
+    return result || null
   }
 
   async #createImageVersions(tx, file, imageId, imageDir) {
-    const versions = [];
-    const originalFilePath = file.path;
-    const originalFilename = `original.${file.originalname.split(".").pop()}`;
-    const originalOutputPath = path.join(imageDir, originalFilename);
-    await sharp(originalFilePath).rotate().toFile(originalOutputPath);
+    const versions = []
+    const originalFilePath = file.path
+    const originalFilename = `original.${file.originalname.split(".").pop()}`
+    const originalOutputPath = path.join(imageDir, originalFilename)
+    await sharp(originalFilePath).rotate().toFile(originalOutputPath)
 
-    const metadata = await sharp(originalOutputPath).metadata();
-    const isVertical = metadata.height > metadata.width;
+    const metadata = await sharp(originalOutputPath).metadata()
+    const isVertical = metadata.height > metadata.width
 
     const sizes = {
       original: {
@@ -123,15 +123,15 @@ class Image extends BaseModel {
         height: isVertical ? Math.round(150 * (metadata.height / metadata.width)) : 150,
         width: isVertical ? 150 : Math.round(150 * (metadata.width / metadata.height))
       }
-    };
+    }
 
     for (const [type, size] of Object.entries(sizes)) {
-      const filename = `${type}.${file.originalname.split(".").pop()}`;
-      const outputPath = path.join(imageDir, filename);
+      const filename = `${type}.${file.originalname.split(".").pop()}`
+      const outputPath = path.join(imageDir, filename)
 
       if (type === "original") {
         if (outputPath !== originalOutputPath) {
-          await fs.copyFile(originalOutputPath, outputPath);
+          await fs.copyFile(originalOutputPath, outputPath)
         }
       } else {
         await sharp(originalOutputPath)
@@ -141,11 +141,11 @@ class Image extends BaseModel {
             width: size.width,
             withoutEnlargement: true
           })
-          .toFile(outputPath);
+          .toFile(outputPath)
       }
 
-      const stats = await fs.stat(outputPath);
-      const outputMeta = await sharp(outputPath).metadata();
+      const stats = await fs.stat(outputPath)
+      const outputMeta = await sharp(outputPath).metadata()
 
       const versionData = {
         height: outputMeta.height,
@@ -155,22 +155,22 @@ class Image extends BaseModel {
         size: stats.size,
         type,
         width: outputMeta.width
-      };
+      }
 
-      const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning();
+      const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning()
 
-      versions.push(versionResult[0]);
+      versions.push(versionResult[0])
     }
-    await fs.unlink(originalFilePath);
+    await fs.unlink(originalFilePath)
 
     if (
       originalOutputPath !== path.join(imageDir, `original.${file.originalname.split(".").pop()}`)
     ) {
-      await fs.unlink(originalOutputPath);
+      await fs.unlink(originalOutputPath)
     }
 
-    return versions;
+    return versions
   }
 }
 
-export default new Image();
+export default new Image()

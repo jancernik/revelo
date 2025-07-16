@@ -1,7 +1,7 @@
 <script setup>
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
 
-import Icon from '@/components/common/Icon.vue'
+import Icon from "@/components/common/Icon.vue"
 
 const props = defineProps({
   disabled: {
@@ -23,24 +23,24 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
-const switchElement = useTemplateRef('switch')
+const emit = defineEmits(["update:modelValue"])
+const switchElement = useTemplateRef("switch")
 
 onMounted(() => {
   if (!props.modelValue && props.options.length > 0) {
-    emit('update:modelValue', props.options[0].value)
+    emit("update:modelValue", props.options[0].value)
   }
 
   nextTick(() => {
     setTimeout(() => {
       if (switchElement.value) {
         const indicator = switchElement.value
-        indicator.style.setProperty('--transition', 'none')
+        indicator.style.setProperty("--transition", "none")
 
         updateIndicatorPosition()
 
         requestAnimationFrame(() => {
-          indicator.style.removeProperty('--transition')
+          indicator.style.removeProperty("--transition")
         })
       }
     }, 0)
@@ -55,7 +55,7 @@ const updateIndicatorPosition = () => {
   if (!switchElement.value || valueIndex.value === -1) return
 
   const currentIndex = valueIndex.value
-  const optionElements = switchElement.value.querySelectorAll('.option')
+  const optionElements = switchElement.value.querySelectorAll(".option")
 
   if (optionElements.length === 0) return
 
@@ -68,10 +68,10 @@ const updateIndicatorPosition = () => {
       position += optionElements[i].offsetHeight
     }
 
-    switchElement.value.style.setProperty('--indicator-width', 'calc(100% - 0.25rem)')
-    switchElement.value.style.setProperty('--indicator-height', `${height}px`)
-    switchElement.value.style.setProperty('--indicator-x', '0px')
-    switchElement.value.style.setProperty('--indicator-y', `${position}px`)
+    switchElement.value.style.setProperty("--indicator-width", "calc(100% - 0.25rem)")
+    switchElement.value.style.setProperty("--indicator-height", `${height}px`)
+    switchElement.value.style.setProperty("--indicator-x", "0px")
+    switchElement.value.style.setProperty("--indicator-y", `${position}px`)
   } else {
     const currentElement = optionElements[currentIndex]
     const width = currentElement.offsetWidth
@@ -81,17 +81,17 @@ const updateIndicatorPosition = () => {
       position += optionElements[i].offsetWidth
     }
 
-    switchElement.value.style.setProperty('--indicator-width', `${width}px`)
-    switchElement.value.style.setProperty('--indicator-height', 'calc(100% - 0.25rem)')
-    switchElement.value.style.setProperty('--indicator-x', `${position}px`)
-    switchElement.value.style.setProperty('--indicator-y', '0px')
+    switchElement.value.style.setProperty("--indicator-width", `${width}px`)
+    switchElement.value.style.setProperty("--indicator-height", "calc(100% - 0.25rem)")
+    switchElement.value.style.setProperty("--indicator-x", `${position}px`)
+    switchElement.value.style.setProperty("--indicator-y", "0px")
   }
 }
 
 watch(valueIndex, () => nextTick(updateIndicatorPosition))
 
 const handleChange = (event) => {
-  emit('update:modelValue', event.target.value)
+  emit("update:modelValue", event.target.value)
 }
 
 const handleKeyDown = (event) => {
@@ -101,22 +101,22 @@ const handleKeyDown = (event) => {
   const maxIndex = props.options.length - 1
 
   if (
-    (!props.vertical && event.key === 'ArrowLeft') ||
-    (props.vertical && event.key === 'ArrowUp')
+    (!props.vertical && event.key === "ArrowLeft") ||
+    (props.vertical && event.key === "ArrowUp")
   ) {
     event.preventDefault()
     const newIndex = currentIndex === 0 ? maxIndex : currentIndex - 1
-    emit('update:modelValue', props.options[newIndex].value)
+    emit("update:modelValue", props.options[newIndex].value)
   }
 
   if (
-    event.key === 'Enter' ||
-    (!props.vertical && event.key === 'ArrowRight') ||
-    (props.vertical && event.key === 'ArrowDown')
+    event.key === "Enter" ||
+    (!props.vertical && event.key === "ArrowRight") ||
+    (props.vertical && event.key === "ArrowDown")
   ) {
     event.preventDefault()
     const newIndex = currentIndex === maxIndex ? 0 : currentIndex + 1
-    emit('update:modelValue', props.options[newIndex].value)
+    emit("update:modelValue", props.options[newIndex].value)
   }
 }
 </script>
@@ -196,7 +196,7 @@ const handleKeyDown = (event) => {
   }
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0.125rem;
     left: 0.125rem;

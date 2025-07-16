@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue"
 
 const props = defineProps({
   value: {
@@ -14,7 +14,7 @@ const roundedValue = computed(() => {
 })
 
 const progressStyle = computed(() => {
-  return { '--progress-value': roundedValue.value / 100 }
+  return { "--progress-value": roundedValue.value / 100 }
 })
 </script>
 
@@ -34,7 +34,7 @@ const progressStyle = computed(() => {
 
   &::before {
     @include fill-parent;
-    content: '';
+    content: "";
     top: 0;
     left: 0;
     position: absolute;

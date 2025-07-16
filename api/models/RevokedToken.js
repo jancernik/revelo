@@ -1,10 +1,10 @@
-import { RevokedTokensTable } from "../drizzle/schema.js";
-import BaseModel from "./BaseModel.js";
+import { RevokedTokensTable } from "../drizzle/schema.js"
+import BaseModel from "./BaseModel.js"
 
 class RevokedToken extends BaseModel {
   constructor() {
-    super(RevokedTokensTable);
+    super(RevokedTokensTable)
   }
 }
 
-export default new RevokedToken();
+export default new RevokedToken()

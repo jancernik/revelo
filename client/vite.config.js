@@ -1,32 +1,29 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import "dotenv/config";
+import { fileURLToPath, URL } from "node:url"
+import { defineConfig } from "vite"
+import vue from "@vitejs/plugin-vue"
+import vueDevTools from "vite-plugin-vue-devtools"
+import "dotenv/config"
 
-const requiredEnvVars = ["VITE_API_BASE_URL", "VITE_CLIENT_BASE_URL"];
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+const requiredEnvVars = ["VITE_API_BASE_URL", "VITE_CLIENT_BASE_URL"]
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
 
 if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
-  process.exit(1);
+  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
+  process.exit(1)
 }
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+  plugins: [vue(), vueDevTools()],
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/styles/_index.scss" as *;`,
+        additionalData: `@use "@/styles/_index.scss" as *;`
       }
     }
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    },
-  },
+      "@": fileURLToPath(new URL("./src", import.meta.url))
+    }
+  }
 })

@@ -8,16 +8,16 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['load', 'click'])
+const emit = defineEmits(["load", "click"])
 
 const getImageVersion = (type) => {
   return props.image?.versions?.find((v) => v.type === type)
 }
 
-const thumbnail = getImageVersion('thumbnail')
+const thumbnail = getImageVersion("thumbnail")
 
 const handleClick = () => {
-  emit('click', props.image, `img-${props.image.id}`)
+  emit("click", props.image, `img-${props.image.id}`)
 }
 </script>
 

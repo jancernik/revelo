@@ -1,14 +1,14 @@
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue"
 
-import Input from '@/components/common/Input.vue'
+import Input from "@/components/common/Input.vue"
 
-const basicValue = ref('')
-const emailValue = ref('')
-const passwordValue = ref('')
-const priceValue = ref('')
-const searchValue = ref('')
-const errorValue = ref('')
+const basicValue = ref("")
+const emailValue = ref("")
+const passwordValue = ref("")
+const priceValue = ref("")
+const searchValue = ref("")
+const errorValue = ref("")
 </script>
 
 <template>

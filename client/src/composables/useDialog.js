@@ -1,28 +1,28 @@
-import { reactive } from 'vue'
+import { reactive } from "vue"
 
 const dialogState = reactive({
   actions: [],
-  description: '',
+  description: "",
   dismissible: true,
   isOpen: false,
-  title: ''
+  title: ""
 })
 
 export function useDialog() {
   const show = (options = {}) => {
     Object.assign(dialogState, {
       actions: options.actions || [],
-      description: options.description || '',
+      description: options.description || "",
       dismissible: options.dismissible !== false,
       isOpen: true,
-      title: options.title || ''
+      title: options.title || ""
     })
   }
 
   const hide = () => {
     dialogState.isOpen = false
-    dialogState.title = ''
-    dialogState.description = ''
+    dialogState.title = ""
+    dialogState.description = ""
     dialogState.dismissible = true
     dialogState.actions = []
   }

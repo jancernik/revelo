@@ -1,12 +1,12 @@
 <script setup>
-import { gsap } from 'gsap'
-import { ScrollSmoother } from 'gsap/ScrollSmoother'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { gsap } from "gsap"
+import { ScrollSmoother } from "gsap/ScrollSmoother"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { nextTick, onMounted, onUnmounted, useTemplateRef } from "vue"
 
 const props = defineProps({
   class: {
-    default: '',
+    default: "",
     type: String
   },
   smoothness: {
@@ -19,8 +19,8 @@ const props = defineProps({
   }
 })
 
-const smoothWrapper = useTemplateRef('smooth-wrapper')
-const smoothContent = useTemplateRef('smooth-content')
+const smoothWrapper = useTemplateRef("smooth-wrapper")
+const smoothContent = useTemplateRef("smooth-content")
 
 let smoother = null
 

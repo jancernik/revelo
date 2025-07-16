@@ -1,20 +1,20 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 
 const INVERTED = true
-const FREQUENCY = '0.002 0.003'
+const FREQUENCY = "0.002 0.003"
 const OCTAVES = 4
 const STEPS = 500
 const SEED = Math.floor(Math.random() * 10000) + 1
 
 const progress = ref(0)
-const svgElement = useTemplateRef('svg')
+const svgElement = useTemplateRef("svg")
 const observer = ref(null)
 
 const updateFromDataAttribute = () => {
   if (!svgElement.value) return
 
-  const dataProgress = svgElement.value.getAttribute('data-dissolve-progress')
+  const dataProgress = svgElement.value.getAttribute("data-dissolve-progress")
   if (dataProgress !== null) {
     const newProgress = parseFloat(dataProgress)
     if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 1) {
@@ -30,14 +30,14 @@ onMounted(() => {
 
   observer.value = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'data-dissolve-progress') {
+      if (mutation.type === "attributes" && mutation.attributeName === "data-dissolve-progress") {
         updateFromDataAttribute()
       }
     })
   })
 
   observer.value.observe(svgElement.value, {
-    attributeFilter: ['data-dissolve-progress'],
+    attributeFilter: ["data-dissolve-progress"],
     attributes: true
   })
 })
@@ -58,7 +58,7 @@ const tableValues = computed(() => {
     values.push(INVERTED ? 1 - result : result)
   }
 
-  return values.join(' ')
+  return values.join(" ")
 })
 </script>
 

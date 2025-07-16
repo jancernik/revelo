@@ -1,11 +1,11 @@
 <script setup>
-import { nextTick, onMounted, useTemplateRef } from 'vue'
+import { nextTick, onMounted, useTemplateRef } from "vue"
 
-import Icon from '@/components/common/Icon.vue'
+import Icon from "@/components/common/Icon.vue"
 
 const props = defineProps({
   description: {
-    default: '',
+    default: "",
     type: String
   },
   disabled: {
@@ -13,57 +13,57 @@ const props = defineProps({
     type: Boolean
   },
   error: {
-    default: '',
+    default: "",
     type: String
   },
   icon: {
-    default: '',
+    default: "",
     type: String
   },
   iconPosition: {
-    default: 'left',
+    default: "left",
     type: String,
-    validator: (value) => ['left', 'right'].includes(value)
+    validator: (value) => ["left", "right"].includes(value)
   },
   label: {
-    default: '',
+    default: "",
     type: String
   },
   modelValue: {
-    default: '',
+    default: "",
     type: [String, Number]
   },
   placeholder: {
-    default: '',
+    default: "",
     type: String
   },
   type: {
-    default: 'text',
+    default: "text",
     type: String
   },
   unit: {
-    default: '',
+    default: "",
     type: String
   },
   unitPosition: {
-    default: 'right',
+    default: "right",
     type: String,
-    validator: (value) => ['left', 'right'].includes(value)
+    validator: (value) => ["left", "right"].includes(value)
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
-const inputUnit = useTemplateRef('input-unit')
-const inputContainer = useTemplateRef('input-container')
+const emit = defineEmits(["update:modelValue"])
+const inputUnit = useTemplateRef("input-unit")
+const inputContainer = useTemplateRef("input-container")
 
 const handleInput = (event) => {
-  emit('update:modelValue', event.target.value)
+  emit("update:modelValue", event.target.value)
 }
 
 const updateUnitWidth = () => {
   if (inputUnit.value && inputContainer.value && props.unit) {
     const unitWidth = inputUnit.value.offsetWidth
-    inputContainer.value.style.setProperty('--unit-width', `${unitWidth}px`)
+    inputContainer.value.style.setProperty("--unit-width", `${unitWidth}px`)
   }
 }
 
@@ -127,7 +127,7 @@ onMounted(() => {
   width: 100%;
 
   label {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-medium);
     color: var(--secondary-foreground);
   }
@@ -179,7 +179,7 @@ onMounted(() => {
 
   input {
     font-family: Geist, Arial, sans-serif;
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-normal);
     width: 100%;
     padding: 0.5rem 1rem;
@@ -222,7 +222,7 @@ onMounted(() => {
   .input-unit {
     position: absolute;
     color: var(--input);
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-normal);
     top: 50%;
     transform: translateY(-50%);
@@ -241,13 +241,13 @@ onMounted(() => {
   }
 
   .error {
-    @include text('xs');
+    @include text("xs");
     color: var(--danger);
     font-weight: var(--font-normal);
   }
 
   .description {
-    @include text('xs');
+    @include text("xs");
     color: var(--input);
     font-weight: var(--font-normal);
   }

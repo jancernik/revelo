@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref } from "vue"
 
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from "@/stores/auth"
 
 const authStore = useAuthStore()
 const showMenu = ref(false)
