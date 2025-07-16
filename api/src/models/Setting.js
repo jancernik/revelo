@@ -2,8 +2,8 @@ import fs from "fs"
 import yaml from "js-yaml"
 import path from "path"
 
-import { SettingsTable } from "../drizzle/schema.js"
-import { AppError, NotFoundError, ValidationError } from "../errors.js"
+import { AppError, NotFoundError, ValidationError } from "../core/errors.js"
+import { SettingsTable } from "../database/schema.js"
 import { createSettingValueSchema } from "../validation/settingSchemas.js"
 import BaseModel from "./BaseModel.js"
 
@@ -154,7 +154,7 @@ class Setting extends BaseModel {
 
   #loadConfigFile() {
     try {
-      const settingsPath = path.resolve(process.cwd(), "settings.yml")
+      const settingsPath = path.resolve(process.cwd(), "src/config/settings.yml")
       const fileContents = fs.readFileSync(settingsPath, "utf8")
       return yaml.load(fileContents)
     } catch (error) {

@@ -1,7 +1,5 @@
-import path from "path"
-
-import { AppError, NotFoundError, ValidationError } from "../../errors.js"
-import Setting from "../../models/Setting.js"
+import { AppError, NotFoundError, ValidationError } from "../../src/core/errors.js"
+import Setting from "../../src/models/Setting.js"
 import {
   cleanupTestSettingsFile,
   createTestSettingsFile,
@@ -11,21 +9,21 @@ import {
 import { TEST_SETTINGS } from "../testFixtures.js"
 
 describe("Setting Model", () => {
-  let testSettingsPath
+  let tempDir
   let originalCwd
 
   beforeAll(async () => {
     originalCwd = process.cwd
-    testSettingsPath = await createTestSettingsFile(TEST_SETTINGS)
+    tempDir = await createTestSettingsFile(TEST_SETTINGS)
   })
 
   afterAll(async () => {
     process.cwd = originalCwd
-    await cleanupTestSettingsFile(testSettingsPath)
+    await cleanupTestSettingsFile()
   })
 
   beforeEach(async () => {
-    process.cwd = () => path.dirname(testSettingsPath)
+    process.cwd = () => tempDir
     Setting.fileSettings = []
     Setting.dbSettings = []
     Setting.initialized = false

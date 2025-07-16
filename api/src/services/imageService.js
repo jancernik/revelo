@@ -5,7 +5,7 @@ import path from "path"
 import sharp from "sharp"
 import { v4 as uuid } from "uuid"
 
-import { FileProcessingError, NotFoundError } from "../errors.js"
+import { FileProcessingError, NotFoundError } from "../core/errors.js"
 import Image from "../models/Image.js"
 
 const uploadsDir = path.join("uploads")

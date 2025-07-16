@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
-import * as schema from "../drizzle/schema.js"
+import * as schema from "../src/database/schema.js"
 
 let client = null
 let db = null

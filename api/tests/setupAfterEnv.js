@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach } from "@jest/globals"
 
-import { closeDb } from "../db.js"
-import { clearTables, connect, disconnect } from "./testDb.js"
+import { closeDb } from "../src/database.js"
+import { clearTables, connect, disconnect } from "./testDatabase.js"
 
 beforeAll(async () => {
   await connect()

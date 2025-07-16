@@ -1,4 +1,4 @@
-import { RevokedTokensTable } from "../drizzle/schema.js"
+import { RevokedTokensTable } from "../database/schema.js"
 import BaseModel from "./BaseModel.js"
 
 class RevokedToken extends BaseModel {

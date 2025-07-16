@@ -4,8 +4,8 @@ import fs from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
 
-import { ImagesTable, ImageVersionsTable } from "../../drizzle/schema.js"
-import Image from "../../models/Image.js"
+import { ImagesTable, ImageVersionsTable } from "../../src/database/schema.js"
+import Image from "../../src/models/Image.js"
 import { createImage, createImages } from "../testHelpers.js"
 
 const __filename = fileURLToPath(import.meta.url)
@@ -28,7 +28,7 @@ const createMockFile = (filename = "test.jpg") => {
     "base64"
   )
 
-  const tempDir = path.join(__dirname, "../../temp")
+  const tempDir = path.join(process.cwd(), "temp")
   const tempFilePath = path.join(tempDir, filename)
 
   return {
@@ -47,7 +47,7 @@ const createTempFile = async (file) => {
 }
 
 const cleanupTempFiles = async () => {
-  const tempDir = path.join(__dirname, "../../temp")
+  const tempDir = path.join(process.cwd(), "temp")
   try {
     await fs.rm(tempDir, { recursive: true, force: true })
   } catch {}

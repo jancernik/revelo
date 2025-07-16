@@ -1,6 +1,6 @@
 import { count, eq, sql } from "drizzle-orm"
 
-import { db } from "../db.js"
+import { db } from "../database.js"
 
 export default class BaseModel {
   constructor(table) {

@@ -4,13 +4,13 @@ import express from "express"
 import fs from "fs"
 import morgan from "morgan"
 
-import { config } from "./config.js"
+import { config } from "./config/environment.js"
 import { errorHandler, notFoundHandler } from "./middlewares/errorMiddleware.js"
 import authRoutes from "./routes/authRoutes.js"
 import imageRoutes from "./routes/imageRoutes.js"
 import settingRoutes from "./routes/settingRoutes.js"
 
-export function createApi(options = {}) {
+export function createServer(options = {}) {
   const { enableLogging = true, uploadsDir = "uploads" } = options
 
   const app = express()

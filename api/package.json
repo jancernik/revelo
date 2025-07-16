@@ -2,9 +2,9 @@
   "name": "api",
   "version": "1.0.0",
   "type": "module",
-  "main": "api.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon api.js",
+    "dev": "nodemon server.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' NODE_ENV=test jest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node drizzle/migrate.js",

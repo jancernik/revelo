@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
-import { EmailVerificationTokensTable, ImagesTable, UserTables } from "../drizzle/schema.js"
-import { generateAccess } from "../utils/tokenUtils.js"
-import { getDb } from "./testDb.js"
+import { EmailVerificationTokensTable, ImagesTable, UserTables } from "../src/database/schema.js"
+import { generateAccess } from "../src/utils/tokenUtils.js"
+import { getDb } from "./testDatabase.js"
 
 const baseUserData = (data = {}) => {
   const timestamp = Date.now()

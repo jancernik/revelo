@@ -1,7 +1,7 @@
-import { config } from "./config.js"
-import { createApi } from "./createApi.js"
+import { config } from "./src/config/environment.js"
+import { createServer } from "./src/createServer.js"
 
-const app = createApi({
+const app = createServer({
   enableLogging: true,
   uploadsDir: "uploads"
 })

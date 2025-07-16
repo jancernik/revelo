@@ -2,21 +2,23 @@ import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 
-import { SettingsTable } from "../../drizzle/schema.js"
-import { getDb } from "../testDb.js"
+import { SettingsTable } from "../../src/database/schema.js"
+import { getDb } from "../testDatabase.js"
 
 export async function createTestSettingsFile(content) {
   const tempDir = path.join(process.cwd(), "temp")
-  await fs.mkdir(tempDir, { recursive: true })
-  const settingsPath = path.join(tempDir, "settings.yml")
+  const settingsDir = path.join(tempDir, "src/config")
+  await fs.mkdir(settingsDir, { recursive: true })
+  const settingsPath = path.join(settingsDir, "settings.yml")
   await fs.writeFile(settingsPath, content)
-  return settingsPath
+  return tempDir
 }
 
-export async function cleanupTestSettingsFile(filePath) {
+export async function cleanupTestSettingsFile() {
+  const settingsDir = path.join(process.cwd(), "temp/src/config")
+  const settingsPath = path.join(settingsDir, "settings.yml")
   try {
-    const tempDir = path.dirname(filePath)
-    await fs.rm(tempDir, { recursive: true, force: true })
+    await fs.rm(settingsPath, { recursive: true, force: true })
   } catch {}
 }
 

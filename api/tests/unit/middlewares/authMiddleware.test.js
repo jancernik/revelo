@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals"
 import jwt from "jsonwebtoken"
 
-import { config } from "../../../config.js"
-import { NotFoundError, UnauthorizedError } from "../../../errors.js"
-import { auth } from "../../../middlewares/authMiddleware.js"
-import User from "../../../models/User.js"
+import { config } from "../../../src/config/environment.js"
+import { NotFoundError, UnauthorizedError } from "../../../src/core/errors.js"
+import { auth } from "../../../src/middlewares/authMiddleware.js"
+import User from "../../../src/models/User.js"
 
 describe("Auth Middleware", () => {
   let req, res, next

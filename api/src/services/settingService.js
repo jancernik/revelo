@@ -1,4 +1,4 @@
-import { NotFoundError, ValidationError } from "../errors.js"
+import { NotFoundError, ValidationError } from "../core/errors.js"
 import Setting from "../models/Setting.js"
 
 export const getSettings = async (opts) => {

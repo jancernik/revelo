@@ -4,12 +4,12 @@ import { fileURLToPath } from "url"
 import { v4 as uuid } from "uuid"
 
 import { createAccessToken, createAdminUser } from "../helpers/authHelpers.js"
-import { createTestApi } from "../testApi.js"
 import { createImage, createImages } from "../testHelpers.js"
+import { createTestServer } from "../testServer.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const api = createTestApi()
+const api = createTestServer()
 
 const mockImageBuffer = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",

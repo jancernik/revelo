@@ -1,10 +1,10 @@
 import { describe, expect, it } from "@jest/globals"
 import request from "supertest"
 
-import { createTestApi } from "../testApi.js"
 import { createUser, createVerificationToken } from "../testHelpers.js"
+import { createTestServer } from "../testServer.js"
 
-const api = createTestApi()
+const api = createTestServer()
 
 describe("Auth Endpoints", () => {
   describe("POST /signup", () => {

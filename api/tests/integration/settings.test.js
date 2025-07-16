@@ -1,24 +1,23 @@
 import { beforeAll, describe, expect, it } from "@jest/globals"
-import path from "path"
 import request from "supertest"
 
-import Setting from "../../models/Setting.js"
+import Setting from "../../src/models/Setting.js"
 import { createAccessToken, createAdminUser, createRegularUser } from "../helpers/authHelpers.js"
 import { cleanupTestSettingsFile, createTestSettingsFile } from "../helpers/settingHelpers.js"
-import { createTestApi } from "../testApi.js"
 import { TEST_SETTINGS } from "../testFixtures.js"
+import { createTestServer } from "../testServer.js"
 
-const api = createTestApi()
+const api = createTestServer()
 
 describe("Settings Endpoints", () => {
-  let testSettingsPath
+  let tempDir
   let originalCwd
   let regularUserToken
   let adminUserToken
 
   beforeAll(async () => {
     originalCwd = process.cwd
-    testSettingsPath = await createTestSettingsFile(TEST_SETTINGS)
+    tempDir = await createTestSettingsFile(TEST_SETTINGS)
 
     const regularUser = await createRegularUser()
     const adminUser = await createAdminUser()
@@ -29,11 +28,11 @@ describe("Settings Endpoints", () => {
 
   afterAll(async () => {
     process.cwd = originalCwd
-    await cleanupTestSettingsFile(testSettingsPath)
+    await cleanupTestSettingsFile()
   })
 
   beforeEach(async () => {
-    process.cwd = () => path.dirname(testSettingsPath)
+    process.cwd = () => tempDir
     Setting.fileSettings = []
     Setting.dbSettings = []
     Setting.initialized = false

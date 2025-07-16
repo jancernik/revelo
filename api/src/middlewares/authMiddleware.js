@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 
-import { config } from "../config.js"
-import { NotFoundError, UnauthorizedError } from "../errors.js"
+import { config } from "../config/environment.js"
+import { NotFoundError, UnauthorizedError } from "../core/errors.js"
 import User, { userSerializer } from "../models/User.js"
 
 const extractToken = (req) => {

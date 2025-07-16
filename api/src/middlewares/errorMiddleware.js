@@ -1,5 +1,5 @@
-import { config } from "../config.js"
-import { NotFoundError } from "../errors.js"
+import { config } from "../config/environment.js"
+import { NotFoundError } from "../core/errors.js"
 
 export const errorHandler = (error, req, res, _next) => {
   const statusCode = error.statusCode || 500

@@ -30,4 +30,5 @@ coverage
 
 uploads/*
 api/uploads/*
+api/temp/*
 clip/__pycache__/*

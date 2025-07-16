@@ -1,6 +1,11 @@
 import { eq } from "drizzle-orm"
 
-import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../errors.js"
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError
+} from "../core/errors.js"
 import EmailVerificationToken from "../models/EmailVerificationToken.js"
 import RevokedToken from "../models/RevokedToken.js"
 import Setting from "../models/Setting.js"

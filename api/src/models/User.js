@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs"
 import { eq } from "drizzle-orm"
 
-import { UserTables } from "../drizzle/schema.js"
+import { UserTables } from "../database/schema.js"
 import BaseModel from "./BaseModel.js"
 
 class User extends BaseModel {

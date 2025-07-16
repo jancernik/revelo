@@ -1,4 +1,4 @@
-import { ValidationError } from "../errors.js"
+import { ValidationError } from "../core/errors.js"
 
 export const validate = (schemas) => {
   return (req, res, next) => {
