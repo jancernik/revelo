@@ -1,6 +1,6 @@
 import { computed } from "vue"
 
-import { useSettingsStore } from "@/stores/settings"
+import { useSettingsStore } from "#src/stores/settings"
 
 export function useSettings() {
   const store = useSettingsStore()

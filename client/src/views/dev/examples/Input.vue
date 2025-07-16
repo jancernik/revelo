@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue"
 
-import Input from "@/components/common/Input.vue"
+import Input from "#src/components/common/Input.vue"
 
 const basicValue = ref("")
 const emailValue = ref("")

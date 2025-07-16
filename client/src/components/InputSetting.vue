@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from "vue"
 
-import Button from "@/components/common/Button.vue"
-import Input from "@/components/common/Input.vue"
-import { useDialog } from "@/composables/useDialog"
+import Button from "#src/components/common/Button.vue"
+import Input from "#src/components/common/Input.vue"
+import { useDialog } from "#src/composables/useDialog"
 
 const { show } = useDialog()
 

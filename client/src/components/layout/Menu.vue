@@ -3,9 +3,9 @@ import gsap from "gsap"
 import { computed, nextTick, onMounted, reactive, useTemplateRef } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import ThemeToggler from "@/components/ThemeToggler.vue"
-import { useAuthStore } from "@/stores/auth"
-import { cssVar } from "@/utils/ui"
+import ThemeToggler from "#src/components/ThemeToggler.vue"
+import { useAuthStore } from "#src/stores/auth"
+import { cssVar } from "#src/utils/ui"
 
 const route = useRoute()
 const router = useRouter()

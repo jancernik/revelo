@@ -1,7 +1,7 @@
 <script setup>
-import Button from "@/components/common/Button.vue"
-import Icon from "@/components/common/Icon.vue"
-import { useToast } from "@/composables/useToast"
+import Button from "#src/components/common/Button.vue"
+import Icon from "#src/components/common/Icon.vue"
+import { useToast } from "#src/composables/useToast"
 
 const ICONS = {
   error: "AlertCircle",

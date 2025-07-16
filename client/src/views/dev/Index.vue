@@ -2,7 +2,7 @@
 import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import Sidebar from "@/views/dev/Sidebar.vue"
+import Sidebar from "#src/views/dev/Sidebar.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -14,7 +14,7 @@ let userClicked = false
 
 const loadComponents = async () => {
   try {
-    const modules = import.meta.glob("@/views/dev/examples/*.vue", { eager: true })
+    const modules = import.meta.glob("#src/views/dev/examples/*.vue", { eager: true })
     const componentList = []
 
     for (const path in modules) {

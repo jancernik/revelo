@@ -1,11 +1,11 @@
 <script setup>
 import { ref } from "vue"
 
-import Button from "@/components/common/Button.vue"
-import ImageUploader from "@/components/ImageUploader.vue"
-import MultipleImagesReview from "@/components/MultipleImagesReview.vue"
-import SimpleImageGrid from "@/components/SimpleImageGrid.vue"
-import api from "@/utils/api"
+import Button from "#src/components/common/Button.vue"
+import ImageUploader from "#src/components/ImageUploader.vue"
+import MultipleImagesReview from "#src/components/MultipleImagesReview.vue"
+import SimpleImageGrid from "#src/components/SimpleImageGrid.vue"
+import api from "#src/utils/api"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 

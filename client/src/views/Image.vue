@@ -2,9 +2,9 @@
 import { onMounted, onUnmounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import { useFullscreenImage } from "@/composables/useFullscreenImage"
-import { useToast } from "@/composables/useToast"
-import api from "@/utils/api"
+import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { useToast } from "#src/composables/useToast"
+import api from "#src/utils/api"
 
 const { hide: hideFullscreenImage, show: showFullscreenImage } = useFullscreenImage()
 const { show: showToast } = useToast()

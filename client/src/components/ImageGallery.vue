@@ -4,9 +4,9 @@ import { ScrollSmoother } from "gsap/ScrollSmoother"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 
-import ImageCard from "@/components/ImageCard.vue"
-import { useFullscreenImage } from "@/composables/useFullscreenImage"
-import api from "@/utils/api"
+import ImageCard from "#src/components/ImageCard.vue"
+import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import api from "#src/utils/api"
 
 const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds

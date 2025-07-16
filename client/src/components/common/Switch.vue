@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
 
-import Icon from "@/components/common/Icon.vue"
+import Icon from "#src/components/common/Icon.vue"
 
 const props = defineProps({
   disabled: {

@@ -1,13 +1,13 @@
 <script setup>
 import { onMounted, watch } from "vue"
 
-import Dialog from "@/components/common/Dialog.vue"
-import FullscreenImage from "@/components/common/FullscreenImage.vue"
-import Toast from "@/components/common/Toast.vue"
-import DissolveMask from "@/components/DissolveMask.vue"
-import Main from "@/components/layout/Main.vue"
-import Menu from "@/components/layout/Menu.vue"
-import { useTheme } from "@/composables/useTheme"
+import Dialog from "#src/components/common/Dialog.vue"
+import FullscreenImage from "#src/components/common/FullscreenImage.vue"
+import Toast from "#src/components/common/Toast.vue"
+import DissolveMask from "#src/components/DissolveMask.vue"
+import Main from "#src/components/layout/Main.vue"
+import Menu from "#src/components/layout/Menu.vue"
+import { useTheme } from "#src/composables/useTheme"
 
 const { isAnimating, themeClass } = useTheme()
 
@@ -38,5 +38,5 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
 </template>
 
 <style lang="scss">
-@use "@/styles/app.scss";
+@use "#src/styles/app.scss" as *;
 </style>

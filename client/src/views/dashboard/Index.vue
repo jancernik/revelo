@@ -1,7 +1,7 @@
 <script setup>
-import Button from "@/components/common/Button.vue"
-import { useToast } from "@/composables/useToast"
-import api from "@/utils/api"
+import Button from "#src/components/common/Button.vue"
+import { useToast } from "#src/composables/useToast"
+import api from "#src/utils/api"
 
 const { show: showToast } = useToast()
 

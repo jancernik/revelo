@@ -3,8 +3,8 @@ import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
 
-import { useFullscreenImage } from "@/composables/useFullscreenImage"
-import { getVisibleElements, orderElementsByDistance } from "@/utils/ui"
+import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { getVisibleElements, orderElementsByDistance } from "#src/utils/ui"
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const {

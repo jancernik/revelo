@@ -2,10 +2,10 @@
 import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
-import Button from "@/components/common/Button.vue"
-import Input from "@/components/common/Input.vue"
-import { useSettings } from "@/composables/useSettings"
-import { useAuthStore } from "@/stores/auth"
+import Button from "#src/components/common/Button.vue"
+import Input from "#src/components/common/Input.vue"
+import { useSettings } from "#src/composables/useSettings"
+import { useAuthStore } from "#src/stores/auth"
 
 const authStore = useAuthStore()
 const router = useRouter()

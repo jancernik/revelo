@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue"
 
-import Button from "@/components/common/Button.vue"
+import Button from "#src/components/common/Button.vue"
 
 import MetadataEditor from "./MetadataEditor.vue"
 

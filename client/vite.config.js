@@ -16,14 +16,14 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/styles/_index.scss" as *;`
+        additionalData: `@use "#src/styles/_index.scss" as *;`
       }
     }
   },
   plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url))
+      "#src": fileURLToPath(new URL("./src", import.meta.url))
     }
   }
 })
