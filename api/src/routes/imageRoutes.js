@@ -1,5 +1,3 @@
-import { Router } from "express"
-
 import {
   cleanupOrphaned,
   cleanupTemp,
@@ -10,17 +8,18 @@ import {
   fetchTiny,
   updateMetadata,
   uploadForReview
-} from "../controllers/imageController.js"
-import { auth } from "../middlewares/authMiddleware.js"
-import { uploadImages } from "../middlewares/uploadMiddleware.js"
-import { validate } from "../middlewares/validationMiddleware.js"
+} from "#src/controllers/imageController.js"
+import { auth } from "#src/middlewares/authMiddleware.js"
+import { uploadImages } from "#src/middlewares/uploadMiddleware.js"
+import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
   confirmUploadSchemas,
   deleteImageSchemas,
   fetchAllSchemas,
   fetchByIdSchemas,
   updateMetadataSchemas
-} from "../validation/imageSchemas.js"
+} from "#src/validation/imageSchemas.js"
+import { Router } from "express"
 
 const router = Router()
 

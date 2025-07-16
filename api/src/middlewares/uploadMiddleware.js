@@ -1,7 +1,6 @@
+import { ValidationError } from "#src/core/errors.js"
+import Setting from "#src/models/Setting.js"
 import multer from "multer"
-
-import { ValidationError } from "../core/errors.js"
-import Setting from "../models/Setting.js"
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

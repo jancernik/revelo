@@ -1,11 +1,14 @@
+import Setting from "#src/models/Setting.js"
+import {
+  createAccessToken,
+  createAdminUser,
+  createRegularUser
+} from "#tests/helpers/authHelpers.js"
+import { cleanupTestSettingsFile, createTestSettingsFile } from "#tests/helpers/settingHelpers.js"
+import { TEST_SETTINGS } from "#tests/testFixtures.js"
+import { createTestServer } from "#tests/testServer.js"
 import { beforeAll, describe, expect, it } from "@jest/globals"
 import request from "supertest"
-
-import Setting from "../../src/models/Setting.js"
-import { createAccessToken, createAdminUser, createRegularUser } from "../helpers/authHelpers.js"
-import { cleanupTestSettingsFile, createTestSettingsFile } from "../helpers/settingHelpers.js"
-import { TEST_SETTINGS } from "../testFixtures.js"
-import { createTestServer } from "../testServer.js"
 
 const api = createTestServer()
 

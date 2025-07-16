@@ -1,7 +1,6 @@
+import { config } from "#src/config/environment.js"
+import { UnauthorizedError } from "#src/core/errors.js"
 import jwt from "jsonwebtoken"
-
-import { config } from "../config/environment.js"
-import { UnauthorizedError } from "../core/errors.js"
 
 const ACCESS_EXPIRATION = 15 // minutes
 const REFRESH_EXPIRATION = 90 // days

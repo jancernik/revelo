@@ -1,6 +1,5 @@
+import { loadEnvironment } from "#src/config/environment.js"
 import postgres from "postgres"
-
-import { loadEnvironment } from "../config/environment.js"
 
 const extractDbInfo = (dbUrl) => {
   const url = new URL(dbUrl)

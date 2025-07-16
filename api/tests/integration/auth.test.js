@@ -1,8 +1,7 @@
+import { createUser, createVerificationToken } from "#tests/testHelpers.js"
+import { createTestServer } from "#tests/testServer.js"
 import { describe, expect, it } from "@jest/globals"
 import request from "supertest"
-
-import { createUser, createVerificationToken } from "../testHelpers.js"
-import { createTestServer } from "../testServer.js"
 
 const api = createTestServer()
 

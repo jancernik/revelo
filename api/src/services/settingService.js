@@ -1,5 +1,5 @@
-import { NotFoundError, ValidationError } from "../core/errors.js"
-import Setting from "../models/Setting.js"
+import { NotFoundError, ValidationError } from "#src/core/errors.js"
+import Setting from "#src/models/Setting.js"
 
 export const getSettings = async (opts) => {
   return await Setting.getAll(opts)

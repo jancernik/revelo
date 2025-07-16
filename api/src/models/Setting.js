@@ -1,10 +1,10 @@
+import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
+import { SettingsTable } from "#src/database/schema.js"
+import { createSettingValueSchema } from "#src/validation/settingSchemas.js"
 import fs from "fs"
 import yaml from "js-yaml"
 import path from "path"
 
-import { AppError, NotFoundError, ValidationError } from "../core/errors.js"
-import { SettingsTable } from "../database/schema.js"
-import { createSettingValueSchema } from "../validation/settingSchemas.js"
 import BaseModel from "./BaseModel.js"
 
 class Setting extends BaseModel {

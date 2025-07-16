@@ -1,7 +1,6 @@
+import Image from "#src/models/Image.js"
+import * as imageService from "#src/services/imageService.js"
 import { sql } from "drizzle-orm"
-
-import Image from "../models/Image.js"
-import * as imageService from "../services/imageService.js"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files

@@ -1,8 +1,7 @@
+import { ValidationError } from "#src/core/errors.js"
+import { validate } from "#src/middlewares/validationMiddleware.js"
 import { beforeEach, describe, expect, it, jest } from "@jest/globals"
 import { z } from "zod"
-
-import { ValidationError } from "../../../src/core/errors.js"
-import { validate } from "../../../src/middlewares/validationMiddleware.js"
 
 describe("Validation Middleware", () => {
   let next, req, res

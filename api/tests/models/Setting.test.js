@@ -1,12 +1,12 @@
-import { AppError, NotFoundError, ValidationError } from "../../src/core/errors.js"
-import Setting from "../../src/models/Setting.js"
+import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
+import Setting from "#src/models/Setting.js"
 import {
   cleanupTestSettingsFile,
   createTestSettingsFile,
   getSettingByName,
   overrideSetting
-} from "../helpers/settingHelpers.js"
-import { TEST_SETTINGS } from "../testFixtures.js"
+} from "#tests/helpers/settingHelpers.js"
+import { TEST_SETTINGS } from "#tests/testFixtures.js"
 
 describe("Setting Model", () => {
   let tempDir

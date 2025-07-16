@@ -1,19 +1,18 @@
-import { Router } from "express"
-
 import {
   getSetting,
   getSettings,
   resetSetting,
   updateSettings
-} from "../controllers/settingController.js"
-import { auth } from "../middlewares/authMiddleware.js"
-import { validate } from "../middlewares/validationMiddleware.js"
+} from "#src/controllers/settingController.js"
+import { auth } from "#src/middlewares/authMiddleware.js"
+import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
   getSettingSchemas,
   getSettingsSchemas,
   resetSettingSchemas,
   updateSettingsSchemas
-} from "../validation/settingSchemas.js"
+} from "#src/validation/settingSchemas.js"
+import { Router } from "express"
 
 const router = Router()
 

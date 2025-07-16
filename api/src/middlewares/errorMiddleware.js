@@ -1,7 +1,7 @@
-import { config } from "../config/environment.js"
-import { NotFoundError } from "../core/errors.js"
+import { config } from "#src/config/environment.js"
+import { NotFoundError } from "#src/core/errors.js"
 
-export const errorHandler = (error, req, res, _next) => {
+export const errorHandler = (error, req, res) => {
   const statusCode = error.statusCode || 500
   const message =
     config.ENV === "production" && !error.isOperational

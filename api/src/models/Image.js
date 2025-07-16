@@ -1,9 +1,9 @@
+import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
 
-import { ImagesTable, ImageVersionsTable } from "../database/schema.js"
 import BaseModel from "./BaseModel.js"
 
 const WITH_VERSIONS_QUERY = {

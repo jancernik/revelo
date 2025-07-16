@@ -1,4 +1,4 @@
-import * as settingService from "../services/settingService.js"
+import * as settingService from "#src/services/settingService.js"
 
 export const getSettings = async (req, res) => {
   const { complete: completeParam } = req.parsedQuery

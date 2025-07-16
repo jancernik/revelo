@@ -1,6 +1,6 @@
-import { userSerializer } from "../models/User.js"
-import * as authService from "../services/authService.js"
-import { setRefreshCookie } from "../utils/tokenUtils.js"
+import { userSerializer } from "#src/models/User.js"
+import * as authService from "#src/services/authService.js"
+import { setRefreshCookie } from "#src/utils/tokenUtils.js"
 
 export const signup = async (req, res) => {
   const { email, password, username } = req.body

@@ -1,15 +1,10 @@
+import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
+import Image from "#src/models/Image.js"
+import { createImage, createImages } from "#tests/testHelpers.js"
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
-import { fileURLToPath } from "url"
-
-import { ImagesTable, ImageVersionsTable } from "../../src/database/schema.js"
-import Image from "../../src/models/Image.js"
-import { createImage, createImages } from "../testHelpers.js"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 const DEFAULT_IMAGE_DATA = {
   aperture: "f/2.8",
@@ -50,7 +45,9 @@ const cleanupTempFiles = async () => {
   const tempDir = path.join(process.cwd(), "temp")
   try {
     await fs.rm(tempDir, { force: true, recursive: true })
-  } catch {}
+  } catch {
+    // Do nothing
+  }
 }
 
 describe("Image Model", () => {
@@ -224,7 +221,6 @@ describe("Image Model", () => {
 
   describe("findAllWithVersions", () => {
     beforeEach(async () => {
-      const files = []
       for (let i = 0; i < 5; i++) {
         const file = createMockFile(`versions-test-${i}.jpg`)
         await createTempFile(file)

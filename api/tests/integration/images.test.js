@@ -1,14 +1,9 @@
-import path from "path"
+import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
+import { createImage, createImages } from "#tests/testHelpers.js"
+import { createTestServer } from "#tests/testServer.js"
 import request from "supertest"
-import { fileURLToPath } from "url"
 import { v4 as uuid } from "uuid"
 
-import { createAccessToken, createAdminUser } from "../helpers/authHelpers.js"
-import { createImage, createImages } from "../testHelpers.js"
-import { createTestServer } from "../testServer.js"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 const api = createTestServer()
 
 const mockImageBuffer = Buffer.from(

@@ -1,5 +1,3 @@
-import { Router } from "express"
-
 import {
   login,
   logout,
@@ -7,14 +5,15 @@ import {
   resendVerificationEmail,
   signup,
   verifyEmail
-} from "../controllers/authController.js"
-import { validate } from "../middlewares/validationMiddleware.js"
+} from "#src/controllers/authController.js"
+import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
   loginSchemas,
   resendVerificationEmailSchemas,
   signupSchemas,
   verifyEmailSchemas
-} from "../validation/authSchemas.js"
+} from "#src/validation/authSchemas.js"
+import { Router } from "express"
 
 const router = Router()
 

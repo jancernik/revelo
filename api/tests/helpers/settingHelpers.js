@@ -1,16 +1,17 @@
+import { SettingsTable } from "#src/database/schema.js"
+import { getDb } from "#tests/testDatabase.js"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
-
-import { SettingsTable } from "../../src/database/schema.js"
-import { getDb } from "../testDatabase.js"
 
 export async function cleanupTestSettingsFile() {
   const settingsDir = path.join(process.cwd(), "temp/src/config")
   const settingsPath = path.join(settingsDir, "settings.yml")
   try {
     await fs.rm(settingsPath, { force: true, recursive: true })
-  } catch {}
+  } catch {
+    // Do nothing
+  }
 }
 
 export async function createTestSettingsFile(content) {

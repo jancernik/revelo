@@ -1,7 +1,7 @@
+import { EmailVerificationTokensTable } from "#src/database/schema.js"
 import crypto from "crypto"
 import { and, eq, gt, lt, sql } from "drizzle-orm"
 
-import { EmailVerificationTokensTable } from "../database/schema.js"
 import BaseModel from "./BaseModel.js"
 
 class EmailVerificationToken extends BaseModel {

@@ -1,8 +1,7 @@
+import { config } from "#src/config/environment.js"
+import { NotFoundError, UnauthorizedError } from "#src/core/errors.js"
+import User, { userSerializer } from "#src/models/User.js"
 import jwt from "jsonwebtoken"
-
-import { config } from "../config/environment.js"
-import { NotFoundError, UnauthorizedError } from "../core/errors.js"
-import User, { userSerializer } from "../models/User.js"
 
 const extractToken = (req) => {
   const authHeader = req.headers.authorization

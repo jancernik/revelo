@@ -1,5 +1,5 @@
-import User from "../../src/models/User.js"
-import { createUser } from "../testHelpers.js"
+import User from "#src/models/User.js"
+import { createUser } from "#tests/testHelpers.js"
 
 describe("User Model", () => {
   describe("findByEmail", () => {
