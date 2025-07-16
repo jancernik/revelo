@@ -1,7 +1,7 @@
 .env
-.env.test
-.env.dev
-.env.prod
+.env.*
+!.env.example
+
 logs
 *.log
 npm-debug.log*
@@ -17,9 +17,6 @@ dist-ssr
 coverage
 *.local
 
-/cypress/videos/
-/cypress/screenshots/
-
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -32,4 +29,5 @@ coverage
 *.tsbuildinfo
 
 uploads/*
+api/uploads/*
 clip/__pycache__/*

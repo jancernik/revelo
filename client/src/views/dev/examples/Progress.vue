@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from "vue"
 
-import Progress from '@/components/common/Progress.vue'
+import Progress from "@/components/common/Progress.vue"
 
 const animatedProgress = ref(0)
 
@@ -81,7 +81,7 @@ onUnmounted(stopAnimation)
 }
 
 .progress-label {
-  @include text('sm');
+  @include text("sm");
   color: var(--font-semibold);
   color: var(--primary);
 }

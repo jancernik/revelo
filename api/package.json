@@ -1,0 +1,44 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "api.js",
+  "scripts": {
+    "dev": "nodemon api.js",
+    "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' NODE_ENV=test jest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node drizzle/migrate.js",
+    "db:create": "node drizzle/create.js",
+    "db:drop": "node drizzle/drop.js",
+    "db:revert": "npx drizzle-kit drop"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "drizzle-orm": "^0.44.2",
+    "exifr": "^7.1.3",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "2.0.1",
+    "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7",
+    "sharp": "^0.34.3",
+    "uuid": "^11.1.0",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "drizzle-kit": "^0.31.4",
+    "jest": "^30.0.4",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.3"
+  }
+}

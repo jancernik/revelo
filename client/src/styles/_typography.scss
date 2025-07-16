@@ -1,15 +1,15 @@
-@use './mixins' as *;
+@use "./mixins" as *;
 
 @font-face {
-  font-family: 'Geist';
-  src: url('../fonts/Geist.ttf') format('truetype-variations');
+  font-family: "Geist";
+  src: url("../fonts/Geist.ttf") format("truetype-variations");
   font-weight: 100 900;
 }
 
 body,
 button {
   font-family: Geist, Arial, sans-serif;
-  @include text('base');
+  @include text("base");
 }
 
 button,
@@ -17,40 +17,40 @@ input,
 textarea {
   font-family: Geist, Arial, sans-serif;
   font-weight: var(--font-normal);
-  @include text('sm');
+  @include text("sm");
 }
 
 h1 {
-  @include text('4xl');
+  @include text("4xl");
   font-weight: var(--font-bold);
 }
 
 h2 {
-  @include text('3xl');
+  @include text("3xl");
   font-weight: var(--font-semibold);
 }
 
 h3 {
-  @include text('2xl');
+  @include text("2xl");
   font-weight: var(--font-semibold);
 }
 
 h4 {
-  @include text('xl');
+  @include text("xl");
   font-weight: var(--font-semibold);
 }
 
 h5 {
-  @include text('lg');
+  @include text("lg");
   font-weight: var(--font-semibold);
 }
 
 h6 {
-  @include text('base');
+  @include text("base");
   font-weight: var(--font-semibold);
 }
 
 p {
-  @include text('base');
+  @include text("base");
   font-weight: var(--font-medium);
 }

@@ -1,20 +1,19 @@
-/* eslint-disable no-console */
-import dotenv from "dotenv";
+import dotenv from "dotenv"
 
-let envType = process.env.NODE_ENV || "development";
-if (envType === "dev") envType = "development";
-if (envType === "prod") envType = "production";
+let envType = process.env.NODE_ENV || "development"
+if (envType === "dev") envType = "development"
+if (envType === "prod") envType = "production"
 
 const dotenvFiles = {
   development: ".env.dev",
   production: ".env.prod",
   test: ".env.test"
-};
+}
 
-const envFile = dotenvFiles[envType];
+const envFile = dotenvFiles[envType]
 if (envFile) {
-  dotenv.config({ path: envFile, quiet: true });
-  console.log(`Loaded environment variables from ${envFile}`);
+  dotenv.config({ path: envFile, quiet: true })
+  console.log(`Loaded environment variables from ${envFile}`)
 }
 
 const requiredEnvVars = [
@@ -29,12 +28,12 @@ const requiredEnvVars = [
   "SMTP_USER",
   "SMTP_PASS",
   "FROM_EMAIL"
-];
+]
 
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
 if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
-  process.exit(1);
+  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
+  process.exit(1)
 }
 
 export const config = {
@@ -50,17 +49,17 @@ export const config = {
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER
-};
+}
 
 export async function loadEnvironment(overrideEnvType) {
   if (overrideEnvType && overrideEnvType !== envType) {
-    if (overrideEnvType === "dev") overrideEnvType = "development";
-    if (overrideEnvType === "prod") overrideEnvType = "production";
+    if (overrideEnvType === "dev") overrideEnvType = "development"
+    if (overrideEnvType === "prod") overrideEnvType = "production"
 
-    const overrideFile = dotenvFiles[overrideEnvType];
+    const overrideFile = dotenvFiles[overrideEnvType]
     if (overrideFile) {
-      dotenv.config({ override: true, path: overrideFile, quiet: true });
-      console.log(`Loaded environment variables from ${overrideFile} (override)`);
+      dotenv.config({ override: true, path: overrideFile, quiet: true })
+      console.log(`Loaded environment variables from ${overrideFile} (override)`)
     }
   }
 }

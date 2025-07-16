@@ -1,0 +1,8 @@
+packages:
+  - api
+  - client
+onlyBuiltDependencies:
+  - "@parcel/watcher"
+  - esbuild
+  - sharp
+  - unrs-resolver

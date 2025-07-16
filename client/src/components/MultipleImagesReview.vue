@@ -1,9 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue"
 
-import Button from '@/components/common/Button.vue'
+import Button from "@/components/common/Button.vue"
 
-import MetadataEditor from './MetadataEditor.vue'
+import MetadataEditor from "./MetadataEditor.vue"
 
 const props = defineProps({
   extractedMetadata: {
@@ -24,7 +24,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['confirm', 'cancel', 'removeImage'])
+const emit = defineEmits(["confirm", "cancel", "removeImage"])
 
 const metadataArray = ref(props.extractedMetadata.map((metadata) => ({ ...metadata })))
 
@@ -33,16 +33,16 @@ const handleConfirm = () => {
     metadata: metadataArray.value[index],
     sessionId
   }))
-  emit('confirm', uploadData)
+  emit("confirm", uploadData)
 }
 
 const handleCancel = () => {
-  emit('cancel')
+  emit("cancel")
 }
 
 const handleRemoveImage = (index) => {
   metadataArray.value.splice(index, 1)
-  emit('removeImage', index)
+  emit("removeImage", index)
 }
 
 const handleMetadataUpdate = (index, newMetadata) => {
@@ -89,12 +89,12 @@ const handleMetadataUpdate = (index, newMetadata) => {
   padding: var(--spacing-6);
 
   .title {
-    @include text('lg');
+    @include text("lg");
     margin-bottom: 0.25rem;
   }
 
   .subtitle {
-    @include text('sm');
+    @include text("sm");
     color: var(--muted-foreground);
   }
 

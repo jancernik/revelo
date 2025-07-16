@@ -1,6 +1,6 @@
 <script setup>
-import Button from '@/components/common/Button.vue'
-import { useDialog } from '@/composables/useDialog'
+import Button from "@/components/common/Button.vue"
+import { useDialog } from "@/composables/useDialog"
 
 const { show } = useDialog()
 
@@ -9,14 +9,14 @@ const showBasicDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('OK clicked')
+          console.log("OK clicked")
         },
-        color: 'primary',
-        name: 'OK'
+        color: "primary",
+        name: "OK"
       }
     ],
-    description: 'This is a simple dialog with just a message and a cancel button.',
-    title: 'Basic Dialog'
+    description: "This is a simple dialog with just a message and a cancel button.",
+    title: "Basic Dialog"
   })
 }
 
@@ -25,15 +25,15 @@ const showConfirmDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('Account deleted')
+          console.log("Account deleted")
         },
-        color: 'primary',
-        icon: 'Trash2',
-        name: 'Delete'
+        color: "primary",
+        icon: "Trash2",
+        name: "Delete"
       }
     ],
-    description: 'Are you sure you want to delete your account? This action cannot be undone.',
-    title: 'Delete Account'
+    description: "Are you sure you want to delete your account? This action cannot be undone.",
+    title: "Delete Account"
   })
 }
 
@@ -42,15 +42,15 @@ const showSaveDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('Changes saved')
+          console.log("Changes saved")
         },
-        color: 'primary',
-        icon: 'Save',
-        name: 'Save'
+        color: "primary",
+        icon: "Save",
+        name: "Save"
       }
     ],
-    description: 'You have unsaved changes. Do you want to save them before leaving?',
-    title: 'Save Changes'
+    description: "You have unsaved changes. Do you want to save them before leaving?",
+    title: "Save Changes"
   })
 }
 
@@ -59,15 +59,15 @@ const showNonDismissibleDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('Forced close')
+          console.log("Forced close")
         },
-        color: 'primary',
-        name: 'Force Close'
+        color: "primary",
+        name: "Force Close"
       }
     ],
-    description: 'Please wait while we process your request. This may take a few moments.',
+    description: "Please wait while we process your request. This may take a few moments.",
     dismissible: false,
-    title: 'Processing'
+    title: "Processing"
   })
 }
 
@@ -76,28 +76,28 @@ const showCustomActionsDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('File downloaded')
+          console.log("File downloaded")
         },
-        color: 'secondary',
-        name: 'Download'
+        color: "secondary",
+        name: "Download"
       },
       {
         callback: () => {
-          console.log('File shared')
+          console.log("File shared")
         },
-        color: 'secondary',
-        name: 'Share'
+        color: "secondary",
+        name: "Share"
       },
       {
         callback: () => {
-          console.log('File deleted')
+          console.log("File deleted")
         },
-        color: 'secondary',
-        name: 'Delete'
+        color: "secondary",
+        name: "Delete"
       }
     ],
-    description: 'What would you like to do with this file?',
-    title: 'Choose Action'
+    description: "What would you like to do with this file?",
+    title: "Choose Action"
   })
 }
 
@@ -106,14 +106,14 @@ const showTitleOnlyDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('Action executed')
+          console.log("Action executed")
         },
-        color: 'primary',
-        icon: 'Zap',
-        name: 'Execute'
+        color: "primary",
+        icon: "Zap",
+        name: "Execute"
       }
     ],
-    title: 'Quick Action'
+    title: "Quick Action"
   })
 }
 
@@ -122,14 +122,14 @@ const showDescriptionOnlyDialog = () => {
     actions: [
       {
         callback: () => {
-          console.log('Message acknowledged')
+          console.log("Message acknowledged")
         },
-        color: 'primary',
-        name: 'Understood'
+        color: "primary",
+        name: "Understood"
       }
     ],
     description:
-      'This is a dialog with only a description and no title. Sometimes you just need to show a message without a formal heading.'
+      "This is a dialog with only a description and no title. Sometimes you just need to show a message without a formal heading."
   })
 }
 </script>

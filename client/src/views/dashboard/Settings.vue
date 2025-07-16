@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import InputSetting from '@/components/InputSetting.vue'
-import SwitchSetting from '@/components/SwitchSetting.vue'
-import ToggleSetting from '@/components/ToggleSetting.vue'
-import { useSettings } from '@/composables/useSettings'
-import api from '@/utils/api'
+import Button from "@/components/common/Button.vue"
+import InputSetting from "@/components/InputSetting.vue"
+import SwitchSetting from "@/components/SwitchSetting.vue"
+import ToggleSetting from "@/components/ToggleSetting.vue"
+import { useSettings } from "@/composables/useSettings"
+import api from "@/utils/api"
 
 const settings = ref([])
 const currentValues = reactive({})
@@ -29,7 +29,7 @@ const hasChanges = computed(() => {
       return JSON.stringify(current) !== JSON.stringify(original)
     }
 
-    if (typeof current === 'object' && typeof original === 'object' && current && original) {
+    if (typeof current === "object" && typeof original === "object" && current && original) {
       return JSON.stringify(current) !== JSON.stringify(original)
     }
 
@@ -47,7 +47,7 @@ const changedSettings = computed(() => {
 
     if (Array.isArray(current) && Array.isArray(original)) {
       hasChanged = JSON.stringify(current) !== JSON.stringify(original)
-    } else if (typeof current === 'object' && typeof original === 'object' && current && original) {
+    } else if (typeof current === "object" && typeof original === "object" && current && original) {
       hasChanged = JSON.stringify(current) !== JSON.stringify(original)
     } else {
       hasChanged = current !== original
@@ -77,7 +77,7 @@ const resetValue = (settingName) => {
 
   if (Array.isArray(original)) {
     currentValues[settingName] = [...original]
-  } else if (typeof original === 'object' && original !== null) {
+  } else if (typeof original === "object" && original !== null) {
     currentValues[settingName] = { ...original }
   } else {
     currentValues[settingName] = original
@@ -96,7 +96,7 @@ const resetDefault = async (settingName) => {
       if (Array.isArray(defaultValue)) {
         currentValues[settingName] = [...defaultValue]
         originalValues[settingName] = [...defaultValue]
-      } else if (typeof defaultValue === 'object' && defaultValue !== null) {
+      } else if (typeof defaultValue === "object" && defaultValue !== null) {
         currentValues[settingName] = { ...defaultValue }
         originalValues[settingName] = { ...defaultValue }
       } else {
@@ -105,7 +105,7 @@ const resetDefault = async (settingName) => {
       }
     }
   } catch (error) {
-    console.error('Error resetting setting to default:', error)
+    console.error("Error resetting setting to default:", error)
   } finally {
     refresh()
     isResetting[settingName] = false
@@ -115,21 +115,21 @@ const resetDefault = async (settingName) => {
 const saveAllChanges = async () => {
   try {
     isSaving.value = true
-    await api.put('/settings', changedSettings.value)
+    await api.put("/settings", changedSettings.value)
 
     Object.keys(changedSettings.value).forEach((key) => {
       const current = currentValues[key]
 
       if (Array.isArray(current)) {
         originalValues[key] = [...current]
-      } else if (typeof current === 'object' && current !== null) {
+      } else if (typeof current === "object" && current !== null) {
         originalValues[key] = { ...current }
       } else {
         originalValues[key] = current
       }
     })
   } catch (error) {
-    console.error('Error saving settings:', error)
+    console.error("Error saving settings:", error)
   } finally {
     refresh()
     isSaving.value = false
@@ -142,7 +142,7 @@ const cancelAllChanges = () => {
 
     if (Array.isArray(original)) {
       currentValues[key] = [...original]
-    } else if (typeof original === 'object' && original !== null) {
+    } else if (typeof original === "object" && original !== null) {
       currentValues[key] = { ...original }
     } else {
       currentValues[key] = original
@@ -153,7 +153,7 @@ const cancelAllChanges = () => {
 const fetchSettings = async () => {
   try {
     loading.value = true
-    const response = await api.get('/settings?complete=true')
+    const response = await api.get("/settings?complete=true")
     settings.value = response.data
 
     settings.value.forEach((setting) => {
@@ -162,7 +162,7 @@ const fetchSettings = async () => {
       if (Array.isArray(value)) {
         currentValues[setting.name] = [...value]
         originalValues[setting.name] = [...value]
-      } else if (typeof value === 'object' && value !== null) {
+      } else if (typeof value === "object" && value !== null) {
         currentValues[setting.name] = { ...value }
         originalValues[setting.name] = { ...value }
       } else {
@@ -171,7 +171,7 @@ const fetchSettings = async () => {
       }
     })
   } catch (error) {
-    console.error('Error fetching settings:', error)
+    console.error("Error fetching settings:", error)
   } finally {
     loading.value = false
   }
@@ -243,7 +243,7 @@ onMounted(fetchSettings)
     <div v-if="hasChanges" class="setting-actions">
       <div class="info">
         <h6>
-          {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? 'change' : 'changes' }}
+          {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? "change" : "changes" }}
         </h6>
       </div>
       <Button icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
@@ -315,13 +315,13 @@ onMounted(fetchSettings)
     }
 
     .name {
-      @include text('sm');
+      @include text("sm");
       font-weight: var(--font-semibold);
       color: var(--primary);
     }
 
     .description {
-      @include text('sm');
+      @include text("sm");
       font-weight: var(--font-normal);
       color: var(--muted-foreground);
     }

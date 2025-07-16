@@ -1,40 +1,40 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 
-import Button from '@/components/common/Button.vue'
-import Input from '@/components/common/Input.vue'
-import { useSettings } from '@/composables/useSettings'
-import { useAuthStore } from '@/stores/auth'
+import Button from "@/components/common/Button.vue"
+import Input from "@/components/common/Input.vue"
+import { useSettings } from "@/composables/useSettings"
+import { useAuthStore } from "@/stores/auth"
 
 const authStore = useAuthStore()
 const router = useRouter()
 const { settings } = useSettings()
 
-const username = ref('')
-const password = ref('')
-const loginError = ref('')
+const username = ref("")
+const password = ref("")
+const loginError = ref("")
 const isLoading = ref(false)
 const showLoginForm = ref(false)
 const showSignupButton = ref(false)
 
 const handleLogin = async () => {
-  loginError.value = ''
+  loginError.value = ""
   isLoading.value = true
 
   try {
     await authStore.login({ password: password.value, username: username.value })
     if (authStore.user?.admin) {
-      router.push('/dashboard')
+      router.push("/dashboard")
     } else {
-      router.push('/')
+      router.push("/")
     }
   } catch (error) {
     if (error.response?.data?.requiresVerification) {
       authStore.setUser(error.response.data)
-      router.push('/verification-pending')
+      router.push("/verification-pending")
     } else {
-      loginError.value = 'Invalid username or password.'
+      loginError.value = "Invalid username or password."
     }
     console.error(error)
   } finally {
@@ -47,8 +47,8 @@ const checkIfSignupsAreEnabled = async () => {
     showSignupButton.value = settings.value.enableSignups
     showLoginForm.value = true
   } catch (error) {
-    console.error('Error getting config.', error)
-    router.push('/')
+    console.error("Error getting config.", error)
+    router.push("/")
   }
 }
 
@@ -57,9 +57,9 @@ const redirectIfAuthenticated = () => {
     return
   }
   if (authStore.user?.admin) {
-    router.push('/dashboard')
+    router.push("/dashboard")
   } else {
-    router.push('/')
+    router.push("/")
   }
 }
 
@@ -118,7 +118,7 @@ onMounted(redirectIfAuthenticated)
     }
 
     .error-message {
-      @include text('sm');
+      @include text("sm");
       color: var(--danger);
       margin-block: var(--spacing-4);
       text-align: center;

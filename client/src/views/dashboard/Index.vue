@@ -1,49 +1,49 @@
 <script setup>
-import Button from '@/components/common/Button.vue'
-import { useToast } from '@/composables/useToast'
-import api from '@/utils/api'
+import Button from "@/components/common/Button.vue"
+import { useToast } from "@/composables/useToast"
+import api from "@/utils/api"
 
 const { show: showToast } = useToast()
 
 const handleCleanupTemp = async () => {
   try {
-    const response = await api.post('/maintenance/cleanup-temp')
+    const response = await api.post("/maintenance/cleanup-temp")
     const data = response.data.result
-    console.log('data: ', data)
+    console.log("data: ", data)
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       duration: 5,
-      title: 'Cleanup Successful',
-      type: 'success'
+      title: "Cleanup Successful",
+      type: "success"
     })
   } catch (error) {
-    console.error('Error cleaning up temporary images:', error)
+    console.error("Error cleaning up temporary images:", error)
     showToast({
-      description: 'Failed to clean up temporary images.',
+      description: "Failed to clean up temporary images.",
       duration: 5,
-      title: 'Cleanup Failed',
-      type: 'error'
+      title: "Cleanup Failed",
+      type: "error"
     })
   }
 }
 
 const handleCleanupOrphaned = async () => {
   try {
-    const response = await api.post('/maintenance/cleanup-orphaned')
+    const response = await api.post("/maintenance/cleanup-orphaned")
     const data = response.data.result
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       duration: 5,
-      title: 'Cleanup Successful',
-      type: 'success'
+      title: "Cleanup Successful",
+      type: "success"
     })
   } catch (error) {
-    console.error('Error cleaning up orphaned images:', error)
+    console.error("Error cleaning up orphaned images:", error)
     showToast({
-      description: 'Failed to clean up orphaned images.',
+      description: "Failed to clean up orphaned images.",
       duration: 5,
-      title: 'Cleanup Failed',
-      type: 'error'
+      title: "Cleanup Failed",
+      type: "error"
     })
   }
 }

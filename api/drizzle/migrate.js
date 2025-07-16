@@ -1,33 +1,32 @@
-/* eslint-disable no-console */
-import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js"
+import { migrate } from "drizzle-orm/postgres-js/migrator"
+import postgres from "postgres"
 
-import { loadEnvironment } from "../config.js";
+import { loadEnvironment } from "../config.js"
 
 export async function migrateDb(envType = process.env.NODE_ENV || "development") {
-  await loadEnvironment(envType);
+  await loadEnvironment(envType)
 
   if (!process.env.DB_URL) {
-    console.error("✗ Error migrating database: DB_URL environment variable is required");
-    return;
+    console.error("✗ Error migrating database: DB_URL environment variable is required")
+    return
   }
 
-  const migrationClient = postgres(process.env.DB_URL, { max: 1 });
+  const migrationClient = postgres(process.env.DB_URL, { max: 1 })
 
   await migrate(drizzle(migrationClient), {
-    migrationsFolder: "api/drizzle/migrations"
-  });
+    migrationsFolder: "./drizzle/migrations"
+  })
 
-  await migrationClient.end();
-  console.log(`\x1b[32m✓ Database migration completed for the ${envType} environment \x1b[0m`);
+  await migrationClient.end()
+  console.log(`\x1b[32m✓ Database migration completed for the ${envType} environment \x1b[0m`)
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const envType = process.argv[2] || process.env.NODE_ENV || "development";
+  const envType = process.argv[2] || process.env.NODE_ENV || "development"
   try {
-    await migrateDb(envType);
+    await migrateDb(envType)
   } catch (error) {
-    console.error("✗ Migration failed:", error);
+    console.error("✗ Migration failed:", error)
   }
 }

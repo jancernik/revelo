@@ -1,18 +1,18 @@
-import nodemailer from "nodemailer";
+import nodemailer from "nodemailer"
 
-import { config } from "../config.js";
+import { config } from "../config.js"
 
-let transporter = null;
+let transporter = null
 
 const sendEmail = async (transporter, mailOptions) => {
-  if (config.NODE_ENV === "test") return;
+  if (config.NODE_ENV === "test") return
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+    const info = await transporter.sendMail(mailOptions)
+    return info
   } catch (error) {
-    console.error("Failed to send email:", error);
+    console.error("Failed to send email:", error)
   }
-};
+}
 
 const initializeTransporter = () => {
   if (!transporter) {
@@ -24,14 +24,14 @@ const initializeTransporter = () => {
       host: config.SMTP_HOST,
       port: parseInt(config.SMTP_PORT),
       secure: false
-    });
+    })
   }
-  return transporter;
-};
+  return transporter
+}
 
 export const sendVerificationEmail = async (email, token, username) => {
-  const transporter = initializeTransporter();
-  const verificationUrl = `${config.CLIENT_BASE_URL}/verify-email?token=${token}`;
+  const transporter = initializeTransporter()
+  const verificationUrl = `${config.CLIENT_BASE_URL}/verify-email?token=${token}`
 
   const mailOptions = {
     from: `"Revelo" <${config.FROM_EMAIL}>`,
@@ -50,13 +50,13 @@ export const sendVerificationEmail = async (email, token, username) => {
       Link expires in 24 hours.
     `,
     to: email
-  };
+  }
 
-  await sendEmail(transporter, mailOptions);
-};
+  await sendEmail(transporter, mailOptions)
+}
 
 export const sendWelcomeEmail = async (email, username) => {
-  const transporter = initializeTransporter();
+  const transporter = initializeTransporter()
 
   const mailOptions = {
     from: config.FROM_EMAIL,
@@ -71,18 +71,18 @@ export const sendWelcomeEmail = async (email, username) => {
       Your email is verified and your account is active.
     `,
     to: email
-  };
+  }
 
-  await sendEmail(transporter, mailOptions);
-};
+  await sendEmail(transporter, mailOptions)
+}
 
 export const testEmailConnection = async () => {
   try {
-    const transporter = initializeTransporter();
-    await transporter.verify();
-    return true;
+    const transporter = initializeTransporter()
+    await transporter.verify()
+    return true
   } catch (error) {
-    console.error("Email service connection failed:", error);
-    return false;
+    console.error("Email service connection failed:", error)
+    return false
   }
-};
+}

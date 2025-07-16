@@ -1,10 +1,10 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import Icon from '@/components/common/Icon.vue'
-import SimpleImageGrid from '@/components/SimpleImageGrid.vue'
-import { useSettings } from '@/composables/useSettings'
+import Button from "@/components/common/Button.vue"
+import Icon from "@/components/common/Icon.vue"
+import SimpleImageGrid from "@/components/SimpleImageGrid.vue"
+import { useSettings } from "@/composables/useSettings"
 
 const { settings } = useSettings()
 const maxFiles = settings.value.maxUploadFiles || 10
@@ -18,10 +18,10 @@ const hasSelectedImages = computed(() => selectedFiles.value.length > 0)
 const hasExceededFileLimit = computed(() => selectedFiles.value.length > maxFiles)
 const canAddMoreFiles = computed(() => selectedFiles.value.length < maxFiles)
 
-const fileInput = useTemplateRef('file-input')
-const container = useTemplateRef('container')
+const fileInput = useTemplateRef("file-input")
+const container = useTemplateRef("container")
 
-const emit = defineEmits(['upload'])
+const emit = defineEmits(["upload"])
 
 const handleFileInput = (event) => {
   if (event.target.files?.length > 0) {
@@ -32,11 +32,11 @@ const handleFileInput = (event) => {
 const handleFileSelection = (files) => {
   for (const file of files) {
     if (!file.type.match(/image\/(jpeg|jpg|png)/i)) {
-      alert('Please select valid image files (JPG or PNG)')
+      alert("Please select valid image files (JPG or PNG)")
       return
     }
     if (file.size > 50 * 1024 * 1024) {
-      alert('Each image size must be less than 50MB')
+      alert("Each image size must be less than 50MB")
       return
     }
   }
@@ -56,7 +56,7 @@ const handleRemoveImage = (index) => {
 
 const uploadImages = () => {
   if (selectedFiles.value.length > 0) {
-    emit('upload', {
+    emit("upload", {
       images: selectedFiles.value,
       previewUrls: previewUrls.value
     })
@@ -109,19 +109,19 @@ const handleDrop = (event) => {
 
 onMounted(() => {
   if (container.value) {
-    container.value.addEventListener('dragenter', handleDragEnter)
-    container.value.addEventListener('dragleave', handleDragLeave)
-    container.value.addEventListener('dragover', handleDragOver)
-    container.value.addEventListener('drop', handleDrop)
+    container.value.addEventListener("dragenter", handleDragEnter)
+    container.value.addEventListener("dragleave", handleDragLeave)
+    container.value.addEventListener("dragover", handleDragOver)
+    container.value.addEventListener("drop", handleDrop)
   }
 })
 
 onBeforeUnmount(() => {
   if (container.value) {
-    container.value.removeEventListener('dragenter', handleDragEnter)
-    container.value.removeEventListener('dragleave', handleDragLeave)
-    container.value.removeEventListener('dragover', handleDragOver)
-    container.value.removeEventListener('drop', handleDrop)
+    container.value.removeEventListener("dragenter", handleDragEnter)
+    container.value.removeEventListener("dragleave", handleDragLeave)
+    container.value.removeEventListener("dragover", handleDragOver)
+    container.value.removeEventListener("drop", handleDrop)
   }
 })
 </script>
@@ -277,14 +277,14 @@ onBeforeUnmount(() => {
       padding-bottom: var(--spacing-6);
       gap: var(--spacing-2);
       h4 {
-        @include text('sm');
+        @include text("sm");
         font-weight: var(--font-semibold);
         color: var(--primary);
       }
 
       .file-counter {
         @include flex-center;
-        @include text('sm');
+        @include text("sm");
         color: var(--muted-foreground);
         background-color: var(--muted);
         border-radius: calc(1.25rem / 2);

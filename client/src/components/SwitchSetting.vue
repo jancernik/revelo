@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue"
 
-import Button from '@/components/common/Button.vue'
-import Switch from '@/components/common/Switch.vue'
-import { useDialog } from '@/composables/useDialog'
+import Button from "@/components/common/Button.vue"
+import Switch from "@/components/common/Switch.vue"
+import { useDialog } from "@/composables/useDialog"
 
 const { show } = useDialog()
 
@@ -26,13 +26,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'reset', 'reset-default'])
+const emit = defineEmits(["update", "reset", "reset-default"])
 
 const hasChanged = computed(() => {
   const current =
-    typeof props.currentValue === 'object' ? JSON.stringify(props.currentValue) : props.currentValue
+    typeof props.currentValue === "object" ? JSON.stringify(props.currentValue) : props.currentValue
   const original =
-    typeof props.originalValue === 'object'
+    typeof props.originalValue === "object"
       ? JSON.stringify(props.originalValue)
       : props.originalValue
 
@@ -41,11 +41,11 @@ const hasChanged = computed(() => {
 
 const showResetDefault = computed(() => {
   const original =
-    typeof props.originalValue === 'object'
+    typeof props.originalValue === "object"
       ? JSON.stringify(props.originalValue)
       : props.originalValue
   const defaultVal =
-    typeof props.setting.default === 'object'
+    typeof props.setting.default === "object"
       ? JSON.stringify(props.setting.default)
       : props.setting.default
 
@@ -56,7 +56,7 @@ const switchOptions = computed(() => {
   if (!props.setting.options) return []
 
   return props.setting.options.map((option) => {
-    if (typeof option === 'string') {
+    if (typeof option === "string") {
       return {
         label: option,
         value: option
@@ -72,7 +72,7 @@ const switchOptions = computed(() => {
 })
 
 const currentSwitchValue = computed(() => {
-  if (typeof props.currentValue === 'object') {
+  if (typeof props.currentValue === "object") {
     return props.currentValue.value || props.currentValue.id || props.currentValue.key
   }
   return props.currentValue
@@ -80,11 +80,11 @@ const currentSwitchValue = computed(() => {
 
 const handleUpdate = (newValue) => {
   const originalOption = props.setting.options?.find((opt) => {
-    const optValue = typeof opt === 'object' ? opt.value || opt.id || opt.key : opt
+    const optValue = typeof opt === "object" ? opt.value || opt.id || opt.key : opt
     return optValue === newValue
   })
 
-  emit('update', originalOption || newValue)
+  emit("update", originalOption || newValue)
 }
 
 const showResetDefaultDialog = () => {
@@ -92,10 +92,10 @@ const showResetDefaultDialog = () => {
     actions: [
       {
         callback: () => {
-          emit('reset-default')
+          emit("reset-default")
         },
-        color: 'primary',
-        name: 'Reset'
+        color: "primary",
+        name: "Reset"
       }
     ],
     description: `Are you sure you want to reset the setting to its default value?`,
@@ -159,13 +159,13 @@ const showResetDefaultDialog = () => {
   }
 
   .name {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-medium);
     color: var(--primary);
   }
 
   .description {
-    @include text('sm');
+    @include text("sm");
     font-weight: var(--font-normal);
     color: var(--muted-foreground);
   }
