@@ -48,10 +48,6 @@ export function useTheme() {
     }
   }
 
-  const linearDistance = (x1, y1, x2, y2) => {
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-  }
-
   const createCleanClone = (element) => {
     const clone = element.cloneNode(false)
 
@@ -150,7 +146,7 @@ export function useTheme() {
     })
   }
 
-  const animateThemeTransition = async (newThemeClass, origin) => {
+  const animateThemeTransition = async (newThemeClass) => {
     isAnimating.value = true
     let clonedBody = null
 

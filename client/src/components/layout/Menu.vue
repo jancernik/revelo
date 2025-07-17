@@ -18,11 +18,6 @@ const menuUl = useTemplateRef("menu-ul")
 let enterTimeline = null
 let leaveTimeline = null
 
-async function handleLogout() {
-  await authStore.logout()
-  router.push("/")
-}
-
 const menuConfig = reactive([
   {
     id: "gallery",
