@@ -1,11 +1,10 @@
 import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
 import { SettingsTable } from "#src/database/schema.js"
+import BaseModel from "#src/models/BaseModel.js"
 import { createSettingValueSchema } from "#src/validation/settingSchemas.js"
 import fs from "fs"
 import yaml from "js-yaml"
 import path from "path"
-
-import BaseModel from "./BaseModel.js"
 
 class Setting extends BaseModel {
   constructor() {

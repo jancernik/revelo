@@ -1,14 +1,13 @@
+import { config } from "#src/config/environment.js"
+import { errorHandler, notFoundHandler } from "#src/middlewares/errorMiddleware.js"
+import authRoutes from "#src/routes/authRoutes.js"
+import imageRoutes from "#src/routes/imageRoutes.js"
+import settingRoutes from "#src/routes/settingRoutes.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import express from "express"
 import fs from "fs"
 import morgan from "morgan"
-
-import { config } from "./config/environment.js"
-import { errorHandler, notFoundHandler } from "./middlewares/errorMiddleware.js"
-import authRoutes from "./routes/authRoutes.js"
-import imageRoutes from "./routes/imageRoutes.js"
-import settingRoutes from "./routes/settingRoutes.js"
 
 export function createServer(options = {}) {
   const { enableLogging = true, uploadsDir = "uploads" } = options

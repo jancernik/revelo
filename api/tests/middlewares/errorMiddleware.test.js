@@ -1,7 +1,7 @@
 import { config } from "#src/config/environment.js"
 import { NotFoundError } from "#src/core/errors.js"
 import { errorHandler, notFoundHandler } from "#src/middlewares/errorMiddleware.js"
-import { beforeEach, describe, expect, it, jest } from "@jest/globals"
+import { jest } from "@jest/globals"
 
 describe("Error Middleware", () => {
   let next, req, res

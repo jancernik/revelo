@@ -8,10 +8,9 @@ import EmailVerificationToken from "#src/models/EmailVerificationToken.js"
 import RevokedToken from "#src/models/RevokedToken.js"
 import Setting from "#src/models/Setting.js"
 import User, { userSerializer } from "#src/models/User.js"
+import { sendVerificationEmail, sendWelcomeEmail } from "#src/services/emailService.js"
 import { generateAccess, generateRefresh, verifyRefresh } from "#src/utils/tokenUtils.js"
 import { eq } from "drizzle-orm"
-
-import { sendVerificationEmail, sendWelcomeEmail } from "./emailService.js"
 
 export const signup = async ({ email, password, username }) => {
   const enableSignups = await Setting.get("enableSignups")

@@ -1,6 +1,5 @@
+import { limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
-
-import { limit, offset } from "./baseSchemas.js"
 
 const sessionIdSchema = z.uuid("Invalid session ID format")
 const imageIdSchema = z.uuid("Invalid image ID format")
