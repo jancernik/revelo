@@ -15,17 +15,17 @@ import { eq } from "drizzle-orm"
 export const signup = async ({ email, password, username }) => {
   const enableSignups = await Setting.get("enableSignups")
   if (!enableSignups) {
-    throw new ForbiddenError("Signup is disabled.")
+    throw new ForbiddenError("Signup is disabled")
   }
 
   const emailExists = await User.findByEmail(email)
   if (emailExists) {
-    throw new ValidationError("Email already used.")
+    throw new ValidationError("Email already used")
   }
 
   const usernameExists = await User.findByUsername(username)
   if (usernameExists) {
-    throw new ValidationError("Username already used.")
+    throw new ValidationError("Username already used")
   }
 
   const adminCount = await User.count(eq(User.table.admin, true))
@@ -53,16 +53,16 @@ export const signup = async ({ email, password, username }) => {
 export const verifyEmail = async (token) => {
   const verificationToken = await EmailVerificationToken.findValidToken(token)
   if (!verificationToken) {
-    throw new ValidationError("Invalid or expired verification token.")
+    throw new ValidationError("Invalid or expired verification token")
   }
 
   const user = await User.findById(verificationToken.userId)
   if (!user) {
-    throw new NotFoundError("User not found.")
+    throw new NotFoundError("User not found")
   }
 
   if (user.emailVerified) {
-    throw new ValidationError("Email is already verified.")
+    throw new ValidationError("Email is already verified")
   }
 
   await User.markEmailVerified(user.id)
@@ -88,11 +88,11 @@ export const verifyEmail = async (token) => {
 export const resendVerificationEmail = async (email) => {
   const user = await User.findByEmail(email)
   if (!user) {
-    throw new NotFoundError("User not found.")
+    throw new NotFoundError("User not found")
   }
 
   if (user.emailVerified) {
-    throw new ValidationError("Email is already verified.")
+    throw new ValidationError("Email is already verified")
   }
 
   const verificationToken = await EmailVerificationToken.createToken(user.id, email)
@@ -102,12 +102,12 @@ export const resendVerificationEmail = async (email) => {
 export const login = async ({ password, username }) => {
   const user = await User.findByUsername(username)
   if (!user) {
-    throw new UnauthorizedError("Invalid credentials.")
+    throw new UnauthorizedError("Invalid credentials")
   }
 
   const match = await User.verifyPassword(user, password)
   if (!match) {
-    throw new UnauthorizedError("Invalid credentials.")
+    throw new UnauthorizedError("Invalid credentials")
   }
 
   if (!user.emailVerified) {
@@ -130,12 +130,12 @@ export const logout = async (refreshToken) => {
 
 export const refresh = async (refreshToken) => {
   if (!refreshToken) {
-    throw new ValidationError("Missing refresh token.")
+    throw new ValidationError("Missing refresh token")
   }
 
   const revokedToken = await RevokedToken.find(eq(RevokedToken.table.token, refreshToken))
   if (revokedToken) {
-    throw new UnauthorizedError("Invalid refresh token.")
+    throw new UnauthorizedError("Invalid refresh token")
   }
 
   const user = await verifyRefresh(refreshToken)

@@ -9,7 +9,7 @@ export const errorHandler = (error, req, res, _next) => {
       ? "Something went wrong"
       : error.message || "Internal server error"
 
-  if (statusCode >= 500) {
+  if (statusCode >= 500 || config.ENV === "development") {
     console.error("Server Error:", {
       message: error.message,
       method: req.method,

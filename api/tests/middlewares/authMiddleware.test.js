@@ -48,21 +48,21 @@ describe("Auth Middleware", () => {
 
       it("should throw UnauthorizedError when no token provided", async () => {
         await expect(auth.required()(req, res, next)).rejects.toThrow(UnauthorizedError)
-        await expect(auth.required()(req, res, next)).rejects.toThrow("Authorization required.")
+        await expect(auth.required()(req, res, next)).rejects.toThrow("Authorization required")
       })
 
       it("should throw UnauthorizedError when token is invalid", async () => {
         req.headers.authorization = "Bearer invalid-token"
 
         await expect(auth.required()(req, res, next)).rejects.toThrow(UnauthorizedError)
-        await expect(auth.required()(req, res, next)).rejects.toThrow("Invalid or expired token.")
+        await expect(auth.required()(req, res, next)).rejects.toThrow("Invalid or expired token")
       })
 
       it("should throw UnauthorizedError when authorization header is malformed", async () => {
         req.headers.authorization = "InvalidFormat token"
 
         await expect(auth.required()(req, res, next)).rejects.toThrow(UnauthorizedError)
-        await expect(auth.required()(req, res, next)).rejects.toThrow("Authorization required.")
+        await expect(auth.required()(req, res, next)).rejects.toThrow("Authorization required")
       })
 
       it("should handle admin users correctly", async () => {
@@ -104,7 +104,7 @@ describe("Auth Middleware", () => {
         User.findById.mockResolvedValue(null)
 
         await expect(auth.required(true)(req, res, next)).rejects.toThrow(NotFoundError)
-        await expect(auth.required(true)(req, res, next)).rejects.toThrow("User not found.")
+        await expect(auth.required(true)(req, res, next)).rejects.toThrow("User not found")
       })
     })
   })

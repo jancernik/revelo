@@ -1,8 +1,5 @@
+import { definedSchema } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
-
-const definedSchema = z
-  .any()
-  .refine((v) => v !== null && v !== undefined, { message: "Value cannot be null or undefined" })
 
 const completeSchema = z.coerce.boolean().optional()
 const settingNameSchema = z.string().min(1, "Setting name is required")

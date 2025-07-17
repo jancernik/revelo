@@ -1,8 +1,7 @@
-import { limit, offset } from "#src/validation/baseSchemas.js"
+import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
 
 const sessionIdSchema = z.uuid("Invalid session ID format")
-const imageIdSchema = z.uuid("Invalid image ID format")
 
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
@@ -28,7 +27,7 @@ export const confirmUploadSchemas = {
 export const updateMetadataSchemas = {
   body: metadataSchema,
   params: z.object({
-    id: imageIdSchema
+    id: definedSchema
   })
 }
 
@@ -41,12 +40,12 @@ export const fetchAllSchemas = {
 
 export const fetchByIdSchemas = {
   params: z.object({
-    id: imageIdSchema
+    id: definedSchema
   })
 }
 
 export const deleteImageSchemas = {
   params: z.object({
-    id: imageIdSchema
+    id: definedSchema
   })
 }

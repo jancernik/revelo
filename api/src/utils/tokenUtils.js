@@ -18,9 +18,13 @@ export const generateAccess = (user) => {
 }
 
 export const generateRefresh = (user) => {
-  return jwt.sign({ id: user.id }, config.JWT_REFRESH_SECRET, {
-    expiresIn: `${REFRESH_EXPIRATION}d`
-  })
+  return jwt.sign(
+    { admin: user.admin, email: user.email, id: user.id },
+    config.JWT_REFRESH_SECRET,
+    {
+      expiresIn: `${REFRESH_EXPIRATION}d`
+    }
+  )
 }
 
 export const setRefreshCookie = (res, refreshToken) => {
@@ -36,7 +40,7 @@ export const verifyRefresh = async (token) => {
   return await new Promise((resolve, reject) => {
     jwt.verify(token, config.JWT_REFRESH_SECRET, (error, user) => {
       if (error) {
-        reject(new UnauthorizedError("Session expired."))
+        reject(new UnauthorizedError("Session expired"))
       } else {
         resolve(user)
       }

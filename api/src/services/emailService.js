@@ -5,6 +5,7 @@ let transporter = null
 
 const sendEmail = async (transporter, mailOptions) => {
   if (config.NODE_ENV === "test") return
+  console.log(mailOptions)
   try {
     const info = await transporter.sendMail(mailOptions)
     return info

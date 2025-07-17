@@ -21,7 +21,7 @@ const fileFilter = (req, file, cb) => {
 
 const validateFiles = (req, res, next) => {
   if (!req.files || req.files.length === 0) {
-    throw new ValidationError("No files uploaded.")
+    throw new ValidationError("No files uploaded")
   }
   next()
 }

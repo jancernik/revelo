@@ -87,14 +87,16 @@ class Image extends BaseModel {
   }
 
   async findByIdWithVersions(id) {
-    const result = await this.db.query.ImagesTable.findFirst({
-      ...WITH_VERSIONS_QUERY,
-      where: eq(this.table.id, id)
-    })
-
-    return result || null
+    try {
+      const result = await this.db.query.ImagesTable.findFirst({
+        ...WITH_VERSIONS_QUERY,
+        where: eq(this.table.id, id)
+      })
+      return result || null
+    } catch {
+      return null
+    }
   }
-
   async #createImageVersions(tx, file, imageId, imageDir) {
     const versions = []
     const originalFilePath = file.path

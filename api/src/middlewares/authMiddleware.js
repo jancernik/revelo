@@ -60,16 +60,16 @@ export const auth = {
       const token = extractToken(req)
 
       if (!token) {
-        throw new UnauthorizedError("Authorization required.")
+        throw new UnauthorizedError("Authorization required")
       }
 
       const decoded = verifyAndDecodeToken(token)
       if (!decoded) {
-        throw new UnauthorizedError("Invalid or expired token.")
+        throw new UnauthorizedError("Invalid or expired token")
       }
 
       if (!decoded.admin) {
-        throw new UnauthorizedError("Authorization required.")
+        throw new UnauthorizedError("Authorization required")
       }
 
       req.user = {
@@ -81,7 +81,7 @@ export const auth = {
       if (loadFullUser) {
         const user = await User.findById(decoded.id)
         if (!user) {
-          throw new NotFoundError("User not found.")
+          throw new NotFoundError("User not found")
         }
         req.user = userSerializer(user)
       }

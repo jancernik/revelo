@@ -1,5 +1,7 @@
-import { createUser, createVerificationToken } from "#tests/helpers/authHelpers.js"
+import { config } from "#src/config/environment.js"
+import { createAdminUser, createUser, createVerificationToken } from "#tests/helpers/authHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
+import jwt from "jsonwebtoken"
 import request from "supertest"
 
 const api = createTestServer()
@@ -56,7 +58,7 @@ describe("Auth Endpoints", () => {
       const response = await request(api).post("/signup").send(userData).expect(400)
 
       expect(response.body.status).toBe("fail")
-      expect(response.body.data).toBeNull()
+      expect(response.body.data).toEqual({ validation: [{ message: "Email already used" }] })
     })
   })
 
@@ -201,7 +203,45 @@ describe("Auth Endpoints", () => {
       const response = await request(api).post("/refresh").expect(400)
 
       expect(response.body.status).toBe("fail")
-      expect(response.body.data).toBeNull()
+      expect(response.body.data).toEqual({ validation: [{ message: "Missing refresh token" }] })
+    })
+
+    it("should preserve admin flag in refreshed access token", async () => {
+      const adminUser = await createAdminUser({ emailVerified: true })
+      const loginResponse = await request(api).post("/login").send({
+        password: adminUser.plainPassword,
+        username: adminUser.username
+      })
+
+      const cookies = loginResponse.headers["set-cookie"]
+      const refreshResponse = await request(api).post("/refresh").set("Cookie", cookies).expect(200)
+
+      expect(refreshResponse.body.status).toBe("success")
+      expect(refreshResponse.body.data.accessToken).toBeDefined()
+
+      const decodedToken = jwt.verify(refreshResponse.body.data.accessToken, config.JWT_SECRET)
+      expect(decodedToken.admin).toBe(true)
+      expect(decodedToken.email).toBe(adminUser.email)
+      expect(decodedToken.id).toBe(adminUser.id)
+    })
+
+    it("should preserve regular user properties in refreshed access token", async () => {
+      const regularUser = await createUser({ admin: false, emailVerified: true })
+      const loginResponse = await request(api).post("/login").send({
+        password: regularUser.plainPassword,
+        username: regularUser.username
+      })
+
+      const cookies = loginResponse.headers["set-cookie"]
+      const refreshResponse = await request(api).post("/refresh").set("Cookie", cookies).expect(200)
+
+      expect(refreshResponse.body.status).toBe("success")
+      expect(refreshResponse.body.data.accessToken).toBeDefined()
+
+      const decodedToken = jwt.verify(refreshResponse.body.data.accessToken, config.JWT_SECRET)
+      expect(decodedToken.admin).toBe(false)
+      expect(decodedToken.email).toBe(regularUser.email)
+      expect(decodedToken.id).toBe(regularUser.id)
     })
   })
 
@@ -233,7 +273,9 @@ describe("Auth Endpoints", () => {
         .expect(400)
 
       expect(response.body.status).toBe("fail")
-      expect(response.body.data).toBeNull()
+      expect(response.body.data).toEqual({
+        validation: [{ message: "Invalid or expired verification token" }]
+      })
     })
 
     it("should fail validation and return 400 for missing token", async () => {

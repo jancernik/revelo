@@ -39,7 +39,7 @@ export class UnauthorizedError extends AppError {
 
 export class ValidationError extends AppError {
   constructor(message = "Validation failed", options = {}) {
-    super(message, { statusCode: 400, ...options })
+    super(message, { data: { validation: [{ message }] }, statusCode: 400, ...options })
     this.name = "ValidationError"
   }
 }

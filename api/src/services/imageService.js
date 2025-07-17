@@ -33,7 +33,7 @@ export const confirmUpload = async (sessionId, metadata) => {
   const sessionFile = tempFiles.find((file) => file.startsWith(sessionId))
 
   if (!sessionFile) {
-    throw new NotFoundError("Upload session expired or not found.")
+    throw new NotFoundError("Upload session expired or not found")
   }
 
   const tempFilePath = path.join(tempUploadsDir, sessionFile)
@@ -83,7 +83,7 @@ export const updateImageMetadata = async (id, metadata) => {
   const image = await Image.findByIdWithVersions(id)
 
   if (!image) {
-    throw new NotFoundError("Image not found.")
+    throw new NotFoundError("Image not found")
   }
 
   const updateData = {}
@@ -105,7 +105,7 @@ export const updateImageMetadata = async (id, metadata) => {
     .returning()
 
   if (!result.length) {
-    throw new FileProcessingError("Failed to update image metadata.")
+    throw new FileProcessingError("Failed to update image metadata")
   }
 
   return await Image.findByIdWithVersions(id)
@@ -115,7 +115,7 @@ export const deleteImage = async (id) => {
   const image = await Image.findByIdWithVersions(id)
 
   if (!image) {
-    throw new NotFoundError("Image not found.")
+    throw new NotFoundError("Image not found")
   }
 
   return await Image.db.transaction(async (tx) => {
@@ -230,7 +230,7 @@ export const fetchById = async (id) => {
   const image = await Image.findByIdWithVersions(id)
 
   if (!image) {
-    throw new NotFoundError("Image not found.")
+    throw new NotFoundError("Image not found")
   }
 
   return image
