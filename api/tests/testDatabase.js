@@ -9,19 +9,10 @@ let db = null
 export async function clearTables() {
   if (!db) return
 
+  const tables = Object.keys(db._.tableNamesMap).join(", ")
+
   try {
-    await db.execute(sql`
-      TRUNCATE TABLE 
-        users, 
-        images, 
-        settings, 
-        revoked_tokens, 
-        email_verification_tokens,
-        image_versions,
-        posts,
-        post_images
-      RESTART IDENTITY CASCADE
-    `)
+    await db.execute(sql`TRUNCATE TABLE ${sql.raw(tables)} RESTART IDENTITY CASCADE`)
   } catch (error) {
     console.warn("Warning: Could not clear tables:", error.message)
   }

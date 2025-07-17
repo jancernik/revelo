@@ -1,7 +1,6 @@
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
-import { createImage, createImages } from "#tests/testHelpers.js"
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals"
+import { createImage, createImages } from "#tests/helpers/imageHelpers.js"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"

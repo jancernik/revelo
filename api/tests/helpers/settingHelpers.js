@@ -5,10 +5,15 @@ import fs from "fs/promises"
 import path from "path"
 
 export async function cleanupTestSettingsFile() {
-  const settingsDir = path.join(process.cwd(), "temp/src/config")
-  const settingsPath = path.join(settingsDir, "settings.yml")
+  const tempSrcDir = path.join(process.cwd(), "temp/src")
+  const settingsPath = path.join(tempSrcDir, "settings.yml")
   try {
     await fs.rm(settingsPath, { force: true, recursive: true })
+  } catch {
+    // Do nothing
+  }
+  try {
+    await fs.rmdir(tempSrcDir, { force: true, recursive: true })
   } catch {
     // Do nothing
   }

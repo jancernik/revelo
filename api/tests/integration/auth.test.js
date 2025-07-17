@@ -1,6 +1,5 @@
-import { createUser, createVerificationToken } from "#tests/testHelpers.js"
+import { createUser, createVerificationToken } from "#tests/helpers/authHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
-import { describe, expect, it } from "@jest/globals"
 import request from "supertest"
 
 const api = createTestServer()
@@ -209,7 +208,7 @@ describe("Auth Endpoints", () => {
   describe("POST /verify-email", () => {
     it("should verify email successfully", async () => {
       const user = await createUser({ emailVerified: false })
-      const token = await createVerificationToken(user.id)
+      const token = await createVerificationToken(user)
 
       const response = await request(api).post("/verify-email").send({ token }).expect(200)
 

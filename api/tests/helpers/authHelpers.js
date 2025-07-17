@@ -1,8 +1,8 @@
-import { EmailVerificationTokensTable, UserTables } from "#src/database/schema.js"
+import { UserTables } from "#src/database/schema.js"
+import EmailVerificationToken from "#src/models/EmailVerificationToken.js"
 import { generateAccess } from "#src/utils/tokenUtils.js"
 import { getDb } from "#tests/testDatabase.js"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
 
 const baseUserData = (data = {}) => {
   const timestamp = Date.now()
@@ -46,21 +46,9 @@ export async function createUser(data) {
   return createdUser
 }
 
-export async function createVerificationToken(userId, email = null) {
-  const token = crypto.randomBytes(32).toString("hex")
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+export async function createVerificationToken(user) {
+  const { email, id } = user
 
-  const db = getDb()
-  const result = await db
-    .insert(EmailVerificationTokensTable)
-    .values({
-      email: email || `test-${userId}@example.com`,
-      expiresAt,
-      token,
-      used: false,
-      userId
-    })
-    .returning()
-
-  return result[0]?.token || token
+  const result = await EmailVerificationToken.createToken(id, email)
+  return result?.token || null
 }

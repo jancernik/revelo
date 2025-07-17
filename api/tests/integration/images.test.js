@@ -1,5 +1,5 @@
 import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
-import { createImage, createImages } from "#tests/testHelpers.js"
+import { createImage, createImages } from "#tests/helpers/imageHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
 import request from "supertest"
 import { v4 as uuid } from "uuid"
