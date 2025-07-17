@@ -5,8 +5,8 @@ export default {
     url: config.DB_URL
   },
   dialect: "postgresql",
-  out: "#src/database/migrations",
-  schema: "#src/database/schema.js",
+  out: "./src/database/migrations",
+  schema: "./src/database/schema.js",
   strict: true,
   verbose: true
 }

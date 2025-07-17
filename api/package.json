@@ -10,7 +10,8 @@
     "db:migrate": "node src/database/migrate.js",
     "db:create": "node src/database/create.js",
     "db:drop": "node src/database/drop.js",
-    "db:revert": "npx drizzle-kit drop"
+    "db:revert": "npx drizzle-kit drop",
+    "db:studio": "node src/database/studio.js"
   },
   "keywords": [],
   "author": "",

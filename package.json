@@ -21,6 +21,7 @@
     "db:create": "pnpm api db:create",
     "db:drop": "pnpm api db:drop",
     "db:revert": "pnpm api db:revert",
+    "db:studio": "pnpm api db:studio",
     "style": "pnpm lint; pnpm format",
     "api": "pnpm --filter api",
     "client": "pnpm --filter client",
