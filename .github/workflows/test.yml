@@ -1,0 +1,66 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: tests-ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DB_URL: postgresql://postgres:postgres@localhost:5432/revelo_test
+      JWT_SECRET: test-jwt-secret-key-for-ci
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-key-for-ci
+      CLIENT_BASE_URL: http://localhost:3000
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_USER: test@example.com
+      SMTP_PASS: test-smtp-password
+      FROM_EMAIL: test@example.com
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: revelo_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run database migrations
+        run: pnpm db:migrate
+
+      - name: Run tests
+        run: pnpm test
