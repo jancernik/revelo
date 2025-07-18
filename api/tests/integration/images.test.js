@@ -1,15 +1,10 @@
 import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
-import { createImage, createImages } from "#tests/helpers/imageHelpers.js"
+import { createImage, createImages, createMockFile } from "#tests/helpers/imageHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
 import request from "supertest"
 import { v4 as uuid } from "uuid"
 
 const api = createTestServer()
-
-const mockImageBuffer = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
-  "base64"
-)
 
 describe("Image Endpoints", () => {
   let adminUserToken
@@ -92,19 +87,22 @@ describe("Image Endpoints", () => {
       expect(response.body.data).toBeNull()
     })
 
-    it("should return 400 for invalid image id", async () => {
-      const response = await request(api).get("/images/invalid").expect(400)
+    it("should return 404 for invalid image id", async () => {
+      const response = await request(api).get("/images/invalid").expect(404)
 
       expect(response.body.status).toBe("fail")
+      expect(response.body.data).toBeNull()
     })
   })
 
   describe("POST /upload/review", () => {
     it("should upload single image for review", async () => {
+      const mockFile = createMockFile("test.png")
+
       const response = await request(api)
         .post("/upload/review")
         .set("Authorization", `Bearer ${adminUserToken}`)
-        .attach("images", mockImageBuffer, "test.png")
+        .attach("images", mockFile.buffer, "test.png")
         .expect(201)
 
       expect(response.body.status).toBe("success")
@@ -116,11 +114,14 @@ describe("Image Endpoints", () => {
     })
 
     it("should upload multiple images for review", async () => {
+      const mockFile1 = createMockFile("test1.png")
+      const mockFile2 = createMockFile("test2.png")
+
       const response = await request(api)
         .post("/upload/review")
         .set("Authorization", `Bearer ${adminUserToken}`)
-        .attach("images", mockImageBuffer, "test1.png")
-        .attach("images", mockImageBuffer, "test2.png")
+        .attach("images", mockFile1.buffer, "test1.png")
+        .attach("images", mockFile2.buffer, "test2.png")
         .expect(201)
 
       expect(response.body.status).toBe("success")
@@ -137,13 +138,15 @@ describe("Image Endpoints", () => {
         .expect(400)
 
       expect(response.body.status).toBe("fail")
-      expect(response.body.data).toBeNull()
+      expect(response.body.data).toEqual({ validation: [{ message: "No files uploaded" }] })
     })
 
     it("should return 401 for unauthenticated request", async () => {
+      const mockFile = createMockFile("test.png")
+
       const response = await request(api)
         .post("/upload/review")
-        .attach("image", mockImageBuffer, "test.png")
+        .attach("image", mockFile.buffer, "test.png")
         .expect(401)
 
       expect(response.body.status).toBe("fail")
@@ -154,10 +157,11 @@ describe("Image Endpoints", () => {
     let sessionId
 
     beforeEach(async () => {
+      const mockFile = createMockFile("test.png")
       const uploadResponse = await request(api)
         .post("/upload/review")
         .set("Authorization", `Bearer ${adminUserToken}`)
-        .attach("images", mockImageBuffer, "test.png")
+        .attach("images", mockFile.buffer, "test.png")
       sessionId = uploadResponse.body.data.images[0].sessionId
     })
 
@@ -208,10 +212,11 @@ describe("Image Endpoints", () => {
     })
 
     it("should confirm multiple images upload with images array", async () => {
+      const mockFile2 = createMockFile("test2.png")
       const uploadResponse2 = await request(api)
         .post("/upload/review")
         .set("Authorization", `Bearer ${adminUserToken}`)
-        .attach("images", mockImageBuffer, "test2.png")
+        .attach("images", mockFile2.buffer, "test2.png")
       const sessionId2 = uploadResponse2.body.data.images[0].sessionId
 
       const imagesData = [

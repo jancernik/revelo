@@ -221,7 +221,7 @@ describe("Setting Model", () => {
 
     it("should return correct text value", async () => {
       const setting = await Setting.get("maintenanceMessage", { includeRestricted: true })
-      expect(setting.value).toBe("The system is temporarily unavailable due to maintenance")
+      expect(setting.value).toBe("The system is temporarily unavailable due to maintenance.")
       expect(setting.value).toEqual(expect.any(String))
     })
 

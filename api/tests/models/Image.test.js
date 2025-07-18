@@ -1,53 +1,15 @@
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
-import { createImage, createImages } from "#tests/helpers/imageHelpers.js"
+import {
+  cleanupTempFiles,
+  createImage,
+  createImages,
+  createMockFile,
+  createTempFile,
+  getMetadataTestData
+} from "#tests/helpers/imageHelpers.js"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
-import path from "path"
-
-const DEFAULT_IMAGE_DATA = {
-  aperture: "f/2.8",
-  camera: "Test Camera",
-  date: new Date("2023-01-01"),
-  focalLength: "50mm",
-  iso: 200,
-  lens: "Test Lens",
-  originalFilename: "test-image.jpg",
-  shutterSpeed: "1/125"
-}
-
-const createMockFile = (filename = "test.jpg") => {
-  const mockImageBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
-    "base64"
-  )
-
-  const tempDir = path.join(process.cwd(), "temp")
-  const tempFilePath = path.join(tempDir, filename)
-
-  return {
-    buffer: mockImageBuffer,
-    mimetype: "image/png",
-    originalname: filename,
-    path: tempFilePath,
-    size: mockImageBuffer.length
-  }
-}
-
-const createTempFile = async (file) => {
-  const tempDir = path.dirname(file.path)
-  await fs.mkdir(tempDir, { recursive: true })
-  await fs.writeFile(file.path, file.buffer)
-}
-
-const cleanupTempFiles = async () => {
-  const tempDir = path.join(process.cwd(), "temp")
-  try {
-    await fs.rm(tempDir, { force: true, recursive: true })
-  } catch {
-    // Do nothing
-  }
-}
 
 describe("Image Model", () => {
   beforeEach(async () => {
@@ -64,8 +26,13 @@ describe("Image Model", () => {
       await createTempFile(file)
 
       const imageData = {
-        ...DEFAULT_IMAGE_DATA,
-        originalFilename: "test-create.jpg"
+        aperture: "f/2.8",
+        camera: "Test Camera",
+        focalLength: "50mm",
+        iso: 200,
+        lens: "Test Lens",
+        originalFilename: "test-create.jpg",
+        shutterSpeed: "1/250"
       }
 
       const result = await Image.createWithVersions(file, imageData)
@@ -73,12 +40,12 @@ describe("Image Model", () => {
       expect(result).toBeDefined()
       expect(result.id).toBeDefined()
       expect(result.originalFilename).toBe("test-create.jpg")
-      expect(result.camera).toBe(DEFAULT_IMAGE_DATA.camera)
-      expect(result.lens).toBe(DEFAULT_IMAGE_DATA.lens)
-      expect(result.aperture).toBe(DEFAULT_IMAGE_DATA.aperture)
-      expect(result.shutterSpeed).toBe(DEFAULT_IMAGE_DATA.shutterSpeed)
-      expect(result.iso).toBe(DEFAULT_IMAGE_DATA.iso)
-      expect(result.focalLength).toBe(DEFAULT_IMAGE_DATA.focalLength)
+      expect(result.camera).toBe("Test Camera")
+      expect(result.lens).toBe("Test Lens")
+      expect(result.aperture).toBe("f/2.8")
+      expect(result.shutterSpeed).toBe("1/250")
+      expect(result.iso).toBe(200)
+      expect(result.focalLength).toBe("50mm")
       expect(result.versions).toBeDefined()
       expect(Array.isArray(result.versions)).toBe(true)
       expect(result.versions.length).toBe(4)
@@ -99,12 +66,11 @@ describe("Image Model", () => {
       })
     })
 
-    it("should handle vertical images correctly", async () => {
+    it("should handle different image orientations correctly", async () => {
       const file = createMockFile("vertical-test.jpg")
       await createTempFile(file)
 
       const imageData = {
-        ...DEFAULT_IMAGE_DATA,
         originalFilename: "vertical-test.jpg"
       }
 
@@ -114,9 +80,16 @@ describe("Image Model", () => {
       expect(result.versions).toBeDefined()
       expect(result.versions.length).toBe(4)
 
+      const versionTypes = result.versions.map((v) => v.type)
+      expect(versionTypes).toContain("original")
+      expect(versionTypes).toContain("regular")
+      expect(versionTypes).toContain("thumbnail")
+      expect(versionTypes).toContain("tiny")
+
       result.versions.forEach((version) => {
         expect(version.height).toBeGreaterThan(0)
         expect(version.width).toBeGreaterThan(0)
+        expect(version.imageId).toBe(result.id)
       })
     })
 
@@ -125,7 +98,6 @@ describe("Image Model", () => {
       await createTempFile(file)
 
       const imageData = {
-        ...DEFAULT_IMAGE_DATA,
         originalFilename: "cleanup-test.jpg"
       }
 
@@ -137,6 +109,87 @@ describe("Image Model", () => {
       } catch (error) {
         expect(error.code).toBe("ENOENT")
       }
+    })
+
+    it("should store metadata correctly for Canon R5", async () => {
+      const testData = getMetadataTestData().canonR5
+      const file = createMockFile("canon-r5-test.jpg")
+      await createTempFile(file)
+
+      const imageData = {
+        aperture: `f/${testData.expected.aperture}`,
+        camera: testData.expected.camera,
+        date: new Date(testData.expected.date),
+        focalLength: `${testData.expected.focalLength}mm`,
+        iso: parseInt(testData.expected.iso),
+        lens: testData.expected.lens,
+        originalFilename: "canon-r5-test.jpg",
+        shutterSpeed: testData.expected.shutterSpeed
+      }
+
+      const result = await Image.createWithVersions(file, imageData)
+
+      expect(result.camera).toBe(testData.expected.camera)
+      expect(result.lens).toBe(testData.expected.lens)
+      expect(result.aperture).toBe(`f/${testData.expected.aperture}`)
+      expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
+      expect(result.iso).toBe(parseInt(testData.expected.iso))
+      expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.date).toEqual(new Date(testData.expected.date))
+    })
+
+    it("should store metadata correctly for Nikon D850", async () => {
+      const testData = getMetadataTestData().nikonD850
+      const file = createMockFile("nikon-d850-test.jpg")
+      await createTempFile(file)
+
+      const imageData = {
+        aperture: `f/${testData.expected.aperture}`,
+        camera: testData.expected.camera,
+        date: new Date(testData.expected.date),
+        focalLength: `${testData.expected.focalLength}mm`,
+        iso: parseInt(testData.expected.iso),
+        lens: testData.expected.lens,
+        originalFilename: "nikon-d850-test.jpg",
+        shutterSpeed: testData.expected.shutterSpeed
+      }
+
+      const result = await Image.createWithVersions(file, imageData)
+
+      expect(result.camera).toBe(testData.expected.camera)
+      expect(result.lens).toBe(testData.expected.lens)
+      expect(result.aperture).toBe(`f/${testData.expected.aperture}`)
+      expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
+      expect(result.iso).toBe(parseInt(testData.expected.iso))
+      expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.date).toEqual(new Date(testData.expected.date))
+    })
+
+    it("should store metadata correctly for Sony A7 IV", async () => {
+      const testData = getMetadataTestData().sonyA7IV
+      const file = createMockFile("sony-a7iv-test.jpg")
+      await createTempFile(file)
+
+      const imageData = {
+        aperture: `f/${testData.expected.aperture}`,
+        camera: testData.expected.camera,
+        date: new Date(testData.expected.date),
+        focalLength: `${testData.expected.focalLength}mm`,
+        iso: parseInt(testData.expected.iso),
+        lens: testData.expected.lens,
+        originalFilename: "sony-a7iv-test.jpg",
+        shutterSpeed: testData.expected.shutterSpeed
+      }
+
+      const result = await Image.createWithVersions(file, imageData)
+
+      expect(result.camera).toBe(testData.expected.camera)
+      expect(result.lens).toBe(testData.expected.lens)
+      expect(result.aperture).toBe(`f/${testData.expected.aperture}`)
+      expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
+      expect(result.iso).toBe(parseInt(testData.expected.iso))
+      expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.date).toEqual(new Date(testData.expected.date))
     })
   })
 
@@ -151,15 +204,12 @@ describe("Image Model", () => {
       await createTempFile(file3)
 
       await Image.createWithVersions(file1, {
-        ...DEFAULT_IMAGE_DATA,
         originalFilename: "version-test-1.jpg"
       })
       await Image.createWithVersions(file2, {
-        ...DEFAULT_IMAGE_DATA,
         originalFilename: "version-test-2.jpg"
       })
       await Image.createWithVersions(file3, {
-        ...DEFAULT_IMAGE_DATA,
         originalFilename: "version-test-3.jpg"
       })
     })
@@ -224,7 +274,6 @@ describe("Image Model", () => {
         const file = createMockFile(`versions-test-${i}.jpg`)
         await createTempFile(file)
         await Image.createWithVersions(file, {
-          ...DEFAULT_IMAGE_DATA,
           camera: `Test Camera ${i}`,
           originalFilename: `versions-test-${i}.jpg`
         })
@@ -550,12 +599,10 @@ describe("Image Model", () => {
   describe("edge cases and error handling", () => {
     it("should handle images with special characters in filename", async () => {
       const specialFilename = "test-image-with-special-chars.jpg"
-      const imageData = {
-        ...DEFAULT_IMAGE_DATA,
-        originalFilename: specialFilename
-      }
 
-      const createdImage = await Image.create(imageData)
+      const createdImage = await createImage({
+        originalFilename: specialFilename
+      })
 
       expect(createdImage).toBeDefined()
       expect(createdImage.originalFilename).toBe(specialFilename)
@@ -587,13 +634,10 @@ describe("Image Model", () => {
     })
 
     it("should handle very large ISO values", async () => {
-      const imageData = {
-        ...DEFAULT_IMAGE_DATA,
+      const createdImage = await createImage({
         iso: 102400,
         originalFilename: "high-iso.jpg"
-      }
-
-      const createdImage = await Image.create(imageData)
+      })
 
       expect(createdImage).toBeDefined()
       expect(createdImage.iso).toBe(102400)
@@ -601,13 +645,11 @@ describe("Image Model", () => {
 
     it("should handle future dates", async () => {
       const futureDate = new Date("2030-12-31")
-      const imageData = {
-        ...DEFAULT_IMAGE_DATA,
+
+      const createdImage = await createImage({
         date: futureDate,
         originalFilename: "future-date.jpg"
-      }
-
-      const createdImage = await Image.create(imageData)
+      })
 
       expect(createdImage).toBeDefined()
       expect(createdImage.date).toEqual(futureDate)
