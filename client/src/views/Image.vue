@@ -14,11 +14,12 @@ const image = ref(null)
 const fetchImage = async () => {
   try {
     const response = await api.get(`/images/${route.params.id}`)
-    image.value = response.data
+    image.value = response.data?.data?.image || null
   } catch (error) {
     router.push("/")
+    const errorMessage = error.response?.data?.message || error.message || "Failed to fetch image."
     showToast({
-      description: error.message,
+      description: errorMessage,
       duration: 5,
       title: "Error fetching image",
       type: "error"

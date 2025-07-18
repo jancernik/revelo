@@ -69,7 +69,7 @@ export const extractMetadata = async (filePath) => {
     camera: (raw.Make || raw.Model) && `${raw.Make || ""}${raw.Model ? ` ${raw.Model}` : ""}`,
     date:
       (raw.DateTimeOriginal || raw.CreateDate) &&
-      (raw.DateTimeOriginal || raw.CreateDate).toISOString().split("T")[0],
+      new Date(raw.DateTimeOriginal || raw.CreateDate).toISOString().split("T")[0],
     focalLength: raw.FocalLength?.toString(),
     iso: raw.ISO?.toString(),
     lens: raw.LensModel,

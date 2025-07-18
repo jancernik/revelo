@@ -1,5 +1,7 @@
+import { useToast } from "#src/composables/useToast"
 import api from "#src/utils/api"
 import { defineStore } from "pinia"
+const { show: showToast } = useToast()
 
 export const useSettingsStore = defineStore("settings", {
   actions: {
@@ -13,12 +15,16 @@ export const useSettingsStore = defineStore("settings", {
       try {
         const response = await api.get("/settings")
 
-        this.settingsArray = response.data
+        this.settingsArray = response.data?.data?.settings || []
         this.initialized = true
       } catch (error) {
         this.error = error.response?.data?.message || error.message
-        console.error("Failed to fetch settings:", error)
-        throw error
+        showToast({
+          description: this.error,
+          duration: 3,
+          title: "Error Fetching Settings",
+          type: "error"
+        })
       } finally {
         this.loading = false
       }

@@ -35,7 +35,7 @@ export const useAuthStore = defineStore("auth", {
     async refreshToken() {
       try {
         const response = await api.post("/refresh")
-        this.accessToken = response.data.data.accessToken
+        this.accessToken = response.data?.data?.accessToken
         localStorage.setItem("accessToken", this.accessToken)
         return response.data
       } catch (error) {

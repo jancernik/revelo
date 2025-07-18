@@ -8,8 +8,7 @@ const { show: showToast } = useToast()
 const handleCleanupTemp = async () => {
   try {
     const response = await api.post("/maintenance/cleanup-temp")
-    const data = response.data.result
-    console.log("data: ", data)
+    const data = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       duration: 5,
@@ -17,9 +16,10 @@ const handleCleanupTemp = async () => {
       type: "success"
     })
   } catch (error) {
-    console.error("Error cleaning up temporary images:", error)
+    const errorMessage =
+      error.response?.data?.message || error.message || "Failed to clean up temporary images."
     showToast({
-      description: "Failed to clean up temporary images.",
+      description: errorMessage,
       duration: 5,
       title: "Cleanup Failed",
       type: "error"
@@ -30,7 +30,7 @@ const handleCleanupTemp = async () => {
 const handleCleanupOrphaned = async () => {
   try {
     const response = await api.post("/maintenance/cleanup-orphaned")
-    const data = response.data.result
+    const data = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       duration: 5,
@@ -38,9 +38,10 @@ const handleCleanupOrphaned = async () => {
       type: "success"
     })
   } catch (error) {
-    console.error("Error cleaning up orphaned images:", error)
+    const errorMessage =
+      error.response?.data?.message || error.message || "Failed to clean up orphaned images."
     showToast({
-      description: "Failed to clean up orphaned images.",
+      description: errorMessage,
       duration: 5,
       title: "Cleanup Failed",
       type: "error"

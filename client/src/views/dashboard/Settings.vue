@@ -114,7 +114,10 @@ const resetDefault = async (settingName) => {
 const saveAllChanges = async () => {
   try {
     isSaving.value = true
-    await api.put("/settings", changedSettings.value)
+
+    const settings = Object.entries(changedSettings.value).map(([name, value]) => ({ name, value }))
+
+    await api.put("/settings", { settings })
 
     Object.keys(changedSettings.value).forEach((key) => {
       const current = currentValues[key]
@@ -153,7 +156,7 @@ const fetchSettings = async () => {
   try {
     loading.value = true
     const response = await api.get("/settings?complete=true")
-    settings.value = response.data
+    settings.value = response.data?.data?.settings || []
 
     settings.value.forEach((setting) => {
       const value = setting.value

@@ -41,7 +41,7 @@ const shuffle = (array) => gsap.utils.shuffle(array)
 const fetchImages = async () => {
   try {
     const response = await api.get("/images")
-    imageData.value = response.data
+    imageData.value = response.data?.data?.images || []
   } catch (error) {
     console.error("Error fetching images:", error)
   }

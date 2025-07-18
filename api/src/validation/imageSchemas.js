@@ -6,7 +6,7 @@ const sessionIdSchema = z.uuid("Invalid session ID format")
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
   camera: z.string().max(255).optional().nullable(),
-  date: z.iso.datetime().optional().nullable(),
+  date: z.iso.date().optional().nullable(),
   focalLength: z.string().max(50).optional().nullable(),
   iso: z.string().max(50).optional().nullable(),
   lens: z.string().max(255).optional().nullable(),

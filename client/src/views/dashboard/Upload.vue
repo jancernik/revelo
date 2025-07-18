@@ -35,33 +35,25 @@ const handleUploadForReview = async (data) => {
 
     const { images, previewUrls: urls } = data
 
-    if (images.length > 1) {
+    if (images.length > 0) {
       const formData = new FormData()
       images.forEach((image) => formData.append("images", image))
-
-      const response = await api.post("/upload/batch-review", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      })
-
-      response.data.data.forEach((result, index) => {
-        sessionIds.value.push(result.sessionId)
-        extractedMetadata.value.push(result.metadata)
-        previewUrls.value.push(urls[index])
-        previewFilenames.value.push(images[index].name)
-      })
-    } else {
-      const formData = new FormData()
-      formData.append("image", images[0])
 
       const response = await api.post("/upload/review", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       })
 
-      const { metadata, sessionId } = response.data.data
-      sessionIds.value.push(sessionId)
-      extractedMetadata.value.push(metadata)
-      previewUrls.value.push(urls[0])
-      previewFilenames.value.push(images[0].name)
+      const imageData = response.data?.data?.images || []
+
+      imageData.forEach((image, index) => {
+        sessionIds.value.push(image.sessionId)
+        extractedMetadata.value.push(image.metadata)
+        previewUrls.value.push(urls[index])
+        previewFilenames.value.push(images[index].name)
+      })
+    } else {
+      console.error("Upload error")
+      return
     }
 
     step.value = 2
@@ -78,15 +70,9 @@ const handleConfirm = async (data) => {
     isLoading.value = true
     processingStep.value = "uploading"
 
-    if (data.length > 1) {
-      const response = await api.post("/upload/batch-confirm", { batch: data })
-      uploadedImages.value = response.data.images
-    } else {
-      const response = await api.post("/upload/confirm", {
-        metadata: data[0].metadata,
-        sessionId: data[0].sessionId
-      })
-      uploadedImages.value.push(response.data.image)
+    if (data.length > 0) {
+      const response = await api.post("/upload/confirm", { images: data })
+      uploadedImages.value = response.data?.data?.images || []
     }
 
     step.value = 3

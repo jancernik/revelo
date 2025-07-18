@@ -7,7 +7,7 @@ const props = defineProps({
     type: String
   },
   defaultClass: {
-    default: "r-icon",
+    default: "icon",
     type: String
   },
   name: {

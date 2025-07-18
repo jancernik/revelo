@@ -11,13 +11,13 @@ const router = useRouter()
 const email = ref("")
 const username = ref("")
 const password = ref("")
-const signupError = ref("")
+const signupErrors = ref([])
 const isLoading = ref(false)
 const showSignupForm = ref(false)
 const { settings } = useSettings()
 
 const handleSignup = async () => {
-  signupError.value = ""
+  signupErrors.value = []
   isLoading.value = true
 
   try {
@@ -27,12 +27,28 @@ const handleSignup = async () => {
       username: username.value
     })
 
-    if (result.requiresVerification) {
-      router.push("verification-pending")
+    if (result.data?.user) {
+      if (result.data.user.emailVerified) {
+        if (result.data.user.admin) {
+          router.push("/dashboard")
+        } else {
+          router.push("/")
+        }
+      } else {
+        router.push("/verification-pending")
+      }
+    } else {
+      signupErrors.value.push("Signup failed. Please try again.")
     }
   } catch (error) {
-    signupError.value = error.response?.data?.message || "Signup failed. Please try again."
-    console.error(error)
+    if (error.response.data?.data?.validation?.length) {
+      const validation = error.response.data.data.validation
+      const validationErrors = validation.map((v) => v.message)
+      signupErrors.value = validationErrors
+      return
+    }
+    const errorMessage = error.response?.data?.message || "Signup failed. Please try again."
+    signupErrors.value = [errorMessage]
   } finally {
     isLoading.value = false
   }
@@ -70,7 +86,9 @@ onMounted(redirectIfAuthenticated)
   <div class="signup">
     <div v-if="showSignupForm" class="signup-card">
       <h3>Sign Up</h3>
-      <div v-if="signupError" class="error-message">{{ signupError }}</div>
+      <ul v-if="signupErrors.length" class="error-message">
+        <li v-for="(error, index) in signupErrors" :key="index">{{ error }}</li>
+      </ul>
       <form @submit.prevent="handleSignup">
         <Input
           v-model="email"
@@ -125,13 +143,19 @@ onMounted(redirectIfAuthenticated)
     }
 
     .error-message {
-      @include text("sm");
       color: var(--danger);
       margin-block: var(--spacing-4);
-      text-align: center;
       background-color: var(--danger-background);
       padding: var(--spacing-2) var(--spacing-4);
       border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+      list-style: none;
+
+      li {
+        @include text("sm");
+      }
     }
 
     form {
