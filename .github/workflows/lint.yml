@@ -9,12 +9,12 @@ on:
       - main
 
 concurrency:
-  group: tests-ci-${{ github.head_ref || github.ref }}
+  group: lint-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   lint:
-    name: Lint (ESLint)
+    name: ESLint
     runs-on: ubuntu-latest
 
     steps:

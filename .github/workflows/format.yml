@@ -8,9 +8,13 @@ on:
     branches:
       - main
 
+concurrency:
+  group: format-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format:
-    name: Format (Prettier)
+    name: Prettier
     runs-on: ubuntu-latest
 
     steps:

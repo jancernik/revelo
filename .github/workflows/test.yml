@@ -9,11 +9,12 @@ on:
       - main
 
 concurrency:
-  group: tests-ci-${{ github.head_ref || github.ref }}
+  group: test-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
+    name: Jest
     runs-on: ubuntu-latest
 
     env:
@@ -31,7 +32,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: revelo_test
@@ -60,7 +61,7 @@ jobs:
         run: pnpm install
 
       - name: Run database migrations
-        run: pnpm db:migrate
+        run: pnpm db:create; pnpm db:migrate
 
       - name: Run tests
         run: pnpm test
