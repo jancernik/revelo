@@ -37,8 +37,10 @@ if (missingEnvVars.length > 0) {
 }
 
 export const config = {
+  API_BASE_URL: process.env.API_BASE_URL,
   CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
   DB_URL: process.env.DB_URL,
+  EMBEDDINGS_BASE_URL: process.env.EMBEDDINGS_BASE_URL,
   ENV: envType,
   FROM_EMAIL: process.env.FROM_EMAIL,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
