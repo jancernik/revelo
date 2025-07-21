@@ -76,7 +76,14 @@ async def generate_image_caption(image: UploadFile = File(...)):
 
         inputs = caption_processor(images=pil_image, return_tensors="pt").to(device)
         with torch.no_grad():
-            caption_ids = caption_model.generate(**inputs, max_new_tokens=30)
+            caption_ids = caption_model.generate(
+                **inputs,
+                max_new_tokens=60,
+                num_beams=3,
+                early_stopping=True,
+                no_repeat_ngram_size=2,
+                temperature=1.2
+            )
             caption = caption_processor.decode(caption_ids[0], skip_special_tokens=True)
 
         processing_time = (time.time() - start_time) * 1000
