@@ -82,7 +82,6 @@ async def generate_image_caption(image: UploadFile = File(...)):
                 num_beams=3,
                 early_stopping=True,
                 no_repeat_ngram_size=2,
-                temperature=1.2
             )
             caption = caption_processor.decode(caption_ids[0], skip_special_tokens=True)
 

@@ -2,6 +2,39 @@ import { config } from "#src/config/environment.js"
 import { AppError } from "#src/core/errors.js"
 import fs from "fs"
 
+class AiQueue {
+  constructor() {
+    this.queue = []
+    this.processing = false
+  }
+
+  async add(task) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ reject, resolve, task })
+      this.processNext()
+    })
+  }
+
+  async processNext() {
+    if (this.processing || this.queue.length === 0) return
+
+    this.processing = true
+    const { reject, resolve, task } = this.queue.shift()
+
+    try {
+      const result = await task()
+      resolve(result)
+    } catch (error) {
+      reject(error)
+    } finally {
+      this.processing = false
+      setTimeout(() => this.processNext(), 100)
+    }
+  }
+}
+
+export const aiQueue = new AiQueue()
+
 const makeRequest = async (url, options = {}) => {
   const response = await fetch(url, {
     ...options,
@@ -19,7 +52,37 @@ const makeRequest = async (url, options = {}) => {
   return json.data
 }
 
-export const generateImageEmbedding = async (imagePath) => {
+const requestImageCaption = async (imagePath) => {
+  if (config.ENV === "test") return "Test caption"
+
+  const baseUrl = config.EMBEDDINGS_BASE_URL
+
+  try {
+    const fileBuffer = fs.readFileSync(imagePath)
+    const blob = new Blob([fileBuffer])
+    const formData = new FormData()
+    formData.append("image", blob, "image.jpg")
+
+    const result = await makeRequest(`${baseUrl}/caption/image`, {
+      body: formData,
+      method: "POST"
+    })
+
+    return result.caption
+  } catch (error) {
+    if (error.name === "TimeoutError") {
+      throw new AppError("Embedding service timed out", { data: { error }, isOperational: false })
+    }
+    throw new AppError(`Failed to generate image caption`, {
+      data: { error },
+      isOperational: false
+    })
+  }
+}
+
+const requestImageEmbedding = async (imagePath) => {
+  if (config.ENV === "test") return new Array(768).fill(0.19)
+
   const baseUrl = config.EMBEDDINGS_BASE_URL
 
   try {
@@ -45,7 +108,9 @@ export const generateImageEmbedding = async (imagePath) => {
   }
 }
 
-export const generateTextEmbedding = async (text) => {
+const requestTextEmbedding = async (text) => {
+  if (config.ENV === "test") return new Array(768).fill(0.21)
+
   const baseUrl = config.EMBEDDINGS_BASE_URL
 
   try {
@@ -70,27 +135,13 @@ export const generateTextEmbedding = async (text) => {
 }
 
 export const generateImageCaption = async (imagePath) => {
-  const baseUrl = config.EMBEDDINGS_BASE_URL
+  return aiQueue.add(() => requestImageCaption(imagePath))
+}
 
-  try {
-    const fileBuffer = fs.readFileSync(imagePath)
-    const blob = new Blob([fileBuffer])
-    const formData = new FormData()
-    formData.append("image", blob, "image.jpg")
+export const generateImageEmbedding = async (imagePath) => {
+  return aiQueue.add(() => requestImageEmbedding(imagePath))
+}
 
-    const result = await makeRequest(`${baseUrl}/caption/image`, {
-      body: formData,
-      method: "POST"
-    })
-
-    return result.caption
-  } catch (error) {
-    if (error.name === "TimeoutError") {
-      throw new AppError("Embedding service timed out", { data: { error }, isOperational: false })
-    }
-    throw new AppError(`Failed to generate image caption`, {
-      data: { error },
-      isOperational: false
-    })
-  }
+export const generateTextEmbedding = async (text) => {
+  return aiQueue.add(() => requestTextEmbedding(text))
 }

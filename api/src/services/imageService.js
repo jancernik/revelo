@@ -1,5 +1,6 @@
-import { FileProcessingError, NotFoundError } from "#src/core/errors.js"
+import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
+import { generateImageCaption, generateImageEmbedding } from "#src/services/aiService.js"
 import { eq } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
@@ -59,7 +60,12 @@ export const confirmUpload = async (sessionId, metadata) => {
     size: (await fs.stat(tempFilePath)).size
   }
 
-  return await Image.createWithVersions(file, imageMetadata)
+  const image = await Image.createWithVersions(file, imageMetadata)
+
+  generateEmbedding(image)
+  generateCaption(image)
+
+  return image
 }
 
 export const extractMetadata = async (filePath) => {
@@ -226,7 +232,7 @@ export const cleanupOrphanedFiles = async () => {
   }
 }
 
-export const fetchById = async (id) => {
+export const fetchByIdWithVersions = async (id) => {
   const image = await Image.findByIdWithVersions(id)
 
   if (!image) {
@@ -234,4 +240,39 @@ export const fetchById = async (id) => {
   }
 
   return image
+}
+
+const generateEmbedding = async (image) => {
+  try {
+    const originalVersion = image.versions.find((v) => v.type === "original")
+    if (!originalVersion) {
+      throw new AppError("Original version not found", { isOperational: false })
+    }
+
+    const embedding = await generateImageEmbedding(originalVersion.path)
+
+    await Image.db.update(Image.table).set({ embedding }).where(eq(Image.table.id, image.id))
+  } catch (error) {
+    throw new AppError("Failed to generate embedding for image", {
+      data: { error },
+      isOperational: false
+    })
+  }
+}
+const generateCaption = async (image) => {
+  try {
+    const originalVersion = image.versions.find((v) => v.type === "original")
+    if (!originalVersion) {
+      throw new AppError("Original version not found", { isOperational: false })
+    }
+
+    const caption = await generateImageCaption(originalVersion.path)
+
+    await Image.db.update(Image.table).set({ caption }).where(eq(Image.table.id, image.id))
+  } catch (error) {
+    throw new AppError("Failed to generate caption for image", {
+      data: { error },
+      isOperational: false
+    })
+  }
 }

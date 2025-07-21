@@ -69,7 +69,7 @@ export const fetchTiny = async (req, res) => {
 
 export const fetchById = async (req, res) => {
   const { id } = req.params
-  const image = await imageService.fetchById(id)
+  const image = await imageService.fetchByIdWithVersions(id)
 
   res.status(200).json({
     data: { image },
