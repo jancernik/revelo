@@ -51,9 +51,10 @@ export const ImagesTable = pgTable(
   {
     aperture: varchar("aperture", { length: 50 }),
     camera: varchar("camera", { length: 255 }),
+    caption: varchar("caption", { length: 1000 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     date: timestamp("date"),
-    embedding: vector("embedding", { dimensions: 512 }),
+    embedding: vector("embedding", { dimensions: 768 }),
     focalLength: varchar("focal_length", { length: 50 }),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     iso: integer("iso"),

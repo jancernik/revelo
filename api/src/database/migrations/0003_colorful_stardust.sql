@@ -1,0 +1,1 @@
+ALTER TABLE "images" ADD COLUMN "caption" varchar(1000);
