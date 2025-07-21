@@ -18,4 +18,4 @@ api/uploads/*
 api/temp/*
 
 
-clip/__pycache__/*
+ai/__pycache__/*

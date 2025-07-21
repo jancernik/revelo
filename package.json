@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"Client,API,Embeddings\" -c \"#41b883,#00a0df,#ff6b6b\" \"pnpm client dev\" \"pnpm api dev\" \"pnpm embeddings\"",
+    "dev": "concurrently -n \"Client,API,AI\" -c \"#41b883,#00a0df,#ff6b6b\" \"pnpm client dev\" \"pnpm api dev\" \"pnpm ai\"",
     "dev:api": "pnpm api dev",
     "dev:client": "pnpm client dev",
     "lint": "eslint . --fix",
@@ -27,7 +27,7 @@
     "style": "pnpm lint; pnpm format",
     "api": "pnpm --filter api",
     "client": "pnpm --filter client",
-    "embeddings": "cd clip && python -m uvicorn app:app --reload --port 8000",
+    "ai": "cd ai && python -m uvicorn app:app --reload --port 8000",
     "prepare": "husky"
   },
   "devDependencies": {

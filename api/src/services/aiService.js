@@ -68,3 +68,29 @@ export const generateTextEmbedding = async (text) => {
     })
   }
 }
+
+export const generateImageCaption = async (imagePath) => {
+  const baseUrl = config.EMBEDDINGS_BASE_URL
+
+  try {
+    const fileBuffer = fs.readFileSync(imagePath)
+    const blob = new Blob([fileBuffer])
+    const formData = new FormData()
+    formData.append("image", blob, "image.jpg")
+
+    const result = await makeRequest(`${baseUrl}/caption/image`, {
+      body: formData,
+      method: "POST"
+    })
+
+    return result.caption
+  } catch (error) {
+    if (error.name === "TimeoutError") {
+      throw new AppError("Embedding service timed out", { data: { error }, isOperational: false })
+    }
+    throw new AppError(`Failed to generate image caption`, {
+      data: { error },
+      isOperational: false
+    })
+  }
+}
