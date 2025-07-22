@@ -1,3 +1,4 @@
+import storageManager from "#src/config/storageManager.js"
 import { extractMetadata } from "#src/services/imageService.js"
 import { cleanupTempFiles, getMetadataTestData } from "#tests/helpers/imageHelpers.js"
 import fs from "fs/promises"
@@ -14,15 +15,14 @@ describe("Image Service", () => {
 
   describe("extractMetadata", () => {
     it("should handle files without EXIF data gracefully", async () => {
-      const tempDir = path.join(process.cwd(), "temp")
-      await fs.mkdir(tempDir, { recursive: true })
+      await storageManager.ensureDirectories()
 
       const simplePng = Buffer.from(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
         "base64"
       )
 
-      const filePath = path.join(tempDir, "no-exif.png")
+      const filePath = path.join(storageManager.stagingDir, "no-exif.png")
       await fs.writeFile(filePath, simplePng)
 
       const metadata = await extractMetadata(filePath)

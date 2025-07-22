@@ -15,6 +15,7 @@ coverage
 !.vscode/extensions.json
 
 api/uploads/*
+api/test-uploads/*
 api/temp/*
 
 

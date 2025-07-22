@@ -1,3 +1,4 @@
+import storageManager from "#src/config/storageManager.js"
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
 import {
@@ -12,14 +13,9 @@ import path from "path"
 import sharp from "sharp"
 import { v4 as uuid } from "uuid"
 
-const uploadsDir = path.join("uploads")
-const tempUploadsDir = path.join("uploads", "temp")
-
 export const uploadForReview = async (file) => {
   const sessionId = uuid()
-  await fs.mkdir(tempUploadsDir, { recursive: true })
-
-  const tempFilePath = path.join(tempUploadsDir, `${sessionId}-${file.originalname}`)
+  const tempFilePath = storageManager.getStagingImagePath(sessionId, file.originalname)
   await fs.copyFile(file.path, tempFilePath)
 
   const metadata = await extractMetadata(tempFilePath)
@@ -34,14 +30,14 @@ export const uploadForReview = async (file) => {
 }
 
 export const confirmUpload = async (sessionId, metadata) => {
-  const tempFiles = await fs.readdir(tempUploadsDir)
+  const tempFiles = await fs.readdir(storageManager.stagingDir)
   const sessionFile = tempFiles.find((file) => file.startsWith(sessionId))
 
   if (!sessionFile) {
     throw new NotFoundError("Upload session expired or not found")
   }
 
-  const tempFilePath = path.join(tempUploadsDir, sessionFile)
+  const tempFilePath = path.join(storageManager.stagingDir, sessionFile)
   const originalFilename = sessionFile
     .split(`${sessionId}-`)[1]
     .replace(/\.[^.]+$/, (ext) => ext.toLowerCase())
@@ -131,7 +127,7 @@ export const deleteImage = async (id) => {
   return await Image.db.transaction(async (tx) => {
     await tx.delete(Image.table).where(eq(Image.table.id, id))
 
-    const imageDir = path.join(uploadsDir, id.toString())
+    const imageDir = storageManager.getImageDirectory(id)
     try {
       await fs.rm(imageDir, { force: true, recursive: true })
     } catch (error) {
@@ -143,9 +139,7 @@ export const deleteImage = async (id) => {
 }
 
 export const cleanupTempFiles = async () => {
-  await fs.mkdir(tempUploadsDir, { recursive: true })
-
-  const tempFiles = await fs.readdir(tempUploadsDir)
+  const tempFiles = await fs.readdir(storageManager.stagingDir)
 
   const timeThreshold = Date.now() - 1 * 60 * 60 * 1000
 
@@ -153,7 +147,7 @@ export const cleanupTempFiles = async () => {
   let errorCount = 0
 
   for (const file of tempFiles) {
-    const filePath = path.join(tempUploadsDir, file)
+    const filePath = path.join(storageManager.stagingDir, file)
 
     try {
       const stats = await fs.stat(filePath)
@@ -185,22 +179,22 @@ export const cleanupOrphanedFiles = async () => {
     }
   }
 
-  const uploadDirs = await fs.readdir(uploadsDir, { withFileTypes: true })
+  const uploadDirs = await fs.readdir(storageManager.uploadsDir, { withFileTypes: true })
 
   let scannedCount = 0
   let deletedCount = 0
   let errorCount = 0
 
   for (const dir of uploadDirs) {
-    if (dir.name === "temp" || !dir.isDirectory()) {
+    if (dir.name === "staging" || !dir.isDirectory()) {
       continue
     }
 
-    const imageId = parseInt(dir.name, 10)
+    const imageId = dir.name
 
-    if (isNaN(imageId) || !images.some((img) => img.id === imageId)) {
+    if (!images.some((img) => img.id === imageId)) {
       try {
-        const dirPath = path.join(uploadsDir, dir.name)
+        const dirPath = path.join(storageManager.uploadsDir, dir.name)
         await fs.rm(dirPath, { force: true, recursive: true })
         deletedCount++
       } catch (err) {
@@ -210,21 +204,28 @@ export const cleanupOrphanedFiles = async () => {
       continue
     }
 
-    const imageDir = path.join(uploadsDir, dir.name)
+    const imageDir = path.join(storageManager.uploadsDir, dir.name)
     const files = await fs.readdir(imageDir)
+    let hasValidFiles = false
 
     for (const file of files) {
-      const filePath = path.join(imageDir, file)
       scannedCount++
+      const relativePath = path.join("uploads", dir.name, file)
 
-      if (!validPaths.has(filePath)) {
-        try {
-          await fs.unlink(filePath)
-          deletedCount++
-        } catch (err) {
-          console.error(`Error deleting orphaned file ${filePath}: ${err.message}`)
-          errorCount++
-        }
+      if (validPaths.has(relativePath)) {
+        hasValidFiles = true
+        break
+      }
+    }
+
+    if (!hasValidFiles) {
+      try {
+        const dirPath = path.join(storageManager.uploadsDir, dir.name)
+        await fs.rm(dirPath, { force: true, recursive: true })
+        deletedCount++
+      } catch (err) {
+        console.error(`Error deleting orphaned directory ${dir.name}: ${err.message}`)
+        errorCount++
       }
     }
   }

@@ -1,11 +1,10 @@
+import storageManager from "#src/config/storageManager.js"
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
-
-const uploadsDir = path.join("uploads")
 
 class Image extends BaseModel {
   static FLUENT_API_IMAGE_COLUMNS = {
@@ -49,7 +48,7 @@ class Image extends BaseModel {
       const result = await tx.insert(this.table).values(data).returning()
       const image = result[0]
 
-      const imageDir = path.join(uploadsDir, image.id.toString())
+      const imageDir = storageManager.getImageDirectory(image.id)
       await fs.mkdir(imageDir, { recursive: true })
 
       const versions = await this.#createImageVersions(tx, file, image.id, imageDir)

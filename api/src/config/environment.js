@@ -27,7 +27,9 @@ const requiredEnvVars = [
   "SMTP_PORT",
   "SMTP_USER",
   "SMTP_PASS",
-  "FROM_EMAIL"
+  "FROM_EMAIL",
+  "EMBEDDINGS_BASE_URL",
+  "API_BASE_URL"
 ]
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
@@ -50,7 +52,8 @@ export const config = {
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_PORT: process.env.SMTP_PORT,
-  SMTP_USER: process.env.SMTP_USER
+  SMTP_USER: process.env.SMTP_USER,
+  UPLOADS_DIR: process.env.UPLOADS_DIR
 }
 
 export async function loadEnvironment(overrideEnvType) {

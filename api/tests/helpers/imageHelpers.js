@@ -1,3 +1,4 @@
+import storageManager from "#src/config/storageManager.js"
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import { getDb } from "#tests/testDatabase.js"
 import fs from "fs/promises"
@@ -30,12 +31,7 @@ const createMockImageBuffer = () => {
 }
 
 export async function cleanupTempFiles() {
-  const tempDir = path.join(process.cwd(), "temp")
-  try {
-    await fs.rm(tempDir, { force: true, recursive: true })
-  } catch {
-    // Ignore errors
-  }
+  await storageManager.cleanupTestFiles()
 }
 
 export async function createImage(data) {
@@ -100,7 +96,7 @@ export async function createImageWithVersions(imageData = {}) {
 
 export function createMockFile(filename = "test-image.jpg") {
   const mockImageBuffer = createMockImageBuffer()
-  const tempDir = path.join(process.cwd(), "temp")
+  const tempDir = path.dirname(storageManager.stagingDir)
   const tempFilePath = path.join(tempDir, filename)
 
   return {
