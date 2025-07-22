@@ -115,3 +115,23 @@ export const cleanupOrphaned = async (_req, res) => {
     status: "success"
   })
 }
+
+export const backfillEmbeddings = async (req, res) => {
+  const { force } = req.parsedQuery
+  const result = await imageService.backfillEmbeddings(force)
+
+  res.status(200).json({
+    data: { result },
+    status: "success"
+  })
+}
+
+export const backfillCaptions = async (req, res) => {
+  const { force } = req.parsedQuery
+  const result = await imageService.backfillCaptions(force)
+
+  res.status(200).json({
+    data: { result },
+    status: "success"
+  })
+}

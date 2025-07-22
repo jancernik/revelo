@@ -1,4 +1,6 @@
 import {
+  backfillCaptions,
+  backfillEmbeddings,
   cleanupOrphaned,
   cleanupTemp,
   confirmUpload,
@@ -13,6 +15,8 @@ import { auth } from "#src/middlewares/authMiddleware.js"
 import { uploadImages } from "#src/middlewares/uploadMiddleware.js"
 import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
+  backfillCaptionsSchemas,
+  backfillEmbeddingsSchemas,
   confirmUploadSchemas,
   deleteImageSchemas,
   fetchAllSchemas,
@@ -32,5 +36,17 @@ router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchem
 router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage)
 router.post("/maintenance/cleanup-temp", auth.required(), cleanupTemp)
 router.post("/maintenance/cleanup-orphaned", auth.required(), cleanupOrphaned)
+router.post(
+  "/maintenance/backfill-embeddings",
+  auth.required(),
+  validate(backfillEmbeddingsSchemas),
+  backfillEmbeddings
+)
+router.post(
+  "/maintenance/backfill-captions",
+  auth.required(),
+  validate(backfillCaptionsSchemas),
+  backfillCaptions
+)
 
 export default router

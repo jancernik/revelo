@@ -1,7 +1,7 @@
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
 import { generateImageCaption, generateImageEmbedding } from "#src/services/aiService.js"
-import { eq } from "drizzle-orm"
+import { eq, isNull } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
 import path from "path"
@@ -244,7 +244,7 @@ export const fetchByIdWithVersions = async (id) => {
 
 const generateEmbedding = async (image) => {
   try {
-    const originalVersion = image.versions.find((v) => v.type === "original")
+    const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
       throw new AppError("Original version not found", { isOperational: false })
     }
@@ -259,9 +259,10 @@ const generateEmbedding = async (image) => {
     })
   }
 }
+
 const generateCaption = async (image) => {
   try {
-    const originalVersion = image.versions.find((v) => v.type === "original")
+    const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
       throw new AppError("Original version not found", { isOperational: false })
     }
@@ -274,5 +275,58 @@ const generateCaption = async (image) => {
       data: { error },
       isOperational: false
     })
+  }
+}
+
+export const backfillEmbeddings = async (force = false) => {
+  try {
+    const options = force ? {} : { where: isNull(Image.table.embedding) }
+    const images = await Image.findAllWithVersions(options)
+
+    if (images.length === 0) {
+      return { failed: 0, processed: 0, successful: 0 }
+    }
+
+    let successful = 0
+    let failed = 0
+
+    for (let i = 0; i < images.length; i++) {
+      try {
+        await generateEmbedding(images[i])
+        successful++
+      } catch {
+        failed++
+      }
+    }
+    return { failed, processed: images.length, successful }
+  } catch (error) {
+    throw new AppError("Embedding backfill failed", { data: { error }, isOperational: false })
+  }
+}
+
+export const backfillCaptions = async (force = false) => {
+  try {
+    const options = force ? {} : { where: isNull(Image.table.caption) }
+    const images = await Image.findAllWithVersions(options)
+
+    if (images.length === 0) {
+      return { failed: 0, processed: 0, successful: 0 }
+    }
+
+    let successful = 0
+    let failed = 0
+
+    for (let i = 0; i < images.length; i++) {
+      try {
+        await generateCaption(images[i])
+        successful++
+      } catch {
+        failed++
+      }
+    }
+
+    return { failed, processed: images.length, successful }
+  } catch (error) {
+    throw new AppError("Caption backfill failed", { data: { error }, isOperational: false })
   }
 }

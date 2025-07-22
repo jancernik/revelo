@@ -5,33 +5,41 @@ import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
 
-const WITH_VERSIONS_QUERY = {
-  columns: {
+const uploadsDir = path.join("uploads")
+
+class Image extends BaseModel {
+  static FLUENT_API_IMAGE_COLUMNS = {
+    aperture: ImagesTable.aperture,
+    camera: ImagesTable.camera,
+    caption: ImagesTable.caption,
+    date: ImagesTable.date,
+    focalLength: ImagesTable.focalLength,
+    id: ImagesTable.id,
+    iso: ImagesTable.iso,
+    lens: ImagesTable.lens,
+    shutterSpeed: ImagesTable.shutterSpeed
+  }
+
+  static QUERY_API_IMAGE_COLUMNS = {
     aperture: true,
     camera: true,
+    caption: true,
     date: true,
     focalLength: true,
     id: true,
     iso: true,
     lens: true,
-    originalFilename: true,
     shutterSpeed: true
-  },
-  with: {
-    versions: {
-      columns: {
-        height: true,
-        path: true,
-        type: true,
-        width: true
-      }
-    }
   }
-}
 
-const uploadsDir = path.join("uploads")
+  static QUERY_API_VERSION_COLUMNS = {
+    height: true,
+    path: true,
+    size: true,
+    type: true,
+    width: true
+  }
 
-class Image extends BaseModel {
   constructor() {
     super(ImagesTable)
   }
@@ -70,9 +78,14 @@ class Image extends BaseModel {
     const { limit, offset, orderBy, where } = options
 
     const queryOptions = {
-      ...WITH_VERSIONS_QUERY,
+      columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
       orderBy: orderBy || undefined,
-      where: where || undefined
+      where: where || undefined,
+      with: {
+        versions: {
+          columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
+        }
+      }
     }
 
     if (limit !== undefined) {
@@ -89,14 +102,20 @@ class Image extends BaseModel {
   async findByIdWithVersions(id) {
     try {
       const result = await this.db.query.ImagesTable.findFirst({
-        ...WITH_VERSIONS_QUERY,
-        where: eq(this.table.id, id)
+        columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
+        where: eq(this.table.id, id),
+        with: {
+          versions: {
+            columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
+          }
+        }
       })
       return result || null
     } catch {
       return null
     }
   }
+
   async #createImageVersions(tx, file, imageId, imageDir) {
     const versions = []
     const originalFilePath = file.path

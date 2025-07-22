@@ -11,6 +11,7 @@ export const errorHandler = (error, req, res, _next) => {
 
   if (statusCode >= 500 || config.ENV === "development") {
     console.error("Server Error:", {
+      data: error.data,
       message: error.message,
       method: req.method,
       stack: error.stack,

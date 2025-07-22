@@ -1,7 +1,7 @@
 import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
 
-const sessionIdSchema = z.uuid("Invalid session ID format")
+const forceSchema = z.coerce.boolean().optional()
 
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
@@ -15,7 +15,7 @@ const metadataSchema = z.object({
 
 const imageUploadSchema = z.object({
   metadata: metadataSchema.optional().default({}),
-  sessionId: sessionIdSchema
+  sessionId: definedSchema
 })
 
 export const confirmUploadSchemas = {
@@ -47,5 +47,17 @@ export const fetchByIdSchemas = {
 export const deleteImageSchemas = {
   params: z.object({
     id: definedSchema
+  })
+}
+
+export const backfillEmbeddingsSchemas = {
+  query: z.object({
+    force: forceSchema
+  })
+}
+
+export const backfillCaptionsSchemas = {
+  query: z.object({
+    force: forceSchema
   })
 }
