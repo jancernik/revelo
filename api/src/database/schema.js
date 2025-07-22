@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 import {
   bigint,
   boolean,
@@ -68,6 +69,14 @@ export const ImagesTable = pgTable(
       embeddingIndex: index("embedding_index").using(
         "hnsw",
         table.embedding.op("vector_cosine_ops")
+      ),
+      searchIndex: index("search_index").using(
+        "gin",
+        sql`(
+          setweight(to_tsvector('english', coalesce(${table.caption}, '')), 'A') ||
+          setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'B') ||
+          setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'B')
+        )`
       )
     }
   }

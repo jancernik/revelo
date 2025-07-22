@@ -1,6 +1,6 @@
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
-import { eq } from "drizzle-orm"
+import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
@@ -114,6 +114,56 @@ class Image extends BaseModel {
     } catch {
       return null
     }
+  }
+
+  async searchByEmbedding(embedding, options = {}) {
+    const { limit = 30, minSimilarity = 0.25 } = options
+
+    const similarity = sql`1 - (${cosineDistance(this.table.embedding, embedding)})`
+
+    const results = await this.db
+      .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, similarity })
+      .from(this.table)
+      .where(gt(similarity, minSimilarity))
+      .orderBy((t) => desc(t.similarity))
+      .limit(limit)
+
+    return await this.#addImageVersions(results)
+  }
+
+  async searchByText(text, options = {}) {
+    const { limit = 30 } = options
+
+    const searchVector = sql`(
+      setweight(to_tsvector('english', coalesce(${this.table.caption}, '')), 'A') ||
+      setweight(to_tsvector('english', coalesce(${this.table.camera}, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'B')
+    )`
+
+    const searchQuery = sql`plainto_tsquery('english', ${text})`
+    const rank = sql`ts_rank(${searchVector}, ${searchQuery})`
+
+    const results = await this.db
+      .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, score: rank.as("score") })
+      .from(this.table)
+      .where(sql`${searchVector} @@ ${searchQuery}`)
+      .orderBy(desc(rank))
+      .limit(limit)
+
+    return await this.#addImageVersions(results)
+  }
+
+  async #addImageVersions(images = []) {
+    if (images.length === 0) return []
+
+    const ids = images.map((r) => r.id)
+
+    const versions = await this.db.query.ImageVersionsTable.findMany({
+      columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS, imageId: true },
+      where: sql`${ImageVersionsTable.imageId} IN (${sql.join(ids, sql`, `)})`
+    })
+
+    return images.map((i) => ({ ...i, versions: versions.filter((v) => v.imageId === i.id) }))
   }
 
   async #createImageVersions(tx, file, imageId, imageDir) {
