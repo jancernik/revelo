@@ -11,6 +11,7 @@ const baseImageData = (data = {}) => {
   return {
     aperture: "f/2.8",
     camera: "Test Camera",
+    caption: `Test Image ${uniqueSuffix}`,
     date: new Date("2023-01-01"),
     focalLength: "50mm",
     iso: 200,

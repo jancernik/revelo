@@ -67,12 +67,12 @@ describe("Image Endpoints", () => {
       expect(response.body.data.image).toEqual({
         aperture: image.aperture,
         camera: image.camera,
+        caption: image.caption,
         date: image.date.toISOString(),
         focalLength: image.focalLength,
         id: image.id,
         iso: image.iso,
         lens: image.lens,
-        originalFilename: image.originalFilename,
         shutterSpeed: image.shutterSpeed,
         versions: []
       })
