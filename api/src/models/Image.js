@@ -117,7 +117,7 @@ class Image extends BaseModel {
   }
 
   async searchByEmbedding(embedding, options = {}) {
-    const { limit = 30, minSimilarity = 0.25 } = options
+    const { limit = 50, minSimilarity = 0.25 } = options
 
     const similarity = sql`1 - (${cosineDistance(this.table.embedding, embedding)})`
 
@@ -132,7 +132,7 @@ class Image extends BaseModel {
   }
 
   async searchByText(text, options = {}) {
-    const { limit = 30 } = options
+    const { limit = 50 } = options
 
     const searchVector = sql`(
       setweight(to_tsvector('english', coalesce(${this.table.caption}, '')), 'A') ||

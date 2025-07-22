@@ -8,6 +8,7 @@ import {
   fetchAll,
   fetchById,
   fetchTiny,
+  search,
   updateMetadata,
   uploadForReview
 } from "#src/controllers/imageController.js"
@@ -21,6 +22,7 @@ import {
   deleteImageSchemas,
   fetchAllSchemas,
   fetchByIdSchemas,
+  searchSchemas,
   updateMetadataSchemas
 } from "#src/validation/imageSchemas.js"
 import { Router } from "express"
@@ -31,6 +33,7 @@ router.post("/upload/review", auth.required(), uploadImages, uploadForReview)
 router.post("/upload/confirm", auth.required(), validate(confirmUploadSchemas), confirmUpload)
 router.get("/images", validate(fetchAllSchemas), fetchAll)
 router.get("/tiny-images", fetchTiny)
+router.get("/images/search", validate(searchSchemas), search)
 router.get("/images/:id", validate(fetchByIdSchemas), fetchById)
 router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchemas), updateMetadata)
 router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage)

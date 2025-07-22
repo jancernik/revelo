@@ -135,3 +135,18 @@ export const backfillCaptions = async (req, res) => {
     status: "success"
   })
 }
+
+export const search = async (req, res) => {
+  const { limit, offset, text } = req.parsedQuery
+
+  const options = {}
+  if (limit) options.limit = limit
+  if (offset) options.offset = offset
+
+  const images = await imageService.searchWithVersions(text, options)
+
+  res.status(200).json({
+    data: { images, metadata: options },
+    status: "success"
+  })
+}

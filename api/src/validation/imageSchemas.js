@@ -50,6 +50,14 @@ export const deleteImageSchemas = {
   })
 }
 
+export const searchSchemas = {
+  query: z.object({
+    limit: limit.optional(),
+    offset: offset.optional(),
+    text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")
+  })
+}
+
 export const backfillEmbeddingsSchemas = {
   query: z.object({
     force: forceSchema

@@ -1,6 +1,10 @@
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
-import { generateImageCaption, generateImageEmbedding } from "#src/services/aiService.js"
+import {
+  generateImageCaption,
+  generateImageEmbedding,
+  generateTextEmbedding
+} from "#src/services/aiService.js"
 import { eq, isNull } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
@@ -329,4 +333,91 @@ export const backfillCaptions = async (force = false) => {
   } catch (error) {
     throw new AppError("Caption backfill failed", { data: { error }, isOperational: false })
   }
+}
+
+export const searchWithVersions = async (text, options = {}) => {
+  const MIN_SIMILARITY = 0.25
+  const RANK_BONUS_FACTOR = 0.1
+  const EMBEDDING_SCORE_WEIGHT = 0.7
+  const TEXT_SCORE_WEIGHT = 0.3
+
+  const { limit = 50 } = options
+
+  const [embeddingResults, textResults] = await Promise.all([
+    (async () => {
+      const embedding = await generateTextEmbedding(text)
+      return await Image.searchByEmbedding(embedding, {
+        limit,
+        minSimilarity: MIN_SIMILARITY
+      })
+    })(),
+    Image.searchByText(text, { limit })
+  ])
+
+  const resultMap = new Map()
+
+  const embeddingLength = embeddingResults.length
+  embeddingResults.forEach((result, index) => {
+    const rawEmbeddingScore = result.similarity
+    const weightedEmbeddingScore = rawEmbeddingScore * EMBEDDING_SCORE_WEIGHT
+    const rankBonus =
+      embeddingLength > 0 ? ((embeddingLength - index) / embeddingLength) * RANK_BONUS_FACTOR : 0
+
+    resultMap.set(result.id, {
+      ...result,
+      embeddingScore: rawEmbeddingScore,
+      finalScore: weightedEmbeddingScore + rankBonus,
+      scoreBreakdown: {
+        embedding: weightedEmbeddingScore,
+        rankBonus,
+        text: 0
+      },
+      source: "embedding",
+      textScore: 0
+    })
+  })
+
+  const textLength = textResults.length
+  textResults.forEach((result, index) => {
+    const rawTextScore = result.score ?? 0
+    const weightedTextScore = rawTextScore * TEXT_SCORE_WEIGHT
+    const rankBonus = textLength > 0 ? ((textLength - index) / textLength) * RANK_BONUS_FACTOR : 0
+
+    if (resultMap.has(result.id)) {
+      const existing = resultMap.get(result.id)
+      const finalScore =
+        existing.embeddingScore * EMBEDDING_SCORE_WEIGHT + weightedTextScore + rankBonus
+
+      resultMap.set(result.id, {
+        ...existing,
+        finalScore,
+        scoreBreakdown: {
+          embedding: existing.embeddingScore * EMBEDDING_SCORE_WEIGHT,
+          rankBonus,
+          text: weightedTextScore
+        },
+        source: "hybrid",
+        textScore: rawTextScore
+      })
+    } else {
+      resultMap.set(result.id, {
+        ...result,
+        embeddingScore: 0,
+        finalScore: weightedTextScore + rankBonus,
+        scoreBreakdown: {
+          embedding: 0,
+          rankBonus,
+          text: weightedTextScore
+        },
+        source: "text",
+        textScore: rawTextScore
+      })
+    }
+  })
+
+  const combinedResults = Array.from(resultMap.values())
+    .sort((a, b) => b.finalScore - a.finalScore)
+    .slice(0, limit)
+
+  return combinedResults
 }
