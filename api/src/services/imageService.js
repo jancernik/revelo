@@ -346,7 +346,7 @@ export const searchWithVersions = async (text, options = {}) => {
 
   const [embeddingResults, textResults] = await Promise.all([
     (async () => {
-      const embedding = await generateTextEmbedding(text)
+      const embedding = await generateTextEmbedding(text, { highPriority: true })
       return await Image.searchByEmbedding(embedding, {
         limit,
         minSimilarity: MIN_SIMILARITY

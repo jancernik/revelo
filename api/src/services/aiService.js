@@ -15,6 +15,13 @@ class AiQueue {
     })
   }
 
+  async addToTop(task) {
+    return new Promise((resolve, reject) => {
+      this.queue.unshift({ reject, resolve, task })
+      this.processNext()
+    })
+  }
+
   async processNext() {
     if (this.processing || this.queue.length === 0) return
 
@@ -134,14 +141,20 @@ const requestTextEmbedding = async (text) => {
   }
 }
 
-export const generateImageCaption = async (imagePath) => {
-  return aiQueue.add(() => requestImageCaption(imagePath))
+export const generateImageCaption = async (imagePath, options = {}) => {
+  const { highPriority = false } = options
+  const method = highPriority ? aiQueue.addToTop : aiQueue.add
+  return method.call(aiQueue, () => requestImageCaption(imagePath))
 }
 
-export const generateImageEmbedding = async (imagePath) => {
-  return aiQueue.add(() => requestImageEmbedding(imagePath))
+export const generateImageEmbedding = async (imagePath, options = {}) => {
+  const { highPriority = false } = options
+  const method = highPriority ? aiQueue.addToTop : aiQueue.add
+  return method.call(aiQueue, () => requestImageEmbedding(imagePath))
 }
 
-export const generateTextEmbedding = async (text) => {
-  return aiQueue.add(() => requestTextEmbedding(text))
+export const generateTextEmbedding = async (text, options = {}) => {
+  const { highPriority = false } = options
+  const method = highPriority ? aiQueue.addToTop : aiQueue.add
+  return method.call(aiQueue, () => requestTextEmbedding(text))
 }
