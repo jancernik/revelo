@@ -370,44 +370,4 @@ describe("Image Endpoints", () => {
       expect(response.body.status).toBe("fail")
     })
   })
-
-  describe("POST /maintenance/cleanup-temp", () => {
-    it("should cleanup temp files successfully", async () => {
-      const response = await request(api)
-        .post("/maintenance/cleanup-temp")
-        .set("Authorization", `Bearer ${adminUserToken}`)
-        .expect(200)
-
-      expect(response.body.status).toBe("success")
-      expect(response.body.data.result).toHaveProperty("deleted")
-      expect(response.body.data.result).toHaveProperty("scanned")
-      expect(response.body.data.result).toHaveProperty("errors")
-    })
-
-    it("should return 401 for unauthenticated request", async () => {
-      const response = await request(api).post("/maintenance/cleanup-temp").expect(401)
-
-      expect(response.body.status).toBe("fail")
-    })
-  })
-
-  describe("POST /maintenance/cleanup-orphaned", () => {
-    it("should cleanup orphaned files successfully", async () => {
-      const response = await request(api)
-        .post("/maintenance/cleanup-orphaned")
-        .set("Authorization", `Bearer ${adminUserToken}`)
-        .expect(200)
-
-      expect(response.body.status).toBe("success")
-      expect(response.body.data.result).toHaveProperty("deleted")
-      expect(response.body.data.result).toHaveProperty("scanned")
-      expect(response.body.data.result).toHaveProperty("errors")
-    })
-
-    it("should return 401 for unauthenticated request", async () => {
-      const response = await request(api).post("/maintenance/cleanup-orphaned").expect(401)
-
-      expect(response.body.status).toBe("fail")
-    })
-  })
 })

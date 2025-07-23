@@ -1,8 +1,6 @@
 import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
 
-const forceSchema = z.coerce.boolean().optional()
-
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
   camera: z.string().max(255).optional().nullable(),
@@ -55,17 +53,5 @@ export const searchSchemas = {
     limit: limit.optional(),
     offset: offset.optional(),
     text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")
-  })
-}
-
-export const backfillEmbeddingsSchemas = {
-  query: z.object({
-    force: forceSchema
-  })
-}
-
-export const backfillCaptionsSchemas = {
-  query: z.object({
-    force: forceSchema
   })
 }

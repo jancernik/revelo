@@ -4,6 +4,7 @@ import { errorHandler, notFoundHandler } from "#src/middlewares/errorMiddleware.
 import authRoutes from "#src/routes/authRoutes.js"
 import imageRoutes from "#src/routes/imageRoutes.js"
 import settingRoutes from "#src/routes/settingRoutes.js"
+import taskRoutes from "#src/routes/taskRoutes.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import express from "express"
@@ -31,6 +32,7 @@ export function createServer(options = {}) {
   app.use(authRoutes)
   app.use(settingRoutes)
   app.use(imageRoutes)
+  app.use(taskRoutes)
 
   storageManager.ensureDirectories()
   app.use("/uploads", express.static(storageManager.uploadsDir))

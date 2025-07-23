@@ -171,7 +171,10 @@ const handleAction = (toast) => {
       border: none;
       cursor: pointer;
       border-radius: 0;
-      color: var(--muted-foreground);
+
+      .icon {
+        color: var(--muted-foreground);
+      }
     }
   }
 }

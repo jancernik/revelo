@@ -98,44 +98,6 @@ export const deleteImage = async (req, res) => {
   })
 }
 
-export const cleanupTemp = async (_req, res) => {
-  const result = await imageService.cleanupTempFiles()
-
-  res.status(200).json({
-    data: { result },
-    status: "success"
-  })
-}
-
-export const cleanupOrphaned = async (_req, res) => {
-  const result = await imageService.cleanupOrphanedFiles()
-
-  res.status(200).json({
-    data: { result },
-    status: "success"
-  })
-}
-
-export const backfillEmbeddings = async (req, res) => {
-  const { force } = req.parsedQuery
-  const result = await imageService.backfillEmbeddings(force)
-
-  res.status(200).json({
-    data: { result },
-    status: "success"
-  })
-}
-
-export const backfillCaptions = async (req, res) => {
-  const { force } = req.parsedQuery
-  const result = await imageService.backfillCaptions(force)
-
-  res.status(200).json({
-    data: { result },
-    status: "success"
-  })
-}
-
 export const search = async (req, res) => {
   const { limit, offset, text } = req.parsedQuery
 
