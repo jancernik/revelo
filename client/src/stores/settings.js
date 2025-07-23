@@ -1,59 +1,65 @@
 import { useToast } from "#src/composables/useToast"
 import api from "#src/utils/api"
 import { defineStore } from "pinia"
-const { show: showToast } = useToast()
+import { computed, ref } from "vue"
 
-export const useSettingsStore = defineStore("settings", {
-  actions: {
-    async fetchSettings(force = false) {
-      if (this.loading && !force) return
-      if (this.initialized && !force) return
+export const useSettingsStore = defineStore("settings", () => {
+  const { show: showToast } = useToast()
 
-      this.loading = true
-      this.error = null
+  const error = ref(null)
+  const initialized = ref(false)
+  const loading = ref(false)
+  const settingsArray = ref([])
 
-      try {
-        const response = await api.get("/settings")
-
-        this.settingsArray = response.data?.data?.settings || []
-        this.initialized = true
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message
-        showToast({
-          description: this.error,
-          duration: 3,
-          title: "Error Fetching Settings",
-          type: "error"
-        })
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async initialize() {
-      if (!this.initialized) {
-        await this.fetchSettings()
-      }
-    },
-
-    async refreshSettings() {
-      return this.fetchSettings(true)
-    }
-  },
-
-  getters: {
-    settings: (state) => {
-      return state.settingsArray.reduce((map, setting) => {
-        map[setting.name] = setting.value
-        return map
-      }, {})
-    }
-  },
-
-  state: () => ({
-    error: null,
-    initialized: false,
-    loading: false,
-    settingsArray: []
+  const settings = computed(() => {
+    return settingsArray.value.reduce((map, setting) => {
+      map[setting.name] = setting.value
+      return map
+    }, {})
   })
+
+  async function fetchSettings(force = false) {
+    if (loading.value && !force) return
+    if (initialized.value && !force) return
+
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await api.get("/settings")
+      settingsArray.value = response.data?.data?.settings || []
+      initialized.value = true
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message
+      showToast({
+        description: error.value,
+        duration: 3,
+        title: "Error Fetching Settings",
+        type: "error"
+      })
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function initialize() {
+    if (!initialized.value) {
+      await fetchSettings()
+    }
+  }
+
+  async function refreshSettings() {
+    return fetchSettings(true)
+  }
+
+  return {
+    error,
+    fetchSettings,
+    initialize,
+    initialized,
+    loading,
+    refreshSettings,
+    settings,
+    settingsArray
+  }
 })
