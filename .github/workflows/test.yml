@@ -24,6 +24,8 @@ jobs:
       JWT_SECRET: test-jwt-secret-key-for-ci
       JWT_REFRESH_SECRET: test-jwt-refresh-secret-key-for-ci
       CLIENT_BASE_URL: http://localhost:3000
+      API_BASE_URL: http://localhost:8080
+      EMBEDDINGS_BASE_URL: http://localhost:8000
       SMTP_HOST: smtp.example.com
       SMTP_PORT: 587
       SMTP_USER: test@example.com
