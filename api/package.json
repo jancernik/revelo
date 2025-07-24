@@ -32,7 +32,7 @@
     "postgres": "^3.4.7",
     "sharp": "^0.34.3",
     "uuid": "^11.1.0",
-    "zod": "^4.0.5"
+    "zod": "^4.0.8"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
