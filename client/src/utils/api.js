@@ -6,10 +6,34 @@ const api = axios.create({
   withCredentials: true
 })
 
-api.interceptors.request.use((config) => {
+let refreshTokenPromise = null
+
+api.interceptors.request.use(async (config) => {
   const authStore = useAuthStore()
   const token = authStore.accessToken
-  if (token) {
+
+  const isRefreshRoute = config.url.includes("/refresh")
+
+  if (token && !isRefreshRoute) {
+    const tokenPayload = JSON.parse(atob(token.split(".")[1]))
+    const expirationTime = tokenPayload.exp * 1000
+    const currentTime = Date.now()
+    const bufferTime = 60 * 1000
+
+    if (expirationTime - currentTime <= bufferTime) {
+      try {
+        if (!refreshTokenPromise) refreshTokenPromise = authStore.refreshToken()
+        await refreshTokenPromise
+        config.headers.Authorization = `Bearer ${authStore.accessToken}`
+      } catch {
+        config.headers.Authorization = `Bearer ${token}`
+      } finally {
+        refreshTokenPromise = null
+      }
+    } else {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  } else if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
@@ -26,17 +50,19 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const isAuthRoute =
-      originalRequest.url.includes("/login") || originalRequest.url.includes("/signup")
+    const isAuthRoute = ["/login", "/signup"].some((route) => originalRequest.url.includes(route))
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true
       try {
-        await authStore.refreshToken()
+        if (!refreshTokenPromise) refreshTokenPromise = authStore.refreshToken()
+        await refreshTokenPromise
         return api(originalRequest)
-      } catch (refreshError) {
+      } catch (error) {
         authStore.logout()
-        return Promise.reject(refreshError)
+        return Promise.reject(error)
+      } finally {
+        refreshTokenPromise = null
       }
     }
 
