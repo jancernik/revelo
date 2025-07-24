@@ -11,7 +11,7 @@ import request from "supertest"
 
 const api = createTestServer()
 
-describe("Settings Endpoints", () => {
+describe("Setting Endpoints", () => {
   let tempDir
   let originalCwd
   let regularUserToken
