@@ -29,8 +29,8 @@ export const useSettingsStore = defineStore("settings", () => {
       const response = await api.get("/settings")
       settingsArray.value = response.data?.data?.settings || []
       initialized.value = true
-    } catch (err) {
-      error.value = err.response?.data?.message || err.message
+    } catch (error) {
+      error.value = error.response?.data?.message || error.message
       showToast({
         description: error.value,
         duration: 3,
