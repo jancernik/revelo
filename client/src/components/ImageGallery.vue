@@ -1,11 +1,11 @@
 <script setup>
 import ImageCard from "#src/components/ImageCard.vue"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
-import api from "#src/utils/api"
+import { useImagesStore } from "#src/stores/images"
 import { gsap } from "gsap"
 import { ScrollSmoother } from "gsap/ScrollSmoother"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 
 const CENTER_DURATION = 1 // seconds
 const ENTER_AND_EXIT_DURATION = 2 // seconds
@@ -28,24 +28,16 @@ const groupedImages = ref([])
 const smoother = ref(null)
 const timelines = []
 const columnScrollTriggers = []
-const loadedImages = ref(0)
+const loadedImageIds = ref(new Set())
 
 const imageGallery = useTemplateRef("image-gallery")
 const smoothWrapper = useTemplateRef("smooth-wrapper")
 const smoothContent = useTemplateRef("smooth-content")
 
-const { show } = useFullscreenImage()
+const imagesStore = useImagesStore()
+const { show: showFullscreenImage } = useFullscreenImage()
 
 const shuffle = (array) => gsap.utils.shuffle(array)
-
-const fetchImages = async () => {
-  try {
-    const response = await api.get("/images")
-    imageData.value = response.data?.data?.images || []
-  } catch (error) {
-    console.error("Error fetching images:", error)
-  }
-}
 
 const groupImages = (images = [], numberOfGroups) => {
   if (images.length === 0) return []
@@ -86,6 +78,22 @@ const groupImages = (images = [], numberOfGroups) => {
   return groups
 }
 
+watch(
+  () => imagesStore.filteredImages,
+  () => {
+    console.log("test")
+    imageData.value = imagesStore.filteredImages
+    groupedImages.value = groupImages(imagesStore.filteredImages, COLUMNS)
+
+    const currentImageIds = new Set(imagesStore.filteredImages.map((img) => img.id))
+    const stillLoadedIds = new Set(
+      [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
+    )
+    loadedImageIds.value = stillLoadedIds
+  },
+  { deep: true, immediate: true }
+)
+
 const initSmoother = () => {
   smoother.value = ScrollSmoother.create({
     content: smoothContent.value,
@@ -119,7 +127,14 @@ const getHorizontalOrigin = (element) => {
   return element.offsetWidth / 2 - scaledDistance
 }
 
+const cleanupTimelines = () => {
+  timelines.forEach((timeline) => timeline.kill())
+  timelines.length = 0
+}
+
 const setupTimelines = () => {
+  cleanupTimelines()
+
   const columns = imageGallery.value.querySelectorAll(".gallery-column")
 
   columns.forEach((column) => {
@@ -177,9 +192,10 @@ const setupTimelines = () => {
   })
 }
 
-const handleImageLoad = () => {
-  loadedImages.value++
-  if (loadedImages.value === imageData.value.length) {
+const handleImageLoad = (imageId) => {
+  loadedImageIds.value.add(imageId)
+
+  if (loadedImageIds.value.size === imageData.value.length) {
     nextTick(() => {
       setupLagEffect()
       setupTimelines()
@@ -188,28 +204,28 @@ const handleImageLoad = () => {
 }
 
 const handleThumbnailClick = (image, flipId) => {
-  show(image, { columnScrollTriggers, flipId, smoother: smoother.value })
+  showFullscreenImage(image, { columnScrollTriggers, flipId, smoother: smoother.value })
 }
 
+const allImagesLoaded = computed(() => {
+  return loadedImageIds.value.size === imagesStore.filteredImages.length
+})
+
 onMounted(async () => {
-  await fetchImages()
-  groupedImages.value = groupImages(shuffle(imageData.value), COLUMNS)
   gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
-  nextTick(() => {
-    initSmoother()
-  })
+  nextTick(initSmoother)
 })
 
 onUnmounted(() => {
   smoother.value?.kill()
-  timelines.forEach((timeline) => timeline.kill())
+  cleanupTimelines()
 })
 </script>
 
 <template>
   <div ref="smooth-wrapper" class="smooth-wrapper">
     <div ref="smooth-content" class="smooth-content">
-      <div v-show="loadedImages === imageData.length" ref="image-gallery" class="image-gallery">
+      <div v-show="allImagesLoaded" ref="image-gallery" class="image-gallery">
         <div v-for="(group, index) in groupedImages" :key="index" class="gallery-column">
           <ImageCard
             v-for="image in group"

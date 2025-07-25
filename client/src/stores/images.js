@@ -39,14 +39,15 @@ export const useImagesStore = defineStore("images", () => {
   }
 
   const search = debounce(async (query) => {
-    if (!query) {
+    const text = query.toString().toLowerCase().trim()
+    if (!text) {
       filteredImages.value = images.value
     } else {
       loading.value = true
       error.value = null
 
       try {
-        const response = await api.get("/images/search", { params: { text: query } })
+        const response = await api.get("/images/search", { params: { text } })
         filteredImages.value = response.data?.data?.images || []
       } catch (error) {
         error.value = error.response?.data?.message || error.message

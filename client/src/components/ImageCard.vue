@@ -27,8 +27,9 @@ const handleClick = () => {
       :src="`${apiBaseUrl}/${thumbnail.path}`"
       :height="thumbnail.height"
       :width="thumbnail.width"
-      alt=""
-      @load="emit('load')"
+      :title="image.caption"
+      :alt="image.caption"
+      @load="emit('load', image.id)"
       @error="emit('load')"
     />
   </div>
