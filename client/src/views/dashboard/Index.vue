@@ -1,6 +1,16 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
+import { useAuthStore } from "#src/stores/auth"
 import Tasks from "#src/views/dashboard/Tasks.vue"
+import { useRouter } from "vue-router"
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push("/")
+}
 </script>
 
 <template>
@@ -17,6 +27,12 @@ import Tasks from "#src/views/dashboard/Tasks.vue"
       </div>
     </div>
     <Tasks />
+    <div class="auth">
+      <h4>Auth</h4>
+      <div class="auth-content">
+        <Button @click="handleLogout">Logout</Button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -27,11 +43,13 @@ import Tasks from "#src/views/dashboard/Tasks.vue"
   flex-direction: column;
   gap: var(--spacing-2);
 
-  .routes {
+  .routes,
+  .auth {
     @include flex-center;
     flex-direction: column;
     gap: var(--spacing-2);
-    .routes-content {
+    .routes-content,
+    .auth-content {
       @include flex-center;
       gap: var(--spacing-2);
     }
