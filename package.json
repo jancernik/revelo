@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n \"Client,API,AI\" -c \"#41b883,#00a0df,#ff6b6b\" \"pnpm client dev\" \"pnpm api dev\" \"pnpm ai\"",
+    "dev:no-ai": "concurrently -n \"Client,API\" -c \"#41b883,#00a0df\" \"pnpm client dev\" \"pnpm api dev\"",
     "dev:api": "pnpm api dev",
     "dev:client": "pnpm client dev",
     "lint": "eslint . --fix",
@@ -27,7 +28,7 @@
     "style": "pnpm lint; pnpm format",
     "api": "pnpm --filter api",
     "client": "pnpm --filter client",
-    "ai": "cd ai && python -m uvicorn app:app --reload --port 8000",
+    "ai": "cd ai && python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000",
     "prepare": "husky"
   },
   "devDependencies": {
