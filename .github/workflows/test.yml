@@ -20,7 +20,7 @@ jobs:
     env:
       NODE_ENV: test
       PORT: 3000
-      DB_URL: postgresql://postgres:postgres@localhost:5432/revelo_test
+      DB_URL: postgresql://postgres:postgres@localhost:5433/revelo_test
       JWT_SECRET: test-jwt-secret-key-for-ci
       JWT_REFRESH_SECRET: test-jwt-refresh-secret-key-for-ci
       CLIENT_BASE_URL: http://localhost:3000
@@ -44,7 +44,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5433:5432
 
     steps:
       - uses: actions/checkout@v4
