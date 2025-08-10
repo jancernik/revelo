@@ -40,29 +40,23 @@ const groupImages = (images = [], numberOfGroups) => {
 
     return {
       ...image,
-      _weight: aspectRatio
+      _weight: parseFloat(aspectRatio.toFixed(3))
     }
   })
 
   imagesWithWeights.sort((a, b) => b._weight - a._weight)
 
-  const groups = Array.from({ length: numberOfGroups }, () => [])
+  let groups = Array.from({ length: numberOfGroups }, () => [])
   const weightTrack = Array.from({ length: numberOfGroups }, () => 0)
 
   imagesWithWeights.forEach((image) => {
-    let minIndex = 0
-    for (let i = 1; i < weightTrack.length; i++) {
-      if (weightTrack[i] < weightTrack[minIndex]) {
-        minIndex = i
-      }
-    }
-
+    const index = weightTrack.indexOf(Math.min(...weightTrack))
     const { _weight, ...cleanImage } = image
-    weightTrack[minIndex] += _weight
-    groups[minIndex].push(cleanImage)
+    weightTrack[index] = parseFloat((weightTrack[index] + _weight).toFixed(3))
+    groups[index].push(cleanImage)
   })
 
-  groups.map((group) => shuffle(group))
+  groups = groups.map((group) => shuffle(group))
 
   return groups
 }
@@ -70,7 +64,6 @@ const groupImages = (images = [], numberOfGroups) => {
 watch(
   () => imagesStore.filteredImages,
   () => {
-    console.log("test")
     imageData.value = imagesStore.filteredImages
     groupedImages.value = groupImages(imagesStore.filteredImages, COLUMNS)
 
@@ -163,5 +156,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+  width: 100%;
 }
 </style>
