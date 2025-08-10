@@ -237,7 +237,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-show="imageData" ref="container" class="fullscreen-image-container" @click="handleClick">
+  <div v-if="imageData" ref="container" class="fullscreen-image-container" @click="handleClick">
     <div ref="image" class="fullscreen-image" :data-flip-id="flipId">
       <img :src="`${apiBaseUrl}/${regularImageVersion.path}`" alt="" />
     </div>
