@@ -41,11 +41,19 @@ const handleClick = () => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  position: absolute;
+  width: inherit;
+  pointer-events: none;
+  user-select: none;
 
   img {
     width: 100%;
     height: 100%;
     user-select: none;
+    pointer-events: none;
   }
 }
 </style>
