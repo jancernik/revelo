@@ -39,9 +39,14 @@ let columnImageCounts = []
 let imageStates = []
 let scrollTargets = []
 let columnCountAnimationFrameId = 0
-let isRendering = false
 let isBuildingLayout = false
 let lastMaxVelocityRecorded = 0
+let columnScalableHeights = []
+let columnSpacing = []
+let columnLerpFactors = []
+let columnWrappedHeights = []
+let lastResizeFactor = 1
+let animationFrameId = 0
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const imagesStore = useImagesStore()
@@ -66,8 +71,6 @@ const columnCount = computed(() => {
   if (clamped % 2 === 0) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
   return clamped
 })
-
-const middleColumnIndex = computed(() => (columnCount.value - 1) / 2)
 
 const columnWidth = computed(() => {
   return (windowWidth.value - SPACING * (columnCount.value + 1)) / columnCount.value
@@ -136,6 +139,7 @@ watch(columnCount, (newCount, oldCount) => {
   }
 })
 
+watch(resizeFactor, () => startRenderLoop())
 const calculateImagePositions = () => {
   cumulativeColumnsHeights = Array.from({ length: columnCount.value }, () => SPACING)
   columnImageCounts = Array.from({ length: columnCount.value }, () => 0)
@@ -160,6 +164,26 @@ const calculateImagePositions = () => {
   })
 }
 
+const calculateColumnLerpFactors = () => {
+  const centerIndex = (columnCount.value - 1) / 2
+  columnLerpFactors = Array.from({ length: columnCount.value }, (_, columnIndex) => {
+    const distanceFromCenter =
+      centerIndex === 0 ? 0 : Math.abs(columnIndex - centerIndex) / centerIndex
+    const easedDistance = 0.5 * (1 + Math.cos(Math.PI * distanceFromCenter))
+    return MIN_SCROLL_LERP + (MAX_SCROLL_LERP - MIN_SCROLL_LERP) * easedDistance
+  })
+}
+
+const calculateColumnDimensions = () => {
+  columnScalableHeights = Array.from({ length: columnCount.value }, (_, columnIndex) => {
+    return cumulativeColumnsHeights[columnIndex] - SPACING * columnImageCounts[columnIndex]
+  })
+  columnSpacing = Array.from({ length: columnCount.value }, (_, columnIndex) => {
+    return SPACING * columnImageCounts[columnIndex]
+  })
+  columnWrappedHeights = new Array(columnCount.value).fill(0)
+}
+
 const hideAllImages = () => {
   for (const state of imageStates) {
     state.setY(window.innerHeight * 2)
@@ -176,11 +200,14 @@ const rebuildLayout = async () => {
 
   await nextTick()
   calculateImagePositions()
+  calculateColumnDimensions()
+  calculateColumnLerpFactors()
   initializeScrollTargets()
   hideAllImages()
 
   requestAnimationFrame(() => {
     isBuildingLayout = false
+    startRenderLoop()
   })
 }
 
@@ -195,48 +222,40 @@ const initializeScrollTargets = () => {
 const updateImagePositions = () => {
   if (isBuildingLayout) return
 
-  scrollTargets = scrollTargets.map((lastTarget, columnIndex) => {
-    const distanceFromCenter = Math.abs(columnIndex - middleColumnIndex.value)
-    const maxD = middleColumnIndex.value
-    const dNorm = maxD === 0 ? 0 : distanceFromCenter / maxD
-
-    const easeValue = 0.5 * (1 + Math.cos(Math.PI * dNorm))
-    const alpha = MIN_SCROLL_LERP + (MAX_SCROLL_LERP - MIN_SCROLL_LERP) * easeValue
-
-    return lerp(lastTarget, normalizedScrollY, alpha)
-  })
+  for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
+    const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
+    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], normalizedScrollY, lerpFactor)
+  }
 
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
 
-  const wrapHeights = Array.from({ length: columnCount.value }, (_, i) => {
-    const totalSpacing = SPACING * columnImageCounts[i]
-    const scalableHeight = cumulativeColumnsHeights[i] - totalSpacing
-    return scalableHeight * resizeFactor.value + totalSpacing
-  })
+  for (let columnIndex = 0; columnIndex < columnCount.value; columnIndex++) {
+    columnWrappedHeights[columnIndex] =
+      columnScalableHeights[columnIndex] * resizeFactor.value + columnSpacing[columnIndex]
+  }
 
   for (let stateIndex = 0; stateIndex < imageStates.length; stateIndex++) {
     const state = imageStates[stateIndex]
     const columnIndex = state.columnIndex
-    const wrapHeight = wrapHeights[columnIndex]
-    if (wrapHeight <= 0) continue
+    const columnWrappedHeight = columnWrappedHeights[columnIndex]
+    if (columnWrappedHeight <= 0) continue
 
     const constantSpacing = (state.cardIndex + 1) * SPACING
     const scaledCardTop = (state.cardTop - constantSpacing) * resizeFactor.value
-
-    const y = scaledCardTop + constantSpacing + scrollTargets[columnIndex] * resizeFactor.value
+    const cardY = scaledCardTop + constantSpacing + scrollTargets[columnIndex] * resizeFactor.value
 
     const minY = -state.cardHeight * resizeFactor.value
-    const totalSpacing = SPACING * columnImageCounts[columnIndex]
+    const totalSpacing = columnSpacing[columnIndex]
     const columnHeight = cumulativeColumnsHeights[columnIndex]
     const scalableMaxY = (columnHeight - totalSpacing - state.cardHeight) * resizeFactor.value
     const maxY = scalableMaxY + totalSpacing
 
-    const yWrapped = gsap.utils.wrap(minY, maxY, y)
+    const wrappedY = gsap.utils.wrap(minY, maxY, cardY)
 
-    const scaledHeight = state.cardHeight * resizeFactor.value
-    const yBottom = yWrapped + scaledHeight
-    const isVisible = yBottom >= viewTop && yWrapped <= viewBottom
+    const scaledCardHeight = state.cardHeight * resizeFactor.value
+    const cardBottom = wrappedY + scaledCardHeight
+    const isVisible = cardBottom >= viewTop && wrappedY <= viewBottom
 
     if (isVisible) {
       if (!state.visible) {
@@ -244,7 +263,7 @@ const updateImagePositions = () => {
         state.element.style.visibility = "visible"
         state.element.style.willChange = "transform"
       }
-      state.setY(yWrapped)
+      state.setY(wrappedY)
     } else if (state.visible) {
       state.visible = false
       state.element.style.visibility = "hidden"
@@ -253,23 +272,43 @@ const updateImagePositions = () => {
   }
 }
 
-const render = () => {
-  if (!isRendering) isRendering = true
-  requestAnimationFrame(render)
+const startRenderLoop = () => {
+  if (animationFrameId) return
+  lastFrameTimestamp = performance.now()
+  lastResizeFactor = resizeFactor.value
+  animationFrameId = requestAnimationFrame(renderFrame)
+}
 
-  const timestamp = performance.now()
-  if (!lastFrameTimestamp) lastFrameTimestamp = timestamp
-  const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - lastFrameTimestamp) / 1000)
+const stopRenderLoop = () => {
+  if (!animationFrameId) return
+  cancelAnimationFrame(animationFrameId)
+  animationFrameId = 0
+  lastFrameTimestamp = 0
+}
+
+const isRenderLoopIdle = () => {
+  if (isBuildingLayout || isDragging.value) return false
+  const scrollTargetsSettled =
+    scrollTargets.length === columnCount.value &&
+    scrollTargets.every((target) => Math.abs(target - normalizedScrollY) < 0.5)
+  const velocitySettled = Math.abs(velocity.value) < VELOCITY_THRESHOLD
+  const resizeFactorStable = Math.abs(resizeFactor.value - lastResizeFactor) < 1e-6
+  return scrollTargetsSettled && velocitySettled && resizeFactorStable
+}
+
+const renderFrame = (timestamp) => {
+  animationFrameId = requestAnimationFrame(renderFrame)
+  const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
   lastFrameTimestamp = timestamp
-
   if (!isBuildingLayout && !isDragging.value) {
     normalizedScrollY += velocity.value * deltaTime
-    const decay = Math.exp(-VELOCITY_DECAY * deltaTime)
-    velocity.value = clamp(velocity.value * decay, -MAX_SPEED, MAX_SPEED)
+    const velocityDecay = Math.exp(-VELOCITY_DECAY * deltaTime)
+    velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
     if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
   }
-
   updateImagePositions()
+  if (isRenderLoopIdle()) stopRenderLoop()
+  lastResizeFactor = resizeFactor.value
 }
 
 const handleImageLoad = (imageId) => {
@@ -277,7 +316,6 @@ const handleImageLoad = (imageId) => {
   if (allImagesLoaded.value) {
     nextTick(async () => {
       await rebuildLayout()
-      if (!isRendering) render()
     })
   }
 }
@@ -287,6 +325,7 @@ const handleWheel = (event) => {
   const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
   normalizedScrollY -= deltaY / resizeFactor.value
   velocity.value += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
+  startRenderLoop()
 }
 
 const handleDragStart = (event) => {
@@ -315,6 +354,7 @@ const handleDragMove = (event) => {
     -MAX_SPEED,
     MAX_SPEED
   )
+  startRenderLoop()
 }
 
 const handleDragEnd = (event) => {
