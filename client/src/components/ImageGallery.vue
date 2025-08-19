@@ -4,42 +4,51 @@ import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import { clamp, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
-const SPACING = 15
-const VIRTUAL_BUFFER = 400
+const SPACING = 15 // Space between images and columns in pixels
+const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performance optimization
 
-const DRAG_FACTOR = 1.5
-const WHEEL_IMPULSE = 2.0
-const DRAG_IMPULSE = 1.0
-const DECAY_PER_SEC = 6.0
-const MAX_SPEED = 4000
-const VELOCITY_THRESHOLD = 4
+const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
+const MIN_COLUMNS = 3 // Minimum number of columns to display
+const MAX_COLUMNS = 9 // Maximum number of columns to display
 
-const MAX_COLUMN_WIDTH = 200
-const MIN_COLUMNS = 3
-const MAX_COLUMNS = 9
+const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
+const WHEEL_IMPULSE = 2.0 // Scroll wheel velocity multiplier
+const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
+const VELOCITY_DECAY = 7.0 // Rate at which velocity decays over time
+const MAX_SPEED = 4000 // Maximum scroll velocity in pixels per second
+const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
+const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
+
+const SCROLL_LERP_BASE = 0.1 // Base lerp factor for scroll smoothing
+const SCROLL_LERP_DISTANCE_FACTOR = 0.025 // Distance-based lerp adjustment factor
+const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
+const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
+const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 let velocity = 0
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
 let normalizedScrollY = 0
-let resizeFactor = 1
 let dragStartY = 0
 
 let cumulativeColumnsHeights = []
+let columnImageCounts = []
 let imageStates = []
-
-const { width: windowWidth } = useWindowSize()
-const imagesStore = useImagesStore()
-const groupedImages = ref([])
-const loadedImageIds = ref(new Set())
-
-const isDragging = ref(false)
+let scrollTargets = []
+let columnCountAnimationFrameId = 0
 let isRendering = false
-let isLayoutSyncing = false
+let isBuildingLayout = false
 
+const { height: windowHeight, width: windowWidth } = useWindowSize()
+const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
+
+const imageGroups = ref([])
+const loadedImageIds = ref(new Set())
+const isDragging = ref(false)
+const baselineColumnWidth = ref(0)
 
 const columnCount = computed(() => {
   const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
@@ -47,22 +56,24 @@ const columnCount = computed(() => {
   if (clamped % 2 === 0) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
   return clamped
 })
-const columnWidth = ref(0)
-const baselineContentWidth = ref(0)
 
-const scrollTargets = ref([])
+const middleColumnIndex = computed(() => (columnCount.value - 1) / 2)
 
-const allImagesLoaded = computed(
-  () => loadedImageIds.value.size === imagesStore.filteredImages.length
-)
+const columnWidth = computed(() => {
+  return (windowWidth.value - SPACING * (columnCount.value + 1)) / columnCount.value
+})
 
-const viewportContentWidth = (cols) => window.innerWidth - SPACING * (cols + 1)
+const resizeFactor = computed(() => {
+  return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
+})
 
-const currentColumnWidth = (cols) => viewportContentWidth(cols) / cols
+const allImagesLoaded = computed(() => {
+  return loadedImageIds.value.size === imagesStore.filteredImages.length
+})
 
-const groupImages = (images = [], numberOfGroups) => {
+const groupImages = (images = [], groupCount) => {
   if (!Array.isArray(images) || images.length === 0) return []
-  if (!numberOfGroups || numberOfGroups <= 0) return images
+  if (!groupCount || groupCount <= 0) return images
 
   const imagesWithWeights = images.map((image) => {
     const imageData = image?.versions?.find((v) => v.type === "regular") || {}
@@ -75,8 +86,8 @@ const groupImages = (images = [], numberOfGroups) => {
 
   imagesWithWeights.sort((a, b) => b._weight - a._weight)
 
-  const groups = Array.from({ length: numberOfGroups }, () => [])
-  const totals = Array.from({ length: numberOfGroups }, () => 0)
+  const groups = Array.from({ length: groupCount }, () => [])
+  const totals = Array.from({ length: groupCount }, () => 0)
 
   for (const image of imagesWithWeights) {
     const index = totals.indexOf(Math.min(...totals))
@@ -88,73 +99,36 @@ const groupImages = (images = [], numberOfGroups) => {
   return groups
 }
 
-const populateImageGroups = () => {
+const updateImageGroups = () => {
   const groups = groupImages(imagesStore.filteredImages, columnCount.value)
-  groupedImages.value = groups.map((group) => gsap.utils.shuffle(group))
+  imageGroups.value = groups.map((group) => gsap.utils.shuffle(group))
 }
 
 watch(
   () => imagesStore.filteredImages,
   () => {
-    populateImageGroups()
-    const currentIds = new Set(imagesStore.filteredImages.map((image) => image.id))
-    loadedImageIds.value = new Set([...loadedImageIds.value].filter((id) => currentIds.has(id)))
+    updateImageGroups()
+    const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
+    loadedImageIds.value = new Set(
+      [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
+    )
   },
   { deep: true, immediate: true }
 )
 
-let columnCountAnimationFrameId = 0
 watch(columnCount, (newCount, oldCount) => {
   if (newCount !== oldCount) {
     cancelAnimationFrame(columnCountAnimationFrameId)
     columnCountAnimationFrameId = requestAnimationFrame(async () => {
-      await rebuildHeavy({ regroupColumns: true })
+      updateImageGroups()
+      await rebuildLayout()
     })
   }
 })
 
-watch(windowWidth, () => {
-  requestAnimationFrame(() => {
-    isLayoutSyncing = true
-    velocity = 0
-
-    const oldWidth = columnWidth.value
-    const newWidth = currentColumnWidth(columnCount.value)
-    const horizontalScale = newWidth / Math.max(1, oldWidth)
-
-    if (horizontalScale !== 1) {
-      const imagesPerColumn = Array.from({ length: columnCount.value }, () => 0)
-      for (const state of imageStates) imagesPerColumn[state.columnIndex]++
-
-      for (const state of imageStates) {
-        const spacingSum = SPACING * (state.cardIndex + 1)
-        const contentTop = state.cardTop - spacingSum
-        state.cardTop = contentTop * horizontalScale + spacingSum
-        state.cardHeight *= horizontalScale
-      }
-
-      for (let col = 0; col < cumulativeColumnsHeights.length; col++) {
-        const count = imagesPerColumn[col] || 0
-        const spacingSumCol = SPACING * Math.max(0, count - 1)
-        const contentSum = cumulativeColumnsHeights[col] - spacingSumCol
-        cumulativeColumnsHeights[col] = contentSum * horizontalScale + spacingSumCol
-      }
-
-      columnWidth.value = newWidth
-    }
-
-    baselineContentWidth.value = viewportContentWidth(columnCount.value)
-    resizeFactor = 1
-    scrollTargets.value = Array.from({ length: columnCount.value }, () => normalizedScrollY)
-
-    requestAnimationFrame(() => {
-      isLayoutSyncing = false
-    })
-  })
-})
-
-const calculateImageStates = () => {
+const calculateImagePositions = () => {
   cumulativeColumnsHeights = Array.from({ length: columnCount.value }, () => SPACING)
+  columnImageCounts = Array.from({ length: columnCount.value }, () => 0)
   imageStates = []
 
   imageGallery.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
@@ -170,6 +144,7 @@ const calculateImageStates = () => {
         visible: false
       })
       cumulativeColumnsHeights[columnIndex] += cardHeight + SPACING
+      columnImageCounts[columnIndex]++
     })
     cumulativeColumnsHeights[columnIndex] -= SPACING
   })
@@ -183,59 +158,71 @@ const hideAllImages = () => {
   }
 }
 
-const ensureScrollTargets = () => {
-  const previous = scrollTargets.value
-  scrollTargets.value = Array.from(
+const rebuildLayout = async () => {
+  isBuildingLayout = true
+  velocity = 0
+  scrollTargets = []
+  baselineColumnWidth.value = columnWidth.value
+
+  await nextTick()
+  calculateImagePositions()
+  initializeScrollTargets()
+  hideAllImages()
+
+  requestAnimationFrame(() => {
+    isBuildingLayout = false
+  })
+}
+
+const initializeScrollTargets = () => {
+  const previousTargets = scrollTargets
+  scrollTargets = Array.from(
     { length: columnCount.value },
-    (_, i) => previous[i] ?? normalizedScrollY
+    (_, columnIndex) => previousTargets[columnIndex] ?? normalizedScrollY
   )
 }
 
-const update = () => {
-  if (isLayoutSyncing) return
+const updateImagePositions = () => {
+  if (isBuildingLayout) return
 
-  ensureScrollTargets()
-
-  const middle = (columnCount.value - 1) / 2
-  scrollTargets.value = scrollTargets.value.map((previous, i) => {
-    const distance = Math.abs(i - middle)
-    return lerp(previous, normalizedScrollY, 0.1 - 0.025 * distance)
+  scrollTargets = scrollTargets.map((lastTarget, columnIndex) => {
+    const distanceFromCenter = Math.abs(columnIndex - middleColumnIndex.value)
+    return lerp(
+      lastTarget,
+      normalizedScrollY,
+      SCROLL_LERP_BASE - SCROLL_LERP_DISTANCE_FACTOR * distanceFromCenter
+    )
   })
 
-  const viewportHeight = imageGallery.value?.clientHeight || window.innerHeight
   const viewTop = -VIRTUAL_BUFFER
-  const viewBottom = viewportHeight + VIRTUAL_BUFFER
-
-  const columnImageCounts = Array.from({ length: columnCount.value }, () => 0)
-  imageStates.forEach((state) => columnImageCounts[state.columnIndex]++)
+  const viewBottom = windowHeight.value + VIRTUAL_BUFFER
 
   const wrapHeights = Array.from({ length: columnCount.value }, (_, i) => {
     const totalSpacing = SPACING * columnImageCounts[i]
     const scalableHeight = cumulativeColumnsHeights[i] - totalSpacing
-    return scalableHeight * resizeFactor + totalSpacing
+    return scalableHeight * resizeFactor.value + totalSpacing
   })
 
-  for (let i = 0; i < imageStates.length; i++) {
-    const state = imageStates[i]
+  for (let stateIndex = 0; stateIndex < imageStates.length; stateIndex++) {
+    const state = imageStates[stateIndex]
     const columnIndex = state.columnIndex
     const wrapHeight = wrapHeights[columnIndex]
     if (wrapHeight <= 0) continue
 
-    const spacingCount = state.cardIndex + 1
-    const scaledCardTop = (state.cardTop - SPACING * spacingCount) * resizeFactor
-    const constantSpacing = SPACING * spacingCount
+    const constantSpacing = (state.cardIndex + 1) * SPACING
+    const scaledCardTop = (state.cardTop - constantSpacing) * resizeFactor.value
 
-    const yWorld = scaledCardTop + constantSpacing + scrollTargets.value[columnIndex] * resizeFactor
+    const y = scaledCardTop + constantSpacing + scrollTargets[columnIndex] * resizeFactor.value
 
-    const minY = -state.cardHeight * resizeFactor
+    const minY = -state.cardHeight * resizeFactor.value
     const totalSpacing = SPACING * columnImageCounts[columnIndex]
-    const scalableMaxY =
-      (cumulativeColumnsHeights[columnIndex] - totalSpacing - state.cardHeight) * resizeFactor
+    const columnHeight = cumulativeColumnsHeights[columnIndex]
+    const scalableMaxY = (columnHeight - totalSpacing - state.cardHeight) * resizeFactor.value
     const maxY = scalableMaxY + totalSpacing
 
-    const yWrapped = gsap.utils.wrap(minY, maxY, yWorld)
+    const yWrapped = gsap.utils.wrap(minY, maxY, y)
 
-    const scaledHeight = state.cardHeight * resizeFactor
+    const scaledHeight = state.cardHeight * resizeFactor.value
     const yBottom = yWrapped + scaledHeight
     const isVisible = yBottom >= viewTop && yWrapped <= viewBottom
 
@@ -254,18 +241,46 @@ const update = () => {
   }
 }
 
+const render = () => {
+  if (!isRendering) isRendering = true
+  requestAnimationFrame(render)
+
+  const timestamp = performance.now()
+  if (!lastFrameTimestamp) lastFrameTimestamp = timestamp
+  const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - lastFrameTimestamp) / 1000)
+  lastFrameTimestamp = timestamp
+
+  if (!isBuildingLayout && !isDragging.value) {
+    normalizedScrollY += velocity * deltaTime
+    const decay = Math.exp(-VELOCITY_DECAY * deltaTime)
+    velocity = clamp(velocity * decay, -MAX_SPEED, MAX_SPEED)
+    if (Math.abs(velocity) < VELOCITY_THRESHOLD) velocity = 0
+  }
+
+  updateImagePositions()
+}
+
+const handleImageLoad = (imageId) => {
+  loadedImageIds.value.add(imageId)
+  if (allImagesLoaded.value) {
+    nextTick(async () => {
+      await rebuildLayout()
+      if (!isRendering) render()
+    })
+  }
+}
+
 const handleWheel = (event) => {
   event.preventDefault?.()
-  const deltaY = clamp(event.deltaY, -100, 100)
-  normalizedScrollY -= deltaY / resizeFactor
-  velocity += (-deltaY / resizeFactor) * WHEEL_IMPULSE
-  velocity = clamp(velocity, -MAX_SPEED, MAX_SPEED)
+  const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
+  normalizedScrollY -= deltaY / resizeFactor.value
+  velocity += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
 }
 
 const handleDragStart = (event) => {
   event.preventDefault?.()
-  dragStartY = event.clientY || event.touches?.[0]?.clientY || 0
   isDragging.value = true
+  dragStartY = event.clientY || event.touches?.[0]?.clientY || 0
   lastDragTimestamp = performance.now()
   velocity = 0
 }
@@ -276,81 +291,24 @@ const handleDragMove = (event) => {
   const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartY
   const deltaY = (currentY - dragStartY) * DRAG_FACTOR
   dragStartY = currentY
-  normalizedScrollY += deltaY / resizeFactor
+  normalizedScrollY += deltaY / resizeFactor.value
 
   const now = performance.now()
-  const dt = Math.max(0.001, (now - lastDragTimestamp) / 1000)
+  const deltaTime = Math.max(MIN_DELTA_TIME, (now - lastDragTimestamp) / 1000)
   lastDragTimestamp = now
 
-  const instantaneousVelocity = ((deltaY / resizeFactor) * DRAG_IMPULSE) / dt
-  velocity = lerp(velocity, instantaneousVelocity, 0.35)
-  velocity = clamp(velocity, -MAX_SPEED, MAX_SPEED)
+  const instantaneousVelocity = ((deltaY / resizeFactor.value) * DRAG_IMPULSE) / deltaTime
+  velocity = clamp(
+    lerp(velocity, instantaneousVelocity, VELOCITY_LERP_FACTOR),
+    -MAX_SPEED,
+    MAX_SPEED
+  )
 }
 
 const handleDragEnd = (event) => {
   event.preventDefault?.()
   isDragging.value = false
 }
-
-const render = (timestamp = performance.now()) => {
-  if (!isRendering) return
-  requestAnimationFrame(render)
-
-  if (!lastFrameTimestamp) lastFrameTimestamp = timestamp
-  const dt = Math.min(0.05, (timestamp - lastFrameTimestamp) / 1000)
-  lastFrameTimestamp = timestamp
-
-  if (!isLayoutSyncing && !isDragging.value) {
-    normalizedScrollY += velocity * dt
-    const decay = Math.exp(-DECAY_PER_SEC * dt)
-    velocity *= decay
-    velocity = clamp(velocity, -MAX_SPEED, MAX_SPEED)
-    if (Math.abs(velocity) < VELOCITY_THRESHOLD) velocity = 0
-  }
-
-  resizeFactor = viewportContentWidth(columnCount.value) / baselineContentWidth.value
-  update()
-}
-
-const startRenderLoopOnce = () => {
-  if (isRendering) return
-  isRendering = true
-  requestAnimationFrame(render)
-}
-
-const rebuildHeavy = async ({ regroupColumns = true } = {}) => {
-  isLayoutSyncing = true
-  velocity = 0
-
-  scrollTargets.value = []
-  columnWidth.value = currentColumnWidth(columnCount.value)
-  baselineContentWidth.value = viewportContentWidth(columnCount.value)
-  resizeFactor = 1
-
-  if (regroupColumns) populateImageGroups()
-  await nextTick()
-  calculateImageStates()
-  hideAllImages()
-
-  requestAnimationFrame(() => {
-    isLayoutSyncing = false
-  })
-}
-
-const handleImageLoad = (imageId) => {
-  loadedImageIds.value.add(imageId)
-  if (allImagesLoaded.value) {
-    nextTick(async () => {
-      await rebuildHeavy({ regroupColumns: false })
-      startRenderLoopOnce()
-    })
-  }
-}
-
-onMounted(() => {
-  columnWidth.value = currentColumnWidth(columnCount.value)
-  baselineContentWidth.value = viewportContentWidth(columnCount.value)
-})
 </script>
 
 <template>
@@ -369,7 +327,7 @@ onMounted(() => {
     @mouseup="handleDragEnd"
   >
     <div
-      v-for="(group, index) in groupedImages"
+      v-for="(group, index) in imageGroups"
       :key="index"
       class="gallery-column"
       :style="{ width: columnWidth + 'px', marginLeft: SPACING + 'px' }"
@@ -386,13 +344,6 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-.test {
-  display: flex;
-  position: fixed;
-  left: 0;
-  right: 0;
-}
-
 .image-gallery {
   display: flex;
   flex-direction: row;
