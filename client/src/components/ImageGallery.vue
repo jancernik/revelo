@@ -21,8 +21,8 @@ const MAX_SPEED = 4000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
 const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
 
-const SCROLL_LERP_BASE = 0.1 // Base lerp factor for scroll smoothing
-const SCROLL_LERP_DISTANCE_FACTOR = 0.025 // Distance-based lerp adjustment factor
+const MAX_SCROLL_LERP = 0.1 // Lerp factor at center column (fastest response)
+const MIN_SCROLL_LERP = 0.05 // Lerp factor at outermost columns (slowest response)
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
@@ -187,11 +187,13 @@ const updateImagePositions = () => {
 
   scrollTargets = scrollTargets.map((lastTarget, columnIndex) => {
     const distanceFromCenter = Math.abs(columnIndex - middleColumnIndex.value)
-    return lerp(
-      lastTarget,
-      normalizedScrollY,
-      SCROLL_LERP_BASE - SCROLL_LERP_DISTANCE_FACTOR * distanceFromCenter
-    )
+    const maxD = middleColumnIndex.value
+    const dNorm = maxD === 0 ? 0 : distanceFromCenter / maxD
+
+    const easeValue = 0.5 * (1 + Math.cos(Math.PI * dNorm))
+    const alpha = MIN_SCROLL_LERP + (MAX_SCROLL_LERP - MIN_SCROLL_LERP) * easeValue
+
+    return lerp(lastTarget, normalizedScrollY, alpha)
   })
 
   const viewTop = -VIRTUAL_BUFFER
