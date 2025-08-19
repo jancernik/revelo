@@ -14,10 +14,10 @@ const MIN_COLUMNS = 3 // Minimum number of columns to display
 const MAX_COLUMNS = 9 // Maximum number of columns to display
 
 const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
-const WHEEL_IMPULSE = 2.0 // Scroll wheel velocity multiplier
+const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
 const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
-const VELOCITY_DECAY = 7.0 // Rate at which velocity decays over time
-const MAX_SPEED = 4000 // Maximum scroll velocity in pixels per second
+const VELOCITY_DECAY = 6.0 // Rate at which velocity decays over time
+const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
 const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
 
@@ -27,7 +27,8 @@ const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interact
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
-let velocity = 0
+const SHOW_DEBUG_INFO = true // Toggle display of debug information
+
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
 let normalizedScrollY = 0
@@ -40,6 +41,7 @@ let scrollTargets = []
 let columnCountAnimationFrameId = 0
 let isRendering = false
 let isBuildingLayout = false
+let lastMaxVelocityRecorded = 0
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const imagesStore = useImagesStore()
@@ -49,6 +51,14 @@ const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
 const isDragging = ref(false)
 const baselineColumnWidth = ref(0)
+const velocity = ref(0)
+
+const maxVelocityRecorded = computed(() => {
+  if (velocity.value !== 0) {
+    lastMaxVelocityRecorded = Math.max(lastMaxVelocityRecorded, Math.abs(velocity.value))
+  }
+  return lastMaxVelocityRecorded
+})
 
 const columnCount = computed(() => {
   const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
@@ -160,7 +170,7 @@ const hideAllImages = () => {
 
 const rebuildLayout = async () => {
   isBuildingLayout = true
-  velocity = 0
+  velocity.value = 0
   scrollTargets = []
   baselineColumnWidth.value = columnWidth.value
 
@@ -253,10 +263,10 @@ const render = () => {
   lastFrameTimestamp = timestamp
 
   if (!isBuildingLayout && !isDragging.value) {
-    normalizedScrollY += velocity * deltaTime
+    normalizedScrollY += velocity.value * deltaTime
     const decay = Math.exp(-VELOCITY_DECAY * deltaTime)
-    velocity = clamp(velocity * decay, -MAX_SPEED, MAX_SPEED)
-    if (Math.abs(velocity) < VELOCITY_THRESHOLD) velocity = 0
+    velocity.value = clamp(velocity.value * decay, -MAX_SPEED, MAX_SPEED)
+    if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
   }
 
   updateImagePositions()
@@ -276,7 +286,7 @@ const handleWheel = (event) => {
   event.preventDefault?.()
   const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
   normalizedScrollY -= deltaY / resizeFactor.value
-  velocity += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
+  velocity.value += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
 }
 
 const handleDragStart = (event) => {
@@ -284,7 +294,7 @@ const handleDragStart = (event) => {
   isDragging.value = true
   dragStartY = event.clientY || event.touches?.[0]?.clientY || 0
   lastDragTimestamp = performance.now()
-  velocity = 0
+  velocity.value = 0
 }
 
 const handleDragMove = (event) => {
@@ -300,8 +310,8 @@ const handleDragMove = (event) => {
   lastDragTimestamp = now
 
   const instantaneousVelocity = ((deltaY / resizeFactor.value) * DRAG_IMPULSE) / deltaTime
-  velocity = clamp(
-    lerp(velocity, instantaneousVelocity, VELOCITY_LERP_FACTOR),
+  velocity.value = clamp(
+    lerp(velocity.value, instantaneousVelocity, VELOCITY_LERP_FACTOR),
     -MAX_SPEED,
     MAX_SPEED
   )
@@ -343,6 +353,15 @@ const handleDragEnd = (event) => {
       />
     </div>
   </div>
+  <div v-if="SHOW_DEBUG_INFO" class="debug-info">
+    <p>Columns: {{ columnCount }}</p>
+    <p>Column Width: {{ columnWidth.toFixed(2) }} px</p>
+    <p>Resize Factor: {{ resizeFactor.toFixed(3) }}</p>
+    <p>Velocity: {{ velocity.toFixed(2) }} px/s</p>
+    <p>Max velocity: {{ maxVelocityRecorded.toFixed(2) }} px/s</p>
+    <p>Normalized Scroll Y: {{ normalizedScrollY.toFixed(2) }} px</p>
+    <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
+  </div>
 </template>
 
 <style lang="scss">
@@ -357,6 +376,7 @@ const handleDragEnd = (event) => {
     cursor: grabbing;
   }
 }
+
 .gallery-column {
   display: flex;
   flex-direction: column;
@@ -364,5 +384,17 @@ const handleDragEnd = (event) => {
   height: 100vh;
   pointer-events: none;
   user-select: none;
+}
+
+.debug-info {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 10px;
+  font-size: 12px;
+  width: 280px;
+  z-index: 1000;
 }
 </style>
