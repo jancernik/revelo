@@ -16,6 +16,8 @@ const MAX_COLUMNS = 9 // Maximum number of columns to display
 const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
 const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
+const KEYBOARD_PAGE_IMPULSE = 2.0 // Page up/down and space bar velocity multiplier
+const KEYBOARD_ARROW_IMPULSE = 2.0 // Arrow key velocity multiplier
 const VELOCITY_DECAY = 6.0 // Rate at which velocity decays over time
 const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
@@ -316,6 +318,7 @@ const handleImageLoad = (imageId) => {
   if (allImagesLoaded.value) {
     nextTick(async () => {
       await rebuildLayout()
+      imageGallery.value?.focus()
     })
   }
 }
@@ -334,6 +337,7 @@ const handleDragStart = (event) => {
   dragStartY = event.clientY || event.touches?.[0]?.clientY || 0
   lastDragTimestamp = performance.now()
   velocity.value = 0
+  imageGallery.value?.focus()
 }
 
 const handleDragMove = (event) => {
@@ -361,6 +365,51 @@ const handleDragEnd = (event) => {
   event.preventDefault?.()
   isDragging.value = false
 }
+
+const handleKeyDown = (event) => {
+  let scrollDelta = 0
+  let impulseMultiplier = 0
+
+  switch (event.key) {
+    case " ":
+      event.preventDefault()
+      scrollDelta = event.shiftKey ? windowHeight.value : -windowHeight.value * 0.6
+      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
+      break
+    case "ArrowDown":
+      event.preventDefault()
+      scrollDelta = -windowHeight.value * 0.2
+      impulseMultiplier = KEYBOARD_ARROW_IMPULSE
+      break
+    case "ArrowUp":
+      event.preventDefault()
+      scrollDelta = windowHeight.value * 0.2
+      impulseMultiplier = KEYBOARD_ARROW_IMPULSE
+      break
+    case "PageDown":
+      event.preventDefault()
+      scrollDelta = -windowHeight.value * 0.6
+      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
+      break
+    case "PageUp":
+      event.preventDefault()
+      scrollDelta = windowHeight.value * 0.6
+      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
+      break
+    default:
+      return
+  }
+
+  if (scrollDelta !== 0) {
+    normalizedScrollY += scrollDelta / resizeFactor.value
+    velocity.value += clamp(
+      (scrollDelta / resizeFactor.value) * impulseMultiplier,
+      -MAX_SPEED,
+      MAX_SPEED
+    )
+    startRenderLoop()
+  }
+}
 </script>
 
 <template>
@@ -369,7 +418,9 @@ const handleDragEnd = (event) => {
     ref="image-gallery"
     class="image-gallery"
     :class="{ dragging: isDragging }"
+    tabindex="0"
     @mousewheel="handleWheel"
+    @keydown="handleKeyDown"
     @touchstart="handleDragStart"
     @touchmove="handleDragMove"
     @touchend="handleDragEnd"
@@ -412,6 +463,7 @@ const handleDragEnd = (event) => {
   overflow: hidden;
   height: 100vh;
   user-select: none;
+  outline: none;
   &.dragging {
     cursor: grabbing;
   }
