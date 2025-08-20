@@ -3,6 +3,10 @@ const props = defineProps({
   image: {
     required: true,
     type: Object
+  },
+  shouldLoad: {
+    default: false,
+    type: Boolean
   }
 })
 
@@ -22,11 +26,12 @@ const handleClick = () => {
 <template>
   <div class="image-card" :data-flip-id="`img-${image.id}`" @click="handleClick">
     <img
-      :src="`/api/${thumbnail.path}`"
+      :src="shouldLoad ? `/api/${thumbnail.path}` : null"
       :height="thumbnail.height"
       :width="thumbnail.width"
       :title="image.caption"
       :alt="image.caption"
+      :data-id="image.id"
       @load="emit('load', image.id)"
       @error="emit('load')"
     />

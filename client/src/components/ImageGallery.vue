@@ -56,6 +56,7 @@ const imageGallery = useTemplateRef("image-gallery")
 
 const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
+const visibleImageIds = ref(new Set())
 const isDragging = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
@@ -80,10 +81,6 @@ const columnWidth = computed(() => {
 
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
-})
-
-const allImagesLoaded = computed(() => {
-  return loadedImageIds.value.size === imagesStore.filteredImages.length
 })
 
 const groupImages = (images = [], groupCount) => {
@@ -121,12 +118,19 @@ const updateImageGroups = () => {
 
 watch(
   () => imagesStore.filteredImages,
-  () => {
+  async () => {
     updateImageGroups()
     const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
     loadedImageIds.value = new Set(
       [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
     )
+    visibleImageIds.value.clear()
+
+    if (imagesStore.filteredImages.length > 0) {
+      await nextTick()
+      await rebuildLayout()
+      imageGallery.value?.focus()
+    }
   },
   { deep: true, immediate: true }
 )
@@ -149,13 +153,15 @@ const calculateImagePositions = () => {
 
   imageGallery.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
     columnElement.querySelectorAll(".image-card").forEach((cardElement, cardIndex) => {
-      const cardHeight = cardElement.clientHeight
+      const img = cardElement.querySelector("img")
+      const cardHeight = (img.height / img.width) * columnWidth.value
       imageStates.push({
         cardHeight,
         cardIndex,
         cardTop: cumulativeColumnsHeights[columnIndex],
         columnIndex,
         element: cardElement,
+        imageId: img.dataset.id,
         setY: gsap.quickSetter(cardElement, "y", "px"),
         visible: false
       })
@@ -259,6 +265,14 @@ const updateImagePositions = () => {
     const cardBottom = wrappedY + scaledCardHeight
     const isVisible = cardBottom >= viewTop && wrappedY <= viewBottom
 
+    const lazyLoadBuffer = VIRTUAL_BUFFER * 2
+    const shouldLoad =
+      cardBottom >= viewTop - lazyLoadBuffer && wrappedY <= viewBottom + lazyLoadBuffer
+
+    if (shouldLoad && !visibleImageIds.value.has(state.imageId)) {
+      visibleImageIds.value.add(state.imageId)
+    }
+
     if (isVisible) {
       if (!state.visible) {
         state.visible = true
@@ -315,12 +329,6 @@ const renderFrame = (timestamp) => {
 
 const handleImageLoad = (imageId) => {
   loadedImageIds.value.add(imageId)
-  if (allImagesLoaded.value) {
-    nextTick(async () => {
-      await rebuildLayout()
-      imageGallery.value?.focus()
-    })
-  }
 }
 
 const handleWheel = (event) => {
@@ -414,7 +422,6 @@ const handleKeyDown = (event) => {
 
 <template>
   <div
-    v-show="allImagesLoaded"
     ref="image-gallery"
     class="image-gallery"
     :class="{ dragging: isDragging }"
@@ -440,6 +447,7 @@ const handleKeyDown = (event) => {
         :key="image.id"
         :identifier="image.id"
         :image="image"
+        :should-load="visibleImageIds.has(image.id)"
         @load="handleImageLoad"
       />
     </div>
@@ -451,6 +459,7 @@ const handleKeyDown = (event) => {
     <p>Velocity: {{ velocity.toFixed(2) }} px/s</p>
     <p>Max velocity: {{ maxVelocityRecorded.toFixed(2) }} px/s</p>
     <p>Normalized Scroll Y: {{ normalizedScrollY.toFixed(2) }} px</p>
+    <p>Images Visible: {{ visibleImageIds.size }}</p>
     <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
   </div>
 </template>
