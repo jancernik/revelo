@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from "vue"
+
 const props = defineProps({
   image: {
     required: true,
@@ -10,6 +12,7 @@ const props = defineProps({
   }
 })
 
+const errorLoading = ref(false)
 const emit = defineEmits(["load", "click"])
 
 const getImageVersion = (type) => {
@@ -24,7 +27,12 @@ const handleClick = () => {
 </script>
 
 <template>
-  <div class="image-card" :data-flip-id="`img-${image.id}`" @click="handleClick">
+  <div
+    class="image-card"
+    :data-flip-id="`img-${image.id}`"
+    :class="{ 'not-loaded': !shouldLoad || errorLoading }"
+    @click="handleClick"
+  >
     <img
       :src="shouldLoad ? `/api/${thumbnail.path}` : null"
       :height="thumbnail.height"
@@ -33,7 +41,7 @@ const handleClick = () => {
       :alt="image.caption"
       :data-id="image.id"
       @load="emit('load', image.id)"
-      @error="emit('load')"
+      @error="errorLoading = true"
     />
   </div>
 </template>
@@ -53,6 +61,47 @@ const handleClick = () => {
   width: inherit;
   pointer-events: none;
   user-select: none;
+  @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
+
+  &.not-loaded::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 200% 200%;
+    border-radius: inherit;
+    pointer-events: none;
+
+    @include light-dark-property(
+      animation,
+      loading-light 1s infinite alternate ease-in-out,
+      loading-dark 1s infinite alternate ease-in-out
+    );
+  }
+
+  @keyframes loading-light {
+    0% {
+      background-color: rgba(#171717, 0.05);
+    }
+    100% {
+      background-color: rgba(#171717, 0.15);
+    }
+  }
+
+  @keyframes loading-dark {
+    0% {
+      background-color: rgba(#e5e5e5, 0.05);
+    }
+    100% {
+      background-color: rgba(#e5e5e5, 0.15);
+    }
+  }
+
+  &.not-loaded img {
+    opacity: 0;
+  }
 
   img {
     width: 100%;

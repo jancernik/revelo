@@ -29,7 +29,7 @@ const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interact
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
-const SHOW_DEBUG_INFO = true // Toggle display of debug information
+const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
