@@ -1,6 +1,4 @@
 <script setup>
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-
 const props = defineProps({
   image: {
     required: true,
@@ -24,7 +22,7 @@ const handleClick = () => {
 <template>
   <div class="image-card" :data-flip-id="`img-${image.id}`" @click="handleClick">
     <img
-      :src="`${apiBaseUrl}/${thumbnail.path}`"
+      :src="`/api/${thumbnail.path}`"
       :height="thumbnail.height"
       :width="thumbnail.width"
       :title="image.caption"

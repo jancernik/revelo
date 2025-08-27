@@ -6,8 +6,6 @@ import SimpleImageGrid from "#src/components/SimpleImageGrid.vue"
 import api from "#src/utils/api"
 import { ref } from "vue"
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-
 const step = ref(1)
 const sessionIds = ref([])
 const extractedMetadata = ref([])
@@ -106,7 +104,7 @@ const handleCancel = () => {
 
 const getImageSrc = (image, type) => {
   const version = image.versions.find((v) => v.type === type)
-  return version ? `${apiBaseUrl}/${version.path}` : ""
+  return version ? `/api/${version.path}` : ""
 }
 </script>
 

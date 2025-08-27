@@ -5,7 +5,6 @@ import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 const {
   columnScrollTriggers,
   completeHide,
@@ -239,7 +238,7 @@ onMounted(() => {
 <template>
   <div v-if="imageData" ref="container" class="fullscreen-image-container" @click="handleClick">
     <div ref="image" class="fullscreen-image" :data-flip-id="flipId">
-      <img :src="`${apiBaseUrl}/${regularImageVersion.path}`" alt="" />
+      <img :src="`/api/${regularImageVersion.path}`" alt="" />
     </div>
   </div>
 </template>

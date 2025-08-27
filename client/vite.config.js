@@ -25,5 +25,14 @@ export default defineConfig({
     alias: {
       "#src": fileURLToPath(new URL("./src", import.meta.url))
     }
+  },
+  server: {
+    proxy: {
+      "/api": {
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+        target: process.env.VITE_API_BASE_URL
+      }
+    }
   }
 })
