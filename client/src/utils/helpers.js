@@ -6,6 +6,25 @@ export const debounce = function (callback, delay = 1000) {
   }
 }
 
-export const lerp = (a, b, t) => a * (1 - t) + b * t
+export const clamp = (value, minValue, maxValue) => {
+  return Math.min(Math.max(value, minValue), maxValue)
+}
 
-export const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+export const lerp = (startValue, endValue, interpolationFactor) => {
+  return startValue * (1 - interpolationFactor) + endValue * interpolationFactor
+}
+
+export const createArray = (length, fillValueOrCallback) => {
+  if (typeof fillValueOrCallback === "function") {
+    return Array.from({ length }, (_, index) => fillValueOrCallback(index))
+  }
+  return Array.from({ length }, () => fillValueOrCallback)
+}
+
+export const clearArray = (array) => {
+  array.length = 0
+}
+
+export const easeInOutSine = (progress) => {
+  return 0.5 - 0.5 * Math.cos(Math.PI * progress)
+}

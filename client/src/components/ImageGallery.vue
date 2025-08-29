@@ -2,13 +2,13 @@
 import ImageCard from "#src/components/ImageCard.vue"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
-import { clamp, lerp } from "#src/utils/helpers"
+import { groupImages } from "#src/utils/galleryHelpers"
+import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
 const SPACING = 15 // Space between images and columns in pixels
 const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performance optimization
-
 const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 3 // Minimum number of columns to display
 const MAX_COLUMNS = 9 // Maximum number of columns to display
@@ -34,23 +34,21 @@ const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
-let normalizedScrollY = 0
-let dragStartY = 0
+let scrollPosition = 0
+let dragStartPosition = 0
 
-let cumulativeColumnsHeights = []
+let columnsHeights = []
 let columnImageCounts = []
-let imageStates = []
+let imageCardData = []
 let scrollTargets = []
-let columnCountAnimationFrameId = 0
+let columnCountUpdateId = 0
 let isBuildingLayout = false
-let lastMaxVelocityRecorded = 0
 let columnScalableHeights = []
 let columnSpacing = []
 let columnLerpFactors = []
 let columnWrappedHeights = []
 let lastResizeFactor = 1
-let animationFrameId = 0
-let visibleImageStates = []
+let renderLoopId = 0
 let currentVelocityDecay = VELOCITY_DECAY
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
@@ -64,13 +62,6 @@ const isDragging = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(false)
-
-const maxVelocityRecorded = computed(() => {
-  if (velocity.value !== 0) {
-    lastMaxVelocityRecorded = Math.max(lastMaxVelocityRecorded, Math.abs(velocity.value))
-  }
-  return lastMaxVelocityRecorded
-})
 
 const columnCount = computed(() => {
   const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
@@ -86,34 +77,6 @@ const columnWidth = computed(() => {
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
 })
-
-const groupImages = (images = [], groupCount) => {
-  if (!Array.isArray(images) || images.length === 0) return []
-  if (!groupCount || groupCount <= 0) return images
-
-  const imagesWithWeights = images.map((image) => {
-    const imageData = image?.versions?.find((v) => v.type === "regular") || {}
-    const height = imageData.height || 0
-    const width = imageData.width || 0
-    const aspectRatio = width > 0 ? height / width : 0
-    const weight = Number(aspectRatio.toFixed(3))
-    return { ...image, _weight: weight }
-  })
-
-  imagesWithWeights.sort((a, b) => b._weight - a._weight)
-
-  const groups = Array.from({ length: groupCount }, () => [])
-  const totals = Array.from({ length: groupCount }, () => 0)
-
-  for (const image of imagesWithWeights) {
-    const index = totals.indexOf(Math.min(...totals))
-    const { _weight, ...cleanImage } = image
-    totals[index] = Number((totals[index] + _weight).toFixed(3))
-    groups[index].push(cleanImage)
-  }
-
-  return groups
-}
 
 const updateImageGroups = () => {
   const groups = groupImages(imagesStore.filteredImages, columnCount.value)
@@ -141,8 +104,8 @@ watch(
 
 watch(columnCount, (newCount, oldCount) => {
   if (newCount !== oldCount) {
-    cancelAnimationFrame(columnCountAnimationFrameId)
-    columnCountAnimationFrameId = requestAnimationFrame(async () => {
+    cancelAnimationFrame(columnCountUpdateId)
+    columnCountUpdateId = requestAnimationFrame(async () => {
       updateImageGroups()
       await rebuildLayout()
     })
@@ -150,57 +113,59 @@ watch(columnCount, (newCount, oldCount) => {
 })
 
 watch(resizeFactor, () => startRenderLoop())
-const calculateImagePositions = () => {
-  cumulativeColumnsHeights = Array.from({ length: columnCount.value }, () => SPACING)
-  columnImageCounts = Array.from({ length: columnCount.value }, () => 0)
-  imageStates = []
+
+const calculateImageCardsData = () => {
+  columnsHeights = createArray(columnCount.value, SPACING)
+  columnImageCounts = createArray(columnCount.value, 0)
+  clearArray(imageCardData)
 
   imageGallery.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
     columnElement.querySelectorAll(".image-card").forEach((cardElement, cardIndex) => {
       const img = cardElement.querySelector("img")
       const cardHeight = (img.height / img.width) * columnWidth.value
-      imageStates.push({
+      imageCardData.push({
         cardHeight,
         cardIndex,
-        cardTop: cumulativeColumnsHeights[columnIndex],
+        cardTop: columnsHeights[columnIndex],
         columnIndex,
         element: cardElement,
         imageId: img.dataset.id,
         setY: gsap.quickSetter(cardElement, "y", "px"),
         visible: false
       })
-      cumulativeColumnsHeights[columnIndex] += cardHeight + SPACING
+      columnsHeights[columnIndex] += cardHeight + SPACING
       columnImageCounts[columnIndex]++
     })
-    cumulativeColumnsHeights[columnIndex] -= SPACING
+    columnsHeights[columnIndex] -= SPACING
   })
 }
 
 const calculateColumnLerpFactors = () => {
   const centerIndex = (columnCount.value - 1) / 2
-  columnLerpFactors = Array.from({ length: columnCount.value }, (_, columnIndex) => {
-    const distanceFromCenter =
-      centerIndex === 0 ? 0 : Math.abs(columnIndex - centerIndex) / centerIndex
-    const easedDistance = 0.5 * (1 + Math.cos(Math.PI * distanceFromCenter))
+  columnLerpFactors = createArray(columnCount.value, (columnIndex) => {
+    if (centerIndex === 0) return MAX_SCROLL_LERP
+
+    const distanceFromCenter = Math.abs(columnIndex - centerIndex) / centerIndex
+    const easedDistance = easeInOutSine(1 - distanceFromCenter)
     return MIN_SCROLL_LERP + (MAX_SCROLL_LERP - MIN_SCROLL_LERP) * easedDistance
   })
 }
 
 const calculateColumnDimensions = () => {
-  columnScalableHeights = Array.from({ length: columnCount.value }, (_, columnIndex) => {
-    return cumulativeColumnsHeights[columnIndex] - SPACING * columnImageCounts[columnIndex]
+  columnScalableHeights = createArray(columnCount.value, (columnIndex) => {
+    return columnsHeights[columnIndex] - SPACING * columnImageCounts[columnIndex]
   })
-  columnSpacing = Array.from({ length: columnCount.value }, (_, columnIndex) => {
+  columnSpacing = createArray(columnCount.value, (columnIndex) => {
     return SPACING * columnImageCounts[columnIndex]
   })
-  columnWrappedHeights = new Array(columnCount.value).fill(0)
+  columnWrappedHeights = createArray(columnCount.value, 0)
 }
 
 const hideAllImages = () => {
-  for (const state of imageStates) {
-    state.setY(window.innerHeight * 2)
-    state.element.style.visibility = "hidden"
-    state.element.style.willChange = "auto"
+  for (const card of imageCardData) {
+    card.setY(window.innerHeight * 2)
+    card.element.style.visibility = "hidden"
+    card.element.style.willChange = "auto"
   }
 }
 
@@ -211,7 +176,7 @@ const rebuildLayout = async () => {
   baselineColumnWidth.value = columnWidth.value
 
   await nextTick()
-  calculateImagePositions()
+  calculateImageCardsData()
   calculateColumnDimensions()
   calculateColumnLerpFactors()
   initializeScrollTargets()
@@ -225,21 +190,38 @@ const rebuildLayout = async () => {
 
 const initializeScrollTargets = () => {
   const previousTargets = scrollTargets
-  scrollTargets = Array.from(
-    { length: columnCount.value },
-    (_, columnIndex) => previousTargets[columnIndex] ?? normalizedScrollY
-  )
+  scrollTargets = createArray(columnCount.value, (columnIndex) => {
+    return previousTargets[columnIndex] ?? scrollPosition
+  })
+}
+
+const updateScrollTargets = () => {
+  for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
+    const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
+    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], scrollPosition, lerpFactor)
+  }
+}
+
+const calculateWrappedPosition = (card) => {
+  const constantSpacing = (card.cardIndex + 1) * SPACING
+  const scaledCardTop = (card.cardTop - constantSpacing) * resizeFactor.value
+  const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
+  const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget
+
+  const minY = -card.cardHeight * resizeFactor.value
+  const totalSpacing = columnSpacing[card.columnIndex]
+  const columnHeight = columnsHeights[card.columnIndex]
+  const scalableMaxY = (columnHeight - totalSpacing - card.cardHeight) * resizeFactor.value
+  const maxY = scalableMaxY + totalSpacing
+
+  return gsap.utils.wrap(minY, maxY, cardPosition)
 }
 
 const updateImagePositions = () => {
   if (isBuildingLayout) return
 
-  for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
-    const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
-    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], normalizedScrollY, lerpFactor)
-  }
+  updateScrollTargets()
 
-  visibleImageStates = []
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
 
@@ -248,63 +230,58 @@ const updateImagePositions = () => {
       columnScalableHeights[columnIndex] * resizeFactor.value + columnSpacing[columnIndex]
   }
 
-  for (let stateIndex = 0; stateIndex < imageStates.length; stateIndex++) {
-    const state = imageStates[stateIndex]
-    const columnIndex = state.columnIndex
-    const columnWrappedHeight = columnWrappedHeights[columnIndex]
-    if (columnWrappedHeight <= 0) continue
-
-    const constantSpacing = (state.cardIndex + 1) * SPACING
-    const scaledCardTop = (state.cardTop - constantSpacing) * resizeFactor.value
-    const cardY = scaledCardTop + constantSpacing + scrollTargets[columnIndex] * resizeFactor.value
-
-    const minY = -state.cardHeight * resizeFactor.value
-    const totalSpacing = columnSpacing[columnIndex]
-    const columnHeight = cumulativeColumnsHeights[columnIndex]
-    const scalableMaxY = (columnHeight - totalSpacing - state.cardHeight) * resizeFactor.value
-    const maxY = scalableMaxY + totalSpacing
-
-    const wrappedY = gsap.utils.wrap(minY, maxY, cardY)
-
-    const scaledCardHeight = state.cardHeight * resizeFactor.value
-    const cardBottom = wrappedY + scaledCardHeight
-    const isVisible = cardBottom >= viewTop && wrappedY <= viewBottom
+  for (const card of imageCardData) {
+    if (columnWrappedHeights[card.columnIndex] <= 0) continue
+    const wrappedPosition = calculateWrappedPosition(card)
+    const scaledCardHeight = card.cardHeight * resizeFactor.value
+    const cardBottom = wrappedPosition + scaledCardHeight
+    const isVisible = cardBottom >= viewTop && wrappedPosition <= viewBottom
 
     const lazyLoadBuffer = VIRTUAL_BUFFER * 2
-    const shouldLoad =
-      cardBottom >= viewTop - lazyLoadBuffer && wrappedY <= viewBottom + lazyLoadBuffer
+    const minY = viewTop - lazyLoadBuffer
+    const maxY = viewBottom + lazyLoadBuffer
+    const shouldLoad = cardBottom >= minY && wrappedPosition <= maxY
 
-    if (shouldLoad && !visibleImageIds.value.has(state.imageId)) {
-      visibleImageIds.value.add(state.imageId)
+    if (shouldLoad && !visibleImageIds.value.has(card.imageId)) {
+      visibleImageIds.value.add(card.imageId)
+    }
+
+    if (isVisible && !card.visible) {
+      card.visible = true
+      card.element.style.visibility = "visible"
+      card.element.style.willChange = "transform"
+    } else if (!isVisible && card.visible) {
+      card.visible = false
+      card.element.style.visibility = "hidden"
+      card.element.style.willChange = "auto"
     }
 
     if (isVisible) {
-      if (!state.visible) {
-        state.visible = true
-        state.element.style.visibility = "visible"
-        state.element.style.willChange = "transform"
-      }
-      state.setY(wrappedY)
-      visibleImageStates.push(state)
-    } else if (state.visible) {
-      state.visible = false
-      state.element.style.visibility = "hidden"
-      state.element.style.willChange = "auto"
+      card.setY(wrappedPosition)
     }
   }
 }
 
+const updateVelocity = (deltaTime) => {
+  if (!isBuildingLayout && !isDragging.value) {
+    scrollPosition += velocity.value * deltaTime
+    const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
+    velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
+    if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
+  }
+}
+
 const startRenderLoop = () => {
-  if (animationFrameId) return
+  if (renderLoopId) return
   lastFrameTimestamp = performance.now()
   lastResizeFactor = resizeFactor.value
-  animationFrameId = requestAnimationFrame(renderFrame)
+  renderLoopId = requestAnimationFrame(renderFrame)
 }
 
 const stopRenderLoop = () => {
-  if (!animationFrameId) return
-  cancelAnimationFrame(animationFrameId)
-  animationFrameId = 0
+  if (!renderLoopId) return
+  cancelAnimationFrame(renderLoopId)
+  renderLoopId = 0
   lastFrameTimestamp = 0
 }
 
@@ -312,23 +289,21 @@ const isRenderLoopIdle = () => {
   if (isBuildingLayout || isDragging.value) return false
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
-    scrollTargets.every((target) => Math.abs(target - normalizedScrollY) < 0.5)
+    scrollTargets.every((target) => Math.abs(target - scrollPosition) < 0.5)
   const velocitySettled = Math.abs(velocity.value) < VELOCITY_THRESHOLD
   const resizeFactorStable = Math.abs(resizeFactor.value - lastResizeFactor) < 1e-6
   return scrollTargetsSettled && velocitySettled && resizeFactorStable
 }
 
 const renderFrame = (timestamp) => {
-  animationFrameId = requestAnimationFrame(renderFrame)
+  renderLoopId = requestAnimationFrame(renderFrame)
+
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
   lastFrameTimestamp = timestamp
-  if (!isBuildingLayout && !isDragging.value) {
-    normalizedScrollY += velocity.value * deltaTime
-    const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
-    velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
-    if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
-  }
+
+  updateVelocity(deltaTime)
   updateImagePositions()
+
   if (isRenderLoopIdle()) stopRenderLoop()
   lastResizeFactor = resizeFactor.value
 }
@@ -360,7 +335,7 @@ const handleWheel = (event) => {
   event.preventDefault?.()
   if (isScrollPaused.value) return
   const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
-  normalizedScrollY -= deltaY / resizeFactor.value
+  scrollPosition -= deltaY / resizeFactor.value
   velocity.value += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
   startRenderLoop()
 }
@@ -368,7 +343,7 @@ const handleWheel = (event) => {
 const handleDragStart = (event) => {
   event.preventDefault?.()
   isDragging.value = true
-  dragStartY = event.clientY || event.touches?.[0]?.clientY || 0
+  dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
   lastDragTimestamp = performance.now()
   velocity.value = 0
   imageGallery.value?.focus()
@@ -377,10 +352,10 @@ const handleDragStart = (event) => {
 const handleDragMove = (event) => {
   event.preventDefault?.()
   if (!isDragging.value || isScrollPaused.value) return
-  const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartY
-  const deltaY = (currentY - dragStartY) * DRAG_FACTOR
-  dragStartY = currentY
-  normalizedScrollY += deltaY / resizeFactor.value
+  const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartPosition
+  const deltaY = (currentY - dragStartPosition) * DRAG_FACTOR
+  dragStartPosition = currentY
+  scrollPosition += deltaY / resizeFactor.value
 
   const now = performance.now()
   const deltaTime = Math.max(MIN_DELTA_TIME, (now - lastDragTimestamp) / 1000)
@@ -441,7 +416,7 @@ const handleKeyDown = (event) => {
   }
 
   if (scrollDelta !== 0) {
-    normalizedScrollY += scrollDelta / resizeFactor.value
+    scrollPosition += scrollDelta / resizeFactor.value
     velocity.value += clamp(
       (scrollDelta / resizeFactor.value) * impulseMultiplier,
       -MAX_SPEED,
@@ -490,8 +465,7 @@ const handleKeyDown = (event) => {
     <p>Column Width: {{ columnWidth.toFixed(2) }} px</p>
     <p>Resize Factor: {{ resizeFactor.toFixed(3) }}</p>
     <p>Velocity: {{ velocity.toFixed(2) }} px/s</p>
-    <p>Max velocity: {{ maxVelocityRecorded.toFixed(2) }} px/s</p>
-    <p>Normalized Scroll Y: {{ normalizedScrollY.toFixed(2) }} px</p>
+    <p>Normalized Scroll Y: {{ scrollPosition.toFixed(2) }} px</p>
     <p>Images Visible: {{ visibleImageIds.size }}</p>
     <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
   </div>
