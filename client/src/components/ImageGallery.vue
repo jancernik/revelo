@@ -18,7 +18,8 @@ const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
 const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
 const KEYBOARD_PAGE_IMPULSE = 2.0 // Page up/down and space bar velocity multiplier
 const KEYBOARD_ARROW_IMPULSE = 2.0 // Arrow key velocity multiplier
-const VELOCITY_DECAY = 6.0 // Rate at which velocity decays over time
+const VELOCITY_DECAY = 5.0 // Rate at which velocity decays over time
+const PAUSED_VELOCITY_DECAY = 10.0 // Rate at which velocity decays over time when paused
 const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
 const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
@@ -49,6 +50,8 @@ let columnLerpFactors = []
 let columnWrappedHeights = []
 let lastResizeFactor = 1
 let animationFrameId = 0
+let visibleImageStates = []
+let currentVelocityDecay = VELOCITY_DECAY
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const imagesStore = useImagesStore()
@@ -60,6 +63,7 @@ const visibleImageIds = ref(new Set())
 const isDragging = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
+const isScrollPaused = ref(false)
 
 const maxVelocityRecorded = computed(() => {
   if (velocity.value !== 0) {
@@ -235,6 +239,7 @@ const updateImagePositions = () => {
     scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], normalizedScrollY, lerpFactor)
   }
 
+  visibleImageStates = []
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
 
@@ -280,6 +285,7 @@ const updateImagePositions = () => {
         state.element.style.willChange = "transform"
       }
       state.setY(wrappedY)
+      visibleImageStates.push(state)
     } else if (state.visible) {
       state.visible = false
       state.element.style.visibility = "hidden"
@@ -318,7 +324,7 @@ const renderFrame = (timestamp) => {
   lastFrameTimestamp = timestamp
   if (!isBuildingLayout && !isDragging.value) {
     normalizedScrollY += velocity.value * deltaTime
-    const velocityDecay = Math.exp(-VELOCITY_DECAY * deltaTime)
+    const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
     velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
     if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
   }
@@ -327,12 +333,32 @@ const renderFrame = (timestamp) => {
   lastResizeFactor = resizeFactor.value
 }
 
+const resumeScrolling = () => {
+  isScrollPaused.value = false
+  currentVelocityDecay = VELOCITY_DECAY
+}
+
+const pauseScrolling = () => {
+  isDragging.value = false
+  isScrollPaused.value = true
+  currentVelocityDecay = PAUSED_VELOCITY_DECAY
+}
+
+const handleImageClick = () => {
+  if (isScrollPaused.value) {
+    resumeScrolling()
+  } else {
+    pauseScrolling()
+  }
+}
+
 const handleImageLoad = (imageId) => {
   loadedImageIds.value.add(imageId)
 }
 
 const handleWheel = (event) => {
   event.preventDefault?.()
+  if (isScrollPaused.value) return
   const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
   normalizedScrollY -= deltaY / resizeFactor.value
   velocity.value += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
@@ -350,7 +376,7 @@ const handleDragStart = (event) => {
 
 const handleDragMove = (event) => {
   event.preventDefault?.()
-  if (!isDragging.value) return
+  if (!isDragging.value || isScrollPaused.value) return
   const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartY
   const deltaY = (currentY - dragStartY) * DRAG_FACTOR
   dragStartY = currentY
@@ -371,6 +397,7 @@ const handleDragMove = (event) => {
 
 const handleDragEnd = (event) => {
   event.preventDefault?.()
+  if (isScrollPaused.value) return
   isDragging.value = false
 }
 
@@ -381,26 +408,31 @@ const handleKeyDown = (event) => {
   switch (event.key) {
     case " ":
       event.preventDefault()
+      if (isScrollPaused.value) return
       scrollDelta = event.shiftKey ? windowHeight.value : -windowHeight.value * 0.6
       impulseMultiplier = KEYBOARD_PAGE_IMPULSE
       break
     case "ArrowDown":
       event.preventDefault()
+      if (isScrollPaused.value) return
       scrollDelta = -windowHeight.value * 0.2
       impulseMultiplier = KEYBOARD_ARROW_IMPULSE
       break
     case "ArrowUp":
       event.preventDefault()
+      if (isScrollPaused.value) return
       scrollDelta = windowHeight.value * 0.2
       impulseMultiplier = KEYBOARD_ARROW_IMPULSE
       break
     case "PageDown":
       event.preventDefault()
+      if (isScrollPaused.value) return
       scrollDelta = -windowHeight.value * 0.6
       impulseMultiplier = KEYBOARD_PAGE_IMPULSE
       break
     case "PageUp":
       event.preventDefault()
+      if (isScrollPaused.value) return
       scrollDelta = windowHeight.value * 0.6
       impulseMultiplier = KEYBOARD_PAGE_IMPULSE
       break
@@ -449,6 +481,7 @@ const handleKeyDown = (event) => {
         :image="image"
         :should-load="visibleImageIds.has(image.id)"
         @load="handleImageLoad"
+        @click="handleImageClick"
       />
     </div>
   </div>
@@ -483,7 +516,6 @@ const handleKeyDown = (event) => {
   flex-direction: column;
   overflow: hidden;
   height: 100vh;
-  pointer-events: none;
   user-select: none;
 }
 
