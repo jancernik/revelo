@@ -21,8 +21,8 @@ const getImageVersion = (type) => {
 
 const thumbnail = getImageVersion("thumbnail")
 
-const handleClick = () => {
-  emit("click", props.image, `img-${props.image.id}`)
+const handleClick = (event) => {
+  emit("click", event, props.image, `img-${props.image.id}`)
 }
 </script>
 
@@ -59,7 +59,6 @@ const handleClick = () => {
   transform: translateZ(0);
   position: absolute;
   width: inherit;
-  pointer-events: none;
   user-select: none;
   @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
 

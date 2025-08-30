@@ -53,3 +53,17 @@ export const sortStatesByDistance = (imageStates, referencePoint, ascending = tr
     return ascending ? distanceA - distanceB : distanceB - distanceA
   })
 }
+
+export const calculateAnimationProgress = (currentTime, startTime, delay, duration) => {
+  const timeSinceStart = currentTime - startTime - delay
+  if (timeSinceStart < 0) return { progress: 0, started: false }
+
+  const rawProgress = timeSinceStart / duration
+  const clampedProgress = Math.max(0, Math.min(1, rawProgress))
+  return { progress: clampedProgress, started: true }
+}
+
+export const interpolateFadeValue = (fromValue, toValue, progress, easeFunction) => {
+  const easedProgress = easeFunction ? easeFunction(progress) : progress
+  return fromValue + (toValue - fromValue) * easedProgress
+}

@@ -1,8 +1,15 @@
 <script setup>
 import ImageCard from "#src/components/ImageCard.vue"
+import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
-import { groupImages } from "#src/utils/galleryHelpers"
+import {
+  calculateAnimationProgress,
+  elementCenter,
+  groupImages,
+  interpolateFadeValue,
+  sortStatesByDistance
+} from "#src/utils/galleryHelpers"
 import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
@@ -30,10 +37,15 @@ const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interact
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
+const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
+const ZOOM_STAGGER = 0.015 // Delay between each image's fade animation for staggered effect
+
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
+let zoomAnimationEndTimestamp = 0
+let zoomAnimationStartTimestamp = 0
 let scrollPosition = 0
 let dragStartPosition = 0
 
@@ -51,6 +63,11 @@ let lastResizeFactor = 1
 let renderLoopId = 0
 let currentVelocityDecay = VELOCITY_DECAY
 
+let isZoomTransitionActive = false
+let isZoomingOut = true
+let zoomTargetImageId = null
+
+const { show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
@@ -124,12 +141,15 @@ const calculateImageCardsData = () => {
       const img = cardElement.querySelector("img")
       const cardHeight = (img.height / img.width) * columnWidth.value
       imageCardData.push({
+        animationDelay: 0,
         cardHeight,
         cardIndex,
         cardTop: columnsHeights[columnIndex],
         columnIndex,
         element: cardElement,
         imageId: img.dataset.id,
+        setOpacity: gsap.quickSetter(cardElement, "opacity"),
+        setScale: (value) => gsap.set(cardElement, { scale: value }),
         setY: gsap.quickSetter(cardElement, "y", "px"),
         visible: false
       })
@@ -195,6 +215,90 @@ const initializeScrollTargets = () => {
   })
 }
 
+const assignFadeDelays = (imageCardData) => {
+  imageCardData.forEach((state, index) => {
+    state.animationDelay = index * ZOOM_STAGGER * 1000
+  })
+}
+
+const calculateZoomAnimationTiming = (imageCardData) => {
+  const now = performance.now()
+  const totalDelay = imageCardData.length
+    ? imageCardData[imageCardData.length - 1].animationDelay
+    : 0
+
+  return {
+    endTime: now + totalDelay + ZOOM_DURATION * 1000,
+    startTime: now
+  }
+}
+
+const startZoomTransition = (imageId, referenceElement) => {
+  zoomTargetImageId = imageId
+
+  const referencePoint = elementCenter(referenceElement)
+  const visibleNonTargetStates = imageCardData.filter(
+    (state) => state.visible && state.imageId !== imageId
+  )
+
+  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, true)
+  assignFadeDelays(sortedStates)
+
+  const timing = calculateZoomAnimationTiming(sortedStates)
+  zoomAnimationStartTimestamp = timing.startTime
+  zoomAnimationEndTimestamp = timing.endTime
+
+  isZoomTransitionActive = true
+  isZoomingOut = true
+  startRenderLoop()
+}
+
+const startZoomReturn = () => {
+  const targetState = imageCardData.find((state) => state.imageId === zoomTargetImageId)
+
+  const referencePoint = targetState
+    ? elementCenter(targetState.element)
+    : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+
+  const visibleNonTargetStates = imageCardData.filter(
+    (state) => state.visible && state.imageId !== zoomTargetImageId
+  )
+
+  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
+  assignFadeDelays(sortedStates)
+
+  const timing = calculateZoomAnimationTiming(sortedStates)
+  zoomAnimationStartTimestamp = timing.startTime
+  zoomAnimationEndTimestamp = timing.endTime
+
+  isZoomTransitionActive = true
+  isZoomingOut = false
+  startRenderLoop()
+}
+
+const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, hiddenValue) => {
+  if (!isZoomTransitionActive) {
+    return normalValue
+  }
+
+  const { progress, started } = calculateAnimationProgress(
+    now,
+    zoomAnimationStartTimestamp,
+    imageCard.animationDelay,
+    ZOOM_DURATION * 1000
+  )
+
+  if (!started) {
+    return isZoomingOut ? visibleValue : hiddenValue
+  }
+
+  const [fromValue, toValue] = isZoomingOut
+    ? [visibleValue, hiddenValue]
+    : [hiddenValue, visibleValue]
+
+  return interpolateFadeValue(fromValue, toValue, progress, easeInOutSine)
+}
+
 const updateScrollTargets = () => {
   for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
     const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
@@ -224,6 +328,7 @@ const updateImagePositions = () => {
 
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
+  const now = performance.now()
 
   for (let columnIndex = 0; columnIndex < columnCount.value; columnIndex++) {
     columnWrappedHeights[columnIndex] =
@@ -257,7 +362,13 @@ const updateImagePositions = () => {
     }
 
     if (isVisible) {
-      card.setY(wrappedPosition)
+      if (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) {
+        const targetOpacity = calculateZoomAnimationValue(card, now, 1, 1, 0)
+        const targetScale = calculateZoomAnimationValue(card, now, 1, 1, 0.8)
+        card.setOpacity(targetOpacity)
+        card.setScale(targetScale)
+        card.setY(wrappedPosition)
+      }
     }
   }
 }
@@ -285,8 +396,19 @@ const stopRenderLoop = () => {
   lastFrameTimestamp = 0
 }
 
+const updateZoomTransitionState = (timestamp) => {
+  if (isZoomTransitionActive && timestamp >= zoomAnimationEndTimestamp) {
+    isZoomTransitionActive = false
+    if (!isZoomingOut) {
+      zoomTargetImageId = null
+    }
+  }
+}
+
 const isRenderLoopIdle = () => {
   if (isBuildingLayout || isDragging.value) return false
+  if (isZoomTransitionActive) return false
+
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
     scrollTargets.every((target) => Math.abs(target - scrollPosition) < 0.5)
@@ -303,12 +425,14 @@ const renderFrame = (timestamp) => {
 
   updateVelocity(deltaTime)
   updateImagePositions()
+  updateZoomTransitionState(timestamp)
 
   if (isRenderLoopIdle()) stopRenderLoop()
   lastResizeFactor = resizeFactor.value
 }
 
 const resumeScrolling = () => {
+  isDragging.value = false
   isScrollPaused.value = false
   currentVelocityDecay = VELOCITY_DECAY
 }
@@ -319,12 +443,20 @@ const pauseScrolling = () => {
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
 
-const handleImageClick = () => {
-  if (isScrollPaused.value) {
+const handleFullscreenReturn = () => {
+  if (zoomTargetImageId) {
     resumeScrolling()
-  } else {
-    pauseScrolling()
+    startZoomReturn()
   }
+}
+
+const handleImageClick = (event, image, flipId) => {
+  if (zoomTargetImageId) return
+  pauseScrolling()
+  startZoomTransition(image.id, event.currentTarget)
+  setTimeout(() => {
+    showFullscreenImage(image, { flipId, onReturn: handleFullscreenReturn })
+  }, 300)
 }
 
 const handleImageLoad = (imageId) => {
@@ -480,6 +612,7 @@ const handleKeyDown = (event) => {
   height: 100vh;
   user-select: none;
   outline: none;
+
   &.dragging {
     cursor: grabbing;
   }

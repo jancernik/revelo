@@ -5,6 +5,7 @@ import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
 
 const {
+  callOnReturn,
   completeHide,
   flipId,
   hide,
@@ -79,18 +80,24 @@ const hideWithFlipAnimation = () => {
   imageElement.value.style.display = "none"
   thumbnailElement.style.visibility = "visible"
 
+  const flipDuration = 0.8
+
   Flip.from(state, {
-    duration: 0.8,
+    duration: flipDuration,
     ease: "power3.inOut",
     onComplete: () => {
       imageElement.value.style.display = "none"
       containerElement.value.style.display = "none"
       isAnimating.value = false
-      completeHide() // This triggers the gallery return animation
+      completeHide()
     },
     opacity: 1,
     scale: true
   })
+
+  setTimeout(() => {
+    callOnReturn()
+  }, flipDuration * 1000 * 0.2)
 }
 
 const showWithRegularAnimation = () => {

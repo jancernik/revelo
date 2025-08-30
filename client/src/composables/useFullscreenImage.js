@@ -3,10 +3,10 @@ import { ref, shallowRef } from "vue"
 const imageData = shallowRef(null)
 const isAnimating = ref(false)
 const flipId = ref(null)
-const smoother = ref(null)
 const updateRoute = ref(true)
 const triggerHide = ref(false)
-const columnScrollTriggers = ref([])
+const onReturn = ref(null)
+const onReturnCalled = ref(false)
 
 let popstateHandler = null
 let popstateCallback = null
@@ -16,9 +16,9 @@ export function useFullscreenImage() {
     if (isAnimating.value) return
 
     flipId.value = options.flipId || null
-    smoother.value = options.smoother || null
     updateRoute.value = options.updateRoute ?? true
-    columnScrollTriggers.value = options.columnScrollTriggers ?? []
+    onReturn.value = options.onReturn || null
+    onReturnCalled.value = false
 
     imageData.value = image
     triggerHide.value = false
@@ -31,14 +31,25 @@ export function useFullscreenImage() {
   }
 
   const completeHide = () => {
+    if (onReturn.value && !onReturnCalled.value) {
+      onReturn.value()
+    }
+
     flipId.value = null
-    smoother.value = null
     updateRoute.value = true
-    columnScrollTriggers.value = []
+    onReturn.value = null
+    onReturnCalled.value = false
 
     imageData.value = null
     triggerHide.value = false
     cleanup()
+  }
+
+  const callOnReturn = () => {
+    if (onReturn.value && !onReturnCalled.value) {
+      onReturnCalled.value = true
+      onReturn.value()
+    }
   }
 
   const setPopstateCallback = (callback) => {
@@ -68,15 +79,15 @@ export function useFullscreenImage() {
   }
 
   return {
-    columnScrollTriggers,
+    callOnReturn,
     completeHide,
     flipId,
     hide,
     imageData,
     isAnimating,
+    onReturn,
     setPopstateCallback,
     show,
-    smoother,
     triggerHide,
     updateRoute
   }
