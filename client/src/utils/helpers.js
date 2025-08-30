@@ -1,3 +1,7 @@
+export const cssVar = (name) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(name)
+}
+
 export const debounce = function (callback, delay = 1000) {
   let timeout
   return (...args) => {
