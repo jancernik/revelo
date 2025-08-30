@@ -1,19 +1,16 @@
 <script setup>
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
-import { getVisibleElements, orderElementsByDistance } from "#src/utils/ui"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
 
 const {
-  columnScrollTriggers,
   completeHide,
   flipId,
   hide,
   imageData,
   isAnimating,
   setPopstateCallback,
-  smoother,
   triggerHide,
   updateRoute
 } = useFullscreenImage()
@@ -25,8 +22,6 @@ const regularImageVersion = computed(() => {
   return imageData.value?.versions?.find((v) => v.type === "regular") || {}
 })
 
-const hiddenElements = ref([])
-
 const handleClick = () => {
   if (isAnimating.value) return
   history.pushState({}, "", "/")
@@ -34,7 +29,6 @@ const handleClick = () => {
 }
 
 const showWithFlipAnimation = () => {
-  smoother.value.paused(true)
   const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
   if (!thumbnailElement) {
     showWithRegularAnimation()
@@ -46,27 +40,6 @@ const showWithFlipAnimation = () => {
 
   gsap.set(imageElement.value, { opacity: 0 })
   gsap.set(imageElement.value.querySelector("img"), { visibility: "hidden" })
-
-  for (const trigger of columnScrollTriggers.value) {
-    if (trigger.enabled) {
-      trigger.disable()
-    }
-  }
-
-  const visibleCards = getVisibleElements(".image-card")
-  const orderedCards = orderElementsByDistance(visibleCards, thumbnailElement)
-
-  const otherCards = orderedCards.filter((card) => card !== thumbnailElement)
-  hiddenElements.value = otherCards
-
-  gsap.to(otherCards, {
-    duration: 0.6,
-    ease: "power2.out",
-    opacity: 0,
-    overwrite: true,
-    scale: 0.8,
-    stagger: 0.02
-  })
 
   const perform = () => {
     const state = Flip.getState([thumbnailElement, imageElement.value])
@@ -106,27 +79,6 @@ const hideWithFlipAnimation = () => {
   imageElement.value.style.display = "none"
   thumbnailElement.style.visibility = "visible"
 
-  for (const trigger of columnScrollTriggers.value) {
-    if (!trigger.enabled) {
-      trigger.enable()
-    }
-  }
-
-  if (hiddenElements.value) {
-    gsap.to(hiddenElements.value.reverse(), {
-      delay: 0.2,
-      duration: 0.6,
-      ease: "power2.out",
-      onComplete: () => {
-        hiddenElements.value = []
-      },
-      opacity: 1,
-      overwrite: true,
-      scale: 1,
-      stagger: 0.02
-    })
-  }
-
   Flip.from(state, {
     duration: 0.8,
     ease: "power3.inOut",
@@ -134,8 +86,7 @@ const hideWithFlipAnimation = () => {
       imageElement.value.style.display = "none"
       containerElement.value.style.display = "none"
       isAnimating.value = false
-      smoother.value?.paused(false)
-      completeHide()
+      completeHide() // This triggers the gallery return animation
     },
     opacity: 1,
     scale: true
