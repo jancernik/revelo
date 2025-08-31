@@ -112,7 +112,7 @@ export const ImageVersionsTable = pgTable(
   }
 )
 
-export const PostsTable = pgTable("posts", {
+export const CollectionsTable = pgTable("collections", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   description: varchar("description"),
   id: serial("id").primaryKey().notNull(),
@@ -120,23 +120,23 @@ export const PostsTable = pgTable("posts", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 })
 
-export const PostImagesTable = pgTable(
-  "post_images",
+export const CollectionImagesTable = pgTable(
+  "collection_images",
   {
+    collectionId: serial("collection_id")
+      .references(() => CollectionsTable.id, { onDelete: "cascade" })
+      .notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     imageId: uuid("image_id")
       .references(() => ImagesTable.id, { onDelete: "cascade" })
       .notNull(),
     order: integer("order").notNull(),
-    postId: serial("post_id")
-      .references(() => PostsTable.id, { onDelete: "cascade" })
-      .notNull(),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
   (table) => {
     return {
-      primaryKey: primaryKey({ columns: [table.imageId, table.postId] }),
-      uniqueOrder: unique("unique_order").on(table.imageId, table.postId, table.order)
+      primaryKey: primaryKey({ columns: [table.imageId, table.collectionId] }),
+      uniqueOrder: unique("unique_order").on(table.imageId, table.collectionId, table.order)
     }
   }
 )
@@ -150,7 +150,7 @@ export const SettingsTable = pgTable("settings", {
 })
 
 export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
-  postsImages: many(PostImagesTable),
+  collectionsImages: many(CollectionImagesTable),
   versions: many(ImageVersionsTable)
 }))
 
@@ -161,17 +161,17 @@ export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one 
   })
 }))
 
-export const PostsTableRelations = relations(PostsTable, ({ many }) => ({
-  images: many(PostImagesTable)
+export const CollectionsTableRelations = relations(CollectionsTable, ({ many }) => ({
+  images: many(CollectionImagesTable)
 }))
 
-export const PostImagesTableRelations = relations(PostImagesTable, ({ one }) => ({
-  image: one(ImagesTable, {
-    fields: [PostImagesTable.imageId],
-    references: [ImagesTable.id]
+export const CollectionImagesTableRelations = relations(CollectionImagesTable, ({ one }) => ({
+  collection: one(CollectionsTable, {
+    fields: [CollectionImagesTable.collectionId],
+    references: [CollectionsTable.id]
   }),
-  post: one(PostsTable, {
-    fields: [PostImagesTable.postId],
-    references: [PostsTable.id]
+  image: one(ImagesTable, {
+    fields: [CollectionImagesTable.imageId],
+    references: [ImagesTable.id]
   })
 }))
