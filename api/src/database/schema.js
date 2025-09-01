@@ -106,7 +106,7 @@ export const ImageVersionsTable = pgTable(
 export const CollectionsTable = pgTable("collections", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   description: varchar("description"),
-  id: serial("id").primaryKey().notNull(),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
   title: varchar("title", { length: 255 }),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 })
@@ -114,7 +114,7 @@ export const CollectionsTable = pgTable("collections", {
 export const CollectionImagesTable = pgTable(
   "collection_images",
   {
-    collectionId: serial("collection_id")
+    collectionId: uuid("collection_id")
       .references(() => CollectionsTable.id, { onDelete: "cascade" })
       .notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
