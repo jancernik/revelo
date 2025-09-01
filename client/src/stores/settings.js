@@ -33,7 +33,6 @@ export const useSettingsStore = defineStore("settings", () => {
       error.value = error.response?.data?.message || error.message
       showToast({
         description: error.value,
-        duration: 3,
         title: "Error Fetching Settings",
         type: "error"
       })

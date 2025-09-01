@@ -12,7 +12,7 @@ export function useToast() {
       action: options.action || null,
       description: options.description || "",
       dismissible: options.dismissible !== false,
-      duration: options.duration !== undefined ? options.duration : 5000,
+      duration: options.duration !== undefined ? options.duration : 4,
       id: ++toastId,
       showIcon: options.showIcon !== false,
       title: options.title || "",

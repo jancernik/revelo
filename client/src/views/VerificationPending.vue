@@ -15,7 +15,6 @@ const handleRequestVerificationEmail = async () => {
     await authStore.resendVerificationEmail(authStore.user?.email)
     showToast({
       description: "Email sent. Please check your inbox.",
-      duration: 3,
       title: "Verification Email Sent",
       type: "success"
     })
@@ -23,7 +22,6 @@ const handleRequestVerificationEmail = async () => {
     console.log("error: ", error)
     showToast({
       description: "There was an error sending the verification email.",
-      duration: 3,
       title: "Error Sending Email",
       type: "error"
     })

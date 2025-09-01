@@ -20,7 +20,6 @@ const fetchImage = async () => {
     const errorMessage = error.response?.data?.message || error.message || "Failed to fetch image."
     showToast({
       description: errorMessage,
-      duration: 5,
       title: "Error fetching image",
       type: "error"
     })

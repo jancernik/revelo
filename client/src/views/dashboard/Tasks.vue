@@ -7,12 +7,11 @@ const { show: showToast } = useToast()
 
 const handleCleanupStaged = async () => {
   try {
-    showToast({ dismissible: false, duration: 3, title: "Cleanup Initiated", type: "info" })
+    showToast({ dismissible: false, title: "Cleanup Initiated", type: "info" })
     const response = await api.post("/tasks/cleanup/images/staged")
     const data = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
-      duration: 5,
       title: "Cleanup Staged Successful",
       type: "success"
     })
@@ -21,7 +20,6 @@ const handleCleanupStaged = async () => {
       error.response?.data?.message || error.message || "Failed to clean up temporary images."
     showToast({
       description: errorMessage,
-      duration: 5,
       title: "Cleanup Failed",
       type: "error"
     })
@@ -30,12 +28,11 @@ const handleCleanupStaged = async () => {
 
 const handleCleanupOrphaned = async () => {
   try {
-    showToast({ dismissible: false, duration: 3, title: "Cleanup Initiated", type: "info" })
+    showToast({ dismissible: false, title: "Cleanup Initiated", type: "info" })
     const response = await api.post("/tasks/cleanup/images/orphaned")
     const data = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
-      duration: 5,
       title: "Cleanup Orphaned Successful",
       type: "success"
     })
@@ -44,7 +41,6 @@ const handleCleanupOrphaned = async () => {
       error.response?.data?.message || error.message || "Failed to clean up orphaned images."
     showToast({
       description: errorMessage,
-      duration: 5,
       title: "Cleanup Failed",
       type: "error"
     })
@@ -53,12 +49,11 @@ const handleCleanupOrphaned = async () => {
 
 const handleBackfillEmbeddings = async () => {
   try {
-    showToast({ dismissible: false, duration: 3, title: "Backfill Initiated", type: "info" })
+    showToast({ dismissible: false, title: "Backfill Initiated", type: "info" })
     const response = await api.post("/tasks/backfill/embeddings")
     const data = response.data?.data?.result || {}
     showToast({
       description: `Successful: ${data.successful}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
-      duration: 5,
       title: "Embedding Backfill Successful",
       type: "success"
     })
@@ -67,7 +62,6 @@ const handleBackfillEmbeddings = async () => {
       error.response?.data?.message || error.message || "Failed to backfill embeddings."
     showToast({
       description: errorMessage,
-      duration: 5,
       title: "Failed to backfill embeddings",
       type: "error"
     })
@@ -76,12 +70,11 @@ const handleBackfillEmbeddings = async () => {
 
 const handleBackfillCaptions = async () => {
   try {
-    showToast({ dismissible: false, duration: 3, title: "Backfill Initiated", type: "info" })
+    showToast({ dismissible: false, title: "Backfill Initiated", type: "info" })
     const response = await api.post("/tasks/backfill/captions")
     const data = response.data?.data?.result || {}
     showToast({
       description: `Successful: ${data.successful}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
-      duration: 5,
       title: "Caption Backfill Successful",
       type: "success"
     })
@@ -90,7 +83,6 @@ const handleBackfillCaptions = async () => {
       error.response?.data?.message || error.message || "Failed to backfill embeddings."
     showToast({
       description: errorMessage,
-      duration: 5,
       title: "Failed to backfill embeddings",
       type: "error"
     })
