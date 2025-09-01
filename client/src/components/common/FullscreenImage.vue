@@ -80,10 +80,8 @@ const hideWithFlipAnimation = () => {
   imageElement.value.style.display = "none"
   thumbnailElement.style.visibility = "visible"
 
-  const flipDuration = 0.8
-
   Flip.from(state, {
-    duration: flipDuration,
+    duration: 0.8,
     ease: "power3.inOut",
     onComplete: () => {
       imageElement.value.style.display = "none"
@@ -97,7 +95,7 @@ const hideWithFlipAnimation = () => {
 
   setTimeout(() => {
     callOnReturn()
-  }, flipDuration * 1000 * 0.2)
+  }, 200)
 }
 
 const showWithRegularAnimation = () => {
