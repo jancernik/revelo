@@ -64,22 +64,17 @@ export const ImagesTable = pgTable(
     shutterSpeed: varchar("shutter_speed", { length: 50 }),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
-  (table) => {
-    return {
-      embeddingIndex: index("embedding_index").using(
-        "hnsw",
-        table.embedding.op("vector_cosine_ops")
-      ),
-      searchIndex: index("search_index").using(
-        "gin",
-        sql`(
+  (table) => [
+    index("embedding_index").using("hnsw", table.embedding.op("vector_cosine_ops")),
+    index("search_index").using(
+      "gin",
+      sql`(
           setweight(to_tsvector('english', coalesce(${table.caption}, '')), 'A') ||
           setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'B') ||
           setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'B')
         )`
-      )
-    }
-  }
+    )
+  ]
 )
 
 export const ImageVersionTypes = pgEnum("image_version_types", [
@@ -105,11 +100,7 @@ export const ImageVersionsTable = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     width: integer("width").notNull()
   },
-  (table) => {
-    return {
-      uniqueImageVersion: unique("unique_image_version").on(table.imageId, table.type)
-    }
-  }
+  (table) => [unique("unique_image_version").on(table.imageId, table.type)]
 )
 
 export const CollectionsTable = pgTable("collections", {
@@ -133,12 +124,10 @@ export const CollectionImagesTable = pgTable(
     order: integer("order").notNull(),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
-  (table) => {
-    return {
-      primaryKey: primaryKey({ columns: [table.imageId, table.collectionId] }),
-      uniqueOrder: unique("unique_order").on(table.imageId, table.collectionId, table.order)
-    }
-  }
+  (table) => [
+    primaryKey({ columns: [table.imageId, table.collectionId] }),
+    unique("unique_order").on(table.imageId, table.collectionId, table.order)
+  ]
 )
 
 export const SettingsTable = pgTable("settings", {
