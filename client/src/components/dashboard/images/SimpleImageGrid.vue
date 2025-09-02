@@ -23,7 +23,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="image-grid">
+  <div class="simple-image-grid">
     <div v-for="(image, index) in images" :key="index" class="image-item">
       <div class="image-container">
         <img :src="image.src" :alt="image.name" />
@@ -42,7 +42,7 @@ defineProps({
 </template>
 
 <style lang="scss">
-.image-grid {
+.simple-image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   width: 100%;

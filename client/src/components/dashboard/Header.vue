@@ -1,5 +1,5 @@
 <script setup></script>
 
-<template>Dashboard Index</template>
+<template>Dashboard Header</template>
 
 <style lang="scss"></style>

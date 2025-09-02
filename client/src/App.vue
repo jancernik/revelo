@@ -3,9 +3,9 @@ import Dialog from "#src/components/common/Dialog.vue"
 import FullscreenImage from "#src/components/common/FullscreenImage.vue"
 import Toast from "#src/components/common/Toast.vue"
 import DissolveMask from "#src/components/DissolveMask.vue"
-import Main from "#src/components/layout/Main.vue"
-import Menu from "#src/components/layout/Menu.vue"
+import Menu from "#src/components/Menu.vue"
 import { useTheme } from "#src/composables/useTheme"
+import Main from "#src/layouts/Main.vue"
 import { onMounted, watch } from "vue"
 
 const { isAnimating, themeClass } = useTheme()

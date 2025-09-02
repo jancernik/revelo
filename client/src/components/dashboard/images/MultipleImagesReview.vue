@@ -1,6 +1,6 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
-import MetadataEditor from "#src/components/MetadataEditor.vue"
+import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { ref } from "vue"
 
 const props = defineProps({

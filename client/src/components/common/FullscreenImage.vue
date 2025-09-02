@@ -162,7 +162,7 @@ const hideImage = () => {
 watch(imageData, () => {
   if (imageData.value) {
     if (updateRoute.value) {
-      history.pushState({}, "", `/image/${imageData.value.id}`)
+      history.pushState({}, "", `/images/${imageData.value.id}`)
 
       if (flipId.value) {
         setPopstateCallback(() => {

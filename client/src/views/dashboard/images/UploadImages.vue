@@ -1,8 +1,8 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
-import ImageUploader from "#src/components/ImageUploader.vue"
-import MultipleImagesReview from "#src/components/MultipleImagesReview.vue"
-import SimpleImageGrid from "#src/components/SimpleImageGrid.vue"
+import ImageUploader from "#src/components/dashboard/images/ImageUploader.vue"
+import MultipleImagesReview from "#src/components/dashboard/images/MultipleImagesReview.vue"
+import SimpleImageGrid from "#src/components/dashboard/images/SimpleImageGrid.vue"
 import api from "#src/utils/api"
 import { ref } from "vue"
 

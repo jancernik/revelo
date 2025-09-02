@@ -1,5 +1,5 @@
 <script setup></script>
 
-<template>Dashboard Index</template>
+<template>Collections View</template>
 
 <style lang="scss"></style>

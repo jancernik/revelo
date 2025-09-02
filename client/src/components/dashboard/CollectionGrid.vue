@@ -1,5 +1,5 @@
 <script setup></script>
 
-<template>Dashboard Index</template>
+<template>CollectionGrid</template>
 
 <style lang="scss"></style>

@@ -26,12 +26,6 @@ const menuConfig = reactive([
     visible: true
   },
   {
-    id: "collections",
-    label: "Collections",
-    path: "/collections",
-    visible: true
-  },
-  {
     id: "dashboard",
     label: "Dashboard",
     path: "/dashboard",
