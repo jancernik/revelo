@@ -1,5 +1,5 @@
 <script setup>
-import ImageCard from "#src/components/ImageCard.vue"
+import ImageCard from "#src/components/images/ImageCard.vue"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
