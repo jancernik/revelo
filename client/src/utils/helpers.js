@@ -32,3 +32,12 @@ export const clearArray = (array) => {
 export const easeInOutSine = (progress) => {
   return 0.5 - 0.5 * Math.cos(Math.PI * progress)
 }
+
+export const getImageVersion = (imageObject = {}, type) => {
+  return imageObject.versions?.find((v) => v.type === type) || {}
+}
+
+export const getThumbnailPath = (imageObject = {}) => {
+  const thumbnailVersion = getImageVersion(imageObject, "thumbnail")
+  return thumbnailVersion.path ? `/api/${thumbnailVersion.path}` : ""
+}
