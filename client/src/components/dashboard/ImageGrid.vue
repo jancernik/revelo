@@ -4,6 +4,10 @@ import { getThumbnailPath } from "#src/utils/helpers"
 import { computed } from "vue"
 
 const props = defineProps({
+  allowSelect: {
+    default: true,
+    type: Boolean
+  },
   fastSelect: {
     default: false,
     type: Boolean
@@ -20,7 +24,7 @@ const props = defineProps({
     default: false,
     type: Boolean
   },
-  showImageActions: {
+  showActions: {
     default: false,
     type: Boolean
   }
@@ -33,7 +37,9 @@ const displayedImages = computed(() => {
 })
 
 const isSelected = (image) => props.selectedImagesIds?.includes(image.id)
-const isSelecting = computed(() => props.selectedImagesIds?.length > 0 || props.fastSelect)
+const isSelecting = computed(() => {
+  return (props.allowSelect && props.selectedImagesIds?.length > 0) || props.fastSelect
+})
 </script>
 
 <template>
@@ -42,15 +48,15 @@ const isSelecting = computed(() => props.selectedImagesIds?.length > 0 || props.
       v-for="(image, imageIndex) in displayedImages"
       :key="imageIndex"
       class="image-item"
-      :class="{ selected: isSelected(image) }"
+      :class="{ selected: allowSelect && isSelected(image) }"
     >
       <div class="image-container" @click="isSelecting && emit('select', image)">
         <img :src="getThumbnailPath(image)" :alt="image.caption" loading="lazy" />
       </div>
-      <button class="select-button" @click="emit('select', image)">
-        <Icon name="Check" size="12" stroke-width="4" />
+      <button v-if="allowSelect" class="select-button" @click="emit('select', image)">
+        <Icon name="Check" size="12" :stroke-width="4" />
       </button>
-      <div v-if="showImageActions && !fastSelect && !isSelecting" class="image-actions">
+      <div v-if="showActions && !fastSelect && !isSelecting" class="image-actions">
         <button class="action-button" @click="emit('edit', image)"><Icon name="Pencil" /></button>
         <button class="action-button" @click="emit('delete', image)"><Icon name="Trash" /></button>
       </div>
@@ -141,11 +147,7 @@ const isSelecting = computed(() => props.selectedImagesIds?.length > 0 || props.
       opacity: 0;
       transition: opacity $transition;
       pointer-events: none;
-      @include light-dark-property(
-        background,
-        linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent),
-        linear-gradient(to top, rgba(255, 255, 255, 0.3), transparent)
-      );
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
     }
     img {
       @include fill-parent;
@@ -203,10 +205,10 @@ const isSelecting = computed(() => props.selectedImagesIds?.length > 0 || props.
       transition: $transition;
       background-color: transparent;
       border: none;
-      color: var(--muted);
+      color: #e0e0e0;
 
       &:hover {
-        color: var(--background);
+        color: #ffffff;
       }
     }
   }
