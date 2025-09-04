@@ -2,6 +2,7 @@ import { config } from "#src/config/environment.js"
 import storageManager from "#src/config/storageManager.js"
 import { errorHandler, notFoundHandler } from "#src/middlewares/errorMiddleware.js"
 import authRoutes from "#src/routes/authRoutes.js"
+import collectionRoutes from "#src/routes/collectionRoutes.js"
 import imageRoutes from "#src/routes/imageRoutes.js"
 import settingRoutes from "#src/routes/settingRoutes.js"
 import taskRoutes from "#src/routes/taskRoutes.js"
@@ -30,6 +31,7 @@ export function createServer(options = {}) {
   )
 
   app.use(authRoutes)
+  app.use(collectionRoutes)
   app.use(settingRoutes)
   app.use(imageRoutes)
   app.use(taskRoutes)

@@ -1,0 +1,37 @@
+import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
+import { z } from "zod"
+
+const collectionDataSchema = z.object({
+  description: z.string().optional().nullable(),
+  title: z.string().max(255).optional().nullable()
+})
+
+export const createCollectionSchemas = {
+  body: collectionDataSchema
+}
+
+export const updateCollectionSchemas = {
+  body: collectionDataSchema,
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const fetchAllCollectionsSchemas = {
+  query: z.object({
+    limit: limit.optional(),
+    offset: offset.optional()
+  })
+}
+
+export const fetchCollectionByIdSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const deleteCollectionSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
