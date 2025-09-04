@@ -2,6 +2,7 @@
 import Icon from "#src/components/common/Icon.vue"
 import { getThumbnailPath } from "#src/utils/helpers"
 import { computed } from "vue"
+import { useRouter } from "vue-router"
 
 const props = defineProps({
   allowSelect: {
@@ -30,6 +31,7 @@ const props = defineProps({
   }
 })
 
+const router = useRouter()
 const emit = defineEmits(["select", "edit", "delete"])
 
 const displayedCollections = computed(() => {
@@ -45,6 +47,10 @@ const isSelecting = computed(() => {
   return (props.allowSelect && props.selectedCollectionsIds?.length > 0) || props.fastSelect
 })
 const onlyOneImage = (collection) => collection.images.length === 1
+
+const openCollection = (collection) => {
+  router.push(`/dashboard/collections/${collection.id}`)
+}
 </script>
 
 <template>
@@ -55,7 +61,10 @@ const onlyOneImage = (collection) => collection.images.length === 1
       class="collection-item"
       :class="{ selected: allowSelect && isSelected(collection) }"
     >
-      <div class="collection-container" @click="isSelecting && emit('select', collection)">
+      <div
+        class="collection-container"
+        @click="isSelecting ? emit('select', collection) : openCollection(collection)"
+      >
         <div class="preview">
           <img
             v-for="(path, imageIndex) in previewImagesPaths(collection)"
@@ -84,7 +93,7 @@ const onlyOneImage = (collection) => collection.images.length === 1
         </button>
       </div>
     </div>
-    <router-link v-if="shortGrid" to="/dashboard/collections">View all</router-link>
+    <RouterLink v-if="shortGrid" to="/dashboard/collections">View all</RouterLink>
   </div>
 </template>
 

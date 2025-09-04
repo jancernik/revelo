@@ -2,6 +2,7 @@
 import Icon from "#src/components/common/Icon.vue"
 import { getThumbnailPath } from "#src/utils/helpers"
 import { computed } from "vue"
+import { useRouter } from "vue-router"
 
 const props = defineProps({
   allowSelect: {
@@ -30,6 +31,7 @@ const props = defineProps({
   }
 })
 
+const router = useRouter()
 const emit = defineEmits(["select", "edit", "delete"])
 
 const displayedImages = computed(() => {
@@ -40,6 +42,10 @@ const isSelected = (image) => props.selectedImagesIds?.includes(image.id)
 const isSelecting = computed(() => {
   return (props.allowSelect && props.selectedImagesIds?.length > 0) || props.fastSelect
 })
+
+const openImage = (image) => {
+  router.push(`/dashboard/images/${image.id}`)
+}
 </script>
 
 <template>
@@ -50,7 +56,7 @@ const isSelecting = computed(() => {
       class="image-item"
       :class="{ selected: allowSelect && isSelected(image) }"
     >
-      <div class="image-container" @click="isSelecting && emit('select', image)">
+      <div class="image-container" @click="isSelecting ? emit('select', image) : openImage(image)">
         <img :src="getThumbnailPath(image)" :alt="image.caption" loading="lazy" />
       </div>
       <button v-if="allowSelect" class="select-button" @click="emit('select', image)">
@@ -61,7 +67,7 @@ const isSelecting = computed(() => {
         <button class="action-button" @click="emit('delete', image)"><Icon name="Trash" /></button>
       </div>
     </div>
-    <router-link v-if="shortGrid" to="/dashboard/images">View all</router-link>
+    <RouterLink v-if="shortGrid" to="/dashboard/images">View all</RouterLink>
   </div>
 </template>
 
