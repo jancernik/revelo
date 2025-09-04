@@ -32,9 +32,22 @@ const props = defineProps({
     default: "",
     type: [String, Number]
   },
+  multiline: {
+    default: false,
+    type: Boolean
+  },
   placeholder: {
     default: "",
     type: String
+  },
+  resize: {
+    default: "none",
+    type: String,
+    validator: (value) => ["both", "horizontal", "none", "vertical"].includes(value)
+  },
+  rows: {
+    default: 3,
+    type: Number
   },
   type: {
     default: "text",
@@ -85,7 +98,8 @@ onMounted(() => {
         { 'has-unit-left': unit && unitPosition === 'left' },
         { 'has-unit-right': unit && unitPosition === 'right' },
         { 'has-error': error },
-        { 'is-disabled': disabled }
+        { 'is-disabled': disabled },
+        { 'is-multiline': multiline }
       ]"
     >
       <Icon
@@ -103,7 +117,17 @@ onMounted(() => {
       >
         {{ unit }}
       </span>
+      <textarea
+        v-if="multiline"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :rows="rows"
+        v-bind="$attrs"
+        @input="handleInput"
+      />
       <input
+        v-else
         :type="type"
         :value="modelValue"
         :placeholder="placeholder"
@@ -135,27 +159,33 @@ onMounted(() => {
     position: relative;
     width: 100%;
 
-    &.has-icon-left input {
+    &.has-icon-left input,
+    &.has-icon-left textarea {
       padding-left: 2.5rem;
     }
 
-    &.has-icon-right input {
+    &.has-icon-right input,
+    &.has-icon-right textarea {
       padding-right: 2.5rem;
     }
 
-    &.has-unit-left input {
+    &.has-unit-left input,
+    &.has-unit-left textarea {
       padding-left: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
     }
 
-    &.has-unit-right input {
+    &.has-unit-right input,
+    &.has-unit-right textarea {
       padding-right: calc(0.75rem + var(--unit-width, 2rem) + 0.5rem);
     }
 
-    &.has-icon-left.has-unit-left input {
+    &.has-icon-left.has-unit-left input,
+    &.has-icon-left.has-unit-left textarea {
       padding-left: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
     }
 
-    &.has-icon-right.has-unit-right input {
+    &.has-icon-right.has-unit-right input,
+    &.has-icon-right.has-unit-right textarea {
       padding-right: calc(2.5rem + var(--unit-width, 2rem) + 0.5rem);
     }
 
@@ -167,16 +197,28 @@ onMounted(() => {
       right: 2.5rem;
     }
 
-    &.has-error input {
+    &.has-error input,
+    &.has-error textarea {
       border-color: var(--danger);
     }
 
     &.is-disabled {
       opacity: 0.7;
     }
+
+    &.is-multiline .input-icon {
+      top: 0.875rem;
+      transform: none;
+    }
+
+    &.is-multiline .input-unit {
+      top: 0.875rem;
+      transform: none;
+    }
   }
 
-  input {
+  input,
+  textarea {
     font-family: Geist, Arial, sans-serif;
     @include text("sm");
     font-weight: var(--font-normal);
@@ -200,6 +242,13 @@ onMounted(() => {
       opacity: 0.8;
       cursor: not-allowed;
     }
+  }
+
+  textarea {
+    resize: v-bind(resize);
+    min-height: auto;
+    vertical-align: top;
+    line-height: 1.4;
   }
 
   .input-icon {
