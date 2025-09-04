@@ -57,6 +57,13 @@
       "when": 1756738556908,
       "tag": "0007_thin_the_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1757007145280,
+      "tag": "0008_lush_toro",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,6 @@ import {
   integer,
   pgEnum,
   pgTable,
-  primaryKey,
   serial,
   timestamp,
   unique,
@@ -47,12 +46,24 @@ export const RevokedTokensTable = pgTable("revoked_tokens", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 })
 
+export const CollectionsTable = pgTable("collections", {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  description: varchar("description"),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  title: varchar("title", { length: 255 }),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+})
+
 export const ImagesTable = pgTable(
   "images",
   {
     aperture: varchar("aperture", { length: 50 }),
     camera: varchar("camera", { length: 255 }),
     caption: varchar("caption", { length: 1000 }),
+    collectionId: uuid("collection_id").references(() => CollectionsTable.id, {
+      onDelete: "set null"
+    }),
+    collectionOrder: integer("collection_order"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     date: timestamp("date"),
     embedding: vector("embedding", { dimensions: 768 }),
@@ -73,7 +84,9 @@ export const ImagesTable = pgTable(
           setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'B') ||
           setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'B')
         )`
-    )
+    ),
+    index("collection_order_index").on(table.collectionId, table.collectionOrder),
+    unique("unique_collection_order").on(table.collectionId, table.collectionOrder)
   ]
 )
 
@@ -103,33 +116,6 @@ export const ImageVersionsTable = pgTable(
   (table) => [unique("unique_image_version").on(table.imageId, table.type)]
 )
 
-export const CollectionsTable = pgTable("collections", {
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  description: varchar("description"),
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  title: varchar("title", { length: 255 }),
-  updatedAt: timestamp("updated_at").notNull().defaultNow()
-})
-
-export const CollectionImagesTable = pgTable(
-  "collection_images",
-  {
-    collectionId: uuid("collection_id")
-      .references(() => CollectionsTable.id, { onDelete: "cascade" })
-      .notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    imageId: uuid("image_id")
-      .references(() => ImagesTable.id, { onDelete: "cascade" })
-      .notNull(),
-    order: integer("order").notNull(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow()
-  },
-  (table) => [
-    primaryKey({ columns: [table.imageId, table.collectionId] }),
-    unique("unique_order").on(table.imageId, table.collectionId, table.order)
-  ]
-)
-
 export const SettingsTable = pgTable("settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   id: serial("id").primaryKey().notNull(),
@@ -138,29 +124,21 @@ export const SettingsTable = pgTable("settings", {
   value: varchar("value").notNull()
 })
 
-export const ImagesTableRelations = relations(ImagesTable, ({ many }) => ({
-  collectionsImages: many(CollectionImagesTable),
+export const CollectionsTableRelations = relations(CollectionsTable, ({ many }) => ({
+  images: many(ImagesTable)
+}))
+
+export const ImagesTableRelations = relations(ImagesTable, ({ many, one }) => ({
+  collection: one(CollectionsTable, {
+    fields: [ImagesTable.collectionId],
+    references: [CollectionsTable.id]
+  }),
   versions: many(ImageVersionsTable)
 }))
 
 export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
   image: one(ImagesTable, {
     fields: [ImageVersionsTable.imageId],
-    references: [ImagesTable.id]
-  })
-}))
-
-export const CollectionsTableRelations = relations(CollectionsTable, ({ many }) => ({
-  images: many(CollectionImagesTable)
-}))
-
-export const CollectionImagesTableRelations = relations(CollectionImagesTable, ({ one }) => ({
-  collection: one(CollectionsTable, {
-    fields: [CollectionImagesTable.collectionId],
-    references: [CollectionsTable.id]
-  }),
-  image: one(ImagesTable, {
-    fields: [CollectionImagesTable.imageId],
     references: [ImagesTable.id]
   })
 }))
