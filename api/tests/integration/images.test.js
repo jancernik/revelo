@@ -68,6 +68,8 @@ describe("Image Endpoints", () => {
         aperture: image.aperture,
         camera: image.camera,
         caption: image.caption,
+        collectionId: image.collectionId,
+        collectionOrder: image.collectionOrder,
         date: image.date.toISOString(),
         focalLength: image.focalLength,
         id: image.id,
