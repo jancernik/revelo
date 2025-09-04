@@ -1,7 +1,3 @@
-<script setup>
-import { RouterView } from "vue-router"
-</script>
-
 <template>
   <main id="main">
     <div class="main-inner inner scrollable">

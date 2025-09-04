@@ -117,9 +117,9 @@ onMounted(redirectIfAuthenticated)
         <div class="actions">
           <Button type="submit" color="primary" :disabled="isLoading"> Sign Up </Button>
 
-          <router-link to="/login">
+          <RouterLink to="/login">
             <Button color="secondary">Login</Button>
-          </router-link>
+          </RouterLink>
         </div>
       </form>
     </div>

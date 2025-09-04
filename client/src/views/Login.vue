@@ -91,9 +91,9 @@ onMounted(redirectIfAuthenticated)
         <div class="actions">
           <Button type="submit" color="primary" :disabled="isLoading"> Login </Button>
 
-          <router-link v-if="showSignupButton" to="/signup">
+          <RouterLink v-if="showSignupButton" to="/signup">
             <Button color="secondary">Sign Up</Button>
-          </router-link>
+          </RouterLink>
         </div>
       </form>
     </div>
