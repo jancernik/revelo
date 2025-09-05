@@ -76,6 +76,7 @@ const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
 const visibleImageIds = ref(new Set())
 const isDragging = ref(false)
+const hasDragged = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(false)
@@ -433,12 +434,14 @@ const renderFrame = (timestamp) => {
 
 const resumeScrolling = () => {
   isDragging.value = false
+  hasDragged.value = false
   isScrollPaused.value = false
   currentVelocityDecay = VELOCITY_DECAY
 }
 
 const pauseScrolling = () => {
   isDragging.value = false
+  hasDragged.value = false
   isScrollPaused.value = true
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
@@ -475,6 +478,7 @@ const handleWheel = (event) => {
 const handleDragStart = (event) => {
   event.preventDefault?.()
   isDragging.value = true
+  hasDragged.value = false
   dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
   lastDragTimestamp = performance.now()
   velocity.value = 0
@@ -486,6 +490,11 @@ const handleDragMove = (event) => {
   if (!isDragging.value || isScrollPaused.value) return
   const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartPosition
   const deltaY = (currentY - dragStartPosition) * DRAG_FACTOR
+
+  if (Math.abs(deltaY) > 2) {
+    hasDragged.value = true
+  }
+
   dragStartPosition = currentY
   scrollPosition += deltaY / resizeFactor.value
 
@@ -506,6 +515,10 @@ const handleDragEnd = (event) => {
   event.preventDefault?.()
   if (isScrollPaused.value) return
   isDragging.value = false
+
+  setTimeout(() => {
+    hasDragged.value = false
+  }, 50)
 }
 
 const handleKeyDown = (event) => {
@@ -587,6 +600,7 @@ const handleKeyDown = (event) => {
         :identifier="image.id"
         :image="image"
         :should-load="visibleImageIds.has(image.id)"
+        :has-dragged="hasDragged"
         @load="handleImageLoad"
         @click="handleImageClick"
       />

@@ -2,6 +2,10 @@
 import { ref } from "vue"
 
 const props = defineProps({
+  hasDragged: {
+    default: false,
+    type: Boolean
+  },
   image: {
     required: true,
     type: Object
@@ -22,6 +26,11 @@ const getImageVersion = (type) => {
 const thumbnail = getImageVersion("thumbnail")
 
 const handleClick = (event) => {
+  if (props.hasDragged) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   emit("click", event, props.image, `img-${props.image.id}`)
 }
 </script>
