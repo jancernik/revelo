@@ -63,3 +63,13 @@ export const fetchCollectionById = async (id) => {
 
   return collection
 }
+
+export const setCollectionImages = async (collectionId, imageIds) => {
+  const collection = await Collection.findById(collectionId)
+
+  if (!collection) {
+    throw new NotFoundError("Collection not found")
+  }
+
+  return await Collection.setCollectionImages(collectionId, imageIds)
+}

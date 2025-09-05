@@ -3,6 +3,7 @@ import {
   deleteCollection,
   fetchAllCollections,
   fetchCollectionById,
+  setCollectionImages,
   updateCollection
 } from "#src/controllers/collectionController.js"
 import { auth } from "#src/middlewares/authMiddleware.js"
@@ -12,6 +13,7 @@ import {
   deleteCollectionSchemas,
   fetchAllCollectionsSchemas,
   fetchCollectionByIdSchemas,
+  setCollectionImagesSchemas,
   updateCollectionSchemas
 } from "#src/validation/collectionSchemas.js"
 import { Router } from "express"
@@ -27,6 +29,12 @@ router.delete(
   auth.required(),
   validate(deleteCollectionSchemas),
   deleteCollection
+)
+router.put(
+  "/collections/:id/images",
+  auth.required(),
+  validate(setCollectionImagesSchemas),
+  setCollectionImages
 )
 
 export default router

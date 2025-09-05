@@ -55,3 +55,14 @@ export const fetchCollectionById = async (req, res) => {
     status: "success"
   })
 }
+
+export const setCollectionImages = async (req, res) => {
+  const { id } = req.params
+  const { imageIds } = req.body
+  const collection = await collectionService.setCollectionImages(id, imageIds)
+
+  res.status(200).json({
+    data: { collection },
+    status: "success"
+  })
+}

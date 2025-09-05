@@ -1,6 +1,6 @@
 import { CollectionsTable, ImagesTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq, inArray } from "drizzle-orm"
 
 class Collection extends BaseModel {
   static QUERY_API_COLLECTION_COLUMNS = {
@@ -89,6 +89,48 @@ class Collection extends BaseModel {
     } catch {
       return null
     }
+  }
+
+  async setCollectionImages(collectionId, imageIds) {
+    return await this.db.transaction(async (tx) => {
+      const currentImages = await tx
+        .select({ id: ImagesTable.id })
+        .from(ImagesTable)
+        .where(eq(ImagesTable.collectionId, collectionId))
+
+      const currentImageIds = currentImages.map((img) => img.id)
+      const removedImageIds = currentImageIds.filter((id) => !imageIds.includes(id))
+
+      if (removedImageIds.length > 0) {
+        await tx
+          .update(ImagesTable)
+          .set({
+            collectionId: null,
+            collectionOrder: null
+          })
+          .where(inArray(ImagesTable.id, removedImageIds))
+      }
+
+      if (imageIds.length > 0) {
+        await tx
+          .update(ImagesTable)
+          .set({
+            collectionOrder: null
+          })
+          .where(and(eq(ImagesTable.collectionId, collectionId), inArray(ImagesTable.id, imageIds)))
+
+        for (let index = 0; index < imageIds.length; index++) {
+          await tx
+            .update(ImagesTable)
+            .set({
+              collectionId,
+              collectionOrder: index
+            })
+            .where(eq(ImagesTable.id, imageIds[index]))
+        }
+      }
+      return await this.findByIdWithImages(collectionId)
+    })
   }
 }
 

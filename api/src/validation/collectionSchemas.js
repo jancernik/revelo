@@ -35,3 +35,12 @@ export const deleteCollectionSchemas = {
     id: definedSchema
   })
 }
+
+export const setCollectionImagesSchemas = {
+  body: z.object({
+    imageIds: z.array(definedSchema).min(0, "Image IDs array is required")
+  }),
+  params: z.object({
+    id: definedSchema
+  })
+}
