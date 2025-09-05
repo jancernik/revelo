@@ -1,5 +1,6 @@
 import { config } from "#src/config/environment.js"
 import { NotFoundError } from "#src/core/errors.js"
+import util from "util"
 
 // eslint-disable-next-line no-unused-vars
 export const errorHandler = (error, req, res, _next) => {
@@ -10,14 +11,20 @@ export const errorHandler = (error, req, res, _next) => {
       : error.message || "Internal server error"
 
   if (statusCode >= 500 || config.ENV === "development") {
-    console.error("Server Error:", {
-      data: error.data,
-      message: error.message,
-      method: req.method,
-      stack: error.stack,
-      timestamp: new Date().toISOString(),
-      url: req.originalUrl
-    })
+    console.error(
+      "Server Error:",
+      util.inspect(
+        {
+          data: error.data,
+          message: error.message,
+          method: req.method,
+          stack: error.stack,
+          timestamp: new Date().toISOString(),
+          url: req.originalUrl
+        },
+        { colors: true, depth: null }
+      )
+    )
   }
 
   const response = {
