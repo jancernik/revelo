@@ -78,12 +78,14 @@ const setupLayout = () => {
     actions: [
       {
         color: "secondary",
+        icon: "X",
         key: "cancel",
         onClick: () => cancel(),
         text: "Cancel"
       },
       {
         color: "primary",
+        icon: "Save",
         key: "save",
         onClick: () => saveCollection(),
         text: "Save Changes"

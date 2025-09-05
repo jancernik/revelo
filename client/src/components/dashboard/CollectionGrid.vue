@@ -39,7 +39,7 @@ const displayedCollections = computed(() => {
 })
 
 const previewImagesPaths = (collection) => {
-  return collection.images.slice(0, 4).map((image) => getThumbnailPath(image.image))
+  return collection.images.slice(0, 4).map((image) => getThumbnailPath(image))
 }
 
 const isSelected = (collection) => props.selectedCollectionsIds?.includes(collection.id)

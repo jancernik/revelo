@@ -170,7 +170,12 @@ export const useCollectionsStore = defineStore("collections", () => {
   }
 
   function imageIdsInCollection(id) {
-    return collections.value.find((c) => c.id === id)?.images?.map((img) => img.id) || []
+    return (
+      collections.value
+        .find((c) => c.id === id)
+        ?.images?.sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
+        .map((img) => img.id) || []
+    )
   }
 
   async function initialize() {

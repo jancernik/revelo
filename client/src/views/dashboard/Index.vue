@@ -98,7 +98,7 @@ const bulkEditImagesAction = {
   icon: "Pencil",
   key: "image-edit-bulk",
   onClick: () => handleBulkEditImages(selectedImagesIds.value),
-  text: "Bulk Edit"
+  text: "Edit"
 }
 
 const baseImageActions = [
@@ -112,7 +112,7 @@ const baseImageActions = [
     icon: "Plus",
     key: "image-add-to-collection",
     onClick: () => handleAddImagesToCollection(selectedImagesIds.value),
-    text: "Add to Collection"
+    text: "Add to collection"
   }
 ]
 

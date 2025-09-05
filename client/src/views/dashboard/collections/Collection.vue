@@ -61,7 +61,6 @@ const setupLayout = () => {
     ],
     title: collection.value?.title || "Collection"
   })
-  console.log("collection: ", collection.value)
 }
 
 const cancelSelectionAction = {
