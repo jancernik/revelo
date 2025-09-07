@@ -13,7 +13,7 @@ export const useImagesStore = defineStore("images", () => {
   const images = ref([])
   const filteredImages = ref([])
 
-  async function fetchImages(force = false) {
+  async function fetchAll(force = false) {
     if (loading.value && !force) return
     if (initialized.value && !force) return
 
@@ -61,19 +61,34 @@ export const useImagesStore = defineStore("images", () => {
     }
   }, 600)
 
+  async function fetch(id) {
+    try {
+      const response = await api.get(`/images/${id}`)
+      return response.data?.data?.image
+    } catch (error) {
+      showToast({
+        description: error.response?.data?.message || error.message,
+        title: "Error Fetching Image",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
   async function initialize() {
     if (!initialized.value) {
-      await fetchImages()
+      await fetchAll()
     }
   }
 
   async function refreshImages() {
-    return fetchImages(true)
+    return fetchAll(true)
   }
 
   return {
     error,
-    fetchImages,
+    fetch,
+    fetchAll,
     filteredImages,
     images,
     initialize,
