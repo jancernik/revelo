@@ -5,6 +5,8 @@ const isAnimating = ref(false)
 const flipId = ref(null)
 const updateRoute = ref(true)
 const triggerHide = ref(false)
+const updatePositions = ref(null)
+const updatePositionsCalled = ref(false)
 const onReturn = ref(null)
 const onReturnCalled = ref(false)
 
@@ -17,6 +19,8 @@ export function useFullscreenImage() {
 
     flipId.value = options.flipId || null
     updateRoute.value = options.updateRoute ?? true
+    updatePositions.value = options.updatePositions || null
+    updatePositionsCalled.value = false
     onReturn.value = options.onReturn || null
     onReturnCalled.value = false
 
@@ -43,6 +47,13 @@ export function useFullscreenImage() {
     imageData.value = null
     triggerHide.value = false
     cleanup()
+  }
+
+  const callUpdatePositions = () => {
+    if (updatePositions.value && !updatePositionsCalled.value) {
+      updatePositionsCalled.value = true
+      updatePositions.value()
+    }
   }
 
   const callOnReturn = () => {
@@ -80,6 +91,7 @@ export function useFullscreenImage() {
 
   return {
     callOnReturn,
+    callUpdatePositions,
     completeHide,
     flipId,
     hide,

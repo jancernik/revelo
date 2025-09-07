@@ -323,7 +323,7 @@ const calculateWrappedPosition = (card) => {
   return gsap.utils.wrap(minY, maxY, cardPosition)
 }
 
-const updateImagePositions = () => {
+const updateImagePositions = (forceSetY = false) => {
   if (isBuildingLayout) return
 
   updateScrollTargets()
@@ -359,7 +359,9 @@ const updateImagePositions = () => {
     }
 
     if (isVisible) {
-      if (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) {
+      if (forceSetY) {
+        card.setY(wrappedPosition)
+      } else if (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) {
         const targetOpacity = calculateZoomAnimationValue(card, now, 1, 1, 0)
         const targetScale = calculateZoomAnimationValue(card, now, 1, 1, 0.8)
         card.setOpacity(targetOpacity)
@@ -396,6 +398,7 @@ const stopRenderLoop = () => {
 const updateZoomTransitionState = (timestamp) => {
   if (isZoomTransitionActive && timestamp >= zoomAnimationEndTimestamp) {
     isZoomTransitionActive = false
+    resumeScrolling()
     if (!isZoomingOut) {
       zoomTargetImageId = null
     }
@@ -444,7 +447,6 @@ const pauseScrolling = () => {
 
 const handleFullscreenReturn = () => {
   if (zoomTargetImageId) {
-    resumeScrolling()
     startZoomReturn()
   }
 }
@@ -453,7 +455,11 @@ const handleImageClick = (event, image, flipId) => {
   if (zoomTargetImageId) return
   pauseScrolling()
   startZoomTransition(image.id, event.currentTarget)
-  showFullscreenImage(image, { flipId, onReturn: handleFullscreenReturn })
+  showFullscreenImage(image, {
+    flipId,
+    onReturn: handleFullscreenReturn,
+    updatePositions: () => updateImagePositions(true)
+  })
 }
 
 const handleImageLoad = (imageId) => {
@@ -594,7 +600,7 @@ const handleKeyDown = (event) => {
         :identifier="image.id"
         :image="image"
         :should-load="visibleImageIds.has(image.id)"
-        :has-dragged="hasDragged"
+        :has-dragged="hasDragged && !isZoomTransitionActive"
         @load="handleImageLoad"
         @click="handleImageClick"
       />

@@ -10,6 +10,7 @@ const ZOOM_FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming 
 
 const {
   callOnReturn,
+  callUpdatePositions,
   completeHide,
   flipId,
   hide,
@@ -96,7 +97,8 @@ const hideWithFlipAnimation = () => {
     return
   }
 
-  // Calculate the same proportional border radius for the reverse animation
+  callUpdatePositions()
+
   const thumbnailStyles = window.getComputedStyle(thumbnailElement)
   const thumbnailBorderRadius = parseFloat(thumbnailStyles.borderRadius) || 0
 
