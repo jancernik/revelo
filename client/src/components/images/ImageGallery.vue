@@ -15,7 +15,7 @@ import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
 const SPACING = 15 // Space between images and columns in pixels
-const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performance optimization
+const VIRTUAL_BUFFER = 600 // Buffer area outside viewport for performance optimization
 const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 3 // Minimum number of columns to display
 const MAX_COLUMNS = 9 // Maximum number of columns to display
@@ -25,7 +25,7 @@ const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
 const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
 const KEYBOARD_PAGE_IMPULSE = 2.0 // Page up/down and space bar velocity multiplier
 const KEYBOARD_ARROW_IMPULSE = 2.0 // Arrow key velocity multiplier
-const VELOCITY_DECAY = 5.0 // Rate at which velocity decays over time
+const VELOCITY_DECAY = 4.0 // Rate at which velocity decays over time
 const PAUSED_VELOCITY_DECAY = 10.0 // Rate at which velocity decays over time when paused
 const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
@@ -133,7 +133,7 @@ watch(columnCount, (newCount, oldCount) => {
 watch(resizeFactor, () => startRenderLoop())
 
 const calculateImageCardsData = () => {
-  columnsHeights = createArray(columnCount.value, SPACING)
+  columnsHeights = createArray(columnCount.value, SPACING + VIRTUAL_BUFFER)
   columnImageCounts = createArray(columnCount.value, 0)
   clearArray(imageCardData)
 
@@ -157,7 +157,7 @@ const calculateImageCardsData = () => {
       columnsHeights[columnIndex] += cardHeight + SPACING
       columnImageCounts[columnIndex]++
     })
-    columnsHeights[columnIndex] -= SPACING
+    columnsHeights[columnIndex] -= SPACING + VIRTUAL_BUFFER
   })
 }
 
@@ -314,13 +314,13 @@ const calculateWrappedPosition = (card) => {
   const constantSpacing = (card.cardIndex + 1) * SPACING
   const scaledCardTop = (card.cardTop - constantSpacing) * resizeFactor.value
   const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
-  const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget
+  const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget - VIRTUAL_BUFFER
 
-  const minY = -card.cardHeight * resizeFactor.value
+  const minY = -card.cardHeight * resizeFactor.value - VIRTUAL_BUFFER
   const totalSpacing = columnSpacing[card.columnIndex]
   const columnHeight = columnsHeights[card.columnIndex]
   const scalableMaxY = (columnHeight - totalSpacing - card.cardHeight) * resizeFactor.value
-  const maxY = scalableMaxY + totalSpacing
+  const maxY = scalableMaxY + totalSpacing - VIRTUAL_BUFFER
 
   return gsap.utils.wrap(minY, maxY, cardPosition)
 }
@@ -346,12 +346,7 @@ const updateImagePositions = () => {
     const cardBottom = wrappedPosition + scaledCardHeight
     const isVisible = cardBottom >= viewTop && wrappedPosition <= viewBottom
 
-    const lazyLoadBuffer = VIRTUAL_BUFFER * 2
-    const minY = viewTop - lazyLoadBuffer
-    const maxY = viewBottom + lazyLoadBuffer
-    const shouldLoad = cardBottom >= minY && wrappedPosition <= maxY
-
-    if (shouldLoad && !visibleImageIds.value.has(card.imageId)) {
+    if (isVisible && !visibleImageIds.value.has(card.imageId)) {
       visibleImageIds.value.add(card.imageId)
     }
 
@@ -460,9 +455,7 @@ const handleImageClick = (event, image, flipId) => {
   if (zoomTargetImageId) return
   pauseScrolling()
   startZoomTransition(image.id, event.currentTarget)
-  setTimeout(() => {
-    showFullscreenImage(image, { flipId, onReturn: handleFullscreenReturn })
-  }, 300)
+  showFullscreenImage(image, { flipId, onReturn: handleFullscreenReturn })
 }
 
 const handleImageLoad = (imageId) => {
