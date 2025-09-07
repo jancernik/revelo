@@ -1,4 +1,5 @@
 import { NotFoundError } from "#src/core/errors.js"
+import { ImagesTable } from "#src/database/schema.js"
 import Collection from "#src/models/Collection.js"
 import { eq } from "drizzle-orm"
 
@@ -45,6 +46,14 @@ export const deleteCollection = async (id) => {
   }
 
   return await Collection.db.transaction(async (tx) => {
+    await tx
+      .update(ImagesTable)
+      .set({
+        collectionId: null,
+        collectionOrder: null
+      })
+      .where(eq(ImagesTable.collectionId, id))
+
     await tx.delete(Collection.table).where(eq(Collection.table.id, id))
     return true
   })
