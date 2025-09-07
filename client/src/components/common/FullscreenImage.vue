@@ -1,8 +1,12 @@
 <script setup>
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { cssVar } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
+
+const ZOOM_FLIP_DURATION = 0.6 // Duration for FLIP animation when zooming in/out
+const ZOOM_FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming in/out
 
 const {
   callOnReturn,
@@ -43,6 +47,18 @@ const showWithFlipAnimation = () => {
   gsap.set(imageElement.value.querySelector("img"), { visibility: "hidden" })
 
   const perform = () => {
+    const thumbnailStyles = window.getComputedStyle(thumbnailElement)
+    const thumbnailBorderRadius = parseFloat(thumbnailStyles.borderRadius) || 0
+
+    const thumbnailRect = thumbnailElement.getBoundingClientRect()
+    const imageRect = imageElement.value.getBoundingClientRect()
+
+    const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
+    const imageSize = Math.min(imageRect.width, imageRect.height)
+    const scaleRatio = thumbnailSize / imageSize
+
+    imageElement.value.style.borderRadius = `${thumbnailBorderRadius / scaleRatio}px`
+
     const state = Flip.getState([thumbnailElement, imageElement.value])
 
     thumbnailElement.style.visibility = "hidden"
@@ -50,13 +66,18 @@ const showWithFlipAnimation = () => {
     gsap.set(imageElement.value.querySelector("img"), { visibility: "visible" })
 
     Flip.from(state, {
-      delay: 0.2,
-      duration: 0.8,
-      ease: "power3.inOut",
+      duration: ZOOM_FLIP_DURATION,
+      ease: ZOOM_FLIP_EASE,
       onComplete: () => {
         isAnimating.value = false
       },
       scale: true
+    })
+
+    gsap.to(imageElement.value, {
+      borderRadius: cssVar("--radius-lg"),
+      duration: ZOOM_FLIP_DURATION,
+      ease: ZOOM_FLIP_EASE
     })
   }
 
@@ -75,14 +96,27 @@ const hideWithFlipAnimation = () => {
     return
   }
 
+  // Calculate the same proportional border radius for the reverse animation
+  const thumbnailStyles = window.getComputedStyle(thumbnailElement)
+  const thumbnailBorderRadius = parseFloat(thumbnailStyles.borderRadius) || 0
+
+  const thumbnailRect = thumbnailElement.getBoundingClientRect()
+  const imageRect = imageElement.value.getBoundingClientRect()
+
+  const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
+  const imageSize = Math.min(imageRect.width, imageRect.height)
+  const scaleRatio = thumbnailSize / imageSize
+
+  const fullscreenBorderRadius = thumbnailBorderRadius * scaleRatio
+
   const state = Flip.getState([thumbnailElement, imageElement.value])
 
   imageElement.value.style.display = "none"
   thumbnailElement.style.visibility = "visible"
 
   Flip.from(state, {
-    duration: 0.8,
-    ease: "power3.inOut",
+    duration: ZOOM_FLIP_DURATION,
+    ease: ZOOM_FLIP_EASE,
     onComplete: () => {
       imageElement.value.style.display = "none"
       containerElement.value.style.display = "none"
@@ -93,9 +127,19 @@ const hideWithFlipAnimation = () => {
     scale: true
   })
 
-  setTimeout(() => {
-    callOnReturn()
-  }, 200)
+  gsap.fromTo(
+    thumbnailElement,
+    {
+      borderRadius: `${fullscreenBorderRadius}px`
+    },
+    {
+      borderRadius: `${thumbnailBorderRadius}px`,
+      duration: ZOOM_FLIP_DURATION,
+      ease: ZOOM_FLIP_EASE
+    }
+  )
+
+  callOnReturn()
 }
 
 const showWithRegularAnimation = () => {
@@ -217,11 +261,14 @@ onMounted(() => {
   will-change: transform, opacity;
 
   img {
-    height: 90vh;
+    max-height: 90vh;
+    max-width: 90vw;
+    height: auto;
     width: auto;
     user-select: none;
     visibility: hidden;
     will-change: transform, opacity;
+    object-fit: contain;
   }
 }
 </style>
