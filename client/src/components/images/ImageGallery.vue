@@ -66,6 +66,7 @@ let currentVelocityDecay = VELOCITY_DECAY
 let isZoomTransitionActive = false
 let isZoomingOut = true
 let zoomTargetImageId = null
+let zoomReferencePoint = null
 
 const { show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
@@ -237,12 +238,14 @@ const calculateZoomAnimationTiming = (imageCardData) => {
 const startZoomTransition = (imageId, referenceElement) => {
   zoomTargetImageId = imageId
 
-  const referencePoint = elementCenter(referenceElement)
+  zoomReferencePoint = referenceElement
+    ? elementCenter(referenceElement)
+    : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
   const visibleNonTargetStates = imageCardData.filter(
     (state) => state.visible && state.imageId !== imageId
   )
 
-  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, true)
+  const sortedStates = sortStatesByDistance(visibleNonTargetStates, zoomReferencePoint, true)
   assignFadeDelays(sortedStates)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
@@ -255,23 +258,18 @@ const startZoomTransition = (imageId, referenceElement) => {
 }
 
 const startZoomReturn = () => {
-  const targetState = imageCardData.find((state) => state.imageId === zoomTargetImageId)
-
-  const referencePoint = targetState
-    ? elementCenter(targetState.element)
-    : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-
   const visibleNonTargetStates = imageCardData.filter(
     (state) => state.visible && state.imageId !== zoomTargetImageId
   )
 
-  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
+  const sortedStates = sortStatesByDistance(visibleNonTargetStates, zoomReferencePoint, false)
   assignFadeDelays(sortedStates)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
   zoomAnimationStartTimestamp = timing.startTime
   zoomAnimationEndTimestamp = timing.endTime
 
+  zoomReferencePoint = null
   isZoomTransitionActive = true
   isZoomingOut = false
   startRenderLoop()
