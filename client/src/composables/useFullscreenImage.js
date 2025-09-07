@@ -35,10 +35,6 @@ export function useFullscreenImage() {
   }
 
   const completeHide = () => {
-    if (onReturn.value && !onReturnCalled.value) {
-      onReturn.value()
-    }
-
     flipId.value = null
     updateRoute.value = true
     onReturn.value = null

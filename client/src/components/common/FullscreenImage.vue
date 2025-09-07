@@ -4,6 +4,8 @@ import { cssVar } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
+import { useRouter } from "vue-router"
+const router = useRouter()
 
 const ZOOM_FLIP_DURATION = 0.6 // Duration for FLIP animation when zooming in/out
 const ZOOM_FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming in/out
@@ -13,7 +15,6 @@ const {
   callUpdatePositions,
   completeHide,
   flipId,
-  hide,
   imageData,
   isAnimating,
   setPopstateCallback,
@@ -27,12 +28,6 @@ const containerElement = useTemplateRef("container")
 const regularImageVersion = computed(() => {
   return imageData.value?.versions?.find((v) => v.type === "regular") || {}
 })
-
-const handleClick = () => {
-  if (isAnimating.value) return
-  history.pushState({}, "", "/")
-  hide()
-}
 
 const showWithFlipAnimation = () => {
   const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
@@ -202,8 +197,10 @@ const hideImage = () => {
 
   if (flipId.value) {
     hideWithFlipAnimation()
+    history.pushState({}, "", "/")
   } else {
     hideWithRegularAnimation()
+    router.push("/")
   }
 }
 
@@ -240,7 +237,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="imageData" ref="container" class="fullscreen-image-container" @click="handleClick">
+  <div v-if="imageData" ref="container" class="fullscreen-image-container" @click="hideImage">
     <div ref="image" class="fullscreen-image" :data-flip-id="flipId">
       <img :src="`/api/${regularImageVersion.path}`" alt="" />
     </div>
