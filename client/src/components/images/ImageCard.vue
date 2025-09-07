@@ -61,7 +61,6 @@ const handleClick = (event) => {
   width: 100%;
   height: auto;
   border-radius: var(--radius-lg);
-  overflow: hidden;
   cursor: pointer;
   will-change: transform;
   backface-visibility: hidden;
@@ -116,6 +115,7 @@ const handleClick = (event) => {
     height: 100%;
     user-select: none;
     pointer-events: none;
+    border-radius: var(--radius-lg);
   }
 }
 </style>

@@ -58,6 +58,8 @@ const showWithFlipAnimation = () => {
     const imageSize = Math.min(imageRect.width, imageRect.height)
     const scaleRatio = thumbnailSize / imageSize
 
+    const imgElement = imageElement.value.querySelector("img")
+    imgElement.style.borderRadius = `${thumbnailBorderRadius / scaleRatio}px`
     imageElement.value.style.borderRadius = `${thumbnailBorderRadius / scaleRatio}px`
 
     const state = Flip.getState([thumbnailElement, imageElement.value])
@@ -75,7 +77,7 @@ const showWithFlipAnimation = () => {
       scale: true
     })
 
-    gsap.to(imageElement.value, {
+    gsap.to([imgElement, imageElement.value], {
       borderRadius: cssVar("--radius-lg"),
       duration: ZOOM_FLIP_DURATION,
       ease: ZOOM_FLIP_EASE
@@ -130,7 +132,7 @@ const hideWithFlipAnimation = () => {
   })
 
   gsap.fromTo(
-    thumbnailElement,
+    [thumbnailElement, thumbnailElement.querySelector("img")],
     {
       borderRadius: `${fullscreenBorderRadius}px`
     },
@@ -257,8 +259,8 @@ onMounted(() => {
 }
 
 .fullscreen-image {
+  position: relative;
   display: none;
-  overflow: hidden;
   opacity: 0;
   will-change: transform, opacity;
 
