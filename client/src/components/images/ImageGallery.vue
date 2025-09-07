@@ -279,6 +279,9 @@ const startZoomReturn = () => {
 
 const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, hiddenValue) => {
   if (!isZoomTransitionActive) {
+    if (zoomTargetImageId && imageCard.imageId !== zoomTargetImageId) {
+      return hiddenValue
+    }
     return normalValue
   }
 
