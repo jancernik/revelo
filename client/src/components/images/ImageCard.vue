@@ -28,7 +28,6 @@ const thumbnail = getImageVersion("thumbnail")
 const handleClick = (event) => {
   if (props.hasDragged) {
     event.preventDefault()
-    event.stopPropagation()
     return
   }
   emit("click", event, props.image, `img-${props.image.id}`)
@@ -41,6 +40,7 @@ const handleClick = (event) => {
     :data-flip-id="`img-${image.id}`"
     :class="{ 'not-loaded': !shouldLoad || errorLoading }"
     @click="handleClick"
+    @touchend="handleClick"
   >
     <img
       :src="shouldLoad ? `/api/${thumbnail.path}` : null"
