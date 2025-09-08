@@ -56,10 +56,14 @@ const openImage = (image) => {
       class="image-item"
       :class="{ selected: allowSelect && isSelected(image) }"
     >
-      <div class="image-container" @click="isSelecting ? emit('select', image) : openImage(image)">
+      <div
+        class="image-container"
+        @click="isSelecting ? emit('select', image, $event) : openImage(image)"
+      >
         <img :src="getThumbnailPath(image)" :alt="image.caption" loading="lazy" />
       </div>
-      <button v-if="allowSelect" class="select-button" @click="emit('select', image)">
+
+      <button v-if="allowSelect" class="select-button" @click="emit('select', image, $event)">
         <Icon name="Check" size="12" :stroke-width="4" />
       </button>
       <div v-if="showActions && !fastSelect && !isSelecting" class="image-actions">

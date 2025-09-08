@@ -63,7 +63,7 @@ const openCollection = (collection) => {
     >
       <div
         class="collection-container"
-        @click="isSelecting ? emit('select', collection) : openCollection(collection)"
+        @click="isSelecting ? emit('select', collection, $event) : openCollection(collection)"
       >
         <div class="preview">
           <img
@@ -81,7 +81,7 @@ const openCollection = (collection) => {
           <p v-else class="image-count">{{ collection.images.length }} images</p>
         </div>
       </div>
-      <button v-if="allowSelect" class="select-button" @click="emit('select', collection)">
+      <button v-if="allowSelect" class="select-button" @click="emit('select', collection, $event)">
         <Icon name="Check" size="12" :stroke-width="4" />
       </button>
       <div v-if="showActions && !fastSelect && !isSelecting" class="collection-actions">

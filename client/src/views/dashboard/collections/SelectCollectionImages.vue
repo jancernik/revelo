@@ -24,6 +24,7 @@ const collection = ref(null)
 const loading = ref(true)
 const saving = ref(false)
 const selectedImagesIds = ref([])
+const lastSelectedId = ref(null)
 
 const availableImages = computed(() => {
   const allImages = imagesStore.images || []
@@ -42,11 +43,40 @@ const loadCollection = async () => {
   }
 }
 
-const handleSelectImage = (image) => {
+const handleSelectImage = (image, event) => {
+  if (event?.shiftKey && lastSelectedId.value) {
+    const startIndex = availableImages.value.findIndex((i) => i.id === lastSelectedId.value)
+    const endIndex = availableImages.value.findIndex((i) => i.id === image.id)
+
+    if (startIndex !== -1 && endIndex !== -1) {
+      const start = Math.min(startIndex, endIndex)
+      const end = Math.max(startIndex, endIndex)
+      const rangeImages = availableImages.value.slice(start, end + 1)
+      handleSelectRange(rangeImages)
+      return
+    }
+  }
+
+  lastSelectedId.value = image.id
   if (selectedImagesIds.value.includes(image.id)) {
     selectedImagesIds.value = selectedImagesIds.value.filter((id) => id !== image.id)
   } else {
     selectedImagesIds.value.push(image.id)
+  }
+}
+
+const handleSelectRange = (images) => {
+  const imageIds = images.map((i) => i.id)
+  const allSelected = imageIds.every((id) => selectedImagesIds.value.includes(id))
+
+  if (allSelected) {
+    selectedImagesIds.value = selectedImagesIds.value.filter((id) => !imageIds.includes(id))
+  } else {
+    imageIds.forEach((id) => {
+      if (!selectedImagesIds.value.includes(id)) {
+        selectedImagesIds.value.push(id)
+      }
+    })
   }
 }
 
