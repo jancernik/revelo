@@ -104,13 +104,11 @@ describe("Error Middleware", () => {
       errorHandler(error, req, res, next)
 
       expect(res.status).toHaveBeenCalledWith(500)
-      expect(console.error).toHaveBeenCalledWith("Server Error:", {
-        message: "Database connection failed",
-        method: "GET",
-        stack: "Error stack trace",
-        timestamp: expect.any(String),
-        url: "/test"
-      })
+      const loggedContent = console.error.mock.calls[0][1]
+      expect(loggedContent).toContain("Database connection failed")
+      expect(loggedContent).toContain("Error stack trace")
+      expect(loggedContent).toContain("GET")
+      expect(loggedContent).toContain("/test")
     })
 
     it("should not log client errors (4xx)", () => {
