@@ -1,14 +1,17 @@
 <script setup>
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { cssVar } from "#src/utils/helpers"
+import { getImageVersion } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
-const router = useRouter()
 
-const ZOOM_FLIP_DURATION = 0.6 // Duration for FLIP animation when zooming in/out
-const ZOOM_FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming in/out
+const FLIP_DURATION = 0.6 // Duration for FLIP animation when zooming in/out
+const FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming in/out
+const REGULAR_DURATION = 0.4 // Duration for regular fade/scale animation
+const REGULAR_EASE = "power3.inOut" // Easing for regular fade/scale animation
+const REGULAR_SCALE = 0.85 // Scale for regular animation when hiding
 
 const {
   callOnReturn,
@@ -21,144 +24,147 @@ const {
   triggerHide,
   updateRoute
 } = useFullscreenImage()
+const router = useRouter()
 
-const imageElement = useTemplateRef("image")
-const containerElement = useTemplateRef("container")
+const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
+const fullscreenImageElement = computed(() => fullscreenElement.value?.querySelector("img"))
+const fullscreenElement = useTemplateRef("fullscreen-image")
+const thumbnailImageElement = computed(() => thumbnailElement.value?.querySelector("img"))
+const thumbnailElement = computed(() => document.querySelector(`[data-flip-id="${flipId.value}"]`))
 
-const regularImageVersion = computed(() => {
-  return imageData.value?.versions?.find((v) => v.type === "regular") || {}
-})
+const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
+
+const getThumbnailBorderRadius = () => {
+  if (!thumbnailElement.value) return 0
+  const styles = window.getComputedStyle(thumbnailElement.value)
+  return parseFloat(styles.borderRadius) || 0
+}
+
+const getScaleRatio = () => {
+  if (!thumbnailElement.value || !fullscreenElement.value) return 1
+
+  const thumbnailRect = thumbnailElement.value.getBoundingClientRect()
+  const imageRect = fullscreenElement.value.getBoundingClientRect()
+
+  const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
+  const imageSize = Math.min(imageRect.width, imageRect.height)
+
+  return thumbnailSize / imageSize
+}
+
+const showFullscreenElements = () => {
+  fullscreenElement.value.style.display = "flex"
+  fullscreenContainerElement.value.style.display = "flex"
+}
+
+const hideFullscreenElements = () => {
+  fullscreenElement.value.style.display = "none"
+  fullscreenContainerElement.value.style.display = "none"
+}
+
+const onShowComplete = () => {
+  isAnimating.value = false
+}
+
+const onHideComplete = () => {
+  isAnimating.value = false
+  hideFullscreenElements()
+  completeHide()
+}
 
 const showWithFlipAnimation = () => {
-  const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
-  if (!thumbnailElement) {
+  if (!thumbnailElement.value) {
     showWithRegularAnimation()
     return
   }
 
-  imageElement.value.style.display = "flex"
-  containerElement.value.style.display = "flex"
-
-  gsap.set(imageElement.value, { opacity: 0 })
-  gsap.set(imageElement.value.querySelector("img"), { visibility: "hidden" })
-
   const perform = () => {
-    const thumbnailStyles = window.getComputedStyle(thumbnailElement)
-    const thumbnailBorderRadius = parseFloat(thumbnailStyles.borderRadius) || 0
+    if (!thumbnailElement.value) return
 
-    const thumbnailRect = thumbnailElement.getBoundingClientRect()
-    const imageRect = imageElement.value.getBoundingClientRect()
+    const borderRadius = getThumbnailBorderRadius()
+    const scaleRatio = getScaleRatio()
+    const scaledBorderRadius = borderRadius / scaleRatio
 
-    const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
-    const imageSize = Math.min(imageRect.width, imageRect.height)
-    const scaleRatio = thumbnailSize / imageSize
+    fullscreenImageElement.value.style.borderRadius = `${scaledBorderRadius}px`
+    fullscreenElement.value.style.borderRadius = `${scaledBorderRadius}px`
 
-    const imgElement = imageElement.value.querySelector("img")
-    imgElement.style.borderRadius = `${thumbnailBorderRadius / scaleRatio}px`
-    imageElement.value.style.borderRadius = `${thumbnailBorderRadius / scaleRatio}px`
+    const state = Flip.getState([thumbnailElement.value, fullscreenElement.value])
 
-    const state = Flip.getState([thumbnailElement, imageElement.value])
+    thumbnailElement.value.style.visibility = "hidden"
 
-    thumbnailElement.style.visibility = "hidden"
-    gsap.set(imageElement.value, { opacity: 1 })
-    gsap.set(imageElement.value.querySelector("img"), { visibility: "visible" })
+    gsap.set(fullscreenElement.value, { opacity: 1 })
+    gsap.set(fullscreenImageElement.value, { visibility: "visible" })
 
     Flip.from(state, {
-      duration: ZOOM_FLIP_DURATION,
-      ease: ZOOM_FLIP_EASE,
-      onComplete: () => {
-        isAnimating.value = false
-      },
+      duration: FLIP_DURATION,
+      ease: FLIP_EASE,
+      onComplete: onShowComplete,
       scale: true
     })
 
-    gsap.to([imgElement, imageElement.value], {
+    gsap.to([fullscreenImageElement.value, fullscreenElement.value], {
       borderRadius: cssVar("--radius-lg"),
-      duration: ZOOM_FLIP_DURATION,
-      ease: ZOOM_FLIP_EASE
+      duration: FLIP_DURATION,
+      ease: FLIP_EASE
     })
   }
 
-  const img = imageElement.value.querySelector("img")
-  if (img.complete) {
+  showFullscreenElements()
+  gsap.set(fullscreenElement.value, { opacity: 0 })
+  gsap.set(fullscreenImageElement.value, { visibility: "hidden" })
+
+  if (fullscreenImageElement.value.complete) {
     perform()
   } else {
-    img.onload = () => perform()
+    fullscreenImageElement.value.onload = perform
   }
 }
 
 const hideWithFlipAnimation = () => {
-  const thumbnailElement = document.querySelector(`[data-flip-id="${flipId.value}"]`)
-  if (!thumbnailElement) {
+  if (!thumbnailElement.value) {
     hideWithRegularAnimation()
     return
   }
 
   callUpdatePositions()
 
-  const thumbnailStyles = window.getComputedStyle(thumbnailElement)
-  const thumbnailBorderRadius = parseFloat(thumbnailStyles.borderRadius) || 0
+  const borderRadius = getThumbnailBorderRadius()
+  const scaleRatio = getScaleRatio()
+  const scaledBorderRadius = borderRadius * scaleRatio
 
-  const thumbnailRect = thumbnailElement.getBoundingClientRect()
-  const imageRect = imageElement.value.getBoundingClientRect()
+  const state = Flip.getState([thumbnailElement.value, fullscreenElement.value])
 
-  const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
-  const imageSize = Math.min(imageRect.width, imageRect.height)
-  const scaleRatio = thumbnailSize / imageSize
-
-  const fullscreenBorderRadius = thumbnailBorderRadius * scaleRatio
-
-  const state = Flip.getState([thumbnailElement, imageElement.value])
-
-  imageElement.value.style.display = "none"
-  thumbnailElement.style.visibility = "visible"
+  fullscreenElement.value.style.display = "none"
+  thumbnailElement.value.style.visibility = "visible"
 
   Flip.from(state, {
-    duration: ZOOM_FLIP_DURATION,
-    ease: ZOOM_FLIP_EASE,
-    onComplete: () => {
-      imageElement.value.style.display = "none"
-      containerElement.value.style.display = "none"
-      isAnimating.value = false
-      completeHide()
-    },
+    duration: FLIP_DURATION,
+    ease: FLIP_EASE,
+    onComplete: onHideComplete,
     opacity: 1,
     scale: true
   })
 
-  gsap.fromTo(
-    [thumbnailElement, thumbnailElement.querySelector("img")],
-    {
-      borderRadius: `${fullscreenBorderRadius}px`
-    },
-    {
-      borderRadius: `${thumbnailBorderRadius}px`,
-      duration: ZOOM_FLIP_DURATION,
-      ease: ZOOM_FLIP_EASE
-    }
-  )
+  gsap.from([thumbnailElement.value, thumbnailImageElement.value], {
+    borderRadius: `${scaledBorderRadius}px`,
+    duration: FLIP_DURATION,
+    ease: FLIP_EASE
+  })
 
   callOnReturn()
 }
 
 const showWithRegularAnimation = () => {
-  imageElement.value.style.display = "flex"
-  containerElement.value.style.display = "flex"
-
-  gsap.set(imageElement.value.querySelector("img"), { visibility: "visible" })
+  showFullscreenElements()
+  gsap.set(fullscreenImageElement.value, { visibility: "visible" })
 
   gsap.fromTo(
-    imageElement.value,
+    fullscreenElement.value,
+    { opacity: 0, scale: REGULAR_SCALE },
     {
-      opacity: 0,
-      scale: 0.8
-    },
-    {
-      duration: 0.5,
-      ease: "power3.inOut",
-      onComplete: () => {
-        isAnimating.value = false
-      },
+      duration: REGULAR_DURATION,
+      ease: REGULAR_EASE,
+      onComplete: onShowComplete,
       opacity: 1,
       scale: 1
     }
@@ -166,17 +172,12 @@ const showWithRegularAnimation = () => {
 }
 
 const hideWithRegularAnimation = () => {
-  gsap.to(imageElement.value, {
-    duration: 0.5,
-    ease: "power3.inOut",
-    onComplete: () => {
-      imageElement.value.style.display = "none"
-      containerElement.value.style.display = "none"
-      isAnimating.value = false
-      completeHide()
-    },
+  gsap.to(fullscreenElement.value, {
+    duration: REGULAR_DURATION,
+    ease: REGULAR_EASE,
+    onComplete: onHideComplete,
     opacity: 0,
-    scale: 0.8
+    scale: REGULAR_SCALE
   })
 }
 
@@ -204,22 +205,21 @@ const hideImage = () => {
   }
 }
 
+const createPopstateCallback = (animationFn) => () => {
+  animationFn()
+  history.pushState({}, "", "/")
+}
+
 watch(imageData, () => {
   if (imageData.value) {
     if (updateRoute.value) {
       history.pushState({}, "", `/images/${imageData.value.id}`)
 
-      if (flipId.value) {
-        setPopstateCallback(() => {
-          hideWithFlipAnimation()
-          history.pushState({}, "", "/")
-        })
-      } else {
-        setPopstateCallback(() => {
-          hideWithRegularAnimation()
-          history.pushState({}, "", "/")
-        })
-      }
+      const callback = flipId.value
+        ? createPopstateCallback(hideWithFlipAnimation)
+        : createPopstateCallback(hideWithRegularAnimation)
+
+      setPopstateCallback(callback)
     }
     nextTick(showImage)
   }
@@ -237,8 +237,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="imageData" ref="container" class="fullscreen-image-container" @click="hideImage">
-    <div ref="image" class="fullscreen-image" :data-flip-id="flipId">
+  <div
+    v-if="imageData"
+    ref="fullscreen-image-container"
+    class="fullscreen-image-container"
+    @click="hideImage"
+  >
+    <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
       <img :src="`/api/${regularImageVersion.path}`" alt="" />
     </div>
   </div>
@@ -270,6 +275,7 @@ onMounted(() => {
     visibility: hidden;
     will-change: transform, opacity;
     object-fit: contain;
+    border-radius: var(--radius-lg);
   }
 }
 </style>
