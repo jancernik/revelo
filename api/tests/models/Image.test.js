@@ -29,6 +29,7 @@ describe("Image Model", () => {
         aperture: "f/2.8",
         camera: "Test Camera",
         focalLength: "50mm",
+        focalLengthEquivalent: "75mm",
         iso: 200,
         lens: "Test Lens",
         originalFilename: "test-create.jpg",
@@ -46,6 +47,7 @@ describe("Image Model", () => {
       expect(result.shutterSpeed).toBe("1/250")
       expect(result.iso).toBe(200)
       expect(result.focalLength).toBe("50mm")
+      expect(result.focalLengthEquivalent).toBe("75mm")
       expect(result.versions).toBeDefined()
       expect(Array.isArray(result.versions)).toBe(true)
       expect(result.versions.length).toBe(4)
@@ -121,6 +123,7 @@ describe("Image Model", () => {
         camera: testData.expected.camera,
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
+        focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
         iso: parseInt(testData.expected.iso),
         lens: testData.expected.lens,
         originalFilename: "canon-r5-test.jpg",
@@ -135,6 +138,7 @@ describe("Image Model", () => {
       expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
       expect(result.date).toEqual(new Date(testData.expected.date))
     })
 
@@ -148,6 +152,7 @@ describe("Image Model", () => {
         camera: testData.expected.camera,
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
+        focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
         iso: parseInt(testData.expected.iso),
         lens: testData.expected.lens,
         originalFilename: "nikon-d850-test.jpg",
@@ -162,6 +167,7 @@ describe("Image Model", () => {
       expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
       expect(result.date).toEqual(new Date(testData.expected.date))
     })
 
@@ -175,6 +181,7 @@ describe("Image Model", () => {
         camera: testData.expected.camera,
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
+        focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
         iso: parseInt(testData.expected.iso),
         lens: testData.expected.lens,
         originalFilename: "sony-a7iv-test.jpg",
@@ -189,6 +196,7 @@ describe("Image Model", () => {
       expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
+      expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
       expect(result.date).toEqual(new Date(testData.expected.date))
     })
   })
@@ -407,6 +415,7 @@ describe("Image Model", () => {
           camera: "Basic Camera",
           date: new Date("2023-06-01"),
           focalLength: "35mm",
+          focalLengthEquivalent: "52mm",
           iso: 400,
           lens: "Basic Lens",
           originalFilename: "basic-create.jpg",
@@ -424,6 +433,7 @@ describe("Image Model", () => {
         expect(createdImage.shutterSpeed).toBe("1/60")
         expect(createdImage.iso).toBe(400)
         expect(createdImage.focalLength).toBe("35mm")
+        expect(createdImage.focalLengthEquivalent).toBe("52mm")
         expect(createdImage.date).toEqual(imageData.date)
         expect(createdImage.createdAt).toBeDefined()
         expect(createdImage.updatedAt).toBeDefined()
@@ -614,6 +624,7 @@ describe("Image Model", () => {
         camera: null,
         date: null,
         focalLength: null,
+        focalLengthEquivalent: null,
         iso: null,
         lens: null,
         originalFilename: "null-metadata.jpg",
@@ -630,6 +641,7 @@ describe("Image Model", () => {
       expect(createdImage.shutterSpeed).toBeNull()
       expect(createdImage.iso).toBeNull()
       expect(createdImage.focalLength).toBeNull()
+      expect(createdImage.focalLengthEquivalent).toBeNull()
       expect(createdImage.date).toBeNull()
     })
 

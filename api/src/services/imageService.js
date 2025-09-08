@@ -47,6 +47,7 @@ export const confirmUpload = async (sessionId, metadata) => {
     camera: metadata.camera || null,
     date: metadata.date ? new Date(metadata.date) : null,
     focalLength: metadata.focalLength || null,
+    focalLengthEquivalent: metadata.focalLengthEquivalent || null,
     iso: metadata.iso || null,
     lens: metadata.lens || null,
     originalFilename,
@@ -77,11 +78,10 @@ export const extractMetadata = async (filePath) => {
       (raw.DateTimeOriginal || raw.CreateDate) &&
       new Date(raw.DateTimeOriginal || raw.CreateDate).toISOString().split("T")[0],
     focalLength: raw.FocalLength?.toString(),
+    focalLengthEquivalent: raw.FocalLengthIn35mmFormat?.toString(),
     iso: raw.ISO?.toString(),
     lens: raw.LensModel,
-    shutterSpeed:
-      raw.ExposureTime &&
-      (raw.ExposureTime < 1 ? `1/${Math.round(1 / raw.ExposureTime)}` : `${raw.ExposureTime}`)
+    shutterSpeed: raw.ExposureTime?.toString()
   }
 }
 
@@ -98,6 +98,8 @@ export const updateImageMetadata = async (id, metadata) => {
   if (metadata.aperture !== undefined) updateData.aperture = metadata.aperture
   if (metadata.shutterSpeed !== undefined) updateData.shutterSpeed = metadata.shutterSpeed
   if (metadata.focalLength !== undefined) updateData.focalLength = metadata.focalLength
+  if (metadata.focalLengthEquivalent !== undefined)
+    updateData.focalLengthEquivalent = metadata.focalLengthEquivalent
   if (metadata.camera !== undefined) updateData.camera = metadata.camera
   if (metadata.lens !== undefined) updateData.lens = metadata.lens
   if (metadata.date !== undefined) {

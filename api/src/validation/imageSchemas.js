@@ -6,6 +6,7 @@ const metadataSchema = z.object({
   camera: z.string().max(255).optional().nullable(),
   date: z.iso.date().optional().nullable(),
   focalLength: z.string().max(50).optional().nullable(),
+  focalLengthEquivalent: z.string().max(50).optional().nullable(),
   iso: z.string().max(50).optional().nullable(),
   lens: z.string().max(255).optional().nullable(),
   shutterSpeed: z.string().max(50).optional().nullable()

@@ -33,6 +33,7 @@ const createDefaultMetadata = () => ({
   camera: "",
   date: "",
   focalLength: "",
+  focalLengthEquivalent: "",
   iso: "",
   lens: "",
   shutterSpeed: ""
@@ -126,6 +127,16 @@ watch(
             v-model="metadata.focalLength"
             type="text"
             label="Focal Length"
+            unit="mm"
+            unit-position="right"
+            placeholder="50"
+          />
+        </div>
+        <div class="form-group">
+          <Input
+            v-model="metadata.focalLengthEquivalent"
+            type="text"
+            label="Focal Length (35mm)"
             unit="mm"
             unit-position="right"
             placeholder="50"

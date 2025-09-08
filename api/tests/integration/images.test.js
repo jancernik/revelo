@@ -72,6 +72,7 @@ describe("Image Endpoints", () => {
         collectionOrder: image.collectionOrder,
         date: image.date.toISOString(),
         focalLength: image.focalLength,
+        focalLengthEquivalent: image.focalLengthEquivalent,
         id: image.id,
         iso: image.iso,
         lens: image.lens,
@@ -172,6 +173,7 @@ describe("Image Endpoints", () => {
         aperture: "f/4",
         camera: "Canon EOS R5",
         focalLength: "50mm",
+        focalLengthEquivalent: "80mm",
         iso: "400",
         lens: "24-70mm f/2.8",
         shutterSpeed: "1/60"

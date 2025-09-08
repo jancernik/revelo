@@ -1,0 +1,1 @@
+ALTER TABLE "images" ADD COLUMN "focal_length_equivalent" varchar(50);

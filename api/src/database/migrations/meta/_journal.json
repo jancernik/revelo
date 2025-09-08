@@ -64,6 +64,13 @@
       "when": 1757007145280,
       "tag": "0008_lush_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1757359378049,
+      "tag": "0009_furry_ulik",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,7 @@ class Collection extends BaseModel {
     collectionOrder: true,
     date: true,
     focalLength: true,
+    focalLengthEquivalent: true,
     id: true,
     iso: true,
     lens: true,
