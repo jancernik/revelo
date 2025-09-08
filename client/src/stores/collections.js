@@ -35,8 +35,12 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function fetch(id) {
+  async function fetch(id, force = false) {
     try {
+      if (!force) {
+        const existing = collections.value.find((c) => c.id === id)
+        if (existing) return existing
+      }
       const response = await api.get(`/collections/${id}`)
       return response.data?.data?.collection
     } catch (error) {
