@@ -29,3 +29,15 @@ maxUploadSize:
   category: Admin
   type: integer
   default: 50
+
+replaceCameraNames:
+  description: Replace camera names when uploading images
+  category: Metadata
+  type: textpairs
+  default: []
+
+replaceLensNames:
+  description: Replace lens names when uploading images
+  category: Metadata
+  type: textpairs
+  default: []

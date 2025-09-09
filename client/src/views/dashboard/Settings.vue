@@ -2,6 +2,7 @@
 import Button from "#src/components/common/Button.vue"
 import InputSetting from "#src/components/dashboard/settings/InputSetting.vue"
 import SwitchSetting from "#src/components/dashboard/settings/SwitchSetting.vue"
+import TextPairsSetting from "#src/components/dashboard/settings/TextPairsSetting.vue"
 import ToggleSetting from "#src/components/dashboard/settings/ToggleSetting.vue"
 import { useSettings } from "#src/composables/useSettings"
 import api from "#src/utils/api"
@@ -221,6 +222,17 @@ onMounted(fetchSettings)
 
             <SwitchSetting
               v-else-if="setting.type === 'switch'"
+              :setting="setting"
+              :current-value="currentValues[setting.name]"
+              :original-value="originalValues[setting.name]"
+              :is-resetting="isResetting[setting.name] || false"
+              @update="updateValue(setting.name, $event)"
+              @reset="resetValue(setting.name)"
+              @reset-default="resetDefault(setting.name)"
+            />
+
+            <TextPairsSetting
+              v-else-if="setting.type === 'textpairs'"
               :setting="setting"
               :current-value="currentValues[setting.name]"
               :original-value="originalValues[setting.name]"
