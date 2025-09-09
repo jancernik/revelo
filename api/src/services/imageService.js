@@ -13,12 +13,12 @@ import path from "path"
 import sharp from "sharp"
 import { v4 as uuid } from "uuid"
 
-export const uploadForReview = async (file) => {
+export const uploadForReview = async (file, options = {}) => {
   const sessionId = uuid()
   const tempFilePath = storageManager.getStagingImagePath(sessionId, file.originalname)
   await fs.copyFile(file.path, tempFilePath)
 
-  const metadata = await extractMetadata(tempFilePath)
+  const metadata = await extractMetadata(tempFilePath, options)
 
   await fs.unlink(file.path)
 
@@ -69,9 +69,33 @@ export const confirmUpload = async (sessionId, metadata) => {
   return image
 }
 
-export const extractMetadata = async (filePath) => {
+const applyMetadataReplacements = (metadata, replaceCameraNames = [], replaceLensNames = []) => {
+  const updatedMetadata = { ...metadata }
+
+  if (updatedMetadata.camera && replaceCameraNames.length > 0) {
+    for (const [original, replacement] of replaceCameraNames) {
+      if (original && updatedMetadata.camera.includes(original)) {
+        updatedMetadata.camera = updatedMetadata.camera.replace(original, replacement)
+      }
+    }
+  }
+
+  if (updatedMetadata.lens && replaceLensNames.length > 0) {
+    for (const [original, replacement] of replaceLensNames) {
+      if (original && updatedMetadata.lens.includes(original)) {
+        updatedMetadata.lens = updatedMetadata.lens.replace(original, replacement)
+      }
+    }
+  }
+
+  return updatedMetadata
+}
+
+export const extractMetadata = async (filePath, options = {}) => {
+  const { replaceCameraNames = [], replaceLensNames = [] } = options
+
   const raw = (await exifr.parse(filePath)) || {}
-  return {
+  const metadata = {
     aperture: raw.FNumber?.toString(),
     camera: (raw.Make || raw.Model) && `${raw.Make || ""}${raw.Model ? ` ${raw.Model}` : ""}`,
     date:
@@ -83,6 +107,8 @@ export const extractMetadata = async (filePath) => {
     lens: raw.LensModel,
     shutterSpeed: raw.ExposureTime?.toString()
   }
+
+  return applyMetadataReplacements(metadata, replaceCameraNames, replaceLensNames)
 }
 
 export const updateImageMetadata = async (id, metadata) => {

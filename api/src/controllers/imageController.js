@@ -1,13 +1,24 @@
 import Image from "#src/models/Image.js"
+import Setting from "#src/models/Setting.js"
 import * as imageService from "#src/services/imageService.js"
 import { sql } from "drizzle-orm"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files
 
+  const [replaceCameraNames, replaceLensNames] = await Promise.all([
+    Setting.get("replaceCameraNames", { includeRestricted: true }).catch(() => ({ value: [] })),
+    Setting.get("replaceLensNames", { includeRestricted: true }).catch(() => ({ value: [] }))
+  ])
+
+  const replacementOptions = {
+    replaceCameraNames: replaceCameraNames.value || [],
+    replaceLensNames: replaceLensNames.value || []
+  }
+
   const imageData = []
   for (const file of files) {
-    const uploadedImageData = await imageService.uploadForReview(file)
+    const uploadedImageData = await imageService.uploadForReview(file, replacementOptions)
     imageData.push(uploadedImageData)
   }
 
