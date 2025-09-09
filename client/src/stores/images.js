@@ -84,12 +84,12 @@ export const useImagesStore = defineStore("images", () => {
 
   async function confirmUpload(imageData) {
     try {
-      const response = await api.post("/upload/confirm", { imageData })
-      const images = response.data?.data?.images || []
+      const response = await api.post("/upload/confirm", { images: imageData })
+      const newImages = response.data?.data?.images || []
 
-      images.value.push(...images)
+      images.value.push(...newImages)
 
-      return images
+      return newImages
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,

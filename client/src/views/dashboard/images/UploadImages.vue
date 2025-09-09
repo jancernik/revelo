@@ -3,7 +3,7 @@ import Button from "#src/components/common/Button.vue"
 import ImageUploader from "#src/components/dashboard/images/ImageUploader.vue"
 import MultipleImagesReview from "#src/components/dashboard/images/MultipleImagesReview.vue"
 import SimpleImageGrid from "#src/components/dashboard/images/SimpleImageGrid.vue"
-import api from "#src/utils/api"
+import { useImagesStore } from "#src/stores/images"
 import { ref } from "vue"
 
 const step = ref(1)
@@ -14,6 +14,7 @@ const previewFilenames = ref([])
 const uploadedImages = ref([])
 const isLoading = ref(false)
 const processingStep = ref("")
+const imagesStore = useImagesStore()
 
 const resetState = () => {
   sessionIds.value = []
@@ -34,14 +35,7 @@ const handleUploadForReview = async (data) => {
     const { images, previewUrls: urls } = data
 
     if (images.length > 0) {
-      const formData = new FormData()
-      images.forEach((image) => formData.append("images", image))
-
-      const response = await api.post("/upload/review", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      })
-
-      const imageData = response.data?.data?.images || []
+      const imageData = await imagesStore.uploadForReview(images)
 
       imageData.forEach((image, index) => {
         sessionIds.value.push(image.sessionId)
@@ -69,8 +63,7 @@ const handleConfirm = async (data) => {
     processingStep.value = "uploading"
 
     if (data.length > 0) {
-      const response = await api.post("/upload/confirm", { images: data })
-      uploadedImages.value = response.data?.data?.images || []
+      uploadedImages.value = await imagesStore.confirmUpload(data)
     }
 
     step.value = 3

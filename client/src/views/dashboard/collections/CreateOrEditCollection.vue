@@ -53,11 +53,11 @@ const saveCollection = async () => {
         type: "success"
       })
     } else {
-      const result = await collectionsStore.create({
+      const collection = await collectionsStore.create({
         description: description.value,
         title: title.value
       })
-      router.push(`/dashboard/collections/${result.data.collection.id}`)
+      router.push(`/dashboard/collections/${collection.id}`)
       showToast({
         description: `Collection created successfully.`,
         title: "Collection Created",
