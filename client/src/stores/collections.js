@@ -1,17 +1,20 @@
 import { useToast } from "#src/composables/useToast"
+import { useImagesStore } from "#src/stores/images.js"
 import api from "#src/utils/api"
 import { defineStore } from "pinia"
 import { ref } from "vue"
 
 export const useCollectionsStore = defineStore("collections", () => {
   const { show: showToast } = useToast()
+  const imagesStore = useImagesStore()
 
   const error = ref(null)
   const initialized = ref(false)
   const loading = ref(false)
   const collections = ref([])
 
-  async function fetchAll(force = false) {
+  async function fetchAll(options = {}) {
+    const { force } = options
     if (loading.value && !force) return
     if (initialized.value && !force) return
 
@@ -22,6 +25,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       const response = await api.get("/collections")
       collections.value = response.data?.data?.collections || []
       initialized.value = true
+      return collections.value
     } catch (error) {
       error.value = error.response?.data?.message || error.message
       showToast({
@@ -35,12 +39,14 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function fetch(id, force = false) {
+  async function fetch(id, options = {}) {
+    const { force } = options
     try {
       if (!force) {
         const existing = collections.value.find((c) => c.id === id)
         if (existing) return existing
       }
+
       const response = await api.get(`/collections/${id}`)
       return response.data?.data?.collection
     } catch (error) {
@@ -53,12 +59,15 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function create(data) {
+  async function create(data = {}) {
     const { description, title } = data
     try {
       const response = await api.post("/collections", { description, title })
-      collections.value.push(response.data?.data?.collection)
-      return response.data
+      const collection = response.data?.data?.collection
+
+      if (collection) collections.value.push(collection)
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -69,17 +78,16 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function update(id, data) {
+  async function update(id, data = {}) {
     const { description, title } = data
     try {
       const response = await api.put(`/collections/${id}`, { description, title })
-      const updatedCollection = response.data?.data?.collection
+      const collection = response.data?.data?.collection
 
       const index = collections.value.findIndex((c) => c.id === id)
-      if (index !== -1) {
-        collections.value[index] = { ...collections.value[index], ...updatedCollection }
-      }
-      return response.data
+      if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -110,14 +118,16 @@ export const useCollectionsStore = defineStore("collections", () => {
       const newImageIds = [...new Set([...existingImageIds, ...imageIds])]
 
       const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
+      const collection = response.data?.data?.collection
 
-      const updatedCollection = response.data?.data?.collection
       const index = collections.value.findIndex((c) => c.id === id)
-      if (index !== -1) {
-        collections.value[index] = { ...collections.value[index], ...updatedCollection }
-      }
+      if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      return response.data
+      imageIds.forEach((id) => {
+        imagesStore.updateLocal(id, { collectionId: id, collectionOrder: newImageIds.indexOf(id) })
+      })
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -134,14 +144,16 @@ export const useCollectionsStore = defineStore("collections", () => {
       const newImageIds = existingImageIds.filter((imgId) => !imageIds.includes(imgId))
 
       const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
+      const collection = response.data?.data?.collection
 
-      const updatedCollection = response.data?.data?.collection
       const index = collections.value.findIndex((c) => c.id === id)
-      if (index !== -1) {
-        collections.value[index] = { ...collections.value[index], ...updatedCollection }
-      }
+      if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      return response.data
+      imageIds.forEach((id) => {
+        imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
+      })
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -155,14 +167,24 @@ export const useCollectionsStore = defineStore("collections", () => {
   async function setImages(id, imageIds) {
     try {
       const response = await api.put(`/collections/${id}/images`, { imageIds })
+      const collection = response.data?.data?.collection
 
-      const updatedCollection = response.data?.data?.collection
+      const oldImageIds = imageIdsInCollection(id)
+      const removedImageIds = oldImageIds.filter((imageId) => !imageIds.includes(imageId))
+      const addedImageIds = imageIds.filter((imageId) => !oldImageIds.includes(imageId))
+
       const index = collections.value.findIndex((c) => c.id === id)
-      if (index !== -1) {
-        collections.value[index] = { ...collections.value[index], ...updatedCollection }
-      }
+      if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      return response.data
+      removedImageIds.forEach((id) => {
+        imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
+      })
+
+      addedImageIds.forEach((id) => {
+        imagesStore.updateLocal(id, { collectionId: id, collectionOrder: imageIds.indexOf(id) })
+      })
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -178,7 +200,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       collections.value
         .find((c) => c.id === id)
         ?.images?.sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
-        .map((img) => img.id) || []
+        .map((image) => image.id) || []
     )
   }
 
@@ -189,7 +211,29 @@ export const useCollectionsStore = defineStore("collections", () => {
   }
 
   async function refreshCollections() {
-    return fetchAll(true)
+    return fetchAll({ force: true })
+  }
+
+  function updateImageLocal(id, image) {
+    collections.value.some((collection, collectionIndex) => {
+      const imageIndex = collection.images?.findIndex((i) => i.id === id)
+      if (imageIndex !== -1) {
+        collections.value[collectionIndex].images[imageIndex] = {
+          ...collections.value[collectionIndex].images[imageIndex],
+          ...image
+        }
+        return true
+      }
+      return false
+    })
+  }
+
+  function removeImageLocal(id) {
+    collections.value.forEach((collection, index) => {
+      if (collection.images) {
+        collections.value[index].images = collection.images.filter((i) => i.id !== id)
+      }
+    })
   }
 
   return {
@@ -205,8 +249,10 @@ export const useCollectionsStore = defineStore("collections", () => {
     loading,
     refreshCollections,
     remove,
+    removeImageLocal,
     removeImages,
     setImages,
-    update
+    update,
+    updateImageLocal
   }
 })
