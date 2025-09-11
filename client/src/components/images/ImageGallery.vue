@@ -398,8 +398,10 @@ const stopRenderLoop = () => {
 const updateZoomTransitionState = (timestamp) => {
   if (isZoomTransitionActive && timestamp >= zoomAnimationEndTimestamp) {
     isZoomTransitionActive = false
-    resumeScrolling()
-    if (!isZoomingOut) {
+    if (isZoomingOut) {
+      pauseScrolling()
+    } else {
+      resumeScrolling()
       zoomTargetImageId = null
     }
   }
