@@ -1,5 +1,5 @@
 export const getImageVersion = (imageObject = {}, type) => {
-  return imageObject.versions?.find((v) => v.type === type) || {}
+  return imageObject?.versions?.find((v) => v.type === type) || {}
 }
 
 export const calculateImageAspectRatio = (imageObject = {}) => {

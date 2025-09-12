@@ -148,7 +148,7 @@ const hideFullscreenElements = () => {
   fullscreenContainerElement.value.style.display = "none"
 }
 
-const setBaseMobileMetadataStyles = (metadataVisible) => {
+const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
   if (!imageMetadataElement.value) return
 
   let spacePx = (windowHeight.value - imageHeight.value) / 2
@@ -159,14 +159,24 @@ const setBaseMobileMetadataStyles = (metadataVisible) => {
     metadataOffset -= (collectionHeight.value + SPACING) / 2
   }
 
-  setStyles(imageMetadataElement.value, {
+  const styles = {
     height: "max-content",
     right: "50%",
     top: `calc(100% + ${spacePx}px`,
     width: "100vw",
     x: "50%",
     y: metadataVisible ? metadataOffset : 0
-  })
+  }
+
+  if (animate) {
+    return gsap.to(imageMetadataElement.value, {
+      ...styles,
+      duration: SLIDE_DURATION,
+      ease: SLIDE_EASE
+    })
+  } else {
+    setStyles(imageMetadataElement.value, styles)
+  }
 }
 
 const setHiddenMetadataStyles = (isMobile) => {
@@ -391,6 +401,10 @@ const animateCollection = (visible, callback) => {
   tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 })
   tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, "<")
   tl.to(fullscreenImageElement.value, { maxHeight: maxImageHeight(visible) }, "<")
+
+  if (metadataVisible.value && isMobileLayout.value) {
+    tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), "<")
+  }
 }
 
 const showMetadata = (callback) => animateMetadata(true, callback)
