@@ -60,7 +60,7 @@ const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
 
 const isMobileLayout = computed(() => {
-  if (windowWidth.value <= 768) return true
+  if (windowWidth.value <= 576) return true
   const availableSpace = windowWidth.value - SPACING * 2 - initialMetadataWidth.value
   if (imageAspectRatio.value < 1) {
     if (initialMetadataWidth.value > availableSpace * (2 / 3)) {
@@ -104,6 +104,43 @@ const getScaleRatio = () => {
   const imageSize = Math.min(imageRect.width, imageRect.height)
 
   return thumbnailSize / imageSize
+}
+
+const getAvailableImageSpace = (metadataVisible, collectionVisible) => {
+  let availableWidth = windowWidth.value - SPACING * 2
+  let availableHeight = windowHeight.value - SPACING * 2
+
+  if (metadataVisible && !isMobileLayout.value) {
+    availableWidth -= initialMetadataWidth.value + SPACING
+  }
+
+  if (collectionVisible) {
+    availableHeight -= collectionHeight.value + SPACING
+  }
+
+  return { height: availableHeight, width: availableWidth }
+}
+
+const calculateOptimalImageSize = (metadataVisible, collectionVisible) => {
+  if (!imageAspectRatio.value) return { height: "auto", width: "auto" }
+
+  const { height: maxHeight, width: maxWidth } = getAvailableImageSpace(
+    metadataVisible,
+    collectionVisible
+  )
+  const aspectRatio = imageAspectRatio.value
+
+  let height, width
+
+  if (maxWidth / aspectRatio <= maxHeight) {
+    width = maxWidth
+    height = maxWidth / aspectRatio
+  } else {
+    height = maxHeight
+    width = maxHeight * aspectRatio
+  }
+
+  return { height: `${height}px`, width: `${width}px` }
 }
 
 const maxImageHeight = (collectionVisible) => {
@@ -201,7 +238,8 @@ const setHiddenMetadataStyles = (isMobile) => {
   }
 
   setStyles(fullscreenElement.value, { x: 0 })
-  setStyles(fullscreenImageElement.value, { maxWidth: maxImageWidth(false) })
+  const { height, width } = calculateOptimalImageSize(false, collectionVisible.value)
+  setStyles(fullscreenImageElement.value, { height, width })
 }
 
 const onShowComplete = () => {
@@ -255,7 +293,11 @@ const showWithFlipAnimation = () => {
 
   showFullscreenElements()
   setStyles(fullscreenElement.value, { opacity: 0 })
-  setStyles(fullscreenImageElement.value, { visibility: "hidden" })
+  setStyles(fullscreenImageElement.value, {
+    maxHeight: maxImageHeight(false),
+    maxWidth: maxImageWidth(false),
+    visibility: "hidden"
+  })
 
   if (fullscreenImageElement.value.complete) {
     perform()
@@ -300,7 +342,11 @@ const hideWithFlipAnimation = () => {
 
 const showWithRegularAnimation = () => {
   showFullscreenElements()
-  setStyles(fullscreenImageElement.value, { visibility: "visible" })
+  setStyles(fullscreenImageElement.value, {
+    maxHeight: maxImageHeight(false),
+    maxWidth: maxImageWidth(false),
+    visibility: "visible"
+  })
 
   gsap.fromTo(
     fullscreenElement.value,
@@ -328,6 +374,12 @@ const hideWithRegularAnimation = () => {
 const showImage = () => {
   if (isAnimating.value) return
   isAnimating.value = true
+
+  const { height, width } = calculateOptimalImageSize(
+    metadataVisible.value,
+    collectionVisible.value
+  )
+  setStyles(fullscreenImageElement.value, { height, width })
 
   if (flipId.value) {
     showWithFlipAnimation()
@@ -374,7 +426,8 @@ const animateMetadata = (visible, callback) => {
 
     tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
     tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
-    tl.to(fullscreenImageElement.value, { maxWidth: maxImageWidth(visible) }, "<")
+    const { height, width } = calculateOptimalImageSize(visible, collectionVisible.value)
+    tl.to(fullscreenImageElement.value, { height, width }, "<")
   }
 }
 
@@ -396,7 +449,8 @@ const animateCollection = (visible, callback) => {
 
   tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 })
   tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, "<")
-  tl.to(fullscreenImageElement.value, { maxHeight: maxImageHeight(visible) }, "<")
+  const { height, width } = calculateOptimalImageSize(metadataVisible.value, visible)
+  tl.to(fullscreenImageElement.value, { height, width }, "<")
 
   if (metadataVisible.value && isMobileLayout.value) {
     tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), "<")
@@ -435,10 +489,11 @@ const onImageUpdate = async (image) => {
 }
 
 const updateImageConstraints = () => {
-  if (metadataVisible.value)
-    setStyles(fullscreenImageElement.value, { maxWidth: maxImageWidth(true) })
-  if (collectionVisible.value)
-    setStyles(fullscreenImageElement.value, { maxHeight: maxImageHeight(true) })
+  const { height, width } = calculateOptimalImageSize(
+    metadataVisible.value,
+    collectionVisible.value
+  )
+  setStyles(fullscreenImageElement.value, { height, width })
 }
 
 const updateMobileLayout = () => {
@@ -520,8 +575,6 @@ $spacing: v-bind(SPACING_PX);
     will-change: transform, opacity;
 
     > img {
-      max-width: calc(100vw - calc($spacing * 2));
-      max-height: calc(100vh - calc($spacing * 2));
       height: auto;
       width: auto;
       user-select: none;
