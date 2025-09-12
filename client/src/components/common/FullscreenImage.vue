@@ -5,6 +5,7 @@ import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
+import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
 import { cssVar } from "#src/utils/helpers"
 import { getImageVersion } from "#src/utils/helpers"
 import { gsap } from "gsap"
@@ -12,15 +13,15 @@ import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
 
-const FLIP_DURATION = 0.6 // Duration for FLIP animation when zooming in/out
-const FLIP_EASE = "power2.inOut" // Easing for FLIP animation when zooming in/out
-const REGULAR_DURATION = 0.4 // Duration for regular fade/scale animation
-const REGULAR_EASE = "power3.inOut" // Easing for regular fade/scale animation
-const REGULAR_SCALE = 0.85 // Scale for regular animation when hiding
-const SLIDE_EASE = "power2.inOut"
-const SLIDE_DURATION = 0.4
-const SLIDE_OFFSET = 20
-const SPACING = `${SLIDE_OFFSET}px`
+const FLIP_DURATION = 0.6 // Duration for FLIP animation when transitioning between thumbnail and fullscreen
+const FLIP_EASE = "power2.inOut" // Easing function for FLIP animation transitions
+const REGULAR_DURATION = 0.4 // Duration for fallback fade/scale animation when no thumbnail available
+const REGULAR_EASE = "power3.inOut" // Easing function for fallback animations
+const REGULAR_SCALE = 0.85 // Initial scale factor for fallback show/hide animations
+const SLIDE_EASE = "power2.inOut" // Easing function for metadata/collection slide animations
+const SLIDE_DURATION = 0.4 // Duration for metadata/collection slide animations
+const SPACING = 20 // Spacing offset in pixels for slide animations
+const SPACING_PX = `${SPACING}px` // CSS spacing value derived from SPACING
 
 const {
   callOnReturn,
@@ -39,21 +40,39 @@ const collectionsStore = useCollectionsStore()
 const collectionData = ref(null)
 const metadataVisible = ref(false)
 const collectionVisible = ref(false)
+const initialMetadataWidth = ref(0)
 
 const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
 const fullscreenElement = useTemplateRef("fullscreen-image")
 const fullscreenImageElement = computed(() => fullscreenElement.value?.querySelector("img"))
 const thumbnailElement = computed(() => document.querySelector(`[data-flip-id="${flipId.value}"]`))
 const thumbnailImageElement = computed(() => thumbnailElement.value?.querySelector("img"))
-const imageMetadataElement = useTemplateRef("image-metadata")
-const collectionElement = useTemplateRef("collection-images")
+const imageMetadataRef = useTemplateRef("image-metadata")
+const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
+const collectionRef = useTemplateRef("collection-images")
+const collectionElement = computed(() => collectionRef.value?.$el)
 
 const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
+const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.value))
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
-// const { height: imageHeight, width: imageWidth } = useElementSize(fullscreenElement)
-const { width: metadataWidth } = useElementSize(imageMetadataElement)
+const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
+
+const isMobileLayout = computed(() => {
+  if (windowWidth.value <= 768) return true
+  const availableSpace = windowWidth.value - SPACING * 2 - initialMetadataWidth.value
+  if (imageAspectRatio.value < 1) {
+    if (initialMetadataWidth.value > availableSpace * (2 / 3)) {
+      return true
+    }
+  } else {
+    if (initialMetadataWidth.value > availableSpace * (1 / 2)) {
+      return true
+    }
+  }
+  return false
+})
 
 const hasMetadata = computed(() =>
   [
@@ -87,6 +106,38 @@ const getScaleRatio = () => {
   return thumbnailSize / imageSize
 }
 
+const maxImageHeight = (collectionVisible) => {
+  if (!collectionVisible) return `calc(100vh - calc(${SPACING_PX} * 2))`
+  const availableVh = 100 - ((collectionHeight.value + SPACING) / windowHeight.value) * 100
+  return `calc(${availableVh}vh - calc(${SPACING_PX} * 2))`
+}
+
+const maxImageWidth = (metadataVisible) => {
+  if (!metadataVisible || isMobileLayout.value) return `calc(100vw - calc(${SPACING_PX} * 2))`
+  const availableVw = 100 - ((initialMetadataWidth.value + SPACING) / windowWidth.value) * 100
+  return `calc(${availableVw}vw - calc(${SPACING_PX} * 2))`
+}
+
+const setVisibility = (element, visible) => {
+  if (!element) return
+  gsap.set(element, { visibility: visible ? "visible" : "hidden" })
+}
+
+const setStyles = (element, styles) => {
+  if (!element) return
+  gsap.set(element, styles)
+}
+
+const createAnimationTimeline = (options = {}) => {
+  return gsap.timeline({
+    defaults: {
+      duration: SLIDE_DURATION,
+      ease: SLIDE_EASE
+    },
+    ...options
+  })
+}
+
 const showFullscreenElements = () => {
   fullscreenElement.value.style.display = "flex"
   fullscreenContainerElement.value.style.display = "flex"
@@ -95,6 +146,52 @@ const showFullscreenElements = () => {
 const hideFullscreenElements = () => {
   fullscreenElement.value.style.display = "none"
   fullscreenContainerElement.value.style.display = "none"
+}
+
+const setBaseMobileMetadataStyles = (metadataVisible) => {
+  if (!imageMetadataElement.value) return
+
+  let spacePx = (windowHeight.value - imageHeight.value) / 2
+  let metadataOffset = -imageMetadataElement.value.offsetHeight
+
+  if (collectionVisible.value) {
+    spacePx += collectionHeight.value + SPACING
+    metadataOffset -= (collectionHeight.value + SPACING) / 2
+  }
+
+  setStyles(imageMetadataElement.value, {
+    height: "max-content",
+    right: "50%",
+    top: `calc(100% + ${spacePx}px`,
+    width: "100vw",
+    x: "50%",
+    y: metadataVisible ? metadataOffset : 0
+  })
+}
+
+const setHiddenMetadataStyles = (isMobile) => {
+  if (!imageMetadataElement.value) return
+
+  imageMetadataElement.value.style.zIndex = isMobile ? 1 : -1
+  if (initialMetadataWidth.value === 0) {
+    initialMetadataWidth.value = imageMetadataElement.value.offsetWidth
+  }
+
+  if (isMobile) {
+    setBaseMobileMetadataStyles(false)
+  } else {
+    setStyles(imageMetadataElement.value, {
+      height: "100%",
+      right: 0,
+      top: 0,
+      width: "max-content",
+      x: 0,
+      y: 0
+    })
+  }
+
+  setStyles(fullscreenElement.value, { x: 0 })
+  setStyles(fullscreenImageElement.value, { maxWidth: maxImageWidth(false) })
 }
 
 const onShowComplete = () => {
@@ -129,8 +226,8 @@ const showWithFlipAnimation = () => {
 
     thumbnailElement.value.style.visibility = "hidden"
 
-    gsap.set(fullscreenElement.value, { opacity: 1 })
-    gsap.set(fullscreenImageElement.value, { visibility: "visible" })
+    setStyles(fullscreenElement.value, { opacity: 1 })
+    setStyles(fullscreenImageElement.value, { visibility: "visible" })
 
     Flip.from(state, {
       duration: FLIP_DURATION,
@@ -147,8 +244,8 @@ const showWithFlipAnimation = () => {
   }
 
   showFullscreenElements()
-  gsap.set(fullscreenElement.value, { opacity: 0 })
-  gsap.set(fullscreenImageElement.value, { visibility: "hidden" })
+  setStyles(fullscreenElement.value, { opacity: 0 })
+  setStyles(fullscreenImageElement.value, { visibility: "hidden" })
 
   if (fullscreenImageElement.value.complete) {
     perform()
@@ -193,7 +290,7 @@ const hideWithFlipAnimation = () => {
 
 const showWithRegularAnimation = () => {
   showFullscreenElements()
-  gsap.set(fullscreenImageElement.value, { visibility: "visible" })
+  setStyles(fullscreenImageElement.value, { visibility: "visible" })
 
   gsap.fromTo(
     fullscreenElement.value,
@@ -242,72 +339,56 @@ const hideImage = () => {
   }
 }
 
-const maxImageHeight = (collectionVisible) => {
-  if (!collectionVisible) return `calc(100vh - calc(${SPACING} * 2))`
-  const availableVh = 100 - ((collectionHeight.value + SLIDE_OFFSET) / windowHeight.value) * 100
-  return `calc(${availableVh}vh - calc(${SPACING} * 2))`
-}
-
-const maxImageWidth = (metadataVisible) => {
-  if (!metadataVisible) return `calc(100vw - calc(${SPACING} * 2))`
-  const availableVw = 100 - ((metadataWidth.value + SLIDE_OFFSET) / windowWidth.value) * 100
-  return `calc(${availableVw}vw - calc(${SPACING} * 2))`
-}
-
 const animateMetadata = (visible, callback) => {
-  if (!hasMetadata.value) return
+  if (!hasMetadata.value || !imageMetadataElement.value) return
+
   metadataVisible.value = !!visible
+  if (visible) setVisibility(imageMetadataElement.value, true)
 
-  if (visible) {
-    gsap.set(imageMetadataElement?.value?.$el, { visibility: "visible" })
-  }
-
-  const metadataOffset = metadataWidth.value + 20
-  const centerOffset = metadataOffset / -2
-
-  const tl = gsap.timeline({
-    defaults: {
-      duration: SLIDE_DURATION,
-      ease: SLIDE_EASE
-    },
+  const tl = createAnimationTimeline({
     onComplete: () => {
-      if (!visible) {
-        gsap.set(imageMetadataElement?.value?.$el, { visibility: "hidden" })
-      }
+      if (!visible) setVisibility(imageMetadataElement.value, false)
       callback?.()
     }
   })
 
-  tl.to(imageMetadataElement?.value?.$el, { x: visible ? metadataOffset : 0 })
-  tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
-  tl.to(fullscreenImageElement.value, { maxWidth: maxImageWidth(visible) }, "<")
+  if (visible) setHiddenMetadataStyles(isMobileLayout.value)
+
+  if (isMobileLayout.value) {
+    let metadataOffset = -imageMetadataElement.value.offsetHeight
+    if (collectionVisible.value) metadataOffset -= (collectionHeight.value + SPACING) / 2
+    tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
+  } else {
+    const metadataOffset = initialMetadataWidth.value + 20
+    const centerOffset = metadataOffset / -2
+
+    tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
+    tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
+    tl.to(fullscreenImageElement.value, { maxWidth: maxImageWidth(visible) }, "<")
+
+    if (hasCollection.value && !isMobileLayout.value) {
+      tl.to(collectionElement.value, { x: visible ? `${-centerOffset}px` : 0 }, "<")
+    }
+  }
 }
 
 const animateCollection = (visible, callback) => {
-  if (!hasCollection.value) return
-  collectionVisible.value = !!visible
+  if (!hasCollection.value || !collectionElement.value) return
 
-  if (visible) {
-    gsap.set(collectionElement?.value?.$el, { visibility: "visible" })
-  }
+  collectionVisible.value = !!visible
+  if (visible) setVisibility(collectionElement.value, true)
 
   const collectionOffset = collectionHeight.value + 20
   const centerOffset = collectionOffset / -2
 
-  const tl = gsap.timeline({
-    defaults: {
-      duration: SLIDE_DURATION,
-      ease: SLIDE_EASE
-    },
+  const tl = createAnimationTimeline({
     onComplete: () => {
-      if (!visible) {
-        gsap.set(collectionElement?.value?.$el, { visibility: "hidden" })
-      }
+      if (!visible) setVisibility(collectionElement.value, false)
       callback?.()
     }
   })
 
-  tl.to(collectionElement?.value?.$el, { y: visible ? collectionOffset : 0 })
+  tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 })
   tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, "<")
   tl.to(fullscreenImageElement.value, { maxHeight: maxImageHeight(visible) }, "<")
 }
@@ -317,60 +398,68 @@ const hideMetadata = (callback) => animateMetadata(false, callback)
 const showCollection = (callback) => animateCollection(true, callback)
 const hideCollection = (callback) => animateCollection(false, callback)
 
-const toggleMetadata = () => {
-  metadataVisible.value ? hideMetadata() : showMetadata()
-}
-
-const toggleCollection = () => {
-  collectionVisible.value ? hideCollection() : showCollection()
-}
+const toggleMetadata = () => (metadataVisible.value ? hideMetadata() : showMetadata())
+const toggleCollection = () => (collectionVisible.value ? hideCollection() : showCollection())
 
 const createPopstateCallback = (animationFn) => () => {
   animationFn()
   history.pushState({}, "", "/")
 }
 
-watch(imageData, async () => {
-  if (imageData.value) {
-    if (updateRoute.value) {
-      history.pushState({}, "", `/images/${imageData.value.id}`)
+const setupRouting = (imageId) => {
+  history.pushState({}, "", `/images/${imageId}`)
+  const callback = flipId.value
+    ? createPopstateCallback(hideWithFlipAnimation)
+    : createPopstateCallback(hideWithRegularAnimation)
+  setPopstateCallback(callback)
+}
 
-      const callback = flipId.value
-        ? createPopstateCallback(hideWithFlipAnimation)
-        : createPopstateCallback(hideWithRegularAnimation)
-
-      setPopstateCallback(callback)
-    }
-
-    if (imageData.value.collectionId) {
-      collectionData.value = await collectionsStore.fetch(imageData.value.collectionId)
-    }
-
+const onImageUpdate = async (image) => {
+  if (image) {
+    if (updateRoute.value) setupRouting(image.id)
+    if (image.collectionId) collectionData.value = await collectionsStore.fetch(image.collectionId)
     nextTick(showImage)
+  } else {
+    initialMetadataWidth.value = 0
   }
-})
+}
 
-watch(triggerHide, () => {
-  if (triggerHide.value) {
-    nextTick(hideImage)
-  }
-})
+const updateImageConstraints = () => {
+  if (metadataVisible.value)
+    setStyles(fullscreenImageElement.value, { maxWidth: maxImageWidth(true) })
+  if (collectionVisible.value)
+    setStyles(fullscreenImageElement.value, { maxHeight: maxImageHeight(true) })
+}
 
-watch(windowWidth, () => {
-  if (metadataVisible.value) {
-    gsap.set(fullscreenImageElement.value, { maxWidth: maxImageWidth(true) })
-  }
-})
+const updateMobileLayout = () => {
+  if (isMobileLayout.value) setBaseMobileMetadataStyles(metadataVisible.value)
+}
 
-watch(windowHeight, () => {
-  if (collectionVisible.value) {
-    gsap.set(fullscreenImageElement.value, { maxHeight: maxImageHeight(true) })
-  }
-})
+const onWindowWidthUpdate = () => {
+  updateImageConstraints()
+  updateMobileLayout()
+}
 
-onMounted(() => {
-  gsap.registerPlugin(Flip)
-})
+const onWindowHeightUpdate = () => {
+  updateImageConstraints()
+  updateMobileLayout()
+}
+
+const onLayoutChange = (isMobile) => {
+  if (!metadataVisible.value) return
+  metadataVisible.value = false
+  setVisibility(imageMetadataElement.value, false)
+  if (collectionVisible.value) setStyles(collectionElement.value, { x: 0 })
+  setHiddenMetadataStyles(isMobile)
+}
+
+watch(imageData, async (image) => onImageUpdate(image))
+watch(windowWidth, onWindowWidthUpdate, { immediate: true })
+watch(windowHeight, onWindowHeightUpdate, { immediate: true })
+watch(isMobileLayout, onLayoutChange, { immediate: true })
+watch(triggerHide, () => triggerHide.value && nextTick(hideImage))
+
+onMounted(() => gsap.registerPlugin(Flip))
 </script>
 
 <template>
@@ -382,10 +471,10 @@ onMounted(() => {
   >
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
       <img :src="`/api/${regularImageVersion.path}`" />
-      <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
       <CollectionImages v-if="hasCollection" ref="collection-images" :collection="collectionData" />
+      <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
-    <div class="test">
+    <div class="debug-controls">
       <button @click.stop="toggleMetadata">Toggle Metadata</button>
       <button @click.stop="toggleCollection">Toggle Collection</button>
     </div>
@@ -393,9 +482,9 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-$spacing: v-bind(SPACING);
+$spacing: v-bind(SPACING_PX);
 
-.test {
+.debug-controls {
   position: fixed;
   top: 20px;
   left: 20px;
@@ -443,9 +532,10 @@ $spacing: v-bind(SPACING);
 
   .collection-images {
     position: absolute;
-    width: 100%;
+    width: 100vw;
     bottom: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: -1;
     visibility: hidden;
   }
