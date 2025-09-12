@@ -369,7 +369,7 @@ const animateMetadata = (visible, callback) => {
     if (collectionVisible.value) metadataOffset -= (collectionHeight.value + SPACING) / 2
     tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
   } else {
-    const metadataOffset = initialMetadataWidth.value + 20
+    const metadataOffset = initialMetadataWidth.value + SPACING
     const centerOffset = metadataOffset / -2
 
     tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
@@ -388,7 +388,7 @@ const animateCollection = (visible, callback) => {
   collectionVisible.value = !!visible
   if (visible) setVisibility(collectionElement.value, true)
 
-  const collectionOffset = collectionHeight.value + 20
+  const collectionOffset = collectionHeight.value + SPACING
   const centerOffset = collectionOffset / -2
 
   const tl = createAnimationTimeline({
