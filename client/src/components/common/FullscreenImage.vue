@@ -41,6 +41,7 @@ const collectionData = ref(null)
 const metadataVisible = ref(false)
 const collectionVisible = ref(false)
 const initialMetadataWidth = ref(0)
+const isSettingInitialWidth = ref(false)
 
 const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
 const fullscreenElement = useTemplateRef("fullscreen-image")
@@ -221,7 +222,9 @@ const setHiddenMetadataStyles = (isMobile) => {
 
   imageMetadataElement.value.style.zIndex = isMobile ? 1 : -1
   if (initialMetadataWidth.value === 0) {
+    isSettingInitialWidth.value = true
     initialMetadataWidth.value = imageMetadataElement.value.offsetWidth
+    nextTick(() => (isSettingInitialWidth.value = false))
   }
 
   if (isMobile) {
@@ -405,8 +408,10 @@ const animateMetadata = (visible, callback) => {
   if (!hasMetadata.value || !imageMetadataElement.value) return
 
   metadataVisible.value = !!visible
-  if (visible) setVisibility(imageMetadataElement.value, true)
-
+  if (visible) {
+    setHiddenMetadataStyles(isMobileLayout.value)
+    setVisibility(imageMetadataElement.value, true)
+  }
   const tl = createAnimationTimeline({
     onComplete: () => {
       if (!visible) setVisibility(imageMetadataElement.value, false)
@@ -414,21 +419,21 @@ const animateMetadata = (visible, callback) => {
     }
   })
 
-  if (visible) setHiddenMetadataStyles(isMobileLayout.value)
+  nextTick(() => {
+    if (isMobileLayout.value) {
+      let metadataOffset = -imageMetadataElement.value.offsetHeight
+      if (collectionVisible.value) metadataOffset -= (collectionHeight.value + SPACING) / 2
+      tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
+    } else {
+      const metadataOffset = initialMetadataWidth.value + SPACING
+      const centerOffset = metadataOffset / -2
 
-  if (isMobileLayout.value) {
-    let metadataOffset = -imageMetadataElement.value.offsetHeight
-    if (collectionVisible.value) metadataOffset -= (collectionHeight.value + SPACING) / 2
-    tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
-  } else {
-    const metadataOffset = initialMetadataWidth.value + SPACING
-    const centerOffset = metadataOffset / -2
-
-    tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
-    tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
-    const { height, width } = calculateOptimalImageSize(visible, collectionVisible.value)
-    tl.to(fullscreenImageElement.value, { height, width }, "<")
-  }
+      tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
+      tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
+      const { height, width } = calculateOptimalImageSize(visible, collectionVisible.value)
+      tl.to(fullscreenImageElement.value, { height, width }, "<")
+    }
+  })
 }
 
 const animateCollection = (visible, callback) => {
@@ -511,7 +516,7 @@ const onWindowHeightUpdate = () => {
 }
 
 const onLayoutChange = (isMobile) => {
-  if (!metadataVisible.value) return
+  if (!metadataVisible.value || isSettingInitialWidth.value) return
   metadataVisible.value = false
   setVisibility(imageMetadataElement.value, false)
   if (collectionVisible.value) setStyles(collectionElement.value, { x: 0 })
