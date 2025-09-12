@@ -375,10 +375,6 @@ const animateMetadata = (visible, callback) => {
     tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
     tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
     tl.to(fullscreenImageElement.value, { maxWidth: maxImageWidth(visible) }, "<")
-
-    if (hasCollection.value && !isMobileLayout.value) {
-      tl.to(collectionElement.value, { x: visible ? `${-centerOffset}px` : 0 }, "<")
-    }
   }
 }
 
@@ -388,8 +384,8 @@ const animateCollection = (visible, callback) => {
   collectionVisible.value = !!visible
   if (visible) setVisibility(collectionElement.value, true)
 
-  const collectionOffset = collectionHeight.value + SPACING
-  const centerOffset = collectionOffset / -2
+  const collectionOffset = -(collectionHeight.value + SPACING)
+  const centerOffset = collectionOffset / 2
 
   const tl = createAnimationTimeline({
     onComplete: () => {
@@ -485,9 +481,9 @@ onMounted(() => gsap.registerPlugin(Flip))
   >
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
       <img :src="`/api/${regularImageVersion.path}`" />
-      <CollectionImages v-if="hasCollection" ref="collection-images" :collection="collectionData" />
       <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
+    <CollectionImages v-if="hasCollection" ref="collection-images" :collection="collectionData" />
     <div class="debug-controls">
       <button @click.stop="toggleMetadata">Toggle Metadata</button>
       <button @click.stop="toggleCollection">Toggle Collection</button>
@@ -520,6 +516,7 @@ $spacing: v-bind(SPACING_PX);
     position: relative;
     display: none;
     opacity: 0;
+    z-index: z(overlay);
     will-change: transform, opacity;
 
     > img {
@@ -547,7 +544,7 @@ $spacing: v-bind(SPACING_PX);
   .collection-images {
     position: absolute;
     width: 100vw;
-    bottom: 0;
+    top: 100%;
     left: 50%;
     transform: translateX(-50%);
     z-index: -1;
