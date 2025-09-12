@@ -68,7 +68,7 @@ let isZoomingOut = true
 let zoomTargetImageId = null
 let zoomReferencePoint = null
 
-const { show: showFullscreenImage } = useFullscreenImage()
+const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
@@ -361,7 +361,10 @@ const updateImagePositions = (forceSetY = false) => {
     if (isVisible) {
       if (forceSetY) {
         card.setY(wrappedPosition)
-      } else if (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) {
+      } else if (
+        (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) &&
+        !(fullscreenImageData.value && card.imageId === fullscreenImageData.value.id)
+      ) {
         const targetOpacity = calculateZoomAnimationValue(card, now, 1, 1, 0)
         const targetScale = calculateZoomAnimationValue(card, now, 1, 1, 0.8)
         card.setOpacity(targetOpacity)
