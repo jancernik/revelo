@@ -68,6 +68,16 @@ onUnmounted(stopAnimation)
         </div>
       </div>
     </div>
+
+    <div class="example-group">
+      <h5>Loading Animation</h5>
+      <div class="example-column">
+        <div class="progress-item">
+          <span class="progress-label">Indeterminate Loading</span>
+          <Progress indeterminate />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

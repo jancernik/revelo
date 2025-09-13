@@ -1,5 +1,6 @@
 <script setup>
 import ImageCard from "#src/components/images/ImageCard.vue"
+import Loading from "#src/components/Loading.vue"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
@@ -40,7 +41,7 @@ const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
 const ZOOM_TOTAL_DURATION = 0.5 // Total duration for all staggered fade animations to complete
 
-const SHOW_DEBUG_INFO = true // Toggle display of debug information
+const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
@@ -452,6 +453,7 @@ const pauseScrolling = () => {
 
 const handleFullscreenReturn = (withTarget) => {
   if (zoomTargetImageId) {
+    updateImagePositions()
     startZoomReturn(withTarget)
   }
 }
@@ -459,6 +461,13 @@ const handleFullscreenReturn = (withTarget) => {
 const checkImageVisibility = (imageId) => {
   const card = imageCardData.find((card) => card.imageId === imageId)
   return card ? card.visible : false
+}
+
+const onFirstLoadComplete = () => {
+  isFirstLoad = false
+  isScrollPaused.value = false
+  updateImagePositions()
+  startZoomReturn(false, ZOOM_TOTAL_DURATION / 2)
 }
 
 const handleImageClick = (event, image, flipId) => {
@@ -625,8 +634,7 @@ watch(columnCount, (newCount, oldCount) => {
 })
 
 watch(initialLoadProgress, (progress) => {
-  if (progress === 1) {
-    if (isFirstLoad) isFirstLoad = false
+  if (progress === 1 && !isFirstLoad && !fullscreenImageData.value) {
     isScrollPaused.value = false
     updateImagePositions()
     startZoomReturn(false, ZOOM_TOTAL_DURATION / 2)
@@ -670,6 +678,11 @@ watch(resizeFactor, () => startRenderLoop())
       />
     </div>
   </div>
+  <Loading
+    v-if="isFirstLoad"
+    :progress="initialLoadProgress * 100"
+    :on-complete="onFirstLoadComplete"
+  />
   <div v-if="SHOW_DEBUG_INFO" class="debug-info">
     <p>Columns: {{ columnCount }}</p>
     <p>Column Width: {{ columnWidth.toFixed(2) }} px</p>
