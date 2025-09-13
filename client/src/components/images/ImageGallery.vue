@@ -38,7 +38,7 @@ const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
-const ZOOM_TOTAL_DURATION = 0.6 // Total duration for all staggered fade animations to complete
+const ZOOM_TOTAL_DURATION = 0.5 // Total duration for all staggered fade animations to complete
 
 const SHOW_DEBUG_INFO = true // Toggle display of debug information
 
@@ -201,9 +201,9 @@ const initializeScrollTargets = () => {
   })
 }
 
-const assignFadeDelays = (imageCardData) => {
+const assignFadeDelays = (imageCardData, duration = ZOOM_TOTAL_DURATION) => {
   const totalImages = imageCardData.length
-  const dynamicStagger = totalImages > 1 ? ZOOM_TOTAL_DURATION / (totalImages - 1) : 0
+  const dynamicStagger = totalImages > 1 ? duration / (totalImages - 1) : 0
   imageCardData.forEach((state, index) => {
     state.animationDelay = index * dynamicStagger * 1000
   })
@@ -243,7 +243,7 @@ const startZoomTransition = (imageId, referenceElement) => {
   startRenderLoop()
 }
 
-const startZoomReturn = (withTarget) => {
+const startZoomReturn = (withTarget, duration) => {
   const visibleNonTargetStates = imageCardData.filter(
     (state) => state.visible && state.imageId !== zoomTargetImageId
   )
@@ -253,7 +253,7 @@ const startZoomReturn = (withTarget) => {
     : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
 
   const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
-  assignFadeDelays(sortedStates)
+  assignFadeDelays(sortedStates, duration)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
   zoomAnimationStartTimestamp = timing.startTime
@@ -629,7 +629,7 @@ watch(initialLoadProgress, (progress) => {
     if (isFirstLoad) isFirstLoad = false
     isScrollPaused.value = false
     updateImagePositions()
-    startZoomReturn(false)
+    startZoomReturn(false, ZOOM_TOTAL_DURATION / 2)
   }
 })
 
