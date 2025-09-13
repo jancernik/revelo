@@ -460,9 +460,23 @@ const handleWheel = (event) => {
   event.preventDefault?.()
 
   if (isScrollPaused.value) return
-  const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
-  scrollPosition -= deltaY / resizeFactor.value
-  velocity.value += clamp((-deltaY / resizeFactor.value) * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
+
+  let deltaY = 0
+  if (event.deltaY !== undefined) {
+    deltaY = event.deltaY
+  } else if (event.wheelDeltaY !== undefined) {
+    deltaY = -event.wheelDeltaY
+  } else if (event.wheelDelta !== undefined) {
+    deltaY = -event.wheelDelta
+  }
+
+  const clampedDelta = clamp(deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
+  scrollPosition -= clampedDelta / resizeFactor.value
+  velocity.value += clamp(
+    (-clampedDelta / resizeFactor.value) * WHEEL_IMPULSE,
+    -MAX_SPEED,
+    MAX_SPEED
+  )
   startRenderLoop()
 }
 
@@ -598,7 +612,7 @@ watch(resizeFactor, () => startRenderLoop())
     class="image-gallery"
     :class="{ dragging: isDragging }"
     tabindex="0"
-    @mousewheel="handleWheel"
+    @wheel="handleWheel"
     @keydown="handleKeyDown"
     @touchstart="handleDragStart"
     @touchmove="handleDragMove"

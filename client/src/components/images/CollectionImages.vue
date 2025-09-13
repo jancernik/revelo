@@ -218,14 +218,29 @@ const initializeElements = async () => {
 const handleWheel = (event) => {
   event.preventDefault()
 
-  const hasHorizontalScroll = Math.abs(event.deltaX) > 0
-  const deltaX = hasHorizontalScroll
-    ? clamp(event.deltaX, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
-    : clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
+  let deltaX = 0
+  if (event.deltaX !== undefined) {
+    deltaX = event.deltaX
+  } else if (event.wheelDeltaX !== undefined) {
+    deltaX = -event.wheelDeltaX
+  }
 
-  const newScrollPosition = scrollPosition - deltaX
+  let deltaY = 0
+  if (event.deltaY !== undefined) {
+    deltaY = event.deltaY
+  } else if (event.wheelDeltaY !== undefined) {
+    deltaY = -event.wheelDeltaY
+  } else if (event.wheelDelta !== undefined) {
+    deltaY = -event.wheelDelta
+  }
+
+  const hasHorizontalScroll = Math.abs(deltaX) > Math.abs(deltaY)
+  const delta = hasHorizontalScroll ? deltaX : deltaY
+  const clampedDelta = clamp(delta, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
+
+  const newScrollPosition = scrollPosition - clampedDelta
   scrollPosition = getBoundedScrollPosition(newScrollPosition)
-  velocity.value += clamp(-deltaX * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
+  velocity.value += clamp(-clampedDelta * WHEEL_IMPULSE, -MAX_SPEED, MAX_SPEED)
   startRenderLoop()
 }
 
@@ -360,7 +375,7 @@ defineExpose({ collectionImages, scrollTo })
     ref="collection-images"
     class="collection-images"
     :class="{ dragging: isDragging }"
-    @mousewheel="handleWheel"
+    @wheel="handleWheel"
     @touchstart="handleDragStart"
     @touchmove="handleDragMove"
     @touchend="handleDragEnd"
