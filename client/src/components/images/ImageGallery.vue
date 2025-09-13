@@ -17,7 +17,7 @@ import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 const SPACING = 15 // Space between images and columns in pixels
 const VIRTUAL_BUFFER = 600 // Buffer area outside viewport for performance optimization
 const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
-const MIN_COLUMNS = 3 // Minimum number of columns to display
+const MIN_COLUMNS = 2 // Minimum number of columns to display
 const MAX_COLUMNS = 9 // Maximum number of columns to display
 
 const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
@@ -85,7 +85,7 @@ const isScrollPaused = ref(false)
 const columnCount = computed(() => {
   const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
   const clamped = clamp(base, MIN_COLUMNS, MAX_COLUMNS)
-  if (clamped % 2 === 0) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
+  if (clamped % 2 === 0 && clamped !== 2) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
   return clamped
 })
 
@@ -166,6 +166,10 @@ const calculateColumnLerpFactors = () => {
   const centerIndex = (columnCount.value - 1) / 2
   columnLerpFactors = createArray(columnCount.value, (columnIndex) => {
     if (centerIndex === 0) return MAX_SCROLL_LERP
+
+    if (columnCount.value === 2) {
+      return columnIndex === 0 ? MAX_SCROLL_LERP * 0.8 : MAX_SCROLL_LERP
+    }
 
     const distanceFromCenter = Math.abs(columnIndex - centerIndex) / centerIndex
     const easedDistance = easeInOutSine(1 - distanceFromCenter)
