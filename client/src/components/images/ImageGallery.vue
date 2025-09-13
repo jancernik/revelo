@@ -134,7 +134,7 @@ watch(columnCount, (newCount, oldCount) => {
 watch(resizeFactor, () => startRenderLoop())
 
 const calculateImageCardsData = () => {
-  columnsHeights = createArray(columnCount.value, SPACING + VIRTUAL_BUFFER)
+  columnsHeights = createArray(columnCount.value, SPACING + VIRTUAL_BUFFER - 1)
   columnImageCounts = createArray(columnCount.value, 0)
   clearArray(imageCardData)
 
@@ -158,7 +158,7 @@ const calculateImageCardsData = () => {
       columnsHeights[columnIndex] += cardHeight + SPACING
       columnImageCounts[columnIndex]++
     })
-    columnsHeights[columnIndex] -= SPACING + VIRTUAL_BUFFER
+    columnsHeights[columnIndex] -= SPACING + VIRTUAL_BUFFER - 1
   })
 }
 
@@ -259,12 +259,16 @@ const startZoomTransition = (imageId, referenceElement) => {
   startRenderLoop()
 }
 
-const startZoomReturn = () => {
+const startZoomReturn = (withTarget) => {
   const visibleNonTargetStates = imageCardData.filter(
     (state) => state.visible && state.imageId !== zoomTargetImageId
   )
 
-  const sortedStates = sortStatesByDistance(visibleNonTargetStates, zoomReferencePoint, false)
+  const referencePoint = withTarget
+    ? zoomReferencePoint
+    : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+
+  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
   assignFadeDelays(sortedStates)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
@@ -452,10 +456,15 @@ const pauseScrolling = () => {
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
 
-const handleFullscreenReturn = () => {
+const handleFullscreenReturn = (withTarget) => {
   if (zoomTargetImageId) {
-    startZoomReturn()
+    startZoomReturn(withTarget)
   }
+}
+
+const checkImageVisibility = (imageId) => {
+  const card = imageCardData.find((card) => card.imageId === imageId)
+  return card ? card.visible : false
 }
 
 const handleImageClick = (event, image, flipId) => {
@@ -464,6 +473,7 @@ const handleImageClick = (event, image, flipId) => {
   startZoomTransition(image.id, event.currentTarget)
   showFullscreenImage(image, {
     flipId,
+    isThumbnailVisible: () => checkImageVisibility(image.id),
     onReturn: handleFullscreenReturn,
     updatePositions: () => updateImagePositions(true)
   })

@@ -30,6 +30,7 @@ const {
   flipId,
   imageData,
   isAnimating,
+  isThumbnailVisible,
   setPopstateCallback,
   triggerHide,
   updateRoute
@@ -88,6 +89,12 @@ const hasMetadata = computed(() =>
   ].some((k) => imageData?.value?.[k])
 )
 const hasCollection = computed(() => collectionData?.value?.images?.length > 0)
+
+const hasThumbnailAvailable = () => {
+  if (!flipId.value) return false
+  if (!thumbnailElement.value) return false
+  return !!isThumbnailVisible.value?.()
+}
 
 const getThumbnailBorderRadius = () => {
   if (!thumbnailElement.value) return 0
@@ -340,7 +347,7 @@ const hideWithFlipAnimation = () => {
     ease: FLIP_EASE
   })
 
-  callOnReturn()
+  callOnReturn(true)
 }
 
 const showWithRegularAnimation = () => {
@@ -384,7 +391,7 @@ const showImage = () => {
   )
   setStyles(fullscreenImageElement.value, { height, width })
 
-  if (flipId.value) {
+  if (hasThumbnailAvailable()) {
     showWithFlipAnimation()
   } else {
     showWithRegularAnimation()
@@ -395,10 +402,11 @@ const hideImage = () => {
   if (isAnimating.value) return
   isAnimating.value = true
 
-  if (flipId.value) {
+  if (hasThumbnailAvailable()) {
     hideWithFlipAnimation()
     history.pushState({}, "", "/")
   } else {
+    callOnReturn(false)
     hideWithRegularAnimation()
     router.push("/")
   }
@@ -477,7 +485,7 @@ const createPopstateCallback = (animationFn) => () => {
 
 const setupRouting = (imageId) => {
   history.pushState({}, "", `/images/${imageId}`)
-  const callback = flipId.value
+  const callback = hasThumbnailAvailable()
     ? createPopstateCallback(hideWithFlipAnimation)
     : createPopstateCallback(hideWithRegularAnimation)
   setPopstateCallback(callback)

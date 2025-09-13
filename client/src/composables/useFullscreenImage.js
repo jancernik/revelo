@@ -9,6 +9,7 @@ const updatePositions = ref(null)
 const updatePositionsCalled = ref(false)
 const onReturn = ref(null)
 const onReturnCalled = ref(false)
+const isThumbnailVisible = ref(null)
 
 let popstateHandler = null
 let popstateCallback = null
@@ -23,6 +24,7 @@ export function useFullscreenImage() {
     updatePositionsCalled.value = false
     onReturn.value = options.onReturn || null
     onReturnCalled.value = false
+    isThumbnailVisible.value = options.isThumbnailVisible || null
 
     imageData.value = image
     triggerHide.value = false
@@ -39,6 +41,7 @@ export function useFullscreenImage() {
     updateRoute.value = true
     onReturn.value = null
     onReturnCalled.value = false
+    isThumbnailVisible.value = null
 
     imageData.value = null
     triggerHide.value = false
@@ -52,10 +55,10 @@ export function useFullscreenImage() {
     }
   }
 
-  const callOnReturn = () => {
+  const callOnReturn = (withTarget) => {
     if (onReturn.value && !onReturnCalled.value) {
       onReturnCalled.value = true
-      onReturn.value()
+      onReturn.value(withTarget)
     }
   }
 
@@ -93,6 +96,7 @@ export function useFullscreenImage() {
     hide,
     imageData,
     isAnimating,
+    isThumbnailVisible,
     onReturn,
     setPopstateCallback,
     show,
