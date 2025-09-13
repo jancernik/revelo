@@ -1,4 +1,5 @@
 <script setup>
+import { getImageVersion } from "#src/utils/helpers"
 import { ref } from "vue"
 
 const props = defineProps({
@@ -16,14 +17,10 @@ const props = defineProps({
   }
 })
 
-const errorLoading = ref(false)
 const emit = defineEmits(["load", "click"])
 
-const getImageVersion = (type) => {
-  return props.image?.versions?.find((v) => v.type === type)
-}
-
-const thumbnail = getImageVersion("thumbnail")
+const errorLoading = ref(false)
+const thumbnail = getImageVersion(props.image, "thumbnail")
 
 const handleClick = (event) => {
   if (props.hasDragged) {
@@ -64,7 +61,6 @@ const handleClick = (event) => {
   cursor: pointer;
   will-change: transform;
   backface-visibility: hidden;
-  transform: translateZ(0);
   position: absolute;
   width: inherit;
   user-select: none;

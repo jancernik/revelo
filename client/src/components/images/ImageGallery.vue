@@ -102,37 +102,6 @@ const updateImageGroups = () => {
   imageGroups.value = groups.map((group) => gsap.utils.shuffle(group))
 }
 
-watch(
-  () => imagesStore.filteredImages,
-  async () => {
-    updateImageGroups()
-    const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
-    loadedImageIds.value = new Set(
-      [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
-    )
-    visibleImageIds.value.clear()
-
-    if (imagesStore.filteredImages.length > 0) {
-      await nextTick()
-      await rebuildLayout()
-      imageGallery.value?.focus()
-    }
-  },
-  { deep: true, immediate: true }
-)
-
-watch(columnCount, (newCount, oldCount) => {
-  if (newCount !== oldCount) {
-    cancelAnimationFrame(columnCountUpdateId)
-    columnCountUpdateId = requestAnimationFrame(async () => {
-      updateImageGroups()
-      await rebuildLayout()
-    })
-  }
-})
-
-watch(resizeFactor, () => startRenderLoop())
-
 const calculateImageCardsData = () => {
   columnsHeights = createArray(columnCount.value, SPACING + VIRTUAL_BUFFER - 1)
   columnImageCounts = createArray(columnCount.value, 0)
@@ -388,6 +357,7 @@ const updateImagePositions = (forceSetY = false) => {
 const updateVelocity = (deltaTime) => {
   if (!isBuildingLayout && !isDragging.value) {
     scrollPosition += velocity.value * deltaTime
+
     const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
     velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
     if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
@@ -421,8 +391,7 @@ const updateZoomTransitionState = (timestamp) => {
 }
 
 const isRenderLoopIdle = () => {
-  if (isBuildingLayout || isDragging.value) return false
-  if (isZoomTransitionActive) return false
+  if (isBuildingLayout || isDragging.value || isZoomTransitionActive) return false
 
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
@@ -489,6 +458,7 @@ const handleImageLoad = (imageId) => {
 
 const handleWheel = (event) => {
   event.preventDefault?.()
+
   if (isScrollPaused.value) return
   const deltaY = clamp(event.deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
   scrollPosition -= deltaY / resizeFactor.value
@@ -498,6 +468,7 @@ const handleWheel = (event) => {
 
 const handleDragStart = (event) => {
   event.preventDefault?.()
+
   isDragging.value = true
   hasDragged.value = false
   dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
@@ -508,13 +479,12 @@ const handleDragStart = (event) => {
 
 const handleDragMove = (event) => {
   event.preventDefault?.()
+
   if (!isDragging.value || isScrollPaused.value) return
   const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartPosition
   const deltaY = (currentY - dragStartPosition) * DRAG_FACTOR
 
-  if (Math.abs(deltaY) > 2) {
-    hasDragged.value = true
-  }
+  if (Math.abs(deltaY) > 2) hasDragged.value = true
 
   dragStartPosition = currentY
   scrollPosition += deltaY / resizeFactor.value
@@ -534,12 +504,10 @@ const handleDragMove = (event) => {
 
 const handleDragEnd = (event) => {
   event.preventDefault?.()
+
   if (isScrollPaused.value) return
   isDragging.value = false
-
-  setTimeout(() => {
-    hasDragged.value = false
-  }, 50)
+  setTimeout(() => (hasDragged.value = false), 50)
 }
 
 const handleKeyDown = (event) => {
@@ -591,6 +559,37 @@ const handleKeyDown = (event) => {
     startRenderLoop()
   }
 }
+
+watch(
+  () => imagesStore.filteredImages,
+  async () => {
+    updateImageGroups()
+    const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
+    loadedImageIds.value = new Set(
+      [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
+    )
+    visibleImageIds.value.clear()
+
+    if (imagesStore.filteredImages.length > 0) {
+      await nextTick()
+      await rebuildLayout()
+      imageGallery.value?.focus()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+watch(columnCount, (newCount, oldCount) => {
+  if (newCount !== oldCount) {
+    cancelAnimationFrame(columnCountUpdateId)
+    columnCountUpdateId = requestAnimationFrame(async () => {
+      updateImageGroups()
+      await rebuildLayout()
+    })
+  }
+})
+
+watch(resizeFactor, () => startRenderLoop())
 </script>
 
 <template>
@@ -648,7 +647,8 @@ const handleKeyDown = (event) => {
   user-select: none;
   outline: none;
 
-  &.dragging {
+  &.dragging,
+  &.dragging .image-card {
     cursor: grabbing;
   }
 }
