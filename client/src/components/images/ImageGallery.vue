@@ -15,7 +15,7 @@ import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
 const SPACING = 15 // Space between images and columns in pixels
-const VIRTUAL_BUFFER = 600 // Buffer area outside viewport for performance optimization
+const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optimization
 const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 2 // Minimum number of columns to display
 const MAX_COLUMNS = 9 // Maximum number of columns to display
@@ -40,7 +40,7 @@ const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
 const ZOOM_TOTAL_DURATION = 0.6 // Total duration for all staggered fade animations to complete
 
-const SHOW_DEBUG_INFO = false // Toggle display of debug information
+const SHOW_DEBUG_INFO = true // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
@@ -62,6 +62,7 @@ let columnWrappedHeights = []
 let lastResizeFactor = 1
 let renderLoopId = 0
 let currentVelocityDecay = VELOCITY_DECAY
+let isFirstLoad = true
 
 let isZoomTransitionActive = false
 let isZoomingOut = true
@@ -76,11 +77,12 @@ const imageGallery = useTemplateRef("image-gallery")
 const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
 const visibleImageIds = ref(new Set())
+const imageCountForInitialLoad = ref(0)
 const isDragging = ref(false)
 const hasDragged = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
-const isScrollPaused = ref(false)
+const isScrollPaused = ref(true)
 
 const columnCount = computed(() => {
   const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
@@ -96,6 +98,14 @@ const columnWidth = computed(() => {
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
 })
+
+const initialLoadProgress = computed(() => {
+  if (imageCountForInitialLoad.value === 0) return 0
+  if (loadedImageIds.value.size >= imageCountForInitialLoad.value) return 1
+  return clamp(loadedImageIds.value.size / imageCountForInitialLoad.value, 0, 1)
+})
+
+const initialLoadComplete = computed(() => initialLoadProgress.value === 1)
 
 const updateImageGroups = () => {
   const groups = groupImages(imagesStore.filteredImages, columnCount.value)
@@ -168,6 +178,7 @@ const rebuildLayout = async () => {
   isBuildingLayout = true
   velocity.value = 0
   scrollTargets = []
+  imageCountForInitialLoad.value = 0
   baselineColumnWidth.value = columnWidth.value
 
   await nextTick()
@@ -310,6 +321,7 @@ const updateImagePositions = (forceSetY = false) => {
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
   const now = performance.now()
+  const saveInitialLoadImageCount = !imageCountForInitialLoad.value
 
   for (let columnIndex = 0; columnIndex < columnCount.value; columnIndex++) {
     columnWrappedHeights[columnIndex] =
@@ -323,18 +335,24 @@ const updateImagePositions = (forceSetY = false) => {
     const cardBottom = wrappedPosition + scaledCardHeight
     const isVisible = cardBottom >= viewTop && wrappedPosition <= viewBottom
 
-    if (isVisible && !visibleImageIds.value.has(card.imageId)) {
+    if (
+      isVisible &&
+      visibleImageIds.value.size < imageCardData.length &&
+      !visibleImageIds.value.has(card.imageId)
+    ) {
       visibleImageIds.value.add(card.imageId)
     }
 
-    if (isVisible && !card.visible) {
-      card.visible = true
-      card.element.style.visibility = "visible"
-      card.element.style.willChange = "transform"
-    } else if (!isVisible && card.visible) {
-      card.visible = false
-      card.element.style.visibility = "hidden"
-      card.element.style.willChange = "auto"
+    if (initialLoadComplete.value) {
+      if (isVisible && !card.visible) {
+        card.visible = true
+        card.element.style.visibility = "visible"
+        card.element.style.willChange = "transform"
+      } else if (!isVisible && card.visible) {
+        card.visible = false
+        card.element.style.visibility = "hidden"
+        card.element.style.willChange = "auto"
+      }
     }
 
     if (isVisible) {
@@ -351,6 +369,9 @@ const updateImagePositions = (forceSetY = false) => {
         card.setY(wrappedPosition)
       }
     }
+  }
+  if (saveInitialLoadImageCount) {
+    imageCountForInitialLoad.value = visibleImageIds.value.size
   }
 }
 
@@ -603,6 +624,15 @@ watch(columnCount, (newCount, oldCount) => {
   }
 })
 
+watch(initialLoadProgress, (progress) => {
+  if (progress === 1) {
+    if (isFirstLoad) isFirstLoad = false
+    isScrollPaused.value = false
+    updateImagePositions()
+    startZoomReturn(false)
+  }
+})
+
 watch(resizeFactor, () => startRenderLoop())
 </script>
 
@@ -648,6 +678,8 @@ watch(resizeFactor, () => startRenderLoop())
     <p>Normalized Scroll Y: {{ scrollPosition.toFixed(2) }} px</p>
     <p>Images Visible: {{ visibleImageIds.size }}</p>
     <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
+    <p>Initial Load Progress: {{ Math.ceil(initialLoadProgress * 100) }}%</p>
+    <p>Is First Load: {{ isFirstLoad }}</p>
   </div>
 </template>
 
