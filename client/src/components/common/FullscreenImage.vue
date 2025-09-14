@@ -28,6 +28,7 @@ const {
   callUpdatePositions,
   completeHide,
   flipId,
+  imageChanged,
   imageData,
   isAnimating,
   isThumbnailVisible,
@@ -43,6 +44,7 @@ const metadataVisible = ref(false)
 const collectionVisible = ref(false)
 const initialMetadataWidth = ref(0)
 const isSettingInitialWidth = ref(false)
+const originalFlipId = ref(null)
 
 const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
 const fullscreenElement = useTemplateRef("fullscreen-image")
@@ -260,6 +262,7 @@ const onHideComplete = () => {
   isAnimating.value = false
   metadataVisible.value = false
   collectionVisible.value = false
+  originalFlipId.value = null
   hideFullscreenElements()
   completeHide()
 }
@@ -491,6 +494,29 @@ const setupRouting = (imageId) => {
   setPopstateCallback(callback)
 }
 
+const switchToImage = async (image) => {
+  if (!image || image.id === imageData.value?.id) return
+
+  if (originalFlipId.value === null && flipId.value !== null) {
+    originalFlipId.value = flipId.value
+  }
+
+  flipId.value = null
+  imageChanged()
+
+  history.replaceState({}, "", `/images/${image.id}`)
+  imageData.value = image
+
+  if (collectionRef.value?.scrollTo) {
+    collectionRef.value.scrollTo(image.id, true)
+  }
+}
+
+const handleCollectionImageClick = (event, image) => {
+  event.stopPropagation()
+  switchToImage(image)
+}
+
 const onImageUpdate = async (image) => {
   if (image) {
     if (updateRoute.value) setupRouting(image.id)
@@ -541,17 +567,18 @@ onMounted(() => gsap.registerPlugin(Flip))
 </script>
 
 <template>
-  <div
-    v-if="imageData"
-    ref="fullscreen-image-container"
-    class="fullscreen-image-container"
-    @click="hideImage"
-  >
+  <div v-if="imageData" ref="fullscreen-image-container" class="fullscreen-image-container">
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
-      <img :src="`/api/${regularImageVersion.path}`" />
+      <img :src="`/api/${regularImageVersion.path}`" @click="hideImage" />
       <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
-    <CollectionImages v-if="hasCollection" ref="collection-images" :collection="collectionData" />
+    <CollectionImages
+      v-if="hasCollection"
+      ref="collection-images"
+      :collection="collectionData"
+      :current-image-id="imageData?.id"
+      @click="handleCollectionImageClick"
+    />
     <div class="debug-controls">
       <button @click.stop="toggleMetadata">Toggle Metadata</button>
       <button @click.stop="toggleCollection">Toggle Collection</button>

@@ -10,6 +10,7 @@ const updatePositionsCalled = ref(false)
 const onReturn = ref(null)
 const onReturnCalled = ref(false)
 const isThumbnailVisible = ref(null)
+const isDifferentImage = ref(false)
 
 let popstateHandler = null
 let popstateCallback = null
@@ -42,6 +43,7 @@ export function useFullscreenImage() {
     onReturn.value = null
     onReturnCalled.value = false
     isThumbnailVisible.value = null
+    isDifferentImage.value = false
 
     imageData.value = null
     triggerHide.value = false
@@ -58,8 +60,12 @@ export function useFullscreenImage() {
   const callOnReturn = (withTarget) => {
     if (onReturn.value && !onReturnCalled.value) {
       onReturnCalled.value = true
-      onReturn.value(withTarget)
+      onReturn.value(withTarget, isDifferentImage.value)
     }
+  }
+
+  const imageChanged = () => {
+    isDifferentImage.value = true
   }
 
   const setPopstateCallback = (callback) => {
@@ -94,6 +100,7 @@ export function useFullscreenImage() {
     completeHide,
     flipId,
     hide,
+    imageChanged,
     imageData,
     isAnimating,
     isThumbnailVisible,

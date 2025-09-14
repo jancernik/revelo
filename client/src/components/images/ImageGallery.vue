@@ -64,6 +64,7 @@ let lastResizeFactor = 1
 let renderLoopId = 0
 let currentVelocityDecay = VELOCITY_DECAY
 let isFirstLoad = true
+let forceZoomTargetVisibility = false
 
 let isZoomTransitionActive = false
 let isZoomingOut = true
@@ -244,9 +245,13 @@ const startZoomTransition = (imageId, referenceElement) => {
   startRenderLoop()
 }
 
-const startZoomReturn = (withTarget, duration) => {
+const startZoomReturn = (options = {}) => {
+  const { duration = ZOOM_TOTAL_DURATION, showAllImages = false, withTarget = false } = options
+
   const visibleNonTargetStates = imageCardData.filter(
-    (state) => state.visible && state.imageId !== zoomTargetImageId
+    (state) =>
+      (state.visible || (showAllImages && state.imageId === zoomTargetImageId)) &&
+      (showAllImages || state.imageId !== zoomTargetImageId)
   )
 
   const referencePoint = withTarget
@@ -268,7 +273,11 @@ const startZoomReturn = (withTarget, duration) => {
 
 const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, hiddenValue) => {
   if (!isZoomTransitionActive) {
-    if (zoomTargetImageId && imageCard.imageId !== zoomTargetImageId) {
+    if (
+      zoomTargetImageId &&
+      imageCard.imageId !== zoomTargetImageId &&
+      !forceZoomTargetVisibility
+    ) {
       return hiddenValue
     }
     return normalValue
@@ -314,7 +323,8 @@ const calculateWrappedPosition = (card) => {
   return gsap.utils.wrap(minY, maxY, cardPosition)
 }
 
-const updateImagePositions = (forceSetY = false) => {
+const updateImagePositions = (options = {}) => {
+  const { forcePosition = false } = options
   if (isBuildingLayout) return
 
   updateScrollTargets()
@@ -345,7 +355,7 @@ const updateImagePositions = (forceSetY = false) => {
     }
 
     if (initialLoadComplete.value) {
-      if (isVisible && !card.visible) {
+      if (isVisible && (!card.visible || forceZoomTargetVisibility)) {
         card.visible = true
         card.element.style.visibility = "visible"
         card.element.style.willChange = "transform"
@@ -357,11 +367,12 @@ const updateImagePositions = (forceSetY = false) => {
     }
 
     if (isVisible) {
-      if (forceSetY) {
+      if (forcePosition) {
         card.setY(wrappedPosition)
       } else if (
-        (!isZoomTransitionActive || card.imageId !== zoomTargetImageId) &&
-        !(fullscreenImageData.value && card.imageId === fullscreenImageData.value.id)
+        ((!isZoomTransitionActive || card.imageId !== zoomTargetImageId) &&
+          !(fullscreenImageData.value && card.imageId === fullscreenImageData.value.id)) ||
+        forceZoomTargetVisibility
       ) {
         const targetOpacity = calculateZoomAnimationValue(card, now, 1, 1, 0)
         const targetScale = calculateZoomAnimationValue(card, now, 1, 1, 0.8)
@@ -408,6 +419,7 @@ const updateZoomTransitionState = (timestamp) => {
     } else {
       resumeScrolling()
       zoomTargetImageId = null
+      forceZoomTargetVisibility = false
     }
   }
 }
@@ -451,10 +463,11 @@ const pauseScrolling = () => {
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
 
-const handleFullscreenReturn = (withTarget) => {
+const handleFullscreenReturn = (withTarget, isDifferentImage) => {
+  forceZoomTargetVisibility = !!isDifferentImage
   if (zoomTargetImageId) {
     updateImagePositions()
-    startZoomReturn(withTarget)
+    startZoomReturn({ showAllImages: isDifferentImage, withTarget })
   }
 }
 
@@ -467,7 +480,7 @@ const onFirstLoadComplete = () => {
   isFirstLoad = false
   isScrollPaused.value = false
   updateImagePositions()
-  startZoomReturn(false, ZOOM_TOTAL_DURATION / 2)
+  startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
 }
 
 const handleImageClick = (event, image, flipId) => {
@@ -478,7 +491,7 @@ const handleImageClick = (event, image, flipId) => {
     flipId,
     isThumbnailVisible: () => checkImageVisibility(image.id),
     onReturn: handleFullscreenReturn,
-    updatePositions: () => updateImagePositions(true)
+    updatePositions: () => updateImagePositions({ forcePosition: true })
   })
 }
 
@@ -637,7 +650,7 @@ watch(initialLoadProgress, (progress) => {
   if (progress === 1 && !isFirstLoad && !fullscreenImageData.value) {
     isScrollPaused.value = false
     updateImagePositions()
-    startZoomReturn(false, ZOOM_TOTAL_DURATION / 2)
+    startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
   }
 })
 
