@@ -15,11 +15,12 @@ import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/
 import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
-const SPACING = 15 // Space between images and columns in pixels
+const SPACING = 20 // Space between images and columns in pixels
 const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optimization
-const MAX_COLUMN_WIDTH = 200 // Maximum width of individual columns in pixels
+const MAX_COLUMN_WIDTH = 300 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 2 // Minimum number of columns to display
-const MAX_COLUMNS = 9 // Maximum number of columns to display
+const MAX_COLUMNS = 5 // Maximum number of columns to display
+const MAX_WIDTH = 1600
 
 const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
@@ -85,17 +86,24 @@ const hasDragged = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(true)
+const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 
 const columnCount = computed(() => {
-  const base = Math.ceil((windowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
+  const base = Math.ceil((maxWindowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
   const clamped = clamp(base, MIN_COLUMNS, MAX_COLUMNS)
   if (clamped % 2 === 0 && clamped !== 2) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
   return clamped
 })
 
 const columnWidth = computed(() => {
-  return (windowWidth.value - SPACING * (columnCount.value + 1)) / columnCount.value
+  return (maxWindowWidth.value - SPACING * (columnCount.value + 1)) / columnCount.value
 })
+
+const centerOffset = computed(() => {
+  return Math.max(0, (windowWidth.value - maxWindowWidth.value) / 2)
+})
+
+const firstColumnMargin = computed(() => centerOffset.value + SPACING)
 
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
@@ -677,7 +685,10 @@ watch(resizeFactor, () => startRenderLoop())
       v-for="(group, index) in imageGroups"
       :key="index"
       class="gallery-column"
-      :style="{ width: columnWidth + 'px', marginLeft: SPACING + 'px' }"
+      :style="{
+        width: columnWidth + 'px',
+        marginLeft: `${index === 0 ? firstColumnMargin : SPACING}px`
+      }"
     >
       <ImageCard
         v-for="image in group"
