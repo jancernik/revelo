@@ -180,6 +180,16 @@ onUnmounted(resetHeader)
 
 <template>
   <div class="dashboard">
+    <div class="dashboard-section">
+      <div class="images">
+        <p>Images</p>
+        <h4>{{ images.length }}</h4>
+      </div>
+      <div class="collections">
+        <p>Collections</p>
+        <h4>{{ collections.length }}</h4>
+      </div>
+    </div>
     <ImageGrid
       v-if="images.length"
       :images="images"
@@ -209,6 +219,28 @@ onUnmounted(resetHeader)
 
 <style lang="scss">
 .dashboard {
+  .dashboard-section {
+    display: flex;
+    gap: var(--spacing-4);
+    > div {
+      p {
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        @include text("sm");
+      }
+
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      background-color: var(--secondary);
+      gap: var(--spacing-1);
+      padding: var(--spacing-4);
+      width: 100%;
+    }
+  }
+
   @include flex(column, stretch, flex-start);
   gap: var(--spacing-10);
 
