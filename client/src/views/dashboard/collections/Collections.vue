@@ -125,7 +125,7 @@ onUnmounted(resetHeader)
       :short-grid="false"
       :selected-collections-ids="selectedCollectionsIds"
       :fast-select="false"
-      :show-collection-actions="false"
+      :show-actions="false"
       :allow-select="true"
       @select="handleSelectCollection"
       @edit="handleEditCollection"

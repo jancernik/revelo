@@ -128,7 +128,7 @@ onUnmounted(resetHeader)
       :short-grid="false"
       :selected-images-ids="selectedImagesIds"
       :fast-select="false"
-      :show-image-actions="false"
+      :show-actions="false"
       :allow-select="true"
       @select="handleSelectImage"
       @edit="handleEditImage"

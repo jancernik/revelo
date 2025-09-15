@@ -5,6 +5,10 @@ import { computed } from "vue"
 import { useRouter } from "vue-router"
 
 const props = defineProps({
+  allowRemove: {
+    default: true,
+    type: Boolean
+  },
   allowSelect: {
     default: true,
     type: Boolean
@@ -32,7 +36,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const emit = defineEmits(["select", "edit", "delete"])
+const emit = defineEmits(["select", "edit", "delete", "remove"])
 
 const displayedImages = computed(() => {
   return props.shortGrid ? props.images.slice(0, 5) : props.images
@@ -65,6 +69,14 @@ const openImage = (image) => {
 
       <button v-if="allowSelect" class="select-button" @click="emit('select', image, $event)">
         <Icon name="Check" size="12" :stroke-width="4" />
+      </button>
+
+      <button
+        v-if="allowRemove && !allowSelect && !fastSelect"
+        class="remove-button"
+        @click="emit('remove', image, $event)"
+      >
+        <Icon name="X" size="12" :stroke-width="4" />
       </button>
       <div v-if="showActions && !fastSelect && !isSelecting" class="image-actions">
         <button class="action-button" @click="emit('edit', image)"><Icon name="Pencil" /></button>
@@ -117,7 +129,8 @@ const openImage = (image) => {
       .image-actions {
         opacity: 1;
       }
-      .select-button {
+      .select-button,
+      .remove-button {
         opacity: 0.5;
       }
       &:has(.image-actions) .image-container::after {
@@ -168,10 +181,18 @@ const openImage = (image) => {
   }
 
   .select-button {
+    left: var(--spacing-3);
+  }
+
+  .remove-button {
+    right: var(--spacing-3);
+  }
+
+  .select-button,
+  .remove-button {
     @include flex-center;
     position: absolute;
     top: var(--spacing-3);
-    left: var(--spacing-3);
     width: calc(1.5rem - 2px);
     height: calc(1.5rem - 2px);
     background-color: var(--background);
