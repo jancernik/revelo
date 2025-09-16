@@ -133,7 +133,6 @@ onUnmounted(resetHeader)
     />
     <div v-else class="dashboard-empty">
       <h5>No collections yet</h5>
-      <p>Create your first collection to organize your images</p>
     </div>
   </div>
 </template>

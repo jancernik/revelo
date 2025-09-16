@@ -17,7 +17,6 @@ const { resetHeader, setHeader, setSelection } = useDashboardLayout()
 const collectionsStore = useCollectionsStore()
 
 const selectedImagesIds = ref([])
-
 const collection = ref(null)
 const loading = ref(true)
 
@@ -100,24 +99,22 @@ onMounted(async () => {
   setupLayout()
 })
 
-onUnmounted(() => resetHeader())
+onUnmounted(resetHeader)
 </script>
 
 <template>
-  <div v-if="collection" class="collection-content">
-    <div v-if="collection.images" class="images-section">
-      <ImageGrid
-        :images="collection.images"
-        :allow-select="true"
-        :show-actions="false"
-        :selected-images-ids="selectedImagesIds"
-        @select="handleSelectImage"
-      />
-    </div>
+  <div v-if="collection" class="collection-view">
+    <ImageGrid
+      v-if="collection.images?.length"
+      :images="collection.images"
+      :allow-select="true"
+      :show-actions="false"
+      :selected-images-ids="selectedImagesIds"
+      @select="handleSelectImage"
+    />
 
     <div v-else class="empty-state">
-      <h5>No Images</h5>
-      <p>This collection doesn't have any images yet.</p>
+      <h5>No Images in this collection yet</h5>
     </div>
   </div>
 </template>

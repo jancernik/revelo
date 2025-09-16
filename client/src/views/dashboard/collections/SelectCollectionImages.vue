@@ -4,6 +4,7 @@ import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { useImagesStore } from "#src/stores/images"
+import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
@@ -19,6 +20,7 @@ const router = useRouter()
 const { reset, setFooter, setHeader } = useDashboardLayout()
 const collectionsStore = useCollectionsStore()
 const imagesStore = useImagesStore()
+const { images } = storeToRefs(imagesStore)
 
 const collection = ref(null)
 const loading = ref(true)
@@ -27,17 +29,14 @@ const selectedImagesIds = ref([])
 const lastSelectedId = ref(null)
 
 const availableImages = computed(() => {
-  const allImages = imagesStore.images || []
-  return allImages.filter((i) => !i.collectionId || i.collectionId === props.id)
+  return images.value?.filter((i) => !i.collectionId || i.collectionId === props.id) || []
 })
 
 const loadCollection = async () => {
   try {
     loading.value = true
     collection.value = await collectionsStore.fetch(props.id)
-    selectedImagesIds.value = collection.value.images
-      .sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
-      .map((img) => img.id)
+    selectedImagesIds.value = await collectionsStore.getImageIdsInCollection(collection.value)
   } finally {
     loading.value = false
   }
@@ -129,29 +128,24 @@ onMounted(async () => {
   setupLayout()
 })
 
-onUnmounted(() => {
-  reset()
-})
+onUnmounted(reset)
 </script>
 
 <template>
   <div v-if="collection" class="select-collection-images">
-    <div class="images-section">
-      <div v-if="availableImages">
-        <ImageGrid
-          :images="availableImages"
-          :selected-images-ids="selectedImagesIds"
-          :allow-select="true"
-          :fast-select="true"
-          :show-actions="false"
-          @select="handleSelectImage"
-        />
-      </div>
+    <div v-if="availableImages">
+      <ImageGrid
+        :images="availableImages"
+        :selected-images-ids="selectedImagesIds"
+        :allow-select="true"
+        :fast-select="true"
+        :show-actions="false"
+        @select="handleSelectImage"
+      />
+    </div>
 
-      <div v-else class="empty-state">
-        <h5>No Images Available</h5>
-        <p>Upload some images first to add them to collections.</p>
-      </div>
+    <div v-else class="empty-state">
+      <h5>No images available</h5>
     </div>
   </div>
 </template>

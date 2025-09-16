@@ -82,7 +82,8 @@ const router = createRouter({
             {
               component: EditImages,
               name: "image-edit",
-              path: "edit"
+              path: ":id/edit",
+              props: true
             },
             {
               component: Image,

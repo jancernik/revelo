@@ -136,7 +136,6 @@ onUnmounted(resetHeader)
     />
     <div v-else class="dashboard-empty">
       <h5>No images yet</h5>
-      <p>Start by uploading your first image</p>
     </div>
   </div>
 </template>
