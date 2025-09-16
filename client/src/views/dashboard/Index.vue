@@ -151,6 +151,7 @@ watch(
   },
   { deep: true }
 )
+
 watch(
   selectedCollectionsIds,
   (ids) => {
@@ -180,7 +181,7 @@ onUnmounted(resetHeader)
 
 <template>
   <div class="dashboard">
-    <div class="dashboard-section">
+    <div class="dashboard-section stats">
       <div class="images">
         <p>Images</p>
         <h4>{{ images.length }}</h4>
@@ -190,30 +191,36 @@ onUnmounted(resetHeader)
         <h4>{{ collections.length }}</h4>
       </div>
     </div>
-    <ImageGrid
-      v-if="images.length"
-      :images="images"
-      :short-grid="true"
-      :selected-images-ids="selectedImagesIds"
-      :fast-select="false"
-      :show-actions="false"
-      :allow-select="selectedCollectionsIds.length === 0"
-      @select="handleSelectImage"
-      @edit="handleEditImage"
-      @delete="handleDeleteImage"
-    />
-    <CollectionGrid
-      v-if="collections.length"
-      :collections="collections"
-      :short-grid="true"
-      :selected-collections-ids="selectedCollectionsIds"
-      :fast-select="false"
-      :show-actions="false"
-      :allow-select="selectedImagesIds.length === 0"
-      @select="handleSelectCollection"
-      @edit="handleEditCollection"
-      @delete="handleDeleteCollection"
-    />
+    <div class="dashboard-section">
+      <h3>Images</h3>
+      <ImageGrid
+        v-if="images.length"
+        :images="images"
+        :short-grid="true"
+        :selected-images-ids="selectedImagesIds"
+        :fast-select="false"
+        :show-actions="false"
+        :allow-select="selectedCollectionsIds.length === 0"
+        @select="handleSelectImage"
+        @edit="handleEditImage"
+        @delete="handleDeleteImage"
+      />
+    </div>
+    <div class="dashboard-section">
+      <h3>Collections</h3>
+      <CollectionGrid
+        v-if="collections.length"
+        :collections="collections"
+        :short-grid="true"
+        :selected-collections-ids="selectedCollectionsIds"
+        :fast-select="false"
+        :show-actions="false"
+        :allow-select="selectedImagesIds.length === 0"
+        @select="handleSelectCollection"
+        @edit="handleEditCollection"
+        @delete="handleDeleteCollection"
+      />
+    </div>
   </div>
 </template>
 
@@ -221,23 +228,28 @@ onUnmounted(resetHeader)
 .dashboard {
   .dashboard-section {
     display: flex;
+    flex-direction: column;
     gap: var(--spacing-4);
-    > div {
-      p {
-        color: var(--muted-foreground);
-        text-transform: uppercase;
-        @include text("sm");
-      }
 
-      display: flex;
-      flex-direction: column;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      color: var(--foreground);
-      background-color: var(--secondary);
-      gap: var(--spacing-1);
-      padding: var(--spacing-4);
-      width: 100%;
+    &.stats {
+      flex-direction: row;
+      > div {
+        p {
+          color: var(--muted-foreground);
+          text-transform: uppercase;
+          @include text("sm");
+        }
+
+        display: flex;
+        flex-direction: column;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        background-color: var(--secondary);
+        gap: var(--spacing-1);
+        padding: var(--spacing-4);
+        width: 100%;
+      }
     }
   }
 

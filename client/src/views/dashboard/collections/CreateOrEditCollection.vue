@@ -114,7 +114,7 @@ onUnmounted(() => reset())
   <div class="collection-form">
     <form v-if="!loading" class="form" @submit.prevent="saveCollection">
       <Input v-model="title" label="Title" :disabled="saving" required />
-      <Input v-model="description" label="Description" :disabled="saving" multiline="textarea" />
+      <Input v-model="description" label="Description" :disabled="saving" :multiline="true" />
     </form>
   </div>
 </template>

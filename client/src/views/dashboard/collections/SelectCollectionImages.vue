@@ -133,7 +133,7 @@ onUnmounted(reset)
 
 <template>
   <div v-if="collection" class="select-collection-images">
-    <div v-if="availableImages">
+    <div v-if="availableImages.length">
       <ImageGrid
         :images="availableImages"
         :selected-images-ids="selectedImagesIds"

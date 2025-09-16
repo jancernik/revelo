@@ -5,6 +5,10 @@ import { computed } from "vue"
 import { useRouter } from "vue-router"
 
 const props = defineProps({
+  allowClick: {
+    default: true,
+    type: Boolean
+  },
   allowRemove: {
     default: true,
     type: Boolean
@@ -32,6 +36,18 @@ const props = defineProps({
   showActions: {
     default: false,
     type: Boolean
+  },
+  showFileNames: {
+    default: false,
+    type: Boolean
+  },
+  showFileSizes: {
+    default: false,
+    type: Boolean
+  },
+  srcAttribute: {
+    default: null,
+    type: String
   }
 })
 
@@ -55,16 +71,21 @@ const openImage = (image) => {
 <template>
   <div class="dashboard-image-grid" :class="{ 'is-selecting': isSelecting }">
     <div
-      v-for="(image, imageIndex) in displayedImages"
-      :key="imageIndex"
+      v-for="image in displayedImages"
+      :key="image.id"
       class="image-item"
       :class="{ selected: allowSelect && isSelected(image) }"
     >
       <div
         class="image-container"
-        @click="isSelecting ? emit('select', image, $event) : openImage(image)"
+        :class="{ clickable: allowClick }"
+        @click="allowClick && (isSelecting ? emit('select', image, $event) : openImage(image))"
       >
-        <img :src="getThumbnailPath(image)" :alt="image.caption" loading="lazy" />
+        <img
+          :src="srcAttribute ? image[srcAttribute] : getThumbnailPath(image)"
+          :alt="image.caption"
+          loading="lazy"
+        />
       </div>
 
       <button v-if="allowSelect" class="select-button" @click="emit('select', image, $event)">
@@ -81,6 +102,12 @@ const openImage = (image) => {
       <div v-if="showActions && !fastSelect && !isSelecting" class="image-actions">
         <button class="action-button" @click="emit('edit', image)"><Icon name="Pencil" /></button>
         <button class="action-button" @click="emit('delete', image)"><Icon name="Trash" /></button>
+      </div>
+      <div v-if="showFileNames || showFileSizes" class="image-info">
+        <div v-if="showFileNames" class="file-name">{{ image.name || image.originalFilename }}</div>
+        <div v-if="showFileSizes && image.size" class="file-size">
+          {{ (image.size / (1024 * 1024)).toFixed(2) }} MB
+        </div>
       </div>
     </div>
     <RouterLink v-if="shortGrid" to="/dashboard/images">View all</RouterLink>
@@ -123,7 +150,6 @@ const openImage = (image) => {
     border-radius: var(--radius-lg);
     overflow: hidden;
     background-color: var(--muted);
-    cursor: pointer;
 
     &:hover {
       .image-actions {
@@ -177,6 +203,10 @@ const openImage = (image) => {
       object-fit: cover;
       pointer-events: none;
       user-select: none;
+    }
+
+    &.clickable .image-item {
+      cursor: pointer;
     }
   }
 
@@ -244,6 +274,31 @@ const openImage = (image) => {
     }
   }
 
+  .image-info {
+    @include flex(column, flex-start, center);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3);
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+
+    .file-name {
+      font-weight: var(--font-medium);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      @include text("sm");
+    }
+
+    .file-size {
+      @include text("xs");
+      color: var(--muted-foreground);
+    }
+  }
+
   > a {
     @include flex-center;
     @include text("sm");
@@ -252,6 +307,7 @@ const openImage = (image) => {
     color: var(--foreground);
     text-decoration: none;
     font-weight: var(--font-medium);
+    cursor: pointer;
 
     &:hover {
       background-color: var(--secondary-hover);
