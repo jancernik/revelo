@@ -114,7 +114,7 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function addImages(id, imageIds) {
     try {
-      const existingImageIds = imageIdsInCollection(id)
+      const existingImageIds = await getImageIdsInCollection(id)
       const newImageIds = [...new Set([...existingImageIds, ...imageIds])]
 
       const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
@@ -123,8 +123,11 @@ export const useCollectionsStore = defineStore("collections", () => {
       const index = collections.value.findIndex((c) => c.id === id)
       if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      imageIds.forEach((id) => {
-        imagesStore.updateLocal(id, { collectionId: id, collectionOrder: newImageIds.indexOf(id) })
+      imageIds.forEach((imageId) => {
+        imagesStore.updateLocal(imageId, {
+          collectionId: id,
+          collectionOrder: newImageIds.indexOf(imageId)
+        })
       })
 
       return collection
@@ -140,7 +143,7 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function removeImages(id, imageIds) {
     try {
-      const existingImageIds = imageIdsInCollection(id)
+      const existingImageIds = await getImageIdsInCollection(id)
       const newImageIds = existingImageIds.filter((imgId) => !imageIds.includes(imgId))
 
       const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
@@ -169,7 +172,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       const response = await api.put(`/collections/${id}/images`, { imageIds })
       const collection = response.data?.data?.collection
 
-      const oldImageIds = imageIdsInCollection(id)
+      const oldImageIds = await getImageIdsInCollection(id)
       const removedImageIds = oldImageIds.filter((imageId) => !imageIds.includes(imageId))
       const addedImageIds = imageIds.filter((imageId) => !oldImageIds.includes(imageId))
 
@@ -180,8 +183,11 @@ export const useCollectionsStore = defineStore("collections", () => {
         imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
       })
 
-      addedImageIds.forEach((id) => {
-        imagesStore.updateLocal(id, { collectionId: id, collectionOrder: imageIds.indexOf(id) })
+      addedImageIds.forEach((imageId) => {
+        imagesStore.updateLocal(imageId, {
+          collectionId: id,
+          collectionOrder: imageIds.indexOf(imageId)
+        })
       })
 
       return collection
@@ -195,11 +201,12 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  function imageIdsInCollection(id) {
+  async function getImageIdsInCollection(collectionOrId) {
+    const collection =
+      typeof collectionOrId === "object" ? collectionOrId : await fetch(collectionOrId)
     return (
-      collections.value
-        .find((c) => c.id === id)
-        ?.images?.sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
+      collection?.images
+        ?.sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
         .map((image) => image.id) || []
     )
   }
@@ -243,7 +250,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     error,
     fetch,
     fetchAll,
-    imageIdsInCollection,
+    getImageIdsInCollection,
     initialize,
     initialized,
     loading,
