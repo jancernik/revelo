@@ -93,7 +93,7 @@ class Collection extends BaseModel {
   }
 
   async setCollectionImages(collectionId, imageIds) {
-    return await this.db.transaction(async (tx) => {
+    await this.db.transaction(async (tx) => {
       const currentImages = await tx
         .select({ id: ImagesTable.id })
         .from(ImagesTable)
@@ -130,8 +130,8 @@ class Collection extends BaseModel {
             .where(eq(ImagesTable.id, imageIds[index]))
         }
       }
-      return await this.findByIdWithImages(collectionId)
     })
+    return await this.findByIdWithImages(collectionId)
   }
 }
 
