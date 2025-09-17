@@ -42,6 +42,7 @@ const createDefaultMetadata = () => ({
 
 const metadata = ref({})
 const originalMetadata = ref({})
+const shutterSpeed = ref("")
 let suppressEmit = false
 
 const initializeMetadata = async () => {
@@ -55,6 +56,7 @@ const initializeMetadata = async () => {
 
   metadata.value = safeMetadata
   originalMetadata.value = { ...safeMetadata }
+  updateShutterSpeed()
   await nextTick()
   suppressEmit = false
 }
@@ -65,6 +67,46 @@ const hasChanges = computed(() => {
 
 const handleReset = () => {
   metadata.value = { ...originalMetadata.value }
+  updateShutterSpeed()
+}
+
+const decimalToShutterSpeed = (decimalValue) => {
+  if (!decimalValue || decimalValue === "") return ""
+  const shutterNum = Number(decimalValue)
+  if (shutterNum >= 1) return `${shutterNum}`
+  const denominator = Math.round(1 / shutterNum)
+  return `1/${denominator}`
+}
+
+const shutterSpeedToDecimal = (displayValue) => {
+  if (!displayValue || displayValue === "") return ""
+  const trimmed = displayValue.trim()
+
+  if (trimmed.includes("/")) {
+    const [numerator, denominator] = trimmed.split("/")
+    const num = Number(numerator)
+    const den = Number(denominator)
+    if (!isNaN(num) && !isNaN(den) && den !== 0) {
+      return num / den
+    }
+  }
+
+  const num = Number(trimmed)
+  if (!isNaN(num)) {
+    return num
+  }
+
+  return ""
+}
+
+const updateShutterSpeed = () => {
+  shutterSpeed.value = decimalToShutterSpeed(metadata.value.shutterSpeed)
+}
+
+const handleShutterSpeedChange = () => {
+  const decimalValue = shutterSpeedToDecimal(shutterSpeed.value)
+  metadata.value.shutterSpeed = decimalValue
+  shutterSpeed.value = decimalToShutterSpeed(decimalValue)
 }
 
 watch(() => props.initialMetadata, initializeMetadata, { deep: true, immediate: true })
@@ -129,12 +171,14 @@ watch(
         <div class="form-row">
           <div class="form-group">
             <Input
-              v-model="metadata.shutterSpeed"
+              v-model="shutterSpeed"
               type="text"
               label="Shutter Speed"
               unit="s"
               unit-position="right"
               placeholder="1/250"
+              @blur="handleShutterSpeedChange"
+              @keydown.enter="handleShutterSpeedChange"
             />
           </div>
           <div class="form-group">
@@ -243,6 +287,9 @@ watch(
 
         .form-group {
           flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
         }
       }
     }
