@@ -1,12 +1,15 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
-import SimpleImageGrid from "#src/components/dashboard/images/SimpleImageGrid.vue"
+import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useSettings } from "#src/composables/useSettings"
+import { useToast } from "#src/composables/useToast"
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
 
+const { show: showToast } = useToast()
 const { settings } = useSettings()
 const maxFiles = settings.value.maxUploadFiles || 10
+const maxUploadSize = settings.value.maxUploadSize || 50
 
 const dragActive = ref(false)
 const dropZoneHidden = ref(false)
@@ -31,12 +34,20 @@ const handleFileInput = (event) => {
 const handleFileSelection = (files) => {
   for (const file of files) {
     if (!file.type.match(/image\/(jpeg|jpg|png)/i)) {
-      alert("Please select valid image files (JPG or PNG)")
-      return
+      files = files.filter((f) => f !== file)
+      showToast({
+        description: `The file "${file.name}" is not a valid image. Only JPG and PNG files are allowed.`,
+        title: "Error Adding File",
+        type: "error"
+      })
     }
-    if (file.size > 50 * 1024 * 1024) {
-      alert("Each image size must be less than 50MB")
-      return
+    if (file.size > maxUploadSize * 1024 * 1024) {
+      files = files.filter((f) => f !== file)
+      showToast({
+        description: `The file "${file.name}" exceeds the maximum upload size of ${maxUploadSize}MB.`,
+        title: "Error Adding File",
+        type: "error"
+      })
     }
   }
 
@@ -47,13 +58,14 @@ const handleFileSelection = (files) => {
   })
 }
 
-const handleRemoveImage = (index) => {
+const handleRemoveImage = (image) => {
+  const index = selectedFiles.value.findIndex((file) => file.name === image.name)
   URL.revokeObjectURL(previewUrls.value[index])
   selectedFiles.value.splice(index, 1)
   previewUrls.value.splice(index, 1)
 }
 
-const uploadImages = () => {
+const handleUploadImages = () => {
   if (selectedFiles.value.length > 0) {
     emit("upload", {
       images: selectedFiles.value,
@@ -62,7 +74,11 @@ const uploadImages = () => {
   }
 }
 
-const resetSelection = () => {
+const handleSelectImages = () => {
+  fileInput.value.click()
+}
+
+const handleResetSelection = () => {
   previewUrls.value.forEach((url) => {
     URL.revokeObjectURL(url)
   })
@@ -123,6 +139,15 @@ onBeforeUnmount(() => {
     container.value.removeEventListener("drop", handleDrop)
   }
 })
+
+defineExpose({
+  canAddMoreFiles,
+  handleResetSelection,
+  handleSelectImages,
+  handleUploadImages,
+  hasExceededFileLimit,
+  hasSelectedImages
+})
 </script>
 
 <template>
@@ -146,53 +171,40 @@ onBeforeUnmount(() => {
       <Icon name="Image" size="32" />
       <div class="text">
         <h3 class="title">Select images or drag and drop them here</h3>
-        <h4 class="subtitle">JPEG and PNG, up to 50MB</h4>
+        <h4 class="subtitle">JPEG and PNG, up to {{ maxUploadSize }}MB</h4>
       </div>
-      <Button icon="FolderOpen" @click="fileInput.click()"> Select Images </Button>
+      <Button icon="FolderOpen" @click="handleSelectImages"> Select Images </Button>
     </div>
 
     <div v-else class="section">
-      <div class="section-header">
-        <div class="text">
-          <h5 class="title">Upload images</h5>
-          <p class="subtitle">JPEG and PNG, up to 50MB</p>
-        </div>
-        <Button icon="FolderOpen" @click="fileInput.click()"> Select Images </Button>
-      </div>
-
       <div class="gallery-title">
-        <h4>Selected images</h4>
-        <span class="file-counter" :class="{ exceeded: hasExceededFileLimit }">
-          {{ selectedFiles.length }}/{{ maxFiles }}</span
-        >
+        <div>
+          <h4>Selected images</h4>
+          <span class="file-counter" :class="{ exceeded: hasExceededFileLimit }">
+            {{ selectedFiles.length }}/{{ maxFiles }}
+          </span>
+        </div>
       </div>
 
       <div class="gallery">
-        <SimpleImageGrid
+        <ImageGrid
           :images="
             selectedFiles.map((image, index) => ({
-              src: previewUrls[index],
+              path: previewUrls[index],
               name: image.name,
-              size: image.size
+              size: image.size,
+              id: `temp-${image.name}-${index}`
             }))
           "
+          :src-attribute="'path'"
           :show-file-names="true"
           :show-file-sizes="true"
-          :allow-delete="true"
+          :allow-select="false"
+          :allow-click="false"
+          :allow-remove="true"
+          :show-actions="false"
           @remove="handleRemoveImage"
         />
-      </div>
-
-      <div class="actions">
-        <Button class="cancel" color="secondary" @click="resetSelection"> Cancel </Button>
-        <Button
-          class="continue"
-          :disabled="hasExceededFileLimit"
-          color="primary"
-          @click="uploadImages"
-        >
-          Continue
-        </Button>
       </div>
     </div>
   </div>
@@ -261,25 +273,24 @@ onBeforeUnmount(() => {
       color: var(--muted-foreground);
     }
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--spacing-6);
-      padding-bottom: var(--spacing-6);
-      border-bottom: 1px solid var(--border);
-    }
-
     .gallery-title {
       display: flex;
-      justify-content: flex-start;
+      justify-content: space-between;
       align-items: center;
       padding-bottom: var(--spacing-6);
-      gap: var(--spacing-2);
+      gap: var(--spacing-3);
+
+      div {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-2);
+      }
+
       h4 {
-        @include text("sm");
+        @include text("base");
         font-weight: var(--font-semibold);
         color: var(--primary);
+        margin: 0;
       }
 
       .file-counter {
@@ -287,9 +298,9 @@ onBeforeUnmount(() => {
         @include text("sm");
         color: var(--muted-foreground);
         background-color: var(--muted);
-        border-radius: calc(1.25rem / 2);
-        padding-inline: var(--spacing-1);
-        height: 1.25rem;
+        border-radius: calc(1.4rem / 2);
+        padding-inline: var(--spacing-2);
+        height: 1.4rem;
         &.exceeded {
           color: var(--danger);
           background-color: var(--danger-background);
@@ -300,16 +311,6 @@ onBeforeUnmount(() => {
     .gallery {
       overflow-y: auto;
       height: 100%;
-    }
-
-    .actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      margin-top: var(--spacing-6);
-      padding-top: var(--spacing-6);
-      border-top: 1px solid var(--border);
-      gap: var(--spacing-3);
     }
   }
 }
