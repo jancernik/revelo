@@ -183,8 +183,12 @@ onUnmounted(resetHeader)
   <div class="dashboard">
     <div class="dashboard-section stats">
       <div class="images">
-        <p>Images</p>
+        <p>Total Images</p>
         <h4>{{ images.length }}</h4>
+      </div>
+      <div class="standalone-images">
+        <p>Standalone images</p>
+        <h4>{{ images.filter((i) => !i.collectionId).length }}</h4>
       </div>
       <div class="collections">
         <p>Collections</p>

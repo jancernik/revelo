@@ -10,7 +10,7 @@ const props = defineProps({
     type: Boolean
   },
   allowRemove: {
-    default: true,
+    default: false,
     type: Boolean
   },
   allowSelect: {
@@ -205,7 +205,7 @@ const openImage = (image) => {
       user-select: none;
     }
 
-    &.clickable .image-item {
+    &.clickable {
       cursor: pointer;
     }
   }
