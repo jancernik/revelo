@@ -107,7 +107,7 @@ onMounted(async () => {
   setupLayout()
 })
 
-onUnmounted(() => reset())
+onUnmounted(reset)
 </script>
 
 <template>
@@ -126,12 +126,15 @@ onUnmounted(() => reset())
   justify-content: center;
 
   .form {
-    padding: var(--spacing-8);
+    padding: var(--spacing-6);
     gap: var(--spacing-4);
     width: 100%;
     max-width: 400px;
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--border);
+    height: fit-content;
+    border-radius: var(--radius-lg);
   }
 }
 </style>

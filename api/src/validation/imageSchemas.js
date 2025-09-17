@@ -4,7 +4,10 @@ import { z } from "zod"
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
   camera: z.string().max(255).optional().nullable(),
-  date: z.iso.date().optional().nullable(),
+  date: z
+    .union([z.iso.date(), z.string().max(0)])
+    .optional()
+    .nullable(),
   focalLength: z.string().max(50).optional().nullable(),
   focalLengthEquivalent: z.string().max(50).optional().nullable(),
   iso: z.string().max(50).optional().nullable(),

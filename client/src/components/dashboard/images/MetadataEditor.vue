@@ -9,7 +9,7 @@ const props = defineProps({
     type: Object
   },
   previewFilename: {
-    required: true,
+    default: "",
     type: String
   },
   previewUrl: {
@@ -50,7 +50,9 @@ const initializeMetadata = async () => {
   const safeMetadata = { ...createDefaultMetadata() }
   if (props.initialMetadata) {
     for (const k in safeMetadata) {
-      if (props.initialMetadata[k] !== undefined) safeMetadata[k] = props.initialMetadata[k]
+      if (props.initialMetadata[k] !== undefined) {
+        safeMetadata[k] = k === "iso" ? String(props.initialMetadata[k]) : props.initialMetadata[k]
+      }
     }
   }
 
@@ -87,13 +89,13 @@ const shutterSpeedToDecimal = (displayValue) => {
     const num = Number(numerator)
     const den = Number(denominator)
     if (!isNaN(num) && !isNaN(den) && den !== 0) {
-      return num / den
+      return (num / den).toString()
     }
   }
 
   const num = Number(trimmed)
   if (!isNaN(num)) {
-    return num
+    return num.toString()
   }
 
   return ""
@@ -113,11 +115,9 @@ watch(() => props.initialMetadata, initializeMetadata, { deep: true, immediate: 
 
 watch(
   metadata,
-  (newMetadata, oldMetadata) => {
+  (newMetadata) => {
     if (suppressEmit) return
-    if (JSON.stringify(newMetadata) !== JSON.stringify(oldMetadata)) {
-      emit("update", newMetadata)
-    }
+    emit("update", newMetadata)
   },
   { deep: true }
 )
@@ -257,7 +257,7 @@ watch(
   .metadata-editor-content {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing-5);
+    padding: var(--spacing-6);
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-6);

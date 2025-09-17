@@ -6,7 +6,7 @@ import Collection from "#src/views/dashboard/collections/Collection.vue"
 import Collections from "#src/views/dashboard/collections/Collections.vue"
 import CreateOrEditCollection from "#src/views/dashboard/collections/CreateOrEditCollection.vue"
 import SelectCollectionImages from "#src/views/dashboard/collections/SelectCollectionImages.vue"
-import EditImages from "#src/views/dashboard/images/EditImages.vue"
+import EditImage from "#src/views/dashboard/images/EditImage.vue"
 import Image from "#src/views/dashboard/images/Image.vue"
 import Images from "#src/views/dashboard/images/Images.vue"
 import UploadImages from "#src/views/dashboard/images/UploadImages.vue"
@@ -80,7 +80,7 @@ const router = createRouter({
               path: ""
             },
             {
-              component: EditImages,
+              component: EditImage,
               name: "image-edit",
               path: ":id/edit",
               props: true
