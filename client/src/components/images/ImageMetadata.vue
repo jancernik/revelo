@@ -42,6 +42,8 @@ const formatShutterSpeed = (shutter) => {
 }
 
 const formatDate = (dateString) => {
+  if (!dateString) return ""
+  dateString = dateString.split("T")[0].replace("-", "/")
   return new Date(dateString).toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
