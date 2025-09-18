@@ -1,9 +1,11 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
+import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useAuthStore } from "#src/stores/auth"
 import { reactive } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
+const { resetSelection } = useDashboardLayout()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -57,6 +59,7 @@ const sidebar = reactive({
 })
 
 const handleItemClick = (item) => {
+  resetSelection()
   if (item.action) {
     item.action()
   } else if (item.path) {
