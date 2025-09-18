@@ -53,7 +53,7 @@ const formatDate = (dateString) => {
 </script>
 
 <template>
-  <div ref="image-metadata" class="image-metadata">
+  <div ref="image-metadata" class="image-metadata scrollable">
     <div v-if="showCameraGroup" class="metadata-group">
       <div class="metadata-title">
         <Icon name="Camera" size="20" />
