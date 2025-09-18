@@ -473,6 +473,10 @@ const pauseScrolling = () => {
 
 const handleFullscreenReturn = (withTarget, isDifferentImage) => {
   forceZoomTargetVisibility = !!isDifferentImage
+
+  // Clear current image when returning from fullscreen
+  imagesStore.clearCurrentImage()
+
   if (zoomTargetImageId) {
     updateImagePositions()
     startZoomReturn({ showAllImages: isDifferentImage, withTarget })
@@ -494,6 +498,10 @@ const onFirstLoadComplete = () => {
 const handleImageClick = (event, image, flipId) => {
   if (zoomTargetImageId) return
   pauseScrolling()
+
+  // Set current image in store
+  imagesStore.setCurrentImage(image)
+
   startZoomTransition(image.id, event.currentTarget)
   showFullscreenImage(image, {
     flipId,

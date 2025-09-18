@@ -2,6 +2,7 @@ import CollectionsLayout from "#src/layouts/Collections.vue"
 import DashboardLayout from "#src/layouts/Dashboard.vue"
 import ImagesLayout from "#src/layouts/Images.vue"
 import { useAuthStore } from "#src/stores/auth"
+import CollectionsShowcase from "#src/views/Collections.vue"
 import Collection from "#src/views/dashboard/collections/Collection.vue"
 import Collections from "#src/views/dashboard/collections/Collections.vue"
 import CreateOrEditCollection from "#src/views/dashboard/collections/CreateOrEditCollection.vue"
@@ -27,6 +28,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { component: Home, name: "home", path: "/" },
+    { component: CollectionsShowcase, name: "collections-showcase", path: "/collections" },
     { component: Login, name: "login", path: "/login" },
     { component: Signup, name: "signup", path: "/signup" },
     { component: VerificationPending, name: "verification-pending", path: "/verification-pending" },

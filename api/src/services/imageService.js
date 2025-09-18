@@ -178,7 +178,7 @@ export const fetchByIdWithVersions = async (id) => {
 
 const generateEmbedding = async (image) => {
   try {
-    const originalVersion = image?.versions?.find((v) => v.type === "original")
+    const originalVersion = image?.versions?.find((v) => v.type === "original" && v.format === "jpg")
     if (!originalVersion) {
       throw new AppError("Original version not found", { isOperational: false })
     }
@@ -196,7 +196,7 @@ const generateEmbedding = async (image) => {
 
 const generateCaption = async (image) => {
   try {
-    const originalVersion = image?.versions?.find((v) => v.type === "original")
+    const originalVersion = image?.versions?.find((v) => v.type === "original" && v.format === "jpg")
     if (!originalVersion) {
       throw new AppError("Original version not found", { isOperational: false })
     }

@@ -67,6 +67,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Docker health checks"""
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "device": device,
+        "models_loaded": model is not None and caption_model is not None
+    }
+
 @app.post("/caption/image")
 async def generate_image_caption(image: UploadFile = File(...)):
     try:

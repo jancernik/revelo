@@ -62,6 +62,7 @@ export const fetchAll = async (req, res) => {
 export const fetchTiny = async (req, res) => {
   const options = {
     columns: {
+      format: true,
       height: true,
       path: true,
       width: true

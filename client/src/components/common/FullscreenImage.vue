@@ -1,6 +1,7 @@
 <script setup>
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
+import Icon from "#src/components/common/Icon.vue"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useWindowSize } from "#src/composables/useWindowSize"
@@ -517,6 +518,25 @@ const handleCollectionImageClick = (event, image) => {
   switchToImage(image)
 }
 
+// Image click handler - toggles collection
+const handleImageClick = (event) => {
+  event.stopPropagation()
+  if (hasCollection.value) {
+    toggleCollection()
+  }
+}
+
+// Floating menu handlers
+const handleBackToGallery = () => {
+  hideImage()
+}
+
+const handleToggleMetadata = () => {
+  if (hasMetadata.value) {
+    toggleMetadata()
+  }
+}
+
 const onImageUpdate = async (image) => {
   if (image) {
     if (updateRoute.value) setupRouting(image.id)
@@ -568,8 +588,26 @@ onMounted(() => gsap.registerPlugin(Flip))
 
 <template>
   <div v-if="imageData" ref="fullscreen-image-container" class="fullscreen-image-container">
+    <!-- Floating Menu - Top Left (Back to Gallery) -->
+    <div class="floating-menu floating-menu--top-left">
+      <button class="floating-menu__button" @click="handleBackToGallery">
+        <Icon name="ArrowLeft" :size="20" />
+      </button>
+    </div>
+
+    <!-- Floating Menu - Top Right (Metadata Toggle) -->
+    <div v-if="hasMetadata" class="floating-menu floating-menu--top-right">
+      <button
+        class="floating-menu__button"
+        :class="{ 'floating-menu__button--active': metadataVisible }"
+        @click="handleToggleMetadata"
+      >
+        <Icon name="Info" :size="20" />
+      </button>
+    </div>
+
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
-      <img :src="`/api/${regularImageVersion.path}`" @click="hideImage" />
+      <img :src="`/api/${regularImageVersion.path}`" @click="handleImageClick" />
       <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
     <CollectionImages
@@ -579,23 +617,52 @@ onMounted(() => gsap.registerPlugin(Flip))
       :current-image-id="imageData?.id"
       @click="handleCollectionImageClick"
     />
-    <div class="debug-controls">
-      <button @click.stop="toggleMetadata">Toggle Metadata</button>
-      <button @click.stop="toggleCollection">Toggle Collection</button>
-    </div>
   </div>
 </template>
 
 <style lang="scss">
 $spacing: v-bind(SPACING_PX);
 
-.debug-controls {
+.floating-menu {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  gap: 10px;
   z-index: z(overlay);
+
+  &--top-left {
+    top: var(--spacing-4);
+    left: var(--spacing-4);
+  }
+
+  &--top-right {
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+  }
+
+  &__button {
+    @include flex-center;
+    width: 48px;
+    height: 48px;
+    background-color: var(--menu-background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: inherit;
+
+    &:hover {
+      background-color: var(--menu-active);
+      transform: scale(1.05);
+    }
+
+    &--active {
+      background-color: var(--menu-active);
+      border-color: var(--accent);
+    }
+
+    .icon {
+      flex-shrink: 0;
+    }
+  }
 }
 
 .fullscreen-image-container {

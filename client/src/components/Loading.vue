@@ -59,7 +59,7 @@ $delay: v-bind(HIDE_DELAY_MS);
   background-color: var(--background);
   top: 0;
   left: 0;
-  z-index: z(overlay);
+  z-index: z(loading);
   opacity: 1;
   padding: var(--spacing-8);
 

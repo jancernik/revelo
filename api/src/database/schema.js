@@ -98,10 +98,17 @@ export const ImageVersionTypes = pgEnum("image_version_types", [
   "tiny"
 ])
 
+export const ImageFormatTypes = pgEnum("image_format_types", [
+  "jpg",
+  "webp",
+  "avif"
+])
+
 export const ImageVersionsTable = pgTable(
   "image_versions",
   {
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    format: ImageFormatTypes("format").notNull(),
     height: integer("height").notNull(),
     id: serial("id").primaryKey().notNull(),
     imageId: uuid("image_id")
@@ -114,7 +121,7 @@ export const ImageVersionsTable = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     width: integer("width").notNull()
   },
-  (table) => [unique("unique_image_version").on(table.imageId, table.type)]
+  (table) => [unique("unique_image_version_format").on(table.imageId, table.type, table.format)]
 )
 
 export const SettingsTable = pgTable("settings", {

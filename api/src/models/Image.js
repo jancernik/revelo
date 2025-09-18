@@ -38,6 +38,7 @@ class Image extends BaseModel {
   }
 
   static QUERY_API_VERSION_COLUMNS = {
+    format: true,
     height: true,
     path: true,
     size: true,
@@ -174,7 +175,8 @@ class Image extends BaseModel {
   async #createImageVersions(tx, file, imageId, imageDir) {
     const versions = []
     const originalFilePath = file.path
-    const originalFilename = `original.${file.originalname.split(".").pop()}`
+    const originalExtension = file.originalname.split(".").pop().toLowerCase()
+    const originalFilename = `original.${originalExtension}`
     const originalOutputPath = path.join(imageDir, originalFilename)
     await sharp(originalFilePath).rotate().toFile(originalOutputPath)
 
@@ -200,47 +202,72 @@ class Image extends BaseModel {
       }
     }
 
-    for (const [type, size] of Object.entries(sizes)) {
-      const filename = `${type}.${file.originalname.split(".").pop()}`
-      const outputPath = path.join(imageDir, filename)
+    const formatConfigs = {
+      jpg: { quality: 90, progressive: true, mimetype: "image/jpeg" },
+      webp: { quality: 85, effort: 4, mimetype: "image/webp" },
+      avif: { quality: 80, effort: 4, mimetype: "image/avif" }
+    }
 
-      if (type === "original") {
-        if (outputPath !== originalOutputPath) {
-          await fs.copyFile(originalOutputPath, outputPath)
-        }
-      } else {
-        await sharp(originalOutputPath)
-          .resize({
+    for (const [type, size] of Object.entries(sizes)) {
+      const formatsToGenerate = type === "original" || type === "tiny" ? ["jpg"] : ["avif", "webp", "jpg"]
+
+      for (const format of formatsToGenerate) {
+        const filename = `${type}.${format}`
+        const outputPath = path.join(imageDir, filename)
+        const formatConfig = formatConfigs[format]
+
+        let pipeline = sharp(originalOutputPath)
+
+        if (type !== "original") {
+          pipeline = pipeline.resize({
             fit: "inside",
             height: size.height,
             width: size.width,
             withoutEnlargement: true
           })
-          .toFile(outputPath)
+        }
+
+        if (format === "jpg") {
+          pipeline = pipeline.jpeg({
+            quality: formatConfig.quality,
+            progressive: formatConfig.progressive
+          })
+        } else if (format === "webp") {
+          pipeline = pipeline.webp({
+            quality: formatConfig.quality,
+            effort: formatConfig.effort
+          })
+        } else if (format === "avif") {
+          pipeline = pipeline.avif({
+            quality: formatConfig.quality,
+            effort: formatConfig.effort
+          })
+        }
+
+        await pipeline.toFile(outputPath)
+
+        const stats = await fs.stat(outputPath)
+        const outputMeta = await sharp(outputPath).metadata()
+
+        const versionData = {
+          format,
+          height: outputMeta.height,
+          imageId,
+          mimetype: formatConfig.mimetype,
+          path: outputPath,
+          size: stats.size,
+          type,
+          width: outputMeta.width
+        }
+
+        const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning()
+        versions.push(versionResult[0])
       }
-
-      const stats = await fs.stat(outputPath)
-      const outputMeta = await sharp(outputPath).metadata()
-
-      const versionData = {
-        height: outputMeta.height,
-        imageId,
-        mimetype: file.mimetype,
-        path: outputPath,
-        size: stats.size,
-        type,
-        width: outputMeta.width
-      }
-
-      const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning()
-
-      versions.push(versionResult[0])
     }
+
     await fs.unlink(originalFilePath)
 
-    if (
-      originalOutputPath !== path.join(imageDir, `original.${file.originalname.split(".").pop()}`)
-    ) {
+    if (originalOutputPath !== path.join(imageDir, originalFilename)) {
       await fs.unlink(originalOutputPath)
     }
 

@@ -30,6 +30,16 @@ export function createServer(options = {}) {
     })
   )
 
+  // Health check endpoint
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: config.NODE_ENV
+    })
+  })
+
   app.use(authRoutes)
   app.use(collectionRoutes)
   app.use(settingRoutes)

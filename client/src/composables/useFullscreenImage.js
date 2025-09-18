@@ -1,4 +1,5 @@
 import { ref, shallowRef } from "vue"
+import { useMenu } from "./useMenu.js"
 
 const imageData = shallowRef(null)
 const isAnimating = ref(false)
@@ -15,6 +16,9 @@ const isDifferentImage = ref(false)
 let popstateHandler = null
 let popstateCallback = null
 
+// Get menu control instance
+const { hideMenu, showMenu } = useMenu()
+
 export function useFullscreenImage() {
   const show = (image, options = {}) => {
     if (isAnimating.value) return
@@ -26,6 +30,9 @@ export function useFullscreenImage() {
     onReturn.value = options.onReturn || null
     onReturnCalled.value = false
     isThumbnailVisible.value = options.isThumbnailVisible || null
+
+    // Hide main menu when showing fullscreen image
+    hideMenu()
 
     imageData.value = image
     triggerHide.value = false
@@ -44,6 +51,9 @@ export function useFullscreenImage() {
     onReturnCalled.value = false
     isThumbnailVisible.value = null
     isDifferentImage.value = false
+
+    // Show main menu when hiding fullscreen image
+    showMenu()
 
     imageData.value = null
     triggerHide.value = false

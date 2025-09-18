@@ -14,6 +14,7 @@ export const useImagesStore = defineStore("images", () => {
   const loading = ref(false)
   const images = ref([])
   const filteredImages = ref([])
+  const currentImage = ref(null)
 
   async function fetchAll(options = {}) {
     const { force } = options
@@ -174,12 +175,27 @@ export const useImagesStore = defineStore("images", () => {
     if (index !== -1) images.value[index] = { ...images.value[index], ...image }
   }
 
+  function setCurrentImage(image) {
+    currentImage.value = image
+  }
+
+  function getCurrentImage() {
+    return currentImage.value
+  }
+
+  function clearCurrentImage() {
+    currentImage.value = null
+  }
+
   return {
+    clearCurrentImage,
     confirmUpload,
+    currentImage,
     error,
     fetch,
     fetchAll,
     filteredImages,
+    getCurrentImage,
     images,
     initialize,
     initialized,
@@ -187,6 +203,7 @@ export const useImagesStore = defineStore("images", () => {
     refreshImages,
     remove,
     search,
+    setCurrentImage,
     updateLocal,
     updateMetadata,
     uploadForReview
