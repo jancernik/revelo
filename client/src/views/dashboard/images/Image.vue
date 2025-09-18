@@ -1,6 +1,8 @@
 <script setup>
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useDialog } from "#src/composables/useDialog"
+import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 import { getImageVersion } from "#src/utils/helpers"
 import { computed, onMounted, onUnmounted, ref } from "vue"
@@ -15,6 +17,8 @@ const props = defineProps({
 
 const router = useRouter()
 const { resetHeader, setHeader } = useDashboardLayout()
+const { show: showDialog } = useDialog()
+const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
 
 const image = ref(null)
@@ -42,6 +46,36 @@ const loadImage = async () => {
   }
 }
 
+const handleDelete = () => {
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await imagesStore.remove(props.id)
+            router.push("/dashboard/images")
+            showToast({
+              description: "The image has been deleted successfully.",
+              title: "Image Deleted",
+              type: "success"
+            })
+          } catch (error) {
+            showToast({
+              description: error.message || "Failed to delete image.",
+              title: "Delete Failed",
+              type: "error"
+            })
+          }
+        },
+        icon: "Trash",
+        name: "Delete"
+      }
+    ],
+    description: "Are you sure you want to delete this image?",
+    title: "Delete Image"
+  })
+}
+
 const setupLayout = () => {
   setHeader({
     actions: [
@@ -50,6 +84,12 @@ const setupLayout = () => {
         key: "edit",
         onClick: () => router.push(`/dashboard/images/${props.id}/edit`),
         text: "Edit"
+      },
+      {
+        icon: "Trash",
+        key: "delete",
+        onClick: handleDelete,
+        text: "Delete"
       }
     ],
     title: "Image"

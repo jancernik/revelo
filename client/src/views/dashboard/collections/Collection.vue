@@ -1,6 +1,8 @@
 <script setup>
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useDialog } from "#src/composables/useDialog"
+import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
@@ -14,6 +16,8 @@ const props = defineProps({
 
 const router = useRouter()
 const { resetHeader, setHeader, setSelection } = useDashboardLayout()
+const { show: showDialog } = useDialog()
+const { show: showToast } = useToast()
 const collectionsStore = useCollectionsStore()
 
 const selectedImagesIds = ref([])
@@ -42,6 +46,36 @@ const loadCollection = async () => {
   }
 }
 
+const handleDelete = () => {
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await collectionsStore.remove(props.id)
+            router.push("/dashboard/collections")
+            showToast({
+              description: "The collection has been deleted successfully.",
+              title: "Collection Deleted",
+              type: "success"
+            })
+          } catch (error) {
+            showToast({
+              description: error.message || "Failed to delete collection.",
+              title: "Delete Failed",
+              type: "error"
+            })
+          }
+        },
+        icon: "Trash",
+        name: "Delete"
+      }
+    ],
+    description: `Are you sure you want to delete the collection${collection.value?.title ? ` "${collection.value.title}"` : ""}?`,
+    title: "Delete Collection"
+  })
+}
+
 const setupLayout = () => {
   setHeader({
     actions: [
@@ -56,6 +90,12 @@ const setupLayout = () => {
         key: "select-images",
         onClick: () => router.push(`/dashboard/collections/${props.id}/images`),
         text: "Select Images"
+      },
+      {
+        icon: "Trash",
+        key: "delete",
+        onClick: handleDelete,
+        text: "Delete"
       }
     ],
     title: collection.value?.title || "Collection"
