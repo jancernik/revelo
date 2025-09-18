@@ -4,6 +4,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 const theme = ref(localStorage.getItem("theme") || "system")
 const systemPrefersDark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches)
 const isAnimating = ref(false)
+const isWaitingForGallery = ref(false)
+let imageGallery = null
 
 export function useTheme() {
   const themeClass = computed(() => {
@@ -13,6 +15,28 @@ export function useTheme() {
 
     return systemPrefersDark.value ? "dark" : "light"
   })
+
+  const registerImageGallery = (ref) => {
+    imageGallery = ref
+  }
+
+  const waitForGalleryToSettle = async () => {
+    if (!imageGallery) return
+
+    isWaitingForGallery.value = true
+
+    return new Promise((resolve) => {
+      const checkSettled = () => {
+        if (!imageGallery.isAnimating()) {
+          isWaitingForGallery.value = false
+          resolve()
+        } else {
+          setTimeout(checkSettled, 10)
+        }
+      }
+      checkSettled()
+    })
+  }
 
   const setTheme = async (newTheme, opts) => {
     if (isAnimating.value) return
@@ -32,6 +56,11 @@ export function useTheme() {
       return
     }
 
+    if (imageGallery && !imageGallery.isScrollPaused()) {
+      imageGallery.pauseScrolling()
+      await waitForGalleryToSettle()
+    }
+
     if (options.animate) {
       await animateThemeTransition(newThemeClass, options.origin)
       theme.value = newTheme
@@ -46,6 +75,10 @@ export function useTheme() {
         document.documentElement.classList.remove("no-transition")
         document.querySelector("body").style.pointerEvents = "all"
       }, 20)
+    }
+
+    if (imageGallery && imageGallery.isScrollPaused()) {
+      imageGallery.resumeScrolling()
     }
   }
 
@@ -247,6 +280,8 @@ export function useTheme() {
 
   return {
     isAnimating,
+    isWaitingForGallery,
+    registerImageGallery,
     setTheme,
     theme,
     themeClass

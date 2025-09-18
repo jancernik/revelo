@@ -663,6 +663,14 @@ watch(initialLoadProgress, (progress) => {
 })
 
 watch(resizeFactor, () => startRenderLoop())
+
+// Expose API for theme integration
+defineExpose({
+  isAnimating: () => !isRenderLoopIdle(),
+  isScrollPaused: () => isScrollPaused.value,
+  pauseScrolling,
+  resumeScrolling
+})
 </script>
 
 <template>
