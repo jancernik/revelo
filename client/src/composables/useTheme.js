@@ -1,3 +1,4 @@
+import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
 const theme = ref(localStorage.getItem("theme") || "system")
@@ -46,6 +47,24 @@ export function useTheme() {
         document.querySelector("body").style.pointerEvents = "all"
       }, 20)
     }
+  }
+
+  const linearDistance = (x1, y1, x2, y2) => {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+  }
+
+  const calculateMaskSize = (origin) => {
+    const width = window.innerWidth
+    const height = window.innerHeight
+
+    const corners = [
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: width, y: height },
+      { x: 0, y: height }
+    ]
+    const distances = corners.map((c) => linearDistance(origin.x, origin.y, c.x, c.y))
+    return Math.max(...distances)
   }
 
   const createCleanClone = (element) => {
@@ -116,37 +135,7 @@ export function useTheme() {
     return clone
   }
 
-  let dissolveMask = document.querySelector("svg[data-dissolve-progress]")
-
-  function setDissolveProgress(progress) {
-    dissolveMask ||= document.querySelector("svg[data-dissolve-progress]")
-    if (dissolveMask) {
-      dissolveMask.setAttribute("data-dissolve-progress", progress.toString())
-    }
-  }
-
-  async function animateDissolve(duration = 3000) {
-    return new Promise((resolve) => {
-      const startTime = performance.now()
-
-      function animate() {
-        const elapsed = performance.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-
-        setDissolveProgress(progress)
-
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          resolve()
-        }
-      }
-
-      requestAnimationFrame(animate)
-    })
-  }
-
-  const animateThemeTransition = async (newThemeClass) => {
+  const animateThemeTransition = async (newThemeClass, origin) => {
     isAnimating.value = true
     let clonedBody = null
 
@@ -161,21 +150,22 @@ export function useTheme() {
       clonedBody = createCleanClone(body)
       clonedBody.className = "theme-transition-clone"
 
+      const finalRadius = calculateMaskSize(origin)
+
       Object.assign(clonedBody.style, {
         backfaceVisibility: "hidden",
-        // mask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, transparent, black)`,
         height: "100%",
         left: "0",
-        // clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
-        mask: "url(#dissolve)",
+        mask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, black 0px, black 0px, transparent 0px)`,
         perspective: "1000px",
         pointerEvents: "none",
         position: "fixed",
         top: "0",
         touchAction: "none",
         userSelect: "none",
+        WebkitMask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, black 0px, black 0px, transparent 0px)`,
         width: "100%",
-        willChange: "mask",
+        willChange: "mask, -webkit-mask",
         zIndex: "8000"
       })
 
@@ -191,19 +181,37 @@ export function useTheme() {
 
       await nextTick()
 
-      await animateDissolve(2000)
+      const animationState = { radius: 0 }
 
-      document.documentElement.classList.remove("light", "dark")
-      document.documentElement.classList.add(newThemeClass)
+      return new Promise((resolve) => {
+        gsap.to(animationState, {
+          duration: 2,
+          ease: "power2.inOut",
+          onComplete: function () {
+            document.documentElement.classList.remove("light", "dark")
+            document.documentElement.classList.add(newThemeClass)
 
-      if (clonedBody && clonedBody.parentNode) {
-        document.body.removeChild(clonedBody)
-      }
+            if (clonedBody && clonedBody.parentNode) {
+              document.body.removeChild(clonedBody)
+            }
 
-      setTimeout(() => {
-        document.documentElement.classList.remove("no-transition")
-        body.style.pointerEvents = "all"
-      }, 20)
+            setTimeout(() => {
+              document.documentElement.classList.remove("no-transition")
+              body.style.pointerEvents = "all"
+            }, 20)
+
+            resolve()
+          },
+          onUpdate: function () {
+            const maskValue = `radial-gradient(circle at ${origin.x}px ${origin.y}px, black ${
+              animationState.radius
+            }px, black ${animationState.radius}px, transparent ${animationState.radius + 1}px)`
+            clonedBody.style.mask = maskValue
+            clonedBody.style.WebkitMask = maskValue
+          },
+          radius: finalRadius
+        })
+      })
     } catch (error) {
       console.error("Theme transition error:", error)
 

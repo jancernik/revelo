@@ -2,7 +2,6 @@
 import Dialog from "#src/components/common/Dialog.vue"
 import FullscreenImage from "#src/components/common/FullscreenImage.vue"
 import Toast from "#src/components/common/Toast.vue"
-import DissolveMask from "#src/components/DissolveMask.vue"
 import Menu from "#src/components/Menu.vue"
 import { useTheme } from "#src/composables/useTheme"
 import Main from "#src/layouts/Main.vue"
@@ -32,7 +31,6 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
     <Toast />
     <Dialog />
     <FullscreenImage />
-    <DissolveMask />
   </div>
 </template>
 

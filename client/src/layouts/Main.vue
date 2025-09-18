@@ -1,6 +1,6 @@
 <template>
   <main id="main">
-    <div class="main-inner inner scrollable">
+    <div class="main-inner inner">
       <RouterView />
     </div>
   </main>
