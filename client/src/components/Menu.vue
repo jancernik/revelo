@@ -1,9 +1,9 @@
 <script setup>
+import Icon from "#src/components/common/Icon.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
 import { useAuthStore } from "#src/stores/auth"
-import { cssVar } from "#src/utils/helpers"
 import gsap from "gsap"
-import { computed, nextTick, onMounted, reactive, useTemplateRef } from "vue"
+import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
@@ -11,43 +11,108 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
-
-const menu = useTemplateRef("menu")
 const menuUl = useTemplateRef("menu-ul")
+const activeIndicator = useTemplateRef("active-indicator")
+const isAnimating = ref(false)
 
-let enterTimeline = null
-let leaveTimeline = null
-
-const menuConfig = reactive([
-  {
-    id: "gallery",
-    label: "Gallery",
-    path: "/",
-    visible: true
-  },
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    path: "/dashboard",
-    visible: () => isAdmin.value
-  }
-])
+const menuConfig = reactive({
+  center: [
+    {
+      hasIndicator: true,
+      icon: "Images",
+      id: "gallery",
+      label: "Gallery",
+      path: "/",
+      visible: true
+    },
+    {
+      hasIndicator: true,
+      icon: "FolderOpen",
+      id: "collections",
+      label: "Collections",
+      path: "/collections",
+      visible: true
+    },
+    {
+      hasIndicator: true,
+      icon: "Settings",
+      id: "dashboard",
+      label: "Dashboard",
+      path: "/dashboard",
+      visible: () => isAdmin.value
+    }
+  ],
+  left: [
+    {
+      component: markRaw(ThemeToggler),
+      id: "theme-toggler",
+      props: {},
+      visible: true
+    }
+  ],
+  right: []
+})
 
 const visibleMenuItems = computed(() => {
-  return menuConfig.filter((item) => {
-    if (typeof item.visible === "function") {
-      return item.visible()
+  const result = {
+    center: [],
+    left: [],
+    right: []
+  }
+
+  Object.keys(menuConfig).forEach((key) => {
+    const section = menuConfig[key]
+    if (Array.isArray(section)) {
+      result[key] = section.filter((item) => {
+        const isVisible = typeof item.visible === "function" ? item.visible() : item.visible
+        return isVisible
+      })
     }
     return item.visible
   })
 })
 
 const handleItemClick = (item) => {
+  if (item.hasIndicator) {
+    animateIndicator(item.id)
+  }
+
   if (item.action) {
     item.action()
   } else if (item.path) {
     router.push(item.path)
   }
+}
+
+const animateIndicator = (itemId) => {
+  const targetElement = menuUl.value?.querySelector(`[data-item-id="${itemId}"]`)
+
+  if (!targetElement || !activeIndicator.value) return
+
+  const buttonElement = targetElement.querySelector("button")
+  if (!buttonElement) return
+
+  isAnimating.value = true
+
+  const buttonRect = buttonElement.getBoundingClientRect()
+  const containerRect = menuUl.value.getBoundingClientRect()
+
+  const targetX = buttonRect.left - containerRect.left
+  const targetY = buttonRect.top - containerRect.top
+  const targetWidth = buttonRect.width
+  const targetHeight = buttonRect.height
+
+  gsap.to(activeIndicator.value, {
+    duration: 0.3,
+    ease: "back.out(1)",
+    height: targetHeight,
+    onComplete: () => {
+      isAnimating.value = false
+    },
+    width: targetWidth,
+    x: targetX,
+    y: targetY
+  })
 }
 
 const isActive = (path) => {
@@ -58,110 +123,112 @@ const isActive = (path) => {
   return route?.path.startsWith(path)
 }
 
-const handleMouseEnter = () => {
-  leaveTimeline.pause()
-  enterTimeline.restart()
-}
+const initializeIndicator = async () => {
+  await nextTick()
 
-const handleMouseLeave = () => {
-  enterTimeline.pause()
-  leaveTimeline.restart()
-}
+  const activeItem = visibleMenuItems.value.center.find(
+    (item) => item.hasIndicator && isActive(item.path)
+  )
 
-const initAnimation = () => {
-  enterTimeline = gsap.timeline({ paused: true })
+  if (activeItem) {
+    const targetElement = menuUl.value?.querySelector(`[data-item-id="${activeItem.id}"]`)
+    const indicator = activeIndicator.value
 
-  enterTimeline
-    .to(menu.value, {
-      borderRadius: `${cssVar("--radius-xl")}`,
-      duration: 0.45,
-      ease: "back.out(2.2)",
-      scale: 1.03,
-      y: `-${cssVar("--spacing-6")}`
-    })
-    .to(
-      menuUl.value,
-      {
-        duration: 0.15,
-        ease: "power1.out",
-        gap: `${cssVar("--spacing-4")}`
-      },
-      "<"
-    )
-    .to(
-      ".list-item button",
-      {
-        duration: 0.15,
-        ease: "power1.out",
-        padding: `${cssVar("--spacing-3")} ${cssVar("--spacing-4")}`
-      },
-      "<"
-    )
+    if (targetElement && indicator) {
+      const buttonElement = targetElement.querySelector("button")
+      if (!buttonElement) return
 
-  leaveTimeline = gsap.timeline({ paused: true })
-  leaveTimeline
-    .to(menu.value, {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-      duration: 0.15,
-      ease: "power2.out",
-      scale: 1,
-      y: 0
-    })
-    .to(
-      menuUl.value,
-      {
-        duration: 0.1,
-        ease: "power1.out",
-        gap: 0
-      },
-      "<"
-    )
-    .to(
-      ".list-item button",
-      {
-        duration: 0.1,
-        ease: "power4.out",
-        padding: `${cssVar("--spacing-2")} ${cssVar("--spacing-4")}`
-      },
-      "<"
-    )
-    .to(
-      menu.value,
-      {
-        duration: 0.07,
-        repeat: 1,
-        scaleX: 1.03,
-        scaleY: 0.92,
-        yoyo: true
-      },
-      "-=0.07"
-    )
+      const buttonRect = buttonElement.getBoundingClientRect()
+      const containerRect = menuUl.value.getBoundingClientRect()
+
+      const targetX = buttonRect.left - containerRect.left
+      const targetY = buttonRect.top - containerRect.top
+      const targetWidth = buttonRect.width
+      const targetHeight = buttonRect.height
+
+      gsap.set(indicator, {
+        height: targetHeight,
+        opacity: 1,
+        width: targetWidth,
+        x: targetX,
+        y: targetY
+      })
+    }
+  }
 }
 
 onMounted(() => {
-  nextTick(initAnimation)
+  initializeIndicator()
 })
+
+watch(
+  () => route.path,
+  () => {
+    setTimeout(() => {
+      if (isAnimating.value) return
+      initializeIndicator()
+    }, 50)
+  }
+)
 </script>
 
 <template>
-  <aside ref="menu" class="menu" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+  <aside ref="menu" class="menu">
     <div class="menu-inner inner">
       <ul ref="menu-ul">
-        <li
-          v-for="item in visibleMenuItems"
-          :key="item.id"
-          :class="{ active: isActive(item.path) }"
-        >
-          <div class="list-item">
-            <button :class="item.className" @click="handleItemClick(item)">
-              <span class="text">{{ item.label }}</span>
+        <div ref="active-indicator" class="active-indicator"></div>
+
+        <template v-for="item in visibleMenuItems.left" :key="item.id">
+          <li :class="{ active: isActive(item.path) }" :data-item-id="item.id">
+            <component
+              :is="item.component"
+              v-if="item.component"
+              v-bind="item.props || {}"
+              :class="item.className"
+              @click="handleItemClick(item)"
+            />
+            <button v-else :class="item.className" @click="handleItemClick(item)">
+              <Icon v-if="item.icon" :name="item.icon" :size="18" />
+              <span v-if="item.label" class="text">{{ item.label }}</span>
             </button>
-          </div>
-        </li>
-        <li class="theme">
-          <ThemeToggler />
-        </li>
+          </li>
+        </template>
+
+        <div v-if="visibleMenuItems.left.length > 0" class="divider"></div>
+
+        <template v-for="item in visibleMenuItems.center" :key="item.id">
+          <li :class="{ active: isActive(item.path) }" :data-item-id="item.id">
+            <component
+              :is="item.component"
+              v-if="item.component"
+              v-bind="item.props || {}"
+              :class="item.className"
+              @click="handleItemClick(item)"
+            />
+            <button v-else :class="item.className" @click="handleItemClick(item)">
+              <Icon v-if="item.icon" :name="item.icon" :size="18" />
+              <span v-if="item.label" class="text">{{ item.label }}</span>
+            </button>
+          </li>
+        </template>
+
+        <div v-if="visibleMenuItems.right.length > 0" class="divider"></div>
+
+        <template v-for="item in visibleMenuItems.right" :key="item.id">
+          <li :class="{ active: isActive(item.path) }" :data-item-id="item.id">
+            <component
+              :is="item.component"
+              v-if="item.component"
+              v-bind="item.props || {}"
+              :class="item.className"
+              @click="handleItemClick(item)"
+            />
+            <button v-else :class="item.className" @click="handleItemClick(item)">
+              <Icon v-if="item.icon" :name="item.icon" :size="18" />
+              <span v-if="item.label" class="text">{{ item.label }}</span>
+            </button>
+          </li>
+        </template>
       </ul>
     </div>
   </aside>
@@ -172,45 +239,66 @@ onMounted(() => {
   @include flex-center;
   background-color: var(--menu-background);
   position: fixed;
-  bottom: -1px;
+  top: var(--spacing-4);
+  left: 50%;
+  transform: translateX(-50%);
+  top: var(--spacing-4);
+  left: 50%;
+  transform: translateX(-50%);
   border-radius: calc(var(--radius-lg) + var(--spacing-2));
   border: 1px solid var(--border);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   transform-origin: bottom;
   backdrop-filter: blur(5px);
+  z-index: z(menu);
+  transition: none;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: calc(-1 * var(--spacing-8));
-    left: calc(-1 * var(--spacing-8));
-    width: calc(100% + var(--spacing-8) * 2);
-    height: 300%;
-    z-index: -1;
-    border-radius: calc(var(--radius-lg) + var(--spacing-2) + var(--spacing-8));
+  &.menu-hidden {
+    pointer-events: none;
   }
-  .theme {
-    @include flex-center;
-  }
+
   ul {
     list-style: none;
     display: flex;
+    align-items: center;
+    align-items: center;
     padding: var(--spacing-2);
+    position: relative;
+  }
+
+  .divider {
+    width: 1px;
+    height: 20px;
+    background-color: var(--border);
+    margin: 0 var(--spacing-2);
+  }
+
+  .active-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: var(--menu-active);
+    border-radius: var(--radius-md);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    transition: none;
+    transform-origin: center;
   }
 
   li {
+    position: relative;
+    z-index: 2;
     border-radius: var(--radius-md);
-  }
-
-  li.active {
-    background-color: var(--menu-active);
   }
 
   button {
     border: none;
     display: flex;
     align-items: center;
+    gap: var(--spacing-2);
+    gap: var(--spacing-2);
     width: 100%;
     padding: var(--spacing-2) var(--spacing-4);
     background: none;
