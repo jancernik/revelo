@@ -24,9 +24,9 @@ const toggleTheme = () => {
     :class="{ loading: isWaitingForGallery }"
     @click="toggleTheme"
   >
-    <Icon v-if="isWaitingForGallery" name="Loader2" class="loading-icon" />
-    <Icon name="Zap" class="dark-icon" />
-    <Icon name="ZapOff" class="light-icon" />
+    <Icon v-if="isWaitingForGallery" name="Loader2" class="loading-icon" :size="18" />
+    <Icon name="Zap" class="dark-icon" :size="18" />
+    <Icon name="ZapOff" class="light-icon" :size="18" />
   </button>
 </template>
 
