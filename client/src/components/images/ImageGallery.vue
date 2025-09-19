@@ -87,6 +87,7 @@ const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(true)
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
+const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
 const columnCount = computed(() => {
   const base = Math.ceil((maxWindowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
@@ -627,7 +628,8 @@ const handleKeyDown = (event) => {
 
 watch(
   () => imagesStore.filteredImages,
-  async () => {
+  async (images) => {
+    if (!images.length) return
     updateImageGroups()
     const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
     loadedImageIds.value = new Set(
@@ -675,6 +677,7 @@ defineExpose({
 
 <template>
   <div
+    v-if="!noImages"
     ref="image-gallery"
     class="image-gallery"
     :class="{ dragging: isDragging }"
@@ -710,8 +713,9 @@ defineExpose({
       />
     </div>
   </div>
+  <div v-else class="no-images">No images found</div>
   <Loading
-    v-if="isFirstLoad"
+    v-if="isFirstLoad && !noImages"
     :progress="initialLoadProgress * 100"
     :on-complete="onFirstLoadComplete"
   />
@@ -742,6 +746,13 @@ defineExpose({
   &.dragging .image-card {
     cursor: grabbing;
   }
+}
+
+.no-images {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 
 .gallery-column {
