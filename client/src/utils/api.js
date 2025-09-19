@@ -15,23 +15,27 @@ api.interceptors.request.use(async (config) => {
   const isRefreshRoute = config.url.includes("/refresh")
 
   if (token && !isRefreshRoute) {
-    const tokenPayload = JSON.parse(atob(token.split(".")[1]))
-    const expirationTime = tokenPayload.exp * 1000
-    const currentTime = Date.now()
-    const bufferTime = 60 * 1000
+    try {
+      const tokenPayload = JSON.parse(atob(token.split(".")[1]))
+      const expirationTime = tokenPayload.exp * 1000
+      const currentTime = Date.now()
+      const bufferTime = 60 * 1000
 
-    if (expirationTime - currentTime <= bufferTime) {
-      try {
-        if (!refreshTokenPromise) refreshTokenPromise = authStore.refreshToken()
-        await refreshTokenPromise
-        config.headers.Authorization = `Bearer ${authStore.accessToken}`
-      } catch {
+      if (expirationTime - currentTime <= bufferTime) {
+        try {
+          if (!refreshTokenPromise) refreshTokenPromise = authStore.refreshToken()
+          await refreshTokenPromise
+          config.headers.Authorization = `Bearer ${authStore.accessToken}`
+        } catch {
+          config.headers.Authorization = `Bearer ${token}`
+        } finally {
+          refreshTokenPromise = null
+        }
+      } else {
         config.headers.Authorization = `Bearer ${token}`
-      } finally {
-        refreshTokenPromise = null
       }
-    } else {
-      config.headers.Authorization = `Bearer ${token}`
+    } catch {
+      authStore.clearUser()
     }
   } else if (token) {
     config.headers.Authorization = `Bearer ${token}`
@@ -45,12 +49,18 @@ api.interceptors.response.use(
     const authStore = useAuthStore()
     const originalRequest = error.config
 
+    if (!originalRequest) {
+      return Promise.reject(error)
+    }
+
     if (originalRequest.url.includes("/refresh")) {
       authStore.logout()
       return Promise.reject(error)
     }
 
-    const isAuthRoute = ["/login", "/signup"].some((route) => originalRequest.url.includes(route))
+    const isAuthRoute = ["/login", "/signup", "/verify-email", "/verification-pending"].some(
+      (route) => originalRequest.url.includes(route)
+    )
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true
