@@ -30,6 +30,15 @@ export function createServer(options = {}) {
     })
   )
 
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      environment: config.NODE_ENV,
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    })
+  })
+
   app.use(authRoutes)
   app.use(collectionRoutes)
   app.use(settingRoutes)
