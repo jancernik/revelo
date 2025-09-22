@@ -82,8 +82,9 @@ $breakpoints: (
 $z-indexes: (
   hide: -1,
   dropdown: 1000,
-  menu: 1200,
-  overlay: 1300,
+  loading: 1100,
+  overlay: 1200,
+  menu: 1300,
   dialog: 1400,
   toast: 1700
 );

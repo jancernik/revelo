@@ -73,8 +73,8 @@ const visibleMenuItems = computed(() => {
         return isVisible
       })
     }
-    return item.visible
   })
+  return result
 })
 
 const handleItemClick = (item) => {
@@ -305,8 +305,6 @@ watch(
   transform: translateX(-50%);
   border-radius: calc(var(--radius-lg) + var(--spacing-2));
   border: 1px solid var(--border);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
   transform-origin: bottom;
   backdrop-filter: blur(5px);
   z-index: z(menu);
