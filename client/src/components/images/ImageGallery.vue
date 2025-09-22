@@ -90,6 +90,7 @@ const hasDragged = ref(false)
 const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(true)
+const canInfiniteScroll = ref(false)
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
@@ -121,6 +122,16 @@ const initialLoadProgress = computed(() => {
 })
 
 const initialLoadComplete = computed(() => initialLoadProgress.value === 1)
+
+const maxScrollDistance = computed(() => {
+  if (canInfiniteScroll.value) return Infinity
+  return Math.max(-SPACING, Math.max(...columnsHeights) - windowHeight.value) + SPACING
+})
+
+const getBoundedScrollPosition = (targetPosition) => {
+  if (canInfiniteScroll.value) return targetPosition
+  return clamp(targetPosition, -maxScrollDistance.value, 0)
+}
 
 const updateImageGroups = () => {
   const groups = groupImages(imagesStore.filteredImages, columnCount.value)
@@ -154,6 +165,8 @@ const calculateImageCardsData = () => {
     })
     columnsHeights[columnIndex] -= SPACING + VIRTUAL_BUFFER - 1
   })
+  canInfiniteScroll.value =
+    Math.min(...columnsHeights) - SPACING >= windowHeight.value + VIRTUAL_BUFFER * 3
 }
 
 const calculateColumnLerpFactors = () => {
@@ -329,13 +342,15 @@ const calculateWrappedPosition = (card) => {
   const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
   const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget - VIRTUAL_BUFFER
 
-  const minY = -card.cardHeight * resizeFactor.value - VIRTUAL_BUFFER
-  const totalSpacing = columnSpacing[card.columnIndex]
-  const columnHeight = columnsHeights[card.columnIndex]
-  const scalableMaxY = (columnHeight - totalSpacing - card.cardHeight) * resizeFactor.value
-  const maxY = scalableMaxY + totalSpacing - VIRTUAL_BUFFER
-
-  return gsap.utils.wrap(minY, maxY, cardPosition)
+  if (canInfiniteScroll.value) {
+    const minY = -card.cardHeight * resizeFactor.value - VIRTUAL_BUFFER
+    const totalSpacing = columnSpacing[card.columnIndex]
+    const columnHeight = columnsHeights[card.columnIndex]
+    const scalableMaxY = (columnHeight - totalSpacing - card.cardHeight) * resizeFactor.value
+    const maxY = scalableMaxY + totalSpacing - VIRTUAL_BUFFER
+    return gsap.utils.wrap(minY, maxY, cardPosition)
+  }
+  return cardPosition
 }
 
 const updateImagePositions = (options = {}) => {
@@ -404,7 +419,8 @@ const updateImagePositions = (options = {}) => {
 
 const updateVelocity = (deltaTime) => {
   if (!isBuildingLayout && !isDragging.value) {
-    scrollPosition += velocity.value * deltaTime
+    const newScrollPosition = scrollPosition + velocity.value * deltaTime
+    scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
     const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
     velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
@@ -530,6 +546,8 @@ const handleWheel = (event) => {
 
   const clampedDelta = clamp(deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
   scrollPosition -= clampedDelta / resizeFactor.value
+  const newScrollPosition = scrollPosition - clampedDelta / resizeFactor.value
+  scrollPosition = getBoundedScrollPosition(newScrollPosition)
   velocity.value += clamp(
     (-clampedDelta / resizeFactor.value) * WHEEL_IMPULSE,
     -MAX_SPEED,
@@ -559,7 +577,8 @@ const handleDragMove = (event) => {
   if (Math.abs(deltaY) > 2) hasDragged.value = true
 
   dragStartPosition = currentY
-  scrollPosition += deltaY / resizeFactor.value
+  const newScrollPosition = scrollPosition + deltaY / resizeFactor.value
+  scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
   const now = performance.now()
   const deltaTime = Math.max(MIN_DELTA_TIME, (now - lastDragTimestamp) / 1000)
@@ -671,6 +690,12 @@ watch(initialLoadProgress, (progress) => {
 })
 
 watch(resizeFactor, () => startRenderLoop())
+watch(windowHeight, () => {
+  if (columnsHeights.length > 0) {
+    canInfiniteScroll.value =
+      Math.min(...columnsHeights) - SPACING >= windowHeight.value + VIRTUAL_BUFFER * 3
+  }
+})
 
 onMounted(() => {
   if (!route.path.includes("/images/")) {
@@ -678,7 +703,6 @@ onMounted(() => {
   }
 })
 
-// Expose API for theme integration
 defineExpose({
   isAnimating: () => !isRenderLoopIdle(),
   isScrollPaused: () => isScrollPaused.value,
@@ -741,6 +765,8 @@ defineExpose({
     <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
     <p>Initial Load Progress: {{ Math.ceil(initialLoadProgress * 100) }}%</p>
     <p>Is First Load: {{ isFirstLoad }}</p>
+    <p>Can Infinite Scroll: {{ canInfiniteScroll }}</p>
+    <p>Max Scroll Distance: {{ maxScrollDistance }}</p>
   </div>
 </template>
 
