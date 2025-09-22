@@ -1,6 +1,7 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
+import { useMenu } from "#src/composables/useMenu"
 import { useAuthStore } from "#src/stores/auth"
 import gsap from "gsap"
 import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
@@ -9,11 +10,15 @@ import { useRoute, useRouter } from "vue-router"
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { isVisible, shouldAnimate } = useMenu("menu")
+
+const menu = useTemplateRef("menu")
 
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const menuUl = useTemplateRef("menu-ul")
 const activeIndicator = useTemplateRef("active-indicator")
 const isAnimating = ref(false)
+const isMenuAnimating = ref(false)
 
 const menuConfig = reactive({
   center: [
@@ -157,9 +162,54 @@ const initializeIndicator = async () => {
   }
 }
 
+const animateMenuVisibility = () => {
+  if (!menu.value || !shouldAnimate.value) return
+
+  isMenuAnimating.value = true
+
+  if (isVisible.value) {
+    gsap.fromTo(
+      menu.value,
+      {
+        opacity: 0,
+        y: -100
+      },
+      {
+        duration: 0.4,
+        ease: "back.out(1.2)",
+        onComplete: () => {
+          isMenuAnimating.value = false
+        },
+        opacity: 1,
+        y: 0
+      }
+    )
+  } else {
+    gsap.to(menu.value, {
+      duration: 0.3,
+      ease: "back.in(1.2)",
+      onComplete: () => {
+        isMenuAnimating.value = false
+      },
+      opacity: 0,
+      y: -100
+    })
+  }
+}
+
 onMounted(() => {
   initializeIndicator()
 })
+
+watch(
+  isVisible,
+  () => {
+    if (shouldAnimate.value) {
+      animateMenuVisibility()
+    }
+  },
+  { immediate: false }
+)
 
 watch(
   () => route.path,
@@ -173,7 +223,15 @@ watch(
 </script>
 
 <template>
-  <aside ref="menu" class="menu">
+  <aside
+    ref="menu"
+    class="menu"
+    :class="{
+      'menu-hidden': !isVisible && !shouldAnimate,
+      'menu-animating': isMenuAnimating
+    }"
+    :style="{ display: !isVisible && !shouldAnimate ? 'none' : 'flex' }"
+  >
     <div class="menu-inner inner">
       <ul ref="menu-ul">
         <div ref="active-indicator" class="active-indicator"></div>
@@ -255,6 +313,11 @@ watch(
   transition: none;
 
   &.menu-hidden {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  &.menu-animating {
     pointer-events: none;
   }
 
