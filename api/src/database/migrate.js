@@ -13,6 +13,10 @@ export async function migrateDb(envType = process.env.NODE_ENV || "development")
 
   const migrationClient = postgres(process.env.DB_URL, { max: 1 })
 
+  // Enable pgvector extension before running migrations
+  await migrationClient`CREATE EXTENSION IF NOT EXISTS vector`
+  console.log("✓ pgvector extension enabled")
+
   await migrate(drizzle(migrationClient), {
     migrationsFolder: "./src/database/migrations"
   })

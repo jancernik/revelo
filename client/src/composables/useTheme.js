@@ -199,7 +199,7 @@ export function useTheme() {
         WebkitMask: `radial-gradient(circle at ${origin.x}px ${origin.y}px, black 0px, black 0px, transparent 0px)`,
         width: "100%",
         willChange: "mask, -webkit-mask",
-        zIndex: "8000"
+        zIndex: "4000"
       })
 
       clonedBody.classList.add(newThemeClass)

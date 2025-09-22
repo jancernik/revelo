@@ -1,8 +1,10 @@
 <script setup>
+import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
@@ -38,6 +40,7 @@ const {
 } = useFullscreenImage()
 const router = useRouter()
 const collectionsStore = useCollectionsStore()
+const { hide: hideMenu } = useMenu()
 
 const collectionData = ref(null)
 const metadataVisible = ref(false)
@@ -55,6 +58,8 @@ const imageMetadataRef = useTemplateRef("image-metadata")
 const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
 const collectionRef = useTemplateRef("collection-images")
 const collectionElement = computed(() => collectionRef.value?.$el)
+const leftControlsRef = useTemplateRef("left-controls")
+const rightControlsRef = useTemplateRef("right-controls")
 
 const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
 const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.value))
@@ -254,8 +259,9 @@ const setHiddenMetadataStyles = (isMobile) => {
   setStyles(fullscreenImageElement.value, { height, width })
 }
 
-const onShowComplete = () => {
+const onShowComplete = async () => {
   isAnimating.value = false
+  await showFloatingControls()
 }
 
 const onHideComplete = () => {
@@ -388,6 +394,10 @@ const showImage = () => {
   if (isAnimating.value) return
   isAnimating.value = true
 
+  // Hide main menu - with animation if coming from gallery, without if direct URL
+  const hasGalleryContext = flipId.value || isThumbnailVisible.value
+  hideMenu(hasGalleryContext)
+
   const { height, width } = calculateOptimalImageSize(
     metadataVisible.value,
     collectionVisible.value
@@ -401,9 +411,11 @@ const showImage = () => {
   }
 }
 
-const hideImage = () => {
+const hideImage = async () => {
   if (isAnimating.value) return
   isAnimating.value = true
+
+  await hideFloatingControls()
 
   if (hasThumbnailAvailable()) {
     hideWithFlipAnimation()
@@ -473,6 +485,70 @@ const animateCollection = (visible, callback) => {
   }
 }
 
+const showFloatingControls = async () => {
+  if (!leftControlsRef.value) return
+
+  const promises = []
+
+  // Always animate left controls (Gallery button)
+  const leftPromise = gsap.fromTo(
+    leftControlsRef.value,
+    { opacity: 0, x: -200 },
+    {
+      duration: 0.4,
+      ease: "back.out(1.4)",
+      opacity: 1,
+      x: 0
+    }
+  )
+  promises.push(leftPromise)
+
+  // Only animate right controls if they exist (has metadata)
+  if (rightControlsRef.value) {
+    const rightPromise = gsap.fromTo(
+      rightControlsRef.value,
+      { opacity: 0, x: 200 },
+      {
+        duration: 0.4,
+        ease: "back.out(1.4)",
+        opacity: 1,
+        x: 0
+      }
+    )
+    promises.push(rightPromise)
+  }
+
+  await Promise.all(promises)
+}
+
+const hideFloatingControls = async () => {
+  if (!leftControlsRef.value) return
+
+  const promises = []
+
+  // Always animate left controls (Gallery button)
+  const leftPromise = gsap.to(leftControlsRef.value, {
+    duration: 0.3,
+    ease: "back.in(1.4)",
+    opacity: 0,
+    x: -200
+  })
+  promises.push(leftPromise)
+
+  // Only animate right controls if they exist (has metadata)
+  if (rightControlsRef.value) {
+    const rightPromise = gsap.to(rightControlsRef.value, {
+      duration: 0.3,
+      ease: "back.in(1.4)",
+      opacity: 0,
+      x: 200
+    })
+    promises.push(rightPromise)
+  }
+
+  await Promise.all(promises)
+}
+
 const showMetadata = (callback) => animateMetadata(true, callback)
 const hideMetadata = (callback) => animateMetadata(false, callback)
 const showCollection = (callback) => animateCollection(true, callback)
@@ -515,6 +591,23 @@ const switchToImage = async (image) => {
 const handleCollectionImageClick = (event, image) => {
   event.stopPropagation()
   switchToImage(image)
+}
+
+const handleImageClick = (event) => {
+  event.stopPropagation()
+  if (hasCollection.value) {
+    toggleCollection()
+  }
+}
+
+const handleBackToGallery = () => {
+  hideImage()
+}
+
+const handleToggleMetadata = () => {
+  if (hasMetadata.value) {
+    toggleMetadata()
+  }
 }
 
 const onImageUpdate = async (image) => {
@@ -568,8 +661,25 @@ onMounted(() => gsap.registerPlugin(Flip))
 
 <template>
   <div v-if="imageData" ref="fullscreen-image-container" class="fullscreen-image-container">
+    <div ref="left-controls" class="floating-controls top-left">
+      <button class="floating-button" @click="handleBackToGallery">
+        <Icon name="ArrowLeft" :size="18" />
+        <span class="button-text">Gallery</span>
+      </button>
+    </div>
+    <div v-if="hasMetadata" ref="right-controls" class="floating-controls top-right">
+      <button
+        class="floating-button"
+        :class="{ active: metadataVisible }"
+        @click="handleToggleMetadata"
+      >
+        <Icon name="Info" :size="18" />
+        <span class="button-text">Info</span>
+      </button>
+    </div>
+
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
-      <img :src="`/api/${regularImageVersion.path}`" @click="hideImage" />
+      <img :src="`/api/${regularImageVersion.path}`" @click="handleImageClick" />
       <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
     <CollectionImages
@@ -579,23 +689,64 @@ onMounted(() => gsap.registerPlugin(Flip))
       :current-image-id="imageData?.id"
       @click="handleCollectionImageClick"
     />
-    <div class="debug-controls">
-      <button @click.stop="toggleMetadata">Toggle Metadata</button>
-      <button @click.stop="toggleCollection">Toggle Collection</button>
-    </div>
   </div>
 </template>
 
 <style lang="scss">
 $spacing: v-bind(SPACING_PX);
 
-.debug-controls {
+.floating-controls {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  gap: 10px;
   z-index: z(overlay);
+  opacity: 0;
+
+  &.top-left {
+    top: var(--spacing-4);
+    left: var(--spacing-4);
+    transform: translateX(-200px);
+  }
+
+  &.top-right {
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+    transform: translateX(200px);
+  }
+}
+
+.floating-button {
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--menu-background);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-lg) + var(--spacing-2));
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: inherit;
+  @include text("base");
+  font-weight: var(--font-normal);
+  text-transform: uppercase;
+
+  &:hover {
+    background-color: var(--menu-active);
+    transform: scale(1.05);
+  }
+
+  &.active {
+    background-color: var(--menu-active);
+    border-color: var(--accent);
+  }
+
+  .icon {
+    flex-shrink: 0;
+  }
+}
+
+.button-text {
+  white-space: nowrap;
 }
 
 .fullscreen-image-container {

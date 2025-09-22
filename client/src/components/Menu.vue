@@ -1,6 +1,7 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
+import ImageSearcher from "#src/components/ImageSearcher.vue"
 import { useMenu } from "#src/composables/useMenu"
 import { useAuthStore } from "#src/stores/auth"
 import gsap from "gsap"
@@ -13,12 +14,14 @@ const authStore = useAuthStore()
 const { isVisible, shouldAnimate } = useMenu("menu")
 
 const menu = useTemplateRef("menu")
-
-const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const menuUl = useTemplateRef("menu-ul")
 const activeIndicator = useTemplateRef("active-indicator")
+
+const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const isAnimating = ref(false)
 const isMenuAnimating = ref(false)
+const isSearchExpanded = ref(false)
+const searchExpandTween = ref(null)
 
 const menuConfig = reactive({
   center: [
@@ -51,6 +54,12 @@ const menuConfig = reactive({
     {
       component: markRaw(ThemeToggler),
       id: "theme-toggler",
+      props: {},
+      visible: true
+    },
+    {
+      component: markRaw(ImageSearcher),
+      id: "image-searcher",
       props: {},
       visible: true
     }
@@ -197,6 +206,135 @@ const animateMenuVisibility = () => {
   }
 }
 
+const handleSearchExpand = () => {
+  if (!menu.value || !menuUl.value) return
+
+  isSearchExpanded.value = true
+
+  // Kill any existing tween
+  if (searchExpandTween.value) {
+    searchExpandTween.value.kill()
+  }
+
+  // Get menu dimensions
+  const menuRect = menu.value.getBoundingClientRect()
+  const menuInner = menu.value.querySelector('.menu-inner')
+  const menuInnerRect = menuInner.getBoundingClientRect()
+
+  // Find the search container li element
+  const searchLi = menuUl.value.querySelector('[data-item-id="image-searcher"]')
+  const searchElement = searchLi?.querySelector('.image-searcher-container')
+
+  if (!searchElement) return
+
+  const searchInputContainer = searchElement.querySelector('.search-input-container')
+  const searchButton = searchElement.querySelector('.image-searcher')
+
+  // Calculate expansion dimensions - expand to fill most of the menu
+  const targetWidth = menuInnerRect.width - 24 // Account for some padding
+
+  // Create timeline for smooth animation
+  const tl = gsap.timeline({
+    onComplete: () => {
+      searchExpandTween.value = null
+    }
+  })
+
+  // Hide menu content except search (but keep the search li visible)
+  const elementsToHide = Array.from(menuUl.value.children).filter(child =>
+    child !== searchLi && child !== activeIndicator.value
+  )
+
+  tl.to(elementsToHide, {
+    duration: 0.2,
+    opacity: 0,
+    scale: 0.9,
+    stagger: 0.02,
+    ease: "power2.inOut"
+  }, 0)
+
+  // Hide active indicator
+  tl.to(activeIndicator.value, {
+    duration: 0.2,
+    opacity: 0,
+    ease: "power2.inOut"
+  }, 0)
+
+  // Expand search container
+  tl.to(searchInputContainer, {
+    duration: 0.4,
+    width: targetWidth,
+    opacity: 1,
+    pointerEvents: "auto",
+    ease: "power3.out"
+  }, 0.1)
+
+  searchExpandTween.value = tl
+}
+
+const handleSearchCollapse = () => {
+  if (!menu.value || !menuUl.value || !isSearchExpanded.value) return
+
+  isSearchExpanded.value = false
+
+  // Kill any existing tween
+  if (searchExpandTween.value) {
+    searchExpandTween.value.kill()
+  }
+
+  // Find the search container li element
+  const searchLi = menuUl.value.querySelector('[data-item-id="image-searcher"]')
+  const searchElement = searchLi?.querySelector('.image-searcher-container')
+
+  if (!searchElement) return
+
+  const searchInputContainer = searchElement.querySelector('.search-input-container')
+
+  // Create timeline for smooth animation
+  const tl = gsap.timeline({
+    onComplete: () => {
+      searchExpandTween.value = null
+    }
+  })
+
+  // Collapse search container back to button size
+  tl.to(searchInputContainer, {
+    duration: 0.3,
+    width: "2.25rem",
+    opacity: 0,
+    pointerEvents: "none",
+    ease: "power2.inOut"
+  }, 0)
+
+  // Show menu content again
+  const elementsToShow = Array.from(menuUl.value.children).filter(child =>
+    child !== searchLi && child !== activeIndicator.value
+  )
+
+  tl.to(elementsToShow, {
+    duration: 0.3,
+    opacity: 1,
+    scale: 1,
+    stagger: 0.02,
+    ease: "power2.out"
+  }, 0.1)
+
+  // Show active indicator if there's an active item
+  const activeItem = visibleMenuItems.value.center.find(
+    (item) => item.hasIndicator && isActive(item.path)
+  )
+
+  if (activeItem) {
+    tl.to(activeIndicator.value, {
+      duration: 0.3,
+      opacity: 1,
+      ease: "power2.out"
+    }, 0.1)
+  }
+
+  searchExpandTween.value = tl
+}
+
 onMounted(() => {
   initializeIndicator()
 })
@@ -237,13 +375,18 @@ watch(
         <div ref="active-indicator" class="active-indicator"></div>
 
         <template v-for="item in visibleMenuItems.left" :key="item.id">
-          <li :class="{ active: isActive(item.path) }" :data-item-id="item.id">
+          <li
+            :class="{ active: isActive(item.path) }"
+            :data-item-id="item.id"
+          >
             <component
               :is="item.component"
               v-if="item.component"
               v-bind="item.props || {}"
               :class="item.className"
               @click="handleItemClick(item)"
+              @search-expand="handleSearchExpand"
+              @search-collapse="handleSearchCollapse"
             />
             <button v-else :class="item.className" @click="handleItemClick(item)">
               <Icon v-if="item.icon" :name="item.icon" :size="18" />

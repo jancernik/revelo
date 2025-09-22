@@ -65,6 +65,7 @@ const handleClick = (event) => {
   width: inherit;
   user-select: none;
   @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
+  transition: box-shadow 0.3s ease, -webkit-box-shadow 0.3s ease, -moz-box-shadow 0.3s ease;
 
   &.not-loaded::before {
     content: "";
