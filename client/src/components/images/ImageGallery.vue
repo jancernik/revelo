@@ -2,6 +2,7 @@
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import {
@@ -74,6 +75,7 @@ let zoomReferencePoint = null
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
+const { hide: hideMenu, show: showMenu } = useMenu()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
@@ -233,6 +235,7 @@ const calculateZoomAnimationTiming = (imageCardData) => {
 }
 
 const startZoomTransition = (imageId, referenceElement) => {
+  hideMenu(true)
   zoomTargetImageId = imageId
 
   zoomReferencePoint = referenceElement
@@ -255,6 +258,7 @@ const startZoomTransition = (imageId, referenceElement) => {
 }
 
 const startZoomReturn = (options = {}) => {
+  showMenu(true)
   const { duration = ZOOM_TOTAL_DURATION, showAllImages = false, withTarget = false } = options
 
   const visibleNonTargetStates = imageCardData.filter(
