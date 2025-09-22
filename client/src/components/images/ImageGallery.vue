@@ -14,7 +14,8 @@ import {
 } from "#src/utils/galleryHelpers"
 import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
-import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
+import { useRoute } from "vue-router"
 
 const SPACING = 20 // Space between images and columns in pixels
 const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optimization
@@ -76,6 +77,7 @@ let zoomReferencePoint = null
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { hide: hideMenu, show: showMenu } = useMenu()
+const route = useRoute()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
@@ -669,6 +671,12 @@ watch(initialLoadProgress, (progress) => {
 })
 
 watch(resizeFactor, () => startRenderLoop())
+
+onMounted(() => {
+  if (!route.path.includes("/images/")) {
+    showMenu(false)
+  }
+})
 
 // Expose API for theme integration
 defineExpose({
