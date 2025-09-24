@@ -28,7 +28,7 @@
     "style": "pnpm lint; pnpm format",
     "api": "pnpm --filter api",
     "client": "pnpm --filter client",
-    "ai": "cd ai && python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000",
+    "ai": "cd ai && node run.js",
     "prepare": "husky"
   },
   "devDependencies": {

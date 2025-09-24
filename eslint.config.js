@@ -14,7 +14,7 @@ export default [
   ...pluginVue.configs["flat/recommended"],
 
   {
-    files: ["api/**/*.js"],
+    files: ["api/**/*.js", "ai/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.node,

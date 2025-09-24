@@ -24,7 +24,7 @@ caption_model = None
 caption_processor = None
 device = None
 
-api_base_url = os.getenv("API_BASE_URL")
+ai_port = os.getenv("AI_PORT", "8000")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,7 +61,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[api_base_url or "*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -169,4 +169,4 @@ async def generate_text_embedding(text: str = Form(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=ai_port, reload=True)
