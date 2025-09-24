@@ -1,16 +1,8 @@
+import { config } from "#src/config/environment.js"
 import vue from "@vitejs/plugin-vue"
 import { fileURLToPath, URL } from "node:url"
 import { defineConfig } from "vite"
 import vueDevTools from "vite-plugin-vue-devtools"
-import "dotenv/config"
-
-const requiredEnvVars = ["VITE_API_BASE_URL", "VITE_CLIENT_BASE_URL"]
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
-
-if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
-  process.exit(1)
-}
 
 export default defineConfig({
   css: {
@@ -27,11 +19,13 @@ export default defineConfig({
     }
   },
   server: {
+    host: true,
+    port: parseInt(config.CLIENT_PORT) || 5173,
     proxy: {
       "/api": {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
-        target: process.env.VITE_API_BASE_URL
+        target: config.API_BASE_URL
       }
     }
   }

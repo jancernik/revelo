@@ -45,7 +45,7 @@ export default [
   },
 
   {
-    files: ["client/vite.config.js", "client/vitest.config.js"],
+    files: ["client/vite.config.js", "client/vitest.config.js", "client/src/config/environment.js"],
     languageOptions: {
       globals: {
         ...globals.browser,

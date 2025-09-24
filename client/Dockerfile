@@ -20,9 +20,11 @@ FROM base AS builder
 # Copy dependencies and workspace files
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/client/node_modules ./client/node_modules
-COPY client/ ./client/
 
-# No build args needed - client uses relative URLs
+# Copy environment and config files
+COPY .env* ./
+COPY api/src/config/ ./api/src/config/
+COPY client/ ./client/
 
 # Set working directory to client for build
 WORKDIR /app/client
