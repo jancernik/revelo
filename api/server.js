@@ -3,6 +3,6 @@ import { createServer } from "#src/createServer.js"
 
 const app = createServer({ enableLogging: true })
 
-app.listen(config.PORT, () => {
-  console.log(`Server is running on port ${config.PORT}`)
+app.listen(config.API_PORT, () => {
+  console.log(`Server is running on port ${config.API_PORT}`)
 })

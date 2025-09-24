@@ -1,70 +1,49 @@
+import { currentEnvFile, currentEnvFilePath, currentEnvType, error } from "#src/config/helpers.js"
 import dotenv from "dotenv"
+import fs from "fs"
 
-let envType = process.env.NODE_ENV || "development"
-if (envType === "dev") envType = "development"
-if (envType === "prod") envType = "production"
+const requiredEnvVars = ["DB_PASSWORD", "JWT_SECRET", "JWT_REFRESH_SECRET", "DB_NAME"]
 
-const dotenvFiles = {
-  development: ".env.dev",
-  production: ".env.prod",
-  test: ".env.test"
+if (fs.existsSync(currentEnvFilePath())) {
+  dotenv.config({ path: currentEnvFilePath(), quiet: true })
+  console.log(`Loaded environment variables from ${currentEnvFile()}`)
 }
-
-const envFile = dotenvFiles[envType]
-if (envFile) {
-  dotenv.config({ path: envFile, quiet: true })
-  console.log(`Loaded environment variables from ${envFile}`)
-}
-
-const requiredEnvVars = [
-  "NODE_ENV",
-  "PORT",
-  "DB_URL",
-  "JWT_SECRET",
-  "JWT_REFRESH_SECRET",
-  "CLIENT_BASE_URL",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_USER",
-  "SMTP_PASS",
-  "FROM_EMAIL",
-  "EMBEDDINGS_BASE_URL",
-  "API_BASE_URL"
-]
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
 if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
-  process.exit(1)
+  error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
 }
 
 export const config = {
+  AI_BASE_URL: process.env.AI_BASE_URL || `http://localhost:${process.env.AI_PORT || 8000}`,
+  AI_PORT: process.env.AI_PORT || 8000,
   API_BASE_URL: process.env.API_BASE_URL,
+  API_PORT: process.env.API_PORT || 3000,
   CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
-  DB_URL: process.env.DB_URL,
-  EMBEDDINGS_BASE_URL: process.env.EMBEDDINGS_BASE_URL,
-  ENV: envType,
-  FROM_EMAIL: process.env.FROM_EMAIL,
+  DB_HOST: process.env.DB_HOST || "localhost",
+  DB_NAME: process.env.DB_NAME,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_PORT: process.env.DB_PORT || 5432,
+  DB_USER: process.env.DB_USER || "postgres",
+  ENV: currentEnvType(),
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   JWT_SECRET: process.env.JWT_SECRET,
-  NODE_ENV: envType,
-  PORT: process.env.PORT,
+  NODE_ENV: currentEnvType(),
+  SMTP_EMAIL: process.env.SMTP_EMAIL,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
-  UPLOADS_DIR: process.env.UPLOADS_DIR
+  UPLOADS_DIR: process.env.UPLOADS_DIR || "uploads"
 }
 
 export async function loadEnvironment(overrideEnvType) {
-  if (overrideEnvType && overrideEnvType !== envType) {
-    if (overrideEnvType === "dev") overrideEnvType = "development"
-    if (overrideEnvType === "prod") overrideEnvType = "production"
-
-    const overrideFile = dotenvFiles[overrideEnvType]
-    if (overrideFile) {
-      dotenv.config({ override: true, path: overrideFile, quiet: true })
-      console.log(`Loaded environment variables from ${overrideFile} (override)`)
+  if (overrideEnvType && overrideEnvType !== currentEnvType()) {
+    if (fs.existsSync(currentEnvFilePath(overrideEnvType))) {
+      dotenv.config({ override: true, path: currentEnvFilePath(overrideEnvType), quiet: true })
+      console.log(`Loaded environment variables from ${currentEnvFile(overrideEnvType)} (override)`)
+    } else {
+      error(`Environment file not found: ${currentEnvFile(overrideEnvType)}`)
     }
   }
 }
