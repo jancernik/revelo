@@ -1,43 +1,39 @@
 import { loadEnvironment } from "#src/config/environment.js"
 import postgres from "postgres"
 
-const extractDbInfo = (dbUrl) => {
-  const url = new URL(dbUrl)
-  return {
-    database: url.pathname.slice(1),
-    host: url.hostname,
-    password: url.password,
-    port: url.port || 5432,
-    username: url.username
-  }
-}
-
 export async function createDatabase(envType = process.env.NODE_ENV || "development") {
   await loadEnvironment(envType)
 
-  if (!process.env.DB_URL) {
-    console.error("✗ Error creating database: DB_URL environment variable is required")
+  const missingDBConfig = [process.env.DB_PASSWORD, process.env.DB_NAME].some((v) => !v)
+  if (missingDBConfig) {
+    console.error(
+      "✗ Error migrating database: DB_PASSWORD and DB_NAME environment variables are required"
+    )
     return
   }
 
-  const dbInfo = extractDbInfo(process.env.DB_URL)
+  const dbUser = process.env.DB_USER || "postgres"
+  const dbHost = process.env.DB_HOST || "localhost"
+  const dbPort = process.env.DB_PORT || 5432
+  const dbName = process.env.DB_NAME
+  const dbPassword = process.env.DB_PASSWORD
 
   const adminClient = postgres({
     database: "postgres",
-    host: dbInfo.host,
-    password: dbInfo.password,
-    port: dbInfo.port,
-    username: dbInfo.username
+    host: dbHost,
+    password: dbPassword,
+    port: dbPort,
+    username: dbUser
   })
 
   try {
-    const result = await adminClient`SELECT 1 FROM pg_database WHERE datname = ${dbInfo.database}`
+    const result = await adminClient`SELECT 1 FROM pg_database WHERE datname = ${dbName}`
 
     if (result.length === 0) {
-      await adminClient`CREATE DATABASE ${adminClient(dbInfo.database)}`
-      console.log(`✓ Database ${dbInfo.database} created`)
+      await adminClient`CREATE DATABASE ${adminClient(dbName)}`
+      console.log(`✓ Database ${dbName} created`)
     } else {
-      console.log(`✓ Database ${dbInfo.database} already exists`)
+      console.log(`✓ Database ${dbName} already exists`)
     }
   } catch (error) {
     console.error(`✗ Error creating database: ${error.message}`)
@@ -46,11 +42,11 @@ export async function createDatabase(envType = process.env.NODE_ENV || "developm
   }
 
   const dbClient = postgres({
-    database: dbInfo.database,
-    host: dbInfo.host,
-    password: dbInfo.password,
-    port: dbInfo.port,
-    username: dbInfo.username
+    database: dbName,
+    host: dbHost,
+    password: dbPassword,
+    port: dbPort,
+    username: dbUser
   })
 
   try {
@@ -58,9 +54,9 @@ export async function createDatabase(envType = process.env.NODE_ENV || "developm
 
     if (extensions.length === 0) {
       await dbClient`CREATE EXTENSION IF NOT EXISTS vector`
-      console.log(`✓ Vector extension created in ${dbInfo.database}`)
+      console.log(`✓ Vector extension created in ${dbName}`)
     } else {
-      console.log(`✓ Vector extension already exists in ${dbInfo.database}`)
+      console.log(`✓ Vector extension already exists in ${dbName}`)
     }
   } catch (error) {
     console.error(`✗ Error creating vector extension: ${error.message}`)

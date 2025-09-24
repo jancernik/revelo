@@ -2,17 +2,6 @@ import { loadEnvironment } from "#src/config/environment.js"
 import postgres from "postgres"
 import readline from "readline"
 
-const extractDbInfo = (dbUrl) => {
-  const url = new URL(dbUrl)
-  return {
-    database: url.pathname.slice(1),
-    host: url.hostname,
-    password: url.password,
-    port: url.port || 5432,
-    username: url.username
-  }
-}
-
 const askConfirmation = (question) => {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
@@ -30,14 +19,22 @@ const askConfirmation = (question) => {
 export async function dropDatabase(envType = process.env.NODE_ENV || "development") {
   await loadEnvironment(envType)
 
-  if (!process.env.DB_URL) {
-    console.error("✗ Error dropping database: DB_URL environment variable is required")
+  const missingDBConfig = [process.env.DB_PASSWORD, process.env.DB_NAME].some((v) => !v)
+  if (missingDBConfig) {
+    console.error(
+      "✗ Error migrating database: DB_PASSWORD and DB_NAME environment variables are required"
+    )
     return
   }
-  const dbInfo = extractDbInfo(process.env.DB_URL)
+
+  const dbUser = process.env.DB_USER || "postgres"
+  const dbHost = process.env.DB_HOST || "localhost"
+  const dbPort = process.env.DB_PORT || 5432
+  const dbName = process.env.DB_NAME
+  const dbPassword = process.env.DB_PASSWORD
 
   const confirmed = await askConfirmation(
-    `Are you sure you want to drop the database "${dbInfo.database}" in the ${envType} environment? (y/N): `
+    `Are you sure you want to drop the database "${dbName}" in the ${envType} environment? (y/N): `
   )
 
   if (!confirmed) {
@@ -47,20 +44,20 @@ export async function dropDatabase(envType = process.env.NODE_ENV || "developmen
 
   const adminClient = postgres({
     database: "postgres",
-    host: dbInfo.host,
-    password: dbInfo.password,
-    port: dbInfo.port,
-    username: dbInfo.username
+    host: dbHost,
+    password: dbPassword,
+    port: dbPort,
+    username: dbUser
   })
 
   try {
-    const result = await adminClient`SELECT 1 FROM pg_database WHERE datname = ${dbInfo.database}`
+    const result = await adminClient`SELECT 1 FROM pg_database WHERE datname = ${dbName}`
 
     if (result.length === 0) {
-      console.error(`✗ Database ${dbInfo.database} does not exist`)
+      console.error(`✗ Database ${dbName} does not exist`)
     } else {
-      await adminClient`DROP DATABASE ${adminClient(dbInfo.database)}`
-      console.log(`✓ Database ${dbInfo.database} dropped`)
+      await adminClient`DROP DATABASE ${adminClient(dbName)}`
+      console.log(`✓ Database ${dbName} dropped`)
     }
   } catch (error) {
     console.error(`✗ Error dropping database: ${error.message}`)

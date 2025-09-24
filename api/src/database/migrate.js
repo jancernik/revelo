@@ -6,12 +6,25 @@ import postgres from "postgres"
 export async function migrateDb(envType = process.env.NODE_ENV || "development") {
   await loadEnvironment(envType)
 
-  if (!process.env.DB_URL) {
-    console.error("✗ Error migrating database: DB_URL environment variable is required")
+  const missingDBConfig = [process.env.DB_PASSWORD, process.env.DB_NAME].some((v) => !v)
+  if (missingDBConfig) {
+    console.error(
+      "✗ Error migrating database: DB_PASSWORD and DB_NAME environment variables are required"
+    )
     return
   }
 
-  const migrationClient = postgres(process.env.DB_URL, { max: 1 })
+  const dbUser = process.env.DB_USER || "postgres"
+  const dbHost = process.env.DB_HOST || "localhost"
+  const dbPort = process.env.DB_PORT || 5432
+  const dbName = process.env.DB_NAME
+  const dbPassword = process.env.DB_PASSWORD
+  const dbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`
+
+  const migrationClient = postgres(dbUrl, { max: 1 })
+
+  await migrationClient`CREATE EXTENSION IF NOT EXISTS vector`
+  console.log(`✓ Vector extension enabled in ${dbName}`)
 
   await migrate(drizzle(migrationClient), {
     migrationsFolder: "./src/database/migrations"
