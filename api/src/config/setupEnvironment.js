@@ -51,11 +51,6 @@ const envConfig = {
   },
   production: {
     optional: [
-      { description: "SMTP server host", key: "SMTP_HOST" },
-      { description: "SMTP server port", key: "SMTP_PORT" },
-      { description: "SMTP username", key: "SMTP_USER" },
-      { description: "SMTP password", key: "SMTP_PASS" },
-      { description: "SMTP email address", key: "SMTP_EMAIL" },
       { description: "API server port", key: "API_PORT" },
       { description: "AI service port", key: "AI_PORT" },
       { description: "Client server port", key: "NGINX_PORT" },
@@ -64,6 +59,11 @@ const envConfig = {
       { description: "Database username", key: "DB_USER" }
     ],
     required: [
+      { description: "SMTP server host", key: "SMTP_HOST" },
+      { default: 587, description: "SMTP server port", key: "SMTP_PORT" },
+      { description: "SMTP username", key: "SMTP_USER" },
+      { description: "SMTP password", key: "SMTP_PASS" },
+      { description: "SMTP email address", key: "SMTP_EMAIL" },
       {
         autoGenerate: true,
         description: "Database password",
@@ -121,7 +121,7 @@ async function setupEnvironment(override) {
   if (!config) error(`Unknown environment: ${envType}`)
 
   if (fs.existsSync(filePath)) {
-    success(`Environment file for '${envType}' already exists: ${envFileName}`)
+    success(`Environment file for '${envType}' exists: ${envFileName}`)
     return
   }
 
