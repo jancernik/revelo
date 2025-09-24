@@ -62,7 +62,7 @@ const makeRequest = async (url, options = {}) => {
 const requestImageCaption = async (imagePath) => {
   if (config.ENV === "test") return "Test caption"
 
-  const baseUrl = config.EMBEDDINGS_BASE_URL
+  const baseUrl = config.AI_BASE_URL
 
   try {
     const fileBuffer = fs.readFileSync(imagePath)
@@ -90,7 +90,7 @@ const requestImageCaption = async (imagePath) => {
 const requestImageEmbedding = async (imagePath) => {
   if (config.ENV === "test") return new Array(768).fill(0.19)
 
-  const baseUrl = config.EMBEDDINGS_BASE_URL
+  const baseUrl = config.AI_BASE_URL
 
   try {
     const fileBuffer = fs.readFileSync(imagePath)
@@ -118,7 +118,7 @@ const requestImageEmbedding = async (imagePath) => {
 const requestTextEmbedding = async (text) => {
   if (config.ENV === "test") return new Array(768).fill(0.21)
 
-  const baseUrl = config.EMBEDDINGS_BASE_URL
+  const baseUrl = config.AI_BASE_URL
 
   try {
     const formData = new FormData()
