@@ -18,24 +18,28 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      CI: true
       NODE_ENV: test
-      PORT: 3000
-      DB_URL: postgresql://postgres:postgres@localhost:5433/revelo_test
+      API_PORT: 3000
+      DB_HOST: localhost
+      DB_PORT: 5433
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: revelo_test
       JWT_SECRET: test-jwt-secret-key-for-ci
       JWT_REFRESH_SECRET: test-jwt-refresh-secret-key-for-ci
-      CLIENT_BASE_URL: http://localhost:3000
-      API_BASE_URL: http://localhost:8080
-      EMBEDDINGS_BASE_URL: http://localhost:8000
+      AI_BASE_URL: http://localhost:8000
       SMTP_HOST: smtp.example.com
       SMTP_PORT: 587
       SMTP_USER: test@example.com
       SMTP_PASS: test-smtp-password
-      FROM_EMAIL: test@example.com
+      SMTP_EMAIL: test@example.com
 
     services:
       postgres:
         image: pgvector/pgvector:pg17
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: revelo_test
         options: >-

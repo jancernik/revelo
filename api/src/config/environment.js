@@ -4,7 +4,7 @@ import fs from "fs"
 
 const requiredEnvVars = ["DB_PASSWORD", "JWT_SECRET", "JWT_REFRESH_SECRET", "DB_NAME"]
 
-if (fs.existsSync(currentEnvFilePath())) {
+if (!process.env.CI && fs.existsSync(currentEnvFilePath())) {
   dotenv.config({ path: currentEnvFilePath(), quiet: true })
   console.log(`Loaded environment variables from ${currentEnvFile()}`)
 }
@@ -17,7 +17,6 @@ if (missingEnvVars.length > 0) {
 export const config = {
   AI_BASE_URL: process.env.AI_BASE_URL || `http://localhost:${process.env.AI_PORT || 8000}`,
   AI_PORT: process.env.AI_PORT || 8000,
-  API_BASE_URL: process.env.API_BASE_URL,
   API_PORT: process.env.API_PORT || 3000,
   CLIENT_BASE_URL:
     process.env.CLIENT_BASE_URL || `http://localhost:${process.env.CLIENT_PORT || 5173}`,
