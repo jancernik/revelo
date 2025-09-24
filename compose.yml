@@ -46,16 +46,33 @@ services:
 
   ai-gpu:
     container_name: revelo_ai_gpu
-    extends:
-      service: ai
     profiles: ["gpu"]
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    environment:
+      AI_PORT: ${AI_PORT:-8000}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${AI_PORT:-8000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - ai_data:/app/models
     deploy:
       resources:
+        limits:
+          memory: 4G
         reservations:
+          memory: 2G
           devices:
             - driver: nvidia
               capabilities: [gpu]
               device_ids: ["0"]
+    networks:
+      - revelo_network
   api:
     container_name: revelo_api
     build:
