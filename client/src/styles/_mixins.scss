@@ -63,3 +63,12 @@
     #{$property}: #{$dark-value} !important;
   }
 }
+
+@mixin glow($color) {
+  $blur: 160px;
+  $spread: 16px;
+  $opacity: 0.5;
+  -webkit-box-shadow: 0px 0px $blur $spread rgba($color, $opacity);
+  -moz-box-shadow: 0px 0px $blur $spread rgba($color, $opacity);
+  box-shadow: 0px 0px $blur $spread rgba($color, $opacity);
+}
