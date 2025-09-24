@@ -24,6 +24,11 @@ const envConfig = {
       { default: "8000", description: "AI service port", key: "AI_PORT" },
       { default: "5173", description: "Client server port", key: "CLIENT_PORT" },
       { default: "http://localhost:8000", description: "AI service URL", key: "AI_BASE_URL" },
+      {
+        default: "http://localhost:5173",
+        description: "Client base URL for emails",
+        key: "CLIENT_BASE_URL"
+      },
       { default: "uploads", description: "File uploads directory", key: "UPLOADS_DIR" },
       { default: "localhost", description: "Database host", key: "DB_HOST" },
       { default: "5432", description: "Database port", key: "DB_PORT" },
@@ -59,6 +64,7 @@ const envConfig = {
       { description: "Database username", key: "DB_USER" }
     ],
     required: [
+      { description: "Client base URL", key: "CLIENT_BASE_URL" },
       { description: "SMTP server host", key: "SMTP_HOST" },
       { default: 587, description: "SMTP server port", key: "SMTP_PORT" },
       { description: "SMTP username", key: "SMTP_USER" },

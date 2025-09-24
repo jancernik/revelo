@@ -19,7 +19,8 @@ export const config = {
   AI_PORT: process.env.AI_PORT || 8000,
   API_BASE_URL: process.env.API_BASE_URL,
   API_PORT: process.env.API_PORT || 3000,
-  CLIENT_BASE_URL: process.env.CLIENT_BASE_URL,
+  CLIENT_BASE_URL:
+    process.env.CLIENT_BASE_URL || `http://localhost:${process.env.CLIENT_PORT || 5173}`,
   DB_HOST: process.env.DB_HOST || "localhost",
   DB_NAME: process.env.DB_NAME,
   DB_PASSWORD: process.env.DB_PASSWORD,

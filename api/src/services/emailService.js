@@ -3,9 +3,23 @@ import nodemailer from "nodemailer"
 
 let transporter = null
 
-const sendEmail = async (transporter, mailOptions) => {
+const sendEmail = async (transporter, mailOptions, verificationUrl) => {
   if (config.NODE_ENV === "test") return
-  console.log(mailOptions)
+  if (
+    [
+      !config.SMTP_HOST,
+      !config.SMTP_PORT,
+      !config.SMTP_USER,
+      !config.SMTP_PASS,
+      !config.SMTP_EMAIL
+    ].some(Boolean)
+  ) {
+    if (verificationUrl) {
+      console.log(`Missing SMTP configuration. Skipping email send.`)
+      console.log(`Verification URL for ${mailOptions.to}: ${verificationUrl}`)
+    }
+    return
+  }
   try {
     const info = await transporter.sendMail(mailOptions)
     return info
@@ -34,7 +48,7 @@ export const sendVerificationEmail = async (email, token, username) => {
   const verificationUrl = `${config.CLIENT_BASE_URL}/verify-email?token=${token}`
 
   const mailOptions = {
-    from: `"Revelo" <${config.FROM_EMAIL}>`,
+    from: `"Revelo" <${config.SMTP_EMAIL}>`,
     html: `
       <p>Hi ${username},</p>
       <p>Please verify your email by clicking this link:</p>
@@ -52,14 +66,14 @@ export const sendVerificationEmail = async (email, token, username) => {
     to: email
   }
 
-  await sendEmail(transporter, mailOptions)
+  await sendEmail(transporter, mailOptions, verificationUrl)
 }
 
 export const sendWelcomeEmail = async (email, username) => {
   const transporter = initializeTransporter()
 
   const mailOptions = {
-    from: config.FROM_EMAIL,
+    from: config.SMTP_EMAIL,
     html: `
       <p>Welcome ${username}!</p>
       <p>Your email is verified and your account is active.</p>
