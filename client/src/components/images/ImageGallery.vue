@@ -17,7 +17,8 @@ import { gsap } from "gsap"
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useRoute } from "vue-router"
 
-const SPACING = 20 // Space between images and columns in pixels
+const SPACING_BASE = 20 // Space between images and columns in pixels
+const SPACING_SMALL = 8 // Space between images and columns in pixels for small screens
 const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optimization
 const MAX_COLUMN_WIDTH = 300 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 2 // Minimum number of columns to display
@@ -95,21 +96,23 @@ const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
 const columnCount = computed(() => {
-  const base = Math.ceil((maxWindowWidth.value - SPACING) / (MAX_COLUMN_WIDTH + SPACING))
+  const base = Math.ceil((maxWindowWidth.value - SPACING_BASE) / (MAX_COLUMN_WIDTH + SPACING_BASE))
   const clamped = clamp(base, MIN_COLUMNS, MAX_COLUMNS)
   if (clamped % 2 === 0 && clamped !== 2) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
   return clamped
 })
 
+const currentSpacing = computed(() => (columnCount.value === 2 ? SPACING_SMALL : SPACING_BASE))
+
 const columnWidth = computed(() => {
-  return (maxWindowWidth.value - SPACING * (columnCount.value + 1)) / columnCount.value
+  return (maxWindowWidth.value - currentSpacing.value * (columnCount.value + 1)) / columnCount.value
 })
 
 const centerOffset = computed(() => {
   return Math.max(0, (windowWidth.value - maxWindowWidth.value) / 2)
 })
 
-const firstColumnMargin = computed(() => centerOffset.value + SPACING)
+const firstColumnMargin = computed(() => centerOffset.value + currentSpacing.value)
 
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
@@ -125,7 +128,10 @@ const initialLoadComplete = computed(() => initialLoadProgress.value === 1)
 
 const maxScrollDistance = computed(() => {
   if (canInfiniteScroll.value) return Infinity
-  return Math.max(-SPACING, Math.max(...columnsHeights) - windowHeight.value) + SPACING
+  return (
+    Math.max(-currentSpacing.value, Math.max(...columnsHeights) - windowHeight.value) +
+    currentSpacing.value
+  )
 })
 
 const getBoundedScrollPosition = (targetPosition) => {
@@ -139,7 +145,7 @@ const updateImageGroups = () => {
 }
 
 const calculateImageCardsData = () => {
-  columnsHeights = createArray(columnCount.value, SPACING + VIRTUAL_BUFFER - 1)
+  columnsHeights = createArray(columnCount.value, currentSpacing.value + VIRTUAL_BUFFER - 1)
   columnImageCounts = createArray(columnCount.value, 0)
   clearArray(imageCardData)
 
@@ -160,13 +166,13 @@ const calculateImageCardsData = () => {
         setY: gsap.quickSetter(cardElement, "y", "px"),
         visible: false
       })
-      columnsHeights[columnIndex] += cardHeight + SPACING
+      columnsHeights[columnIndex] += cardHeight + currentSpacing.value
       columnImageCounts[columnIndex]++
     })
-    columnsHeights[columnIndex] -= SPACING + VIRTUAL_BUFFER - 1
+    columnsHeights[columnIndex] -= currentSpacing.value + VIRTUAL_BUFFER - 1
   })
   canInfiniteScroll.value =
-    Math.min(...columnsHeights) - SPACING >= windowHeight.value + VIRTUAL_BUFFER * 3
+    Math.min(...columnsHeights) - currentSpacing.value >= windowHeight.value + VIRTUAL_BUFFER * 3
 }
 
 const calculateColumnLerpFactors = () => {
@@ -186,10 +192,10 @@ const calculateColumnLerpFactors = () => {
 
 const calculateColumnDimensions = () => {
   columnScalableHeights = createArray(columnCount.value, (columnIndex) => {
-    return columnsHeights[columnIndex] - SPACING * columnImageCounts[columnIndex]
+    return columnsHeights[columnIndex] - currentSpacing.value * columnImageCounts[columnIndex]
   })
   columnSpacing = createArray(columnCount.value, (columnIndex) => {
-    return SPACING * columnImageCounts[columnIndex]
+    return currentSpacing.value * columnImageCounts[columnIndex]
   })
   columnWrappedHeights = createArray(columnCount.value, 0)
 }
@@ -337,7 +343,7 @@ const updateScrollTargets = () => {
 }
 
 const calculateWrappedPosition = (card) => {
-  const constantSpacing = (card.cardIndex + 1) * SPACING
+  const constantSpacing = (card.cardIndex + 1) * currentSpacing.value
   const scaledCardTop = (card.cardTop - constantSpacing) * resizeFactor.value
   const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
   const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget - VIRTUAL_BUFFER
@@ -693,7 +699,7 @@ watch(resizeFactor, () => startRenderLoop())
 watch(windowHeight, () => {
   if (columnsHeights.length > 0) {
     canInfiniteScroll.value =
-      Math.min(...columnsHeights) - SPACING >= windowHeight.value + VIRTUAL_BUFFER * 3
+      Math.min(...columnsHeights) - currentSpacing.value >= windowHeight.value + VIRTUAL_BUFFER * 3
   }
 })
 
@@ -734,7 +740,7 @@ defineExpose({
       class="gallery-column"
       :style="{
         width: columnWidth + 'px',
-        marginLeft: `${index === 0 ? firstColumnMargin : SPACING}px`
+        marginLeft: `${index === 0 ? firstColumnMargin : currentSpacing}px`
       }"
     >
       <ImageCard
