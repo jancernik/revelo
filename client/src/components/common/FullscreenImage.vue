@@ -449,10 +449,10 @@ const animateMetadata = (visible, callback) => {
       const metadataOffset = initialMetadataWidth.value + SPACING
       const centerOffset = metadataOffset / -2
 
-      tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 })
-      tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, "<")
+      tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 }, 0)
+      tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, 0)
       const { height, width } = calculateOptimalImageSize(visible, collectionVisible.value)
-      tl.to(fullscreenImageElement.value, { height, width }, "<")
+      tl.to(fullscreenImageElement.value, { height, width }, 0)
     }
   })
 }
@@ -473,13 +473,13 @@ const animateCollection = (visible, callback) => {
     }
   })
 
-  tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 })
-  tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, "<")
+  tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 }, 0)
+  tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, 0)
   const { height, width } = calculateOptimalImageSize(metadataVisible.value, visible)
-  tl.to(fullscreenImageElement.value, { height, width }, "<")
+  tl.to(fullscreenImageElement.value, { height, width }, 0)
 
   if (metadataVisible.value && isMobileLayout.value) {
-    tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), "<")
+    tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), 0)
   }
 }
 
