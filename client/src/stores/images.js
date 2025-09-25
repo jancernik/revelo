@@ -157,7 +157,7 @@ export const useImagesStore = defineStore("images", () => {
         loading.value = false
       }
     }
-  }, 600)
+  }, 300)
 
   async function initialize() {
     if (!initialized.value) {
