@@ -59,7 +59,6 @@ let columnImageCounts = []
 let imageCardData = []
 let scrollTargets = []
 let columnCountUpdateId = 0
-let isBuildingLayout = false
 let columnScalableHeights = []
 let columnSpacing = []
 let columnLerpFactors = []
@@ -92,6 +91,7 @@ const baselineColumnWidth = ref(0)
 const velocity = ref(0)
 const isScrollPaused = ref(true)
 const canInfiniteScroll = ref(false)
+const isBuildingLayout = ref(false)
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
@@ -209,11 +209,14 @@ const hideAllImages = () => {
 }
 
 const rebuildLayout = async () => {
-  isBuildingLayout = true
+  isBuildingLayout.value = true
+
+  await nextTick()
   velocity.value = 0
   scrollTargets = []
   imageCountForInitialLoad.value = 0
   baselineColumnWidth.value = columnWidth.value
+  scrollPosition = getBoundedScrollPosition(0)
 
   await nextTick()
   calculateImageCardsData()
@@ -223,7 +226,7 @@ const rebuildLayout = async () => {
   hideAllImages()
 
   requestAnimationFrame(() => {
-    isBuildingLayout = false
+    isBuildingLayout.value = false
     startRenderLoop()
   })
 }
@@ -279,7 +282,7 @@ const startZoomTransition = (imageId, referenceElement) => {
 }
 
 const startZoomReturn = (options = {}) => {
-  showMenu(true)
+  setTimeout(() => showMenu(true), 200)
   const { duration = ZOOM_TOTAL_DURATION, showAllImages = false, withTarget = false } = options
 
   const visibleNonTargetStates = imageCardData.filter(
@@ -361,7 +364,7 @@ const calculateWrappedPosition = (card) => {
 
 const updateImagePositions = (options = {}) => {
   const { forcePosition = false } = options
-  if (isBuildingLayout) return
+  if (isBuildingLayout.value) return
 
   updateScrollTargets()
 
@@ -424,7 +427,7 @@ const updateImagePositions = (options = {}) => {
 }
 
 const updateVelocity = (deltaTime) => {
-  if (!isBuildingLayout && !isDragging.value) {
+  if (!isBuildingLayout.value && !isDragging.value) {
     const newScrollPosition = scrollPosition + velocity.value * deltaTime
     scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
@@ -462,7 +465,7 @@ const updateZoomTransitionState = (timestamp) => {
 }
 
 const isRenderLoopIdle = () => {
-  if (isBuildingLayout || isDragging.value || isZoomTransitionActive) return false
+  if (isBuildingLayout.value || isDragging.value || isZoomTransitionActive) return false
 
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
@@ -671,7 +674,6 @@ watch(
     if (imagesStore.filteredImages.length > 0) {
       await nextTick()
       await rebuildLayout()
-      imageGallery.value?.focus()
     }
   },
   { deep: true, immediate: true }
@@ -722,7 +724,7 @@ defineExpose({
     v-if="!noImages"
     ref="image-gallery"
     class="image-gallery"
-    :class="{ dragging: isDragging }"
+    :class="{ dragging: isDragging, building: isBuildingLayout }"
     tabindex="0"
     @wheel="handleWheel"
     @keydown="handleKeyDown"
@@ -789,6 +791,17 @@ defineExpose({
   &.dragging,
   &.dragging .image-card {
     cursor: grabbing;
+  }
+
+  &.building::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--background);
+    z-index: z(overlay);
   }
 }
 
