@@ -1,5 +1,6 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
+import ImageSearcher from "#src/components/ImageSearcher.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
 import { useMenu } from "#src/composables/useMenu"
 import { useAuthStore } from "#src/stores/auth"
@@ -13,10 +14,10 @@ const authStore = useAuthStore()
 const { isVisible, shouldAnimate } = useMenu("menu")
 
 const menu = useTemplateRef("menu")
-
-const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const menuUl = useTemplateRef("menu-ul")
 const activeIndicator = useTemplateRef("active-indicator")
+
+const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const isAnimating = ref(false)
 const isMenuAnimating = ref(false)
 
@@ -53,6 +54,12 @@ const menuConfig = reactive({
       id: "theme-toggler",
       props: {},
       visible: true
+    },
+    {
+      component: markRaw(ImageSearcher),
+      id: "image-searcher",
+      props: { menu },
+      visible: () => !!menu.value
     }
   ],
   right: []
@@ -243,7 +250,6 @@ watch(
               v-if="item.component"
               v-bind="item.props || {}"
               :class="item.className"
-              @click="handleItemClick(item)"
             />
             <button v-else :class="item.className" @click="handleItemClick(item)">
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
@@ -307,6 +313,7 @@ watch(
   border: 1px solid var(--border);
   transform-origin: bottom;
   backdrop-filter: blur(5px);
+  padding: var(--spacing-2);
   z-index: z(menu);
   transition: none;
 
@@ -324,7 +331,6 @@ watch(
     display: flex;
     align-items: center;
     align-items: center;
-    padding: var(--spacing-2);
     position: relative;
   }
 
@@ -349,25 +355,24 @@ watch(
   }
 
   li {
-    position: relative;
     z-index: 2;
     border-radius: var(--radius-md);
-  }
 
-  button {
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    gap: var(--spacing-2);
-    width: 100%;
-    padding: var(--spacing-2) var(--spacing-4);
-    background: none;
-    cursor: pointer;
-    color: inherit;
-    @include text("base");
-    font-weight: var(--font-normal);
-    text-transform: uppercase;
+    > button {
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      gap: var(--spacing-2);
+      width: 100%;
+      padding: var(--spacing-2) var(--spacing-4);
+      background: none;
+      cursor: pointer;
+      color: inherit;
+      @include text("base");
+      font-weight: var(--font-normal);
+      text-transform: uppercase;
+    }
   }
 }
 </style>

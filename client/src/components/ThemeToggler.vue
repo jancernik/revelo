@@ -18,49 +18,55 @@ const toggleTheme = () => {
 </script>
 
 <template>
-  <button
-    ref="button"
-    class="theme-toggler"
-    :class="{ loading: isWaitingForGallery }"
-    @click="toggleTheme"
-  >
-    <Icon v-if="isWaitingForGallery" name="Loader2" class="loading-icon" :size="18" />
-    <Icon name="Zap" class="dark-icon" :size="18" />
-    <Icon name="ZapOff" class="light-icon" :size="18" />
-  </button>
+  <div class="theme-toggler">
+    <button
+      ref="button"
+      class="theme-toggler-button"
+      :class="{ loading: isWaitingForGallery }"
+      @click="toggleTheme"
+    >
+      <Icon v-if="isWaitingForGallery" name="Loader2" class="loading-icon" :size="18" />
+      <Icon name="Zap" class="dark-icon" :size="18" />
+      <Icon name="ZapOff" class="light-icon" :size="18" />
+    </button>
+  </div>
 </template>
 
 <style lang="scss">
 .theme-toggler {
-  @include flex-center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
+  padding-inline: var(--spacing-1);
 
-  .light-icon {
-    @include light-dark-property(display, block, none);
-  }
+  .theme-toggler-button {
+    @include flex-center;
+    width: 2.25rem;
+    height: 2.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
 
-  .dark-icon {
-    @include light-dark-property(display, none, block);
-  }
+    .light-icon {
+      @include light-dark-property(display, block, none);
+    }
 
-  .loading-icon {
-    animation: spin 1s linear infinite;
-  }
-
-  &.loading {
-    cursor: wait;
-    .light-icon,
     .dark-icon {
-      display: none !important;
+      @include light-dark-property(display, none, block);
+    }
+
+    .loading-icon {
+      animation: spin 1s linear infinite;
+    }
+
+    &.loading {
+      cursor: wait;
+      .light-icon,
+      .dark-icon {
+        display: none !important;
+      }
     }
   }
 }
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
