@@ -176,7 +176,7 @@ export const fetchByIdWithVersions = async (id) => {
   return image
 }
 
-const generateEmbedding = async (image) => {
+export const generateEmbedding = async (image) => {
   try {
     const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
@@ -194,7 +194,7 @@ const generateEmbedding = async (image) => {
   }
 }
 
-const generateCaption = async (image) => {
+export const generateCaption = async (image) => {
   try {
     const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
