@@ -693,6 +693,12 @@ watch(initialLoadProgress, (progress) => {
   if (progress === 1 && !isFirstLoad && !fullscreenImageData.value) {
     isScrollPaused.value = false
     updateImagePositions()
+    for (const card of imageCardData) {
+      if (card.visible) {
+        card.setOpacity(0)
+        card.setScale(0.8)
+      }
+    }
     startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
   }
 })
