@@ -16,6 +16,7 @@ const searchValue = ref("")
 const searchButton = useTemplateRef("search-button")
 const searchInput = useTemplateRef("search-input")
 const searchInputContainer = useTemplateRef("search-input-container")
+const clearButton = useTemplateRef("clear-button")
 
 const { width: searchButtonWidth, x: searchButtonX } = useElementRect(searchButton)
 const { x: menuX } = useElementRect(props.menu)
@@ -85,10 +86,11 @@ const expandSearch = () => {
 const collapseSearch = () => {
   if (!isSearchExpanded.value) return
   isSearchExpanded.value = false
-  hideSearchInput()
   searchInput.value?.blur()
   imagesStore.search("")
-  searchValue.value = ""
+  hideSearchInput(() => {
+    searchValue.value = ""
+  })
 }
 
 const handleInput = (event) => {
@@ -96,8 +98,10 @@ const handleInput = (event) => {
   imagesStore.search(event.target.value)
 }
 
-const handleBlur = () => {
-  if (!searchValue.value.trim()) collapseSearch()
+const handleBlur = (event) => {
+  if (!searchValue.value.trim() && event.relatedTarget !== clearButton.value) {
+    collapseSearch()
+  }
 }
 </script>
 
@@ -114,12 +118,19 @@ const handleBlur = () => {
         type="text"
         class="search-input"
         placeholder="Search images..."
+        :tabindex="isSearchExpanded ? 0 : -1"
         :style="{ paddingLeft: searchButtonWidth + menuOffset + 'px' }"
         @blur="handleBlur"
+        @keydown.esc.prevent="collapseSearch"
         @input="handleInput"
       />
 
-      <button ref="clear-button" class="clear-button" @click="collapseSearch">
+      <button
+        ref="clear-button"
+        class="clear-button"
+        :tabindex="isSearchExpanded ? 0 : -1"
+        @click="collapseSearch"
+      >
         <Icon name="X" class="clear-icon" :size="18" />
       </button>
     </div>
