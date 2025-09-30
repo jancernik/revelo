@@ -1,10 +1,12 @@
 <script setup>
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { useMenu } from "#src/composables/useMenu"
 import { useImagesStore } from "#src/stores/images"
 import { onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
 const { hide: hideFullscreenImage, show: showFullscreenImage } = useFullscreenImage()
+const { hide: hideMenu } = useMenu()
 const imagesStore = useImagesStore()
 const router = useRouter()
 const image = ref(null)
@@ -22,6 +24,7 @@ const fetchImage = async () => {
 }
 
 onMounted(async () => {
+  hideMenu(false)
   await fetchImage()
   showFullscreenImage(image.value, { updateRoute: false })
 })

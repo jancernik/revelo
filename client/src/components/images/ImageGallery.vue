@@ -981,7 +981,7 @@ watch(windowHeight, () => {
 
 onMounted(() => {
   if (!route.path.includes("/images/")) {
-    showMenu(false)
+    showMenu(true)
   }
   window.addEventListener("focusin", handleWindowFocusIn)
   window.addEventListener("keydown", handleWindowKeyDown)
