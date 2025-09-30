@@ -40,6 +40,7 @@ export default [
       sourceType: "module"
     },
     rules: {
+      "perfectionist/sort-switch-cases": "off",
       "vue/multi-word-component-names": "off"
     }
   },

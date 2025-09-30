@@ -47,6 +47,7 @@ const animateSearchInput = (visible, callback) => {
   const nonStaggeredElements = ".menu .divider, .menu .active-indicator"
   const searchInputElements = ".search-input, .clear-button"
   const menuListItems = ".menu li:not(:has(.image-searcher))"
+  const menuButtons = ".menu button:not(.clear-button)"
   const animateIn = { filter: "blur(0px)", opacity: 1 }
   const animateOut = { filter: "blur(15px)", opacity: 0 }
 
@@ -62,6 +63,7 @@ const animateSearchInput = (visible, callback) => {
       { duration: 0.3, ease: "power2.inOut", x: searchButtonOffset.value },
       0
     )
+    document.querySelectorAll(menuButtons).forEach((b) => (b.tabIndex = -1))
   } else {
     tl.to(staggeredElements, { ...animateIn, stagger: 0.03 }, 0)
     tl.to(nonStaggeredElements, { ...animateIn }, 0)
@@ -70,6 +72,7 @@ const animateSearchInput = (visible, callback) => {
 
     tl.to(searchInputElements, { ...animateOut, duration: 0.3, stagger: -0.05 }, 0)
     tl.to(searchButton.value, { duration: 0.3, ease: "power2.inOut", x: 0 }, 0)
+    document.querySelectorAll(menuButtons).forEach((b) => (b.tabIndex = 0))
   }
 }
 

@@ -14,7 +14,7 @@ import {
 } from "#src/utils/galleryHelpers"
 import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 import { useRoute } from "vue-router"
 
 const SPACING_BASE = 20 // Space between images and columns in pixels
@@ -73,6 +73,8 @@ let isZoomTransitionActive = false
 let isZoomingOut = true
 let zoomTargetImageId = null
 let zoomReferencePoint = null
+let lastInputMethod = null
+let lastTabDirection = 1
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
@@ -92,6 +94,7 @@ const velocity = ref(0)
 const isScrollPaused = ref(true)
 const canInfiniteScroll = ref(false)
 const isBuildingLayout = ref(false)
+const selectedImage = ref(null)
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
@@ -137,6 +140,144 @@ const maxScrollDistance = computed(() => {
 const getBoundedScrollPosition = (targetPosition) => {
   if (canInfiniteScroll.value) return targetPosition
   return clamp(targetPosition, -maxScrollDistance.value, 0)
+}
+
+const getFocusTargetInColumn = (columnIndex) => {
+  const columnImages = imageCardData.filter((img) => img.columnIndex === columnIndex && img.visible)
+  if (columnImages.length === 0) return null
+
+  const viewportCenter = windowHeight.value / 2
+  let closestImage = null
+  let closestDistance = Infinity
+
+  for (const card of columnImages) {
+    if (!card.visible) continue
+
+    const wrappedPosition = calculateWrappedPosition(card)
+    const cardHeight = card.cardHeight * resizeFactor.value
+    const cardCenter = wrappedPosition + cardHeight / 2
+    const distance = Math.abs(cardCenter - viewportCenter)
+
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestImage = card
+    }
+  }
+
+  return closestImage
+}
+
+const scrollToImage = (imageId, options = {}) => {
+  const { animated = true, force = false } = options
+  if (!imageId) return
+
+  const targetCard = imageCardData.find((card) => card.imageId === imageId)
+  const rect = targetCard?.element?.getBoundingClientRect()
+  if (rect && !force) {
+    if (rect.top >= 0 && rect.bottom <= windowHeight.value) {
+      return
+    }
+  }
+  if (!targetCard) return
+
+  const constantSpacing = (targetCard.cardIndex + 1) * currentSpacing.value
+  const scaledCardTop = (targetCard.cardTop - constantSpacing) * resizeFactor.value
+  const adjustedCardTop = scaledCardTop + constantSpacing - VIRTUAL_BUFFER
+
+  const screenCenter = windowHeight.value / 2
+  const cardCenter = adjustedCardTop + (targetCard.cardHeight * resizeFactor.value) / 2
+  let targetScrollPosition = -(cardCenter - screenCenter)
+
+  if (canInfiniteScroll.value) {
+    const totalSpacing = columnSpacing[targetCard.columnIndex]
+    const columnHeight = columnsHeights[targetCard.columnIndex]
+    const scalableHeight = columnHeight - totalSpacing
+    const wrapHeight = scalableHeight + totalSpacing
+    const currentPos = scrollPosition
+    const scaledTargetPosition = targetScrollPosition / resizeFactor.value
+
+    if (animated) {
+      const normalizePosition = (pos) => ((pos % wrapHeight) + wrapHeight) % wrapHeight
+
+      const currentNormalized = normalizePosition(currentPos)
+      const targetNormalized = normalizePosition(scaledTargetPosition)
+
+      let backwardDistance, forwardDistance
+
+      if (targetNormalized >= currentNormalized) {
+        forwardDistance = targetNormalized - currentNormalized
+        backwardDistance = currentNormalized + (wrapHeight - targetNormalized)
+      } else {
+        forwardDistance = wrapHeight - currentNormalized + targetNormalized
+        backwardDistance = currentNormalized - targetNormalized
+      }
+
+      if (forwardDistance <= backwardDistance) {
+        targetScrollPosition = currentPos + forwardDistance
+      } else {
+        targetScrollPosition = currentPos - backwardDistance
+      }
+    } else {
+      targetScrollPosition = scaledTargetPosition
+    }
+
+    scrollPosition = targetScrollPosition
+  } else {
+    scrollPosition = getBoundedScrollPosition(targetScrollPosition)
+  }
+
+  if (animated) {
+    velocity.value = 0
+    startRenderLoop()
+  } else {
+    scrollTargets = scrollTargets.map(() => scrollPosition)
+    updateImagePositions()
+  }
+}
+
+const selectImageHorizontally = (direction = 1) => {
+  let targetColumn = 0
+  if (!selectedImage.value) {
+    targetColumn = direction > 0 ? 0 : columnCount.value - 1
+  } else {
+    targetColumn = selectedImage.value.columnIndex + direction
+    if (targetColumn < 0) targetColumn = 0
+    if (targetColumn >= columnCount.value) targetColumn = columnCount.value - 1
+  }
+
+  selectedImage.value = getFocusTargetInColumn(targetColumn)
+
+  if (selectedImage.value) {
+    selectedImage.value.element?.focus()
+    updateImagePositions()
+    requestAnimationFrame(() => scrollToImage(selectedImage.value.imageId))
+  }
+}
+
+const selectImageVertically = (direction = 1) => {
+  if (!selectedImage.value) return
+  else {
+    const columnIndex = selectedImage.value.columnIndex
+    const columnImages = imageCardData.filter((img) => img.columnIndex === columnIndex)
+    const currentIndex = columnImages.findIndex(
+      (img) => img.imageId === selectedImage.value.imageId
+    )
+    let targetIndex = currentIndex + direction
+    if (targetIndex < 0) targetIndex = columnImages.length - 1
+    if (targetIndex > columnImages.length - 1) targetIndex = 0
+    selectedImage.value = columnImages[targetIndex]
+  }
+
+  if (selectedImage.value) {
+    selectedImage.value.element?.focus()
+    updateImagePositions()
+    requestAnimationFrame(() => scrollToImage(selectedImage.value.imageId, { force: true }))
+  }
+}
+
+const clearImageSelection = () => {
+  selectedImage.value = null
+  updateImagePositions()
 }
 
 const updateImageGroups = () => {
@@ -460,6 +601,7 @@ const updateZoomTransitionState = (timestamp) => {
       resumeScrolling()
       zoomTargetImageId = null
       forceZoomTargetVisibility = false
+      selectedImage.value?.element?.focus()
     }
   }
 }
@@ -610,54 +752,180 @@ const handleDragEnd = (event) => {
   setTimeout(() => (hasDragged.value = false), 50)
 }
 
+const handleWindowPointerDown = (event) => {
+  lastInputMethod = event.pointerType
+  if (selectedImage.value) {
+    clearImageSelection()
+  }
+}
+
+const handleWindowFocusIn = (event) => {
+  if (
+    (event.target === imageGallery.value || event.target.tagName === "BODY") &&
+    lastInputMethod === "keyboard"
+  ) {
+    selectImageHorizontally(lastTabDirection)
+  }
+}
+
 const handleKeyDown = (event) => {
-  let scrollDelta = 0
-  let impulseMultiplier = 0
-
   switch (event.key) {
-    case " ":
+    case " ": {
       event.preventDefault()
-      if (isScrollPaused.value) return
-      scrollDelta = event.shiftKey ? windowHeight.value : -windowHeight.value * 0.6
-      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
-      break
-    case "ArrowDown":
-      event.preventDefault()
-      if (isScrollPaused.value) return
-      scrollDelta = -windowHeight.value * 0.2
-      impulseMultiplier = KEYBOARD_ARROW_IMPULSE
-      break
-    case "ArrowUp":
-      event.preventDefault()
-      if (isScrollPaused.value) return
-      scrollDelta = windowHeight.value * 0.2
-      impulseMultiplier = KEYBOARD_ARROW_IMPULSE
-      break
-    case "PageDown":
-      event.preventDefault()
-      if (isScrollPaused.value) return
-      scrollDelta = -windowHeight.value * 0.6
-      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
-      break
-    case "PageUp":
-      event.preventDefault()
-      if (isScrollPaused.value) return
-      scrollDelta = windowHeight.value * 0.6
-      impulseMultiplier = KEYBOARD_PAGE_IMPULSE
-      break
-    default:
-      return
-  }
+      if (isScrollPaused.value) break
+      if (selectedImage.value) {
+        selectedImage.value?.element?.click()
+        break
+      }
 
-  if (scrollDelta !== 0) {
-    scrollPosition += scrollDelta / resizeFactor.value
-    velocity.value += clamp(
-      (scrollDelta / resizeFactor.value) * impulseMultiplier,
-      -MAX_SPEED,
-      MAX_SPEED
-    )
-    startRenderLoop()
+      const scrollDelta = event.shiftKey ? windowHeight.value : -windowHeight.value * 0.6
+      scrollPosition += scrollDelta / resizeFactor.value
+      velocity.value += clamp(
+        (scrollDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
+        -MAX_SPEED,
+        MAX_SPEED
+      )
+      startRenderLoop()
+      break
+    }
+
+    case "A":
+    case "a":
+    case "ArrowLeft": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      if (!selectedImage.value) break
+      selectImageHorizontally(-1)
+      break
+    }
+
+    case "ArrowDown":
+    case "S":
+    case "s": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      if (selectedImage.value) {
+        selectImageVertically(1)
+        break
+      }
+      const downDelta = -windowHeight.value * 0.2
+      scrollPosition += downDelta / resizeFactor.value
+      velocity.value += clamp(
+        (downDelta / resizeFactor.value) * KEYBOARD_ARROW_IMPULSE,
+        -MAX_SPEED,
+        MAX_SPEED
+      )
+      startRenderLoop()
+      break
+    }
+
+    case "ArrowRight":
+    case "D":
+    case "d": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      if (!selectedImage.value) break
+      selectImageHorizontally(1)
+      break
+    }
+
+    case "ArrowUp":
+    case "W":
+    case "w": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      if (selectedImage.value) {
+        selectImageVertically(-1)
+        break
+      }
+      const upDelta = windowHeight.value * 0.2
+      scrollPosition += upDelta / resizeFactor.value
+      velocity.value += clamp(
+        (upDelta / resizeFactor.value) * KEYBOARD_ARROW_IMPULSE,
+        -MAX_SPEED,
+        MAX_SPEED
+      )
+      startRenderLoop()
+      break
+    }
   }
+}
+
+const handleWindowKeyDown = (event) => {
+  switch (event.key) {
+    case "Enter": {
+      event.preventDefault()
+      selectedImage.value?.element?.click()
+      break
+    }
+
+    case "Escape": {
+      if (fullscreenImageData.value) break
+      event.preventDefault()
+      document.activeElement?.blur()
+      clearImageSelection()
+      break
+    }
+
+    case "PageDown": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      const pageDownDelta = -windowHeight.value * 0.6
+      scrollPosition += pageDownDelta / resizeFactor.value
+      velocity.value += clamp(
+        (pageDownDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
+        -MAX_SPEED,
+        MAX_SPEED
+      )
+      startRenderLoop()
+      break
+    }
+
+    case "PageUp": {
+      event.preventDefault()
+      if (isScrollPaused.value) break
+      const pageUpDelta = windowHeight.value * 0.6
+      scrollPosition += pageUpDelta / resizeFactor.value
+      velocity.value += clamp(
+        (pageUpDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
+        -MAX_SPEED,
+        MAX_SPEED
+      )
+      startRenderLoop()
+      break
+    }
+
+    case "Tab": {
+      if (isScrollPaused.value) break
+      if (selectedImage.value) {
+        if (event.shiftKey) {
+          event.preventDefault()
+          if (selectedImage.value.columnIndex > 0) {
+            selectImageHorizontally(-1)
+          } else {
+            document.querySelector(".menu li:last-of-type button")?.focus()
+            clearImageSelection()
+          }
+          break
+        } else if (!event.shiftKey) {
+          event.preventDefault()
+          if (selectedImage.value.columnIndex < columnCount.value - 1) {
+            selectImageHorizontally(1)
+          } else {
+            document.querySelector(".menu li:first-of-type button")?.focus()
+            clearImageSelection()
+          }
+          break
+        }
+      } else if (document.activeElement === imageGallery.value) {
+        event.preventDefault()
+        selectImageHorizontally(event.shiftKey ? -1 : 1)
+      }
+      lastTabDirection = event.shiftKey ? -1 : 1
+      break
+    }
+  }
+  lastInputMethod = "keyboard"
 }
 
 watch(
@@ -715,6 +983,15 @@ onMounted(() => {
   if (!route.path.includes("/images/")) {
     showMenu(false)
   }
+  window.addEventListener("focusin", handleWindowFocusIn)
+  window.addEventListener("keydown", handleWindowKeyDown)
+  window.addEventListener("pointerdown", handleWindowPointerDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener("focusin", handleWindowFocusIn)
+  window.removeEventListener("keydown", handleWindowKeyDown)
+  window.removeEventListener("pointerdown", handleWindowPointerDown)
 })
 
 defineExpose({

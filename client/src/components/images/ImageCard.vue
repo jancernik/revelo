@@ -36,6 +36,7 @@ const handleClick = (event) => {
     class="image-card"
     :data-flip-id="`img-${image.id}`"
     :class="{ 'not-loaded': !shouldLoad || errorLoading }"
+    tabindex="-1"
     @click="handleClick"
     @touchend="handleClick"
   >
@@ -65,6 +66,12 @@ const handleClick = (event) => {
   width: inherit;
   user-select: none;
   @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
+  transition: outline-offset 0.1s ease-in-out;
+
+  &:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+  }
 
   &.not-loaded::before {
     content: "";
