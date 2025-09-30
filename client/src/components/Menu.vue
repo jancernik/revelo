@@ -13,6 +13,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { isVisible, shouldAnimate } = useMenu("menu")
 
+const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
+
 const menu = useTemplateRef("menu")
 const menuUl = useTemplateRef("menu-ul")
 const activeIndicator = useTemplateRef("active-indicator")
@@ -250,8 +252,15 @@ watch(
               v-if="item.component"
               v-bind="item.props || {}"
               :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
+              @click="handleItemClick(item)"
             />
-            <button v-else :class="item.className" @click="handleItemClick(item)">
+            <button
+              v-else
+              :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
+              @click="handleItemClick(item)"
+            >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>
             </button>
@@ -267,9 +276,15 @@ watch(
               v-if="item.component"
               v-bind="item.props || {}"
               :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
               @click="handleItemClick(item)"
             />
-            <button v-else :class="item.className" @click="handleItemClick(item)">
+            <button
+              v-else
+              :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
+              @click="handleItemClick(item)"
+            >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>
             </button>
@@ -285,9 +300,15 @@ watch(
               v-if="item.component"
               v-bind="item.props || {}"
               :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
               @click="handleItemClick(item)"
             />
-            <button v-else :class="item.className" @click="handleItemClick(item)">
+            <button
+              v-else
+              :class="item.className"
+              :tabindex="canFocus ? 0 : -1"
+              @click="handleItemClick(item)"
+            >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>
             </button>
