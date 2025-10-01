@@ -121,7 +121,8 @@ export const backfillEmbeddings = async (force = false) => {
       try {
         await imageService.generateEmbedding(images[i])
         successful++
-      } catch {
+      } catch (error) {
+        console.log(error)
         errors++
       }
     }
@@ -147,7 +148,8 @@ export const backfillCaptions = async (force = false) => {
       try {
         await imageService.generateCaption(images[i])
         successful++
-      } catch {
+      } catch (error) {
+        console.log(error)
         errors++
       }
     }
