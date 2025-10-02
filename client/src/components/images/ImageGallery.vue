@@ -76,6 +76,25 @@ let zoomReferencePoint = null
 let lastInputMethod = null
 let lastTabDirection = 1
 
+const props = defineProps({
+  alternatingScroll: {
+    default: false,
+    type: Boolean
+  },
+  columns: {
+    default: null,
+    type: Number
+  },
+  continuousScroll: {
+    default: false,
+    type: Boolean
+  },
+  scrollSpeed: {
+    default: 20,
+    type: Number
+  }
+})
+
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { hide: hideMenu, show: showMenu } = useMenu()
@@ -95,10 +114,18 @@ const isScrollPaused = ref(true)
 const canInfiniteScroll = ref(false)
 const isBuildingLayout = ref(false)
 const selectedImage = ref(null)
+const isAutoScrolling = ref(false)
+const autoScrollVelocity = ref(0)
+
+let userInactivityTimer = null
+const USER_INACTIVITY_TIMEOUT = 1500
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
 const columnCount = computed(() => {
+  if (props.columns && props.columns >= MIN_COLUMNS && props.columns <= MAX_COLUMNS) {
+    return props.columns
+  }
   const base = Math.ceil((maxWindowWidth.value - SPACING_BASE) / (MAX_COLUMN_WIDTH + SPACING_BASE))
   const clamped = clamp(base, MIN_COLUMNS, MAX_COLUMNS)
   if (clamped % 2 === 0 && clamped !== 2) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
@@ -107,12 +134,25 @@ const columnCount = computed(() => {
 
 const currentSpacing = computed(() => (columnCount.value === 2 ? SPACING_SMALL : SPACING_BASE))
 
+const availableWidth = computed(() => {
+  return props.columns ? windowWidth.value : maxWindowWidth.value
+})
+
 const columnWidth = computed(() => {
-  return (maxWindowWidth.value - currentSpacing.value * (columnCount.value + 1)) / columnCount.value
+  const totalSpacing = currentSpacing.value * 2 + currentSpacing.value * (columnCount.value - 1)
+  return (availableWidth.value - totalSpacing) / columnCount.value
+})
+
+const galleryWidth = computed(() => {
+  return (
+    currentSpacing.value * 2 +
+    columnCount.value * columnWidth.value +
+    currentSpacing.value * (columnCount.value - 1)
+  )
 })
 
 const centerOffset = computed(() => {
-  return Math.max(0, (windowWidth.value - maxWindowWidth.value) / 2)
+  return Math.max(0, (windowWidth.value - galleryWidth.value) / 2)
 })
 
 const firstColumnMargin = computed(() => centerOffset.value + currentSpacing.value)
@@ -482,7 +522,9 @@ const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, 
 const updateScrollTargets = () => {
   for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
     const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
-    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], scrollPosition, lerpFactor)
+    const shouldReverse = props.alternatingScroll && columnIndex % 2 === 1
+    const targetPosition = shouldReverse ? -scrollPosition : scrollPosition
+    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], targetPosition, lerpFactor)
   }
 }
 
@@ -567,14 +609,45 @@ const updateImagePositions = (options = {}) => {
   }
 }
 
+const startAutoScroll = () => {
+  if (!props.continuousScroll) return
+  isAutoScrolling.value = true
+  autoScrollVelocity.value = props.scrollSpeed
+}
+
+const stopAutoScroll = () => {
+  isAutoScrolling.value = false
+  autoScrollVelocity.value = 0
+}
+
+const resetUserInactivityTimer = () => {
+  if (!props.continuousScroll) return
+
+  if (userInactivityTimer) {
+    clearTimeout(userInactivityTimer)
+  }
+
+  if (isAutoScrolling.value) {
+    stopAutoScroll()
+  }
+
+  userInactivityTimer = setTimeout(() => {
+    startAutoScroll()
+  }, USER_INACTIVITY_TIMEOUT)
+}
+
 const updateVelocity = (deltaTime) => {
   if (!isBuildingLayout.value && !isDragging.value) {
-    const newScrollPosition = scrollPosition + velocity.value * deltaTime
+    const effectiveVelocity = isAutoScrolling.value ? autoScrollVelocity.value : velocity.value
+
+    const newScrollPosition = scrollPosition + effectiveVelocity * deltaTime
     scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
-    const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
-    velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
-    if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
+    if (!isAutoScrolling.value) {
+      const velocityDecay = Math.exp(-currentVelocityDecay * deltaTime)
+      velocity.value = clamp(velocity.value * velocityDecay, -MAX_SPEED, MAX_SPEED)
+      if (Math.abs(velocity.value) < VELOCITY_THRESHOLD) velocity.value = 0
+    }
   }
 }
 
@@ -686,6 +759,8 @@ const handleWheel = (event) => {
 
   if (isScrollPaused.value) return
 
+  resetUserInactivityTimer()
+
   let deltaY = 0
   if (event.deltaY !== undefined) {
     deltaY = event.deltaY
@@ -709,6 +784,8 @@ const handleWheel = (event) => {
 
 const handleDragStart = (event) => {
   event.preventDefault?.()
+
+  resetUserInactivityTimer()
 
   isDragging.value = true
   hasDragged.value = false
@@ -986,12 +1063,20 @@ onMounted(() => {
   window.addEventListener("focusin", handleWindowFocusIn)
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
+
+  if (props.continuousScroll) {
+    startAutoScroll()
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener("focusin", handleWindowFocusIn)
   window.removeEventListener("keydown", handleWindowKeyDown)
   window.removeEventListener("pointerdown", handleWindowPointerDown)
+
+  if (userInactivityTimer) {
+    clearTimeout(userInactivityTimer)
+  }
 })
 
 defineExpose({
