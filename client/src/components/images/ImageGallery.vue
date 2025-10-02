@@ -89,6 +89,10 @@ const props = defineProps({
     default: false,
     type: Boolean
   },
+  menuVisible: {
+    default: true,
+    type: Boolean
+  },
   scrollSpeed: {
     default: 20,
     type: Number
@@ -463,7 +467,7 @@ const startZoomTransition = (imageId, referenceElement) => {
 }
 
 const startZoomReturn = (options = {}) => {
-  setTimeout(() => showMenu(true), 200)
+  props.menuVisible && setTimeout(() => showMenu(true), 200)
   const { duration = ZOOM_TOTAL_DURATION, showAllImages = false, withTarget = false } = options
 
   const visibleNonTargetStates = imageCardData.filter(
@@ -1058,7 +1062,7 @@ watch(windowHeight, () => {
 
 onMounted(() => {
   if (!route.path.includes("/images/")) {
-    showMenu(true)
+    props.menuVisible && showMenu(true)
   }
   window.addEventListener("focusin", handleWindowFocusIn)
   window.addEventListener("keydown", handleWindowKeyDown)

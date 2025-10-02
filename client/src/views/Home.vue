@@ -21,6 +21,7 @@ onMounted(() => {
     :columns="route.query.columns ? Number(route.query.columns) : null"
     :alternating-scroll="route.query.alternating === 'true'"
     :continuous-scroll="route.query.continuous === 'true'"
+    :menu-visible="route.query.menu === 'false' ? false : true"
     :scroll-speed="route.query.speed ? Number(route.query.speed) : 20"
   />
 </template>
