@@ -1,4 +1,4 @@
-name: Build & Push Images
+name: CI
 
 on:
   push:
@@ -21,13 +21,17 @@ concurrency:
 
 jobs:
   lint:
+    name: Lint
     uses: ./.github/workflows/lint.yml
   format:
+    name: Format
     uses: ./.github/workflows/format.yml
   test:
+    name: Test
     uses: ./.github/workflows/test.yml
 
   build-and-push:
+    name: Build and push ${{ matrix.title }}
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -41,30 +45,31 @@ jobs:
           - id: ai
             context: ./ai
             dockerfile: ./ai/Dockerfile
+            title: AI
           - id: api
             context: .
             dockerfile: ./api/Dockerfile
+            title: API
           - id: client
             context: .
             dockerfile: ./client/Dockerfile
+            title: Client
 
     steps:
-      - name: Checkout
+      - name: Checkout (${{ matrix.title }})
         uses: actions/checkout@v5
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker Buildx (${{ matrix.title }})
         uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-flags: --debug
 
-      - name: Log in to the Container Registry
+      - name: Log in to the Container Registry (${{ matrix.title }})
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker Metadata
+      - name: Docker Metadata (${{ matrix.title }})
         id: metadata
         uses: docker/metadata-action@v5
         with:
@@ -75,7 +80,7 @@ jobs:
             type=sha,format=long
             type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      - name: Build & Push
+      - name: Build & Push (${{ matrix.title }})
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
