@@ -1,12 +1,10 @@
 name: Format
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+  workflow_call: {}
 
 concurrency:
   group: format-${{ github.head_ref || github.ref }}
