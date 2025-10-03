@@ -38,8 +38,7 @@ RUN pnpm build
 FROM nginx:alpine AS runner
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nginx-user
-RUN adduser --system --uid 1001 nginx-user
+RUN addgroup --system --gid 1001 nginx-user && adduser --system --uid 1001 nginx-user
 
 # Copy built assets
 COPY --from=builder /app/client/dist /usr/share/nginx/html
@@ -49,10 +48,8 @@ COPY client/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Change ownership of static files and cache directories
 RUN chown -R nginx-user:nginx-user /usr/share/nginx/html && \
-    mkdir -p /var/cache/nginx && \
-    chown -R nginx-user:nginx-user /var/cache/nginx && \
-    mkdir -p /var/log/nginx && \
-    chown -R nginx-user:nginx-user /var/log/nginx
+    mkdir -p /var/cache/nginx && chown -R nginx-user:nginx-user /var/cache/nginx && \
+    mkdir -p /var/log/nginx && chown -R nginx-user:nginx-user /var/log/nginx
 
 # Expose port
 EXPOSE 80

@@ -7,14 +7,10 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN groupadd --gid 1001 appuser && \
-    useradd --uid 1001 --gid appuser --shell /bin/bash --create-home appuser
-
+RUN groupadd --gid 1001 appuser && useradd --uid 1001 --gid appuser --shell /bin/bash --create-home appuser
 # Set working directory
 WORKDIR /app
 
@@ -33,11 +29,11 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
-EXPOSE ${AI_PORT:-8000}
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-  CMD curl -f http://localhost:${AI_PORT:-8000}/health || exit 1
+  CMD sh -c 'curl -f http://localhost:${AI_PORT:-8000}/health || exit 1'
 
 # Start the application
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${AI_PORT:-8000} --workers 1"]
