@@ -850,6 +850,8 @@ const handleWindowFocusIn = (event) => {
 }
 
 const handleKeyDown = (event) => {
+  if (fullscreenImageData.value) return
+
   switch (event.key) {
     case " ": {
       event.preventDefault()
@@ -933,6 +935,8 @@ const handleKeyDown = (event) => {
 }
 
 const handleWindowKeyDown = (event) => {
+  if (fullscreenImageData.value) return
+
   switch (event.key) {
     case "Enter": {
       event.preventDefault()
