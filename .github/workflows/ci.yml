@@ -121,7 +121,7 @@ jobs:
           chmod 600 ~/.ssh/config
 
       - name: Docker Stack Deploy
-        uses: cssnr/docker-stack-deploy@v1
+        uses: cssnr/stack-deploy-action@v1
         env:
           GIT_COMMIT_HASH: ${{ github.sha }}
         with:
