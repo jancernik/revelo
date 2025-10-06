@@ -1,0 +1,209 @@
+name: Deploy
+on:
+  workflow_call:
+    inputs:
+      git_commit_hash:
+        required: true
+        type: string
+    secrets:
+      DEPLOY_SSH_KEY:
+        required: true
+      DB_PASSWORD:
+        required: true
+      JWT_SECRET:
+        required: true
+      JWT_REFRESH_SECRET:
+        required: true
+      CLIENT_BASE_URL:
+        required: true
+      SMTP_HOST:
+        required: true
+      SMTP_PORT:
+        required: true
+      SMTP_USER:
+        required: true
+      SMTP_PASS:
+        required: true
+      SMTP_EMAIL:
+        required: true
+  workflow_dispatch:
+    inputs:
+      git_commit_hash:
+        description: "Git commit hash to deploy (leave blank for latest)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_commit_hash || github.sha }}
+
+      - name: Install cloudflared
+        run: |
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
+          cloudflared --version
+
+      - name: Install rsync
+        run: |
+          sudo apt-get -qq update -y && sudo apt-get -qq install -y rsync &>/dev/null
+
+      - name: Setup SSH with Cloudflare Tunnel
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          cat > ~/.ssh/config <<EOF
+          Host revelo
+            HostName ssh.revelo.app
+            User deploy
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            ProxyCommand cloudflared access ssh --hostname %h
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Test SSH connection
+        run: |
+          ssh -q revelo "echo 'SSH connection successful'"
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p deployment
+          cp stack.yml deployment/
+          cp -r nginx deployment/
+
+          cat > deployment/.env <<EOF
+          GIT_COMMIT_HASH=${{ inputs.git_commit_hash || github.sha }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          CLIENT_BASE_URL=${{ secrets.CLIENT_BASE_URL }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          SMTP_EMAIL=${{ secrets.SMTP_EMAIL }}
+          EOF
+
+      - name: Copy deployment files
+        run: |
+          ssh revelo "mkdir -p ~/revelo"
+          rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/
+          rm -rf deployment
+
+      - name: Deploy stack
+        run: |
+          ssh -T revelo << 'ENDSSH'
+          cd ~/revelo
+          set -a && source ~/revelo/.env && set +a
+          rm -f ~/revelo/.env
+
+          docker swarm init 2>/dev/null || echo "Swarm already initialized"
+
+          if docker stack services revelo &>/dev/null; then
+            max_iterations=100
+            echo "Updating existing stack..."
+          else
+            max_iterations=200
+            echo "Deploying stack for the first time..."
+          fi
+
+          docker stack deploy -c stack.yml revelo --detach=true
+
+          echo "Waiting for services to be ready..."
+          for i in $(seq 1 $max_iterations); do
+            ready=$(docker stack services revelo --format "{{.Replicas}}" | grep -c "1/1" || true)
+            total=$(docker stack services revelo --format "{{.Name}}" | wc -l)
+            
+            if [ "$ready" -eq "$total" ]; then
+              echo "All services ready ($ready/$total)"
+              break
+            fi
+            
+            echo "Services ready: $ready/$total"
+            sleep 3
+          done
+
+          docker stack services revelo --format "table {{.Name}}\t{{.Image}}"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          ssh -T revelo << 'ENDSSH'
+          set -e
+          echo ""
+          echo "Service status:"
+          all_running=true
+
+          for service in postgres nginx client api ai; do
+            task_info=$(docker service ps revelo_$service \
+              --filter "desired-state=running" \
+              --format "{{.CurrentState}}" \
+              --no-trunc | head -1)
+            
+            error=$(docker service ps revelo_$service \
+              --format "{{.CurrentState}}\t{{.Error}}" \
+              --no-trunc | grep -E "Failed|Rejected" | head -1 || true)
+            
+            if [[ $task_info == Running* ]]; then
+              echo "  ✓ $service: $task_info"
+              [[ -n "$error" ]] && echo "    └─ Previous failure: $error"
+            else
+              echo "  ✗ $service: ${task_info:-Not running}"
+              [[ -n "$error" ]] && echo "    └─ $error"
+              all_running=false
+            fi
+          done
+
+          if [ "$all_running" = false ]; then
+            echo ""
+            echo "Some services are not running!"
+            exit 1
+          fi
+          ENDSSH
+
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          echo "→ Deployment failed - checking services..."
+          ssh revelo << 'ENDSSH'
+          rm -f ~/revelo/.env
+
+          failed=""
+          for service in postgres nginx client api ai; do
+            status=$(docker service ps revelo_$service --no-trunc --format "{{.CurrentState}}" | head -1)
+            if [[ $status == *"Failed"* ]] || [[ $status == *"Rejected"* ]] || [[ -z "$status" ]]; then
+              failed="$failed $service"
+              echo ""
+              echo "✗ revelo_$service: $status"
+              echo "  Last 20 log lines:"
+              docker service logs revelo_$service --tail 20 --no-task-ids 2>/dev/null | sed 's/^/    /' || echo "    No logs available"
+            fi
+          done
+
+          if [ -n "$failed" ]; then
+            echo ""
+            echo "→ Rolling back failed services..."
+            for service in $failed; do
+              echo "  ↺ Rolling back revelo_$service"
+              docker service rollback revelo_$service 2>/dev/null || echo "    Cannot rollback revelo_$service"
+            done
+            
+            echo ""
+            echo "→ Final service status:"
+            docker stack services revelo --format "table {{.Name}}\t{{.Replicas}}" | sed 's/^/  /'
+          fi
+          ENDSSH

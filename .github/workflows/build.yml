@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+  REPO: ${{ github.event.repository.name }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.title }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: ai
+            context: ./ai
+            dockerfile: ./ai/Dockerfile
+            title: AI
+          - id: api
+            context: .
+            dockerfile: ./api/Dockerfile
+            title: API
+          - id: client
+            context: .
+            dockerfile: ./client/Dockerfile
+            title: Client
+
+    steps:
+      - name: Checkout (${{ matrix.title }})
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx (${{ matrix.title }})
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container Registry (${{ matrix.title }})
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker Metadata (${{ matrix.title }})
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.REPO }}-${{ matrix.id }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long,prefix=
+            type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build & Push (${{ matrix.title }})
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.id }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.id }}
