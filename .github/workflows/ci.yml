@@ -96,46 +96,118 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-and-push
+    environment: production
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Add Cloudflare GPG key
-        run: |
-          sudo mkdir -p --mode=0755 /usr/share/keyrings
-          curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-
-      - name: Add Cloudflare repository
-        run: |
-          echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
-
       - name: Install cloudflared
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cloudflared
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
+          cloudflared --version
 
-      - name: Export Cloudflare Access credentials
+      - name: Install rsync
         run: |
-          echo "CLOUDFLARE_ACCESS_TOKEN_ID=${{ secrets.CLOUDFLARE_ACCESS_TOKEN_ID }}" >> $GITHUB_ENV
-          echo "CLOUDFLARE_ACCESS_TOKEN_SECRET=${{ secrets.CLOUDFLARE_ACCESS_TOKEN_SECRET }}" >> $GITHUB_ENV
+          sudo apt-get -qq update -y && sudo apt-get -qq install -y rsync
 
-      - name: Write SSH config for Cloudflare Access
+      - name: Setup SSH with Cloudflare Tunnel
         run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          cat >> ~/.ssh/config <<'EOF'
-          Host revelo.app revelo
-            ProxyCommand cloudflared access ssh --hostname %h --service-token-id $CLOUDFLARE_ACCESS_TOKEN_ID --service-token-secret $CLOUDFLARE_ACCESS_TOKEN_SECRET
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          cat > ~/.ssh/config <<EOF
+          Host revelo
+            HostName ssh.revelo.app
+            User deploy
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            ProxyCommand cloudflared access ssh --hostname %h
           EOF
           chmod 600 ~/.ssh/config
 
-      - name: Docker Stack Deploy
-        uses: cssnr/stack-deploy-action@v1
-        env:
-          GIT_COMMIT_HASH: ${{ github.sha }}
-        with:
-          name: revelo
-          file: compose.yml
-          host: revelo.app
-          user: deploy
-          ssh_key: ${{ secrets.DEPLOY_SSH_KEY }}
+      - name: Test SSH connection
+        run: |
+          ssh revelo "echo 'SSH connection successful'"
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p deployment
+          cp stack.yml deployment/
+          cp -r nginx deployment/
+
+          cat > deployment/.env <<EOF
+          GIT_COMMIT_HASH=${{ github.sha }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          CLIENT_BASE_URL=${{ secrets.CLIENT_BASE_URL }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          SMTP_EMAIL=${{ secrets.SMTP_EMAIL }}
+          EOF
+
+      - name: Copy deployment files
+        run: |
+          ssh revelo "mkdir -p ~/revelo"
+          rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/
+          rm -rf deployment
+
+      - name: Deploy stack
+        run: |
+          ssh revelo << 'ENDSSH'
+          cd ~/revelo
+          set -a && source ~/revelo/.env && set +a
+          ls
+          rm -f ~/revelo/.env
+
+          docker swarm init 2>/dev/null || echo "Swarm already initialized"
+          # docker stack deploy -c stack.yml revelo --detach=false
+          docker stack deploy -c stack.yml revelo --detach=false 2>&1 | sed -u -E "/^verify: Waiting [0-9]+ seconds to verify that tasks are stable\.\.\.$/d"
+          docker stack services revelo
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          ssh revelo << 'ENDSSH'
+          for service in postgres nginx client api ai; do
+            echo; docker service ps revelo_$service --no-trunc --format "table {{.Name}}\t{{.CurrentState}}\t{{.Error}}"
+          done
+          ENDSSH
+
+      - name: Deployment failed
+        if: failure()
+        run: |
+          ssh revelo << 'ENDSSH'
+          rm -f ~/revelo/.env
+
+          failed=""
+          for service in postgres nginx client api ai; do
+            status=$(docker service ps revelo_$service --no-trunc --format "{{.CurrentState}}" | head -1)
+            if [[ $status == *"Failed"* ]] || [[ $status == *"Rejected"* ]] || [[ -z "$status" ]]; then
+              failed="$failed $service"
+              echo "\n revelo_$service: $status"
+              docker service logs revelo_$service --tail 20 --no-task-ids 2>/dev/null || echo "No logs available"
+            else
+              echo "revelo_$service: Running"
+            fi
+          done
+
+          if [ -n "$failed" ]; then
+            for service in $failed; do
+              echo "Rolling back revelo_$service"
+              docker service rollback revelo_$service 2>/dev/null || echo "Cannot rollback revelo_$service"
+            done
+            docker stack services revelo
+          else
+            echo "No services to rollback"
+            docker stack ps revelo --no-trunc --format "table {{.Name}}\t{{.CurrentState}}" | head -20
+          fi
+          ENDSSH
