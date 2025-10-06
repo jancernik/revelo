@@ -13,11 +13,27 @@ const dbName = config.DB_NAME
 const dbPassword = config.DB_PASSWORD
 const dbUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`
 
-const client = postgres(dbUrl)
+const client = postgres(dbUrl, {
+  connect_timeout: 10,
+  connection: { application_name: "revelo" },
+  idle_timeout: 20,
+  max: 10,
+  max_lifetime: 60 * 30
+})
+
 export const db = drizzle(client, {
   logger: config.ENV !== "test" ? new FilteredLogger(suppressed) : false,
   schema
 })
+
+export async function checkDbHealth() {
+  try {
+    await client`SELECT 1`
+    return { error: null, healthy: true }
+  } catch (error) {
+    return { error: error.message, healthy: false }
+  }
+}
 
 export async function closeDb() {
   await client.end()

@@ -1,5 +1,6 @@
 import { config } from "#src/config/environment.js"
 import storageManager from "#src/config/storageManager.js"
+import { checkDbHealth } from "#src/database.js"
 import { errorHandler, notFoundHandler } from "#src/middlewares/errorMiddleware.js"
 import authRoutes from "#src/routes/authRoutes.js"
 import collectionRoutes from "#src/routes/collectionRoutes.js"
@@ -30,13 +31,22 @@ export function createServer(options = {}) {
     })
   )
 
-  app.get("/health", (req, res) => {
-    res.status(200).json({
+  app.get("/health", async (req, res) => {
+    const dbHealth = await checkDbHealth()
+
+    const health = {
+      database: {
+        connected: dbHealth.healthy,
+        error: dbHealth.error
+      },
       environment: config.NODE_ENV,
-      status: "healthy",
+      status: dbHealth.healthy ? "healthy" : "unhealthy",
       timestamp: new Date().toISOString(),
       uptime: process.uptime()
-    })
+    }
+
+    const statusCode = dbHealth.healthy ? 200 : 503
+    res.status(statusCode).json(health)
   })
 
   app.use(authRoutes)
