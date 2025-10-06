@@ -218,6 +218,8 @@ jobs:
                 echo "  ✓ $service: $task_info (no health check)"
               fi
               [[ -n "$error" ]] && echo "    └─ Previous failure: $error"
+            elif [[ $task_info == Starting* ]]; then
+              echo "    $service: $task_info (waiting for start_period)"
             else
               echo "  ✗ $service: ${task_info:-Not running}"
               [[ -n "$error" ]] && echo "    └─ $error"
