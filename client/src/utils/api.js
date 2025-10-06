@@ -76,6 +76,26 @@ api.interceptors.response.use(
       }
     }
 
+    const isNetworkError =
+      !error.response ||
+      error.code === "ECONNABORTED" ||
+      error.code === "ERR_NETWORK" ||
+      [502, 503, 504].includes(error.response?.status)
+
+    if (isNetworkError) {
+      const retryCount = originalRequest._retryCount || 0
+      const maxRetries = 5
+
+      if (retryCount < maxRetries) {
+        originalRequest._retryCount = retryCount + 1
+
+        const delay = Math.pow(2, retryCount) * 1000
+        await new Promise((resolve) => setTimeout(resolve, delay))
+
+        return api(originalRequest)
+      }
+    }
+
     return Promise.reject(error)
   }
 )
