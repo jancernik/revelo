@@ -31,5 +31,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD sh -c 'curl -f http://localhost:${API_PORT:-3000}/health || exit 1'
 
-# Start the application with migrations and ensure uploads permissions
-CMD ["sh", "-c", "mkdir -p uploads/staging uploads/images && pnpm db:migrate && node server.js"]
+# Start the application nd ensure uploads permissions
+CMD ["sh", "-c", "mkdir -p uploads/staging uploads/images && node server.js"]
