@@ -34,6 +34,9 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy
@@ -72,12 +75,27 @@ jobs:
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking accept-new
             ProxyCommand cloudflared access ssh --hostname %h
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+            TCPKeepAlive yes
           EOF
           chmod 600 ~/.ssh/config
 
       - name: Test SSH connection
         run: |
-          ssh -q revelo "echo 'SSH connection successful'"
+          for attempt in 1 2 3; do
+            if ssh -q revelo "echo 'SSH connection successful'"; then
+              break
+            else
+              if [ $attempt -lt 3 ]; then
+                echo "SSH connection failed ($attempt/3), retrying in 5s..."
+                sleep 5
+              else
+                echo "SSH connection failed after 3 attempts"
+                exit 1
+              fi
+            fi
+          done
 
       - name: Prepare deployment files
         run: |
@@ -101,8 +119,21 @@ jobs:
       - name: Copy deployment files
         run: |
           ssh revelo "mkdir -p ~/revelo"
-          rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/
-          rm -rf deployment
+          for attempt in 1 2 3; do
+            if rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/; then
+              rm -rf deployment
+              break
+            else
+              if [ $attempt -lt 3 ]; then
+                echo "rsync failed ($attempt/3), retrying in 5s..."
+                sleep 5
+              else
+                echo "rsync failed after 3 attempts"
+                rm -rf deployment
+                exit 1
+              fi
+            fi
+          done
 
       - name: Deploy stack
         run: |
@@ -111,9 +142,14 @@ jobs:
           set -a && source ~/revelo/.env && set +a
           rm -f ~/revelo/.env
 
-          docker swarm init 2>/dev/null || echo "Swarm already initialized"
+          if docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null | grep -q inactive; then
+            docker swarm init > /dev/null 2>&1
+            echo "Swarm initialized"
+          else
+            echo "Swarm already initialized"
+          fi
 
-          if docker stack services revelo &>/dev/null; then
+          if docker stack ps revelo --format "{{.Name}}" 2>/dev/null | grep -q .; then
             max_iterations=100
             echo "Updating existing stack..."
           else
@@ -146,55 +182,89 @@ jobs:
           set -e
           echo ""
           echo "Service status:"
-          all_running=true
+          all_healthy=true
 
           for service in postgres nginx client api ai; do
             task_info=$(docker service ps revelo_$service \
               --filter "desired-state=running" \
               --format "{{.CurrentState}}" \
               --no-trunc | head -1)
-            
+
+            health_status=$(docker service inspect revelo_$service \
+              --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "unknown")
+
             error=$(docker service ps revelo_$service \
               --format "{{.CurrentState}}\t{{.Error}}" \
               --no-trunc | grep -E "Failed|Rejected" | head -1 || true)
-            
+
             if [[ $task_info == Running* ]]; then
-              echo "  ✓ $service: $task_info"
+              if [ "$health_status" = "enabled" ]; then
+                sleep 2
+                task_id=$(docker service ps revelo_$service --filter "desired-state=running" --format "{{.ID}}" --no-trunc | head -1)
+                if [ -n "$task_id" ]; then
+                  container_state=$(docker inspect $(docker ps -q --filter "label=com.docker.swarm.task.id=$task_id") \
+                    --format '{{.State.Health.Status}}' 2>/dev/null || echo "unknown")
+
+                  if [ "$container_state" = "healthy" ] || [ "$container_state" = "unknown" ]; then
+                    echo "  ✓ $service: Running and healthy"
+                  else
+                    echo "  ⚠ $service: Running but health check is $container_state"
+                    all_healthy=false
+                  fi
+                else
+                  echo "  ✓ $service: $task_info"
+                fi
+              else
+                echo "  ✓ $service: $task_info (no health check)"
+              fi
               [[ -n "$error" ]] && echo "    └─ Previous failure: $error"
             else
               echo "  ✗ $service: ${task_info:-Not running}"
               [[ -n "$error" ]] && echo "    └─ $error"
-              all_running=false
+              all_healthy=false
             fi
           done
 
-          if [ "$all_running" = false ]; then
+          if [ "$all_healthy" = false ]; then
             echo ""
-            echo "Some services are not running!"
+            echo "Some services are not healthy!"
             exit 1
           fi
           ENDSSH
 
-      - name: Show service logs on failure
+      - name: Save failure logs
         if: failure()
         run: |
           echo "→ Deployment failed - checking services..."
           ssh revelo << 'ENDSSH'
           rm -f ~/revelo/.env
 
+          mkdir -p ~/revelo/logs
+          log_file=~/revelo/logs/deploy-$(date +%Y%m%d-%H%M%S).log
+
           failed=""
+          echo "Deployment failed at $(date)" > $log_file
+          echo "----------------------------------------" >> $log_file
+
           for service in postgres nginx client api ai; do
             status=$(docker service ps revelo_$service --no-trunc --format "{{.CurrentState}}" | head -1)
             if [[ $status == *"Failed"* ]] || [[ $status == *"Rejected"* ]] || [[ -z "$status" ]]; then
               failed="$failed $service"
               echo ""
-              echo "✗ revelo_$service: $status"
-              echo "  Last 20 log lines:"
-              docker service logs revelo_$service --tail 20 --no-task-ids 2>/dev/null | sed 's/^/    /' || echo "    No logs available"
+              echo "✗ revelo_$service: Failed"
+
+              echo "" >> $log_file
+              echo "Service: revelo_$service" >> $log_file
+              echo "Status: $status" >> $log_file
+              echo "Last 50 log lines:" >> $log_file
+              docker service logs revelo_$service --tail 50 --no-task-ids 2>&1 >> $log_file || echo "No logs available" >> $log_file
+              echo "----------------------------------------" >> $log_file
             fi
           done
 
           if [ -n "$failed" ]; then
+            echo ""
+            echo "Detailed logs written to: $log_file"
             echo ""
             echo "→ Rolling back failed services..."
             for service in $failed; do
@@ -207,3 +277,12 @@ jobs:
             docker stack services revelo --format "table {{.Name}}\t{{.Replicas}}" | sed 's/^/  /'
           fi
           ENDSSH
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
+          rm -f ~/.ssh/config
+          rm -rf deployment
+
+          ssh revelo "rm -f ~/revelo/.env" 2>/dev/null || true
