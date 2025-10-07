@@ -1133,7 +1133,7 @@ defineExpose({
       />
     </div>
   </div>
-  <div v-else class="no-images">No images found</div>
+  <div v-else class="no-images">No images found :(</div>
   <Loading
     v-if="isFirstLoad && !noImages"
     :progress="initialLoadProgress * 100"
