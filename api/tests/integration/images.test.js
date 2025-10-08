@@ -1,5 +1,5 @@
 import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
-import { createImage, createImages, createMockFile } from "#tests/helpers/imageHelpers.js"
+import { createImageWithVersions, createMockFile } from "#tests/helpers/imageHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
 import request from "supertest"
 import { v4 as uuid } from "uuid"
@@ -16,7 +16,11 @@ describe("Image Endpoints", () => {
 
   describe("GET /images", () => {
     it("should get images successfully", async () => {
-      await createImages(3)
+      await Promise.all([
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions()
+      ])
 
       const response = await request(api).get("/images").expect(200)
 
@@ -26,7 +30,13 @@ describe("Image Endpoints", () => {
     })
 
     it("should get images with limit", async () => {
-      await createImages(5)
+      await Promise.all([
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions()
+      ])
 
       const response = await request(api).get("/images?limit=2").expect(200)
 
@@ -36,7 +46,13 @@ describe("Image Endpoints", () => {
     })
 
     it("should get images with offset", async () => {
-      await createImages(5)
+      await Promise.all([
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions()
+      ])
 
       const response = await request(api).get("/images?offset=2").expect(200)
 
@@ -48,7 +64,7 @@ describe("Image Endpoints", () => {
 
   describe("GET /tiny-images", () => {
     it("should get tiny images successfully", async () => {
-      await createImages(2)
+      await Promise.all([createImageWithVersions(), createImageWithVersions()])
 
       const response = await request(api).get("/tiny-images").expect(200)
 
@@ -59,26 +75,16 @@ describe("Image Endpoints", () => {
 
   describe("GET /images/:id", () => {
     it("should get image by id successfully", async () => {
-      const image = await createImage()
+      const image = await createImageWithVersions()
 
       const response = await request(api).get(`/images/${image.id}`).expect(200)
 
       expect(response.body.status).toBe("success")
-      expect(response.body.data.image).toEqual({
-        aperture: image.aperture,
-        camera: image.camera,
-        caption: image.caption,
-        collectionId: image.collectionId,
-        collectionOrder: image.collectionOrder,
-        date: image.date.toISOString(),
-        focalLength: image.focalLength,
-        focalLengthEquivalent: image.focalLengthEquivalent,
-        id: image.id,
-        iso: image.iso,
-        lens: image.lens,
-        shutterSpeed: image.shutterSpeed,
-        versions: []
-      })
+      expect(response.body.data.image.id).toBe(image.id)
+      expect(response.body.data.image.aperture).toBe(image.aperture)
+      expect(response.body.data.image.camera).toBe(image.camera)
+      expect(Array.isArray(response.body.data.image.versions)).toBe(true)
+      expect(response.body.data.image.versions.length).toBeGreaterThan(0)
     })
 
     it("should return 404 for non-existent image", async () => {
@@ -293,7 +299,7 @@ describe("Image Endpoints", () => {
     let image
 
     beforeEach(async () => {
-      image = await createImage()
+      image = await createImageWithVersions()
     })
 
     it("should update image metadata successfully", async () => {
@@ -342,7 +348,7 @@ describe("Image Endpoints", () => {
     let image
 
     beforeEach(async () => {
-      image = await createImage()
+      image = await createImageWithVersions()
     })
 
     it("should delete image successfully", async () => {

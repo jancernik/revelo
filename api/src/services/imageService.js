@@ -1,4 +1,4 @@
-import storageManager from "#src/config/storageManager.js"
+import { config } from "#src/config/environment.js"
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
 import {
@@ -6,6 +6,7 @@ import {
   generateImageEmbedding,
   generateTextEmbedding
 } from "#src/services/aiService.js"
+import storageManager from "#src/storage/storageManager.js"
 import { eq } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
@@ -66,7 +67,7 @@ export const confirmUpload = async (sessionId, metadata) => {
   generateEmbedding(image)
   generateCaption(image)
 
-  return image
+  return Image.transformImageWithUrls(image)
 }
 
 const applyMetadataReplacements = (metadata, replaceCameraNames = [], replaceLensNames = []) => {
@@ -152,18 +153,45 @@ export const deleteImage = async (id) => {
     throw new NotFoundError("Image not found")
   }
 
-  return await Image.db.transaction(async (tx) => {
+  const imageDir = storageManager.getImageDirectory(id)
+  const storageType = image.versions?.[0]?.storageType || "local"
+
+  await Image.db.transaction(async (tx) => {
     await tx.delete(Image.table).where(eq(Image.table.id, id))
-
-    const imageDir = storageManager.getImageDirectory(id)
-    try {
-      await fs.rm(imageDir, { force: true, recursive: true })
-    } catch (error) {
-      console.error(`Error deleting image files: ${error.message}`)
-    }
-
-    return true
   })
+
+  try {
+    if (storageType === "s3") {
+      const S3StorageAdapter = (await import("#src/storage/S3StorageAdapter.js")).default
+
+      if (
+        config.BUCKET_ENDPOINT &&
+        config.BUCKET_ACCESS_KEY_ID &&
+        config.BUCKET_SECRET_ACCESS_KEY &&
+        config.BUCKET_NAME
+      ) {
+        const s3Adapter = new S3StorageAdapter({
+          accessKeyId: config.BUCKET_ACCESS_KEY_ID,
+          bucket: config.BUCKET_NAME,
+          endpoint: config.BUCKET_ENDPOINT,
+          publicUrl: config.BUCKET_PUBLIC_URL,
+          region: config.BUCKET_REGION,
+          secretAccessKey: config.BUCKET_SECRET_ACCESS_KEY
+        })
+        await s3Adapter.deleteDirectory(imageDir)
+      } else {
+        console.log(`Cannot delete S3 files for ${id}: S3 credentials not configured`)
+      }
+    } else {
+      const LocalStorageAdapter = (await import("#src/storage/LocalStorageAdapter.js")).default
+      const localAdapter = new LocalStorageAdapter(storageManager.uploadsDir)
+      await localAdapter.deleteDirectory(imageDir)
+    }
+  } catch (error) {
+    console.log(`Failed to delete image files for ${id}: ${error.message}`)
+  }
+
+  return true
 }
 
 export const fetchByIdWithVersions = async (id) => {
@@ -183,9 +211,19 @@ export const generateEmbedding = async (image) => {
       throw new AppError("Original version not found", { isOperational: false })
     }
 
-    const embedding = await generateImageEmbedding(originalVersion.path)
+    let imagePath = originalVersion.path
 
+    if (!storageManager.isLocalStorage()) {
+      const tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-embedding.jpg`)
+      const data = await storageManager.adapter.readFile(originalVersion.path)
+      await fs.writeFile(tempPath, data)
+      imagePath = tempPath
+    }
+
+    const embedding = await generateImageEmbedding(imagePath)
     await Image.db.update(Image.table).set({ embedding }).where(eq(Image.table.id, image.id))
+
+    if (!storageManager.isLocalStorage()) await fs.unlink(imagePath)
   } catch (error) {
     throw new AppError("Failed to generate embedding for image", {
       data: { error },
@@ -201,9 +239,19 @@ export const generateCaption = async (image) => {
       throw new AppError("Original version not found", { isOperational: false })
     }
 
-    const caption = await generateImageCaption(originalVersion.path)
+    let imagePath = originalVersion.path
 
+    if (!storageManager.isLocalStorage()) {
+      const tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-caption.jpg`)
+      const data = await storageManager.adapter.readFile(originalVersion.path)
+      await fs.writeFile(tempPath, data)
+      imagePath = tempPath
+    }
+
+    const caption = await generateImageCaption(imagePath)
     await Image.db.update(Image.table).set({ caption }).where(eq(Image.table.id, image.id))
+
+    if (!storageManager.isLocalStorage()) await fs.unlink(imagePath)
   } catch (error) {
     throw new AppError("Failed to generate caption for image", {
       data: { error },

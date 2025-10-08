@@ -38,6 +38,5 @@ export const getImageVersion = (imageObject = {}, type) => {
 }
 
 export const getThumbnailPath = (imageObject = {}) => {
-  const thumbnailVersion = getImageVersion(imageObject, "thumbnail")
-  return thumbnailVersion.path ? `/api/${thumbnailVersion.path}` : ""
+  return getImageVersion(imageObject, "thumbnail")?.path || ""
 }

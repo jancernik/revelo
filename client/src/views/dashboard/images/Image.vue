@@ -108,11 +108,7 @@ onUnmounted(resetHeader)
   <div v-if="image" class="image-view">
     <div class="image-content">
       <div class="image-wrapper">
-        <img
-          :src="`/api/${regularImageVersion.path}`"
-          :alt="image.caption"
-          :title="image.caption"
-        />
+        <img :src="regularImageVersion.path" :alt="image.caption" :title="image.caption" />
       </div>
       <div v-if="hasMetadata" class="metadata-wrapper">
         <ImageMetadata :image="image" />

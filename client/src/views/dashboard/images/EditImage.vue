@@ -139,7 +139,7 @@ onUnmounted(reset)
     <div v-if="image" class="edit-form">
       <MetadataEditor
         :initial-metadata="metadata"
-        :preview-url="`/api/${regularImageVersion.path}`"
+        :preview-url="regularImageVersion.path"
         :show-header="false"
         :show-reset-button="false"
         @update="handleMetadataUpdate"

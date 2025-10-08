@@ -1,5 +1,7 @@
+import { config } from "#src/config/environment.js"
 import { CollectionsTable, ImagesTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
+import storageManager from "#src/storage/storageManager.js"
 import { and, asc, eq, inArray } from "drizzle-orm"
 
 class Collection extends BaseModel {
@@ -30,6 +32,7 @@ class Collection extends BaseModel {
     height: true,
     path: true,
     size: true,
+    storageType: true,
     type: true,
     width: true
   }
@@ -66,7 +69,8 @@ class Collection extends BaseModel {
       queryOptions.offset = offset
     }
 
-    return await this.db.query.CollectionsTable.findMany(queryOptions)
+    const results = await this.db.query.CollectionsTable.findMany(queryOptions)
+    return results.map((collection) => this.#transformCollectionWithUrls(collection))
   }
 
   async findByIdWithImages(id) {
@@ -86,7 +90,7 @@ class Collection extends BaseModel {
           }
         }
       })
-      return result || null
+      return result ? this.#transformCollectionWithUrls(result) : null
     } catch {
       return null
     }
@@ -105,33 +109,88 @@ class Collection extends BaseModel {
       if (removedImageIds.length > 0) {
         await tx
           .update(ImagesTable)
-          .set({
-            collectionId: null,
-            collectionOrder: null
-          })
+          .set({ collectionId: null, collectionOrder: null })
           .where(inArray(ImagesTable.id, removedImageIds))
       }
 
       if (imageIds.length > 0) {
         await tx
           .update(ImagesTable)
-          .set({
-            collectionOrder: null
-          })
+          .set({ collectionOrder: null })
           .where(and(eq(ImagesTable.collectionId, collectionId), inArray(ImagesTable.id, imageIds)))
 
         for (let index = 0; index < imageIds.length; index++) {
           await tx
             .update(ImagesTable)
-            .set({
-              collectionId,
-              collectionOrder: index
-            })
+            .set({ collectionId, collectionOrder: index })
             .where(eq(ImagesTable.id, imageIds[index]))
         }
       }
     })
     return await this.findByIdWithImages(collectionId)
+  }
+
+  #filterAccessibleVersions(image) {
+    if (!image.versions || !Array.isArray(image.versions)) return image
+
+    const shouldExcludeS3 = this.#shouldExcludeS3Images()
+    if (shouldExcludeS3) {
+      return {
+        ...image,
+        versions: image.versions.filter((v) => v.storageType !== "s3")
+      }
+    }
+
+    return image
+  }
+
+  #getPublicUrlForVersion(version) {
+    const storageType = version.storageType || "local"
+
+    if (storageType === "s3") {
+      return storageManager.getPublicUrlForS3(version.path)
+    }
+
+    return `/api/${version.path}`
+  }
+
+  #hasAccessibleVersions(image) {
+    if (!image.versions || !Array.isArray(image.versions) || image.versions.length === 0) {
+      return false
+    }
+
+    const shouldExcludeS3 = this.#shouldExcludeS3Images()
+    if (shouldExcludeS3) {
+      return image.versions.some((v) => v.storageType !== "s3")
+    }
+
+    return true
+  }
+
+  #shouldExcludeS3Images() {
+    return !config.BUCKET_PUBLIC_URL
+  }
+
+  #transformCollectionWithUrls(collection) {
+    if (!collection) return collection
+
+    if (collection.images && Array.isArray(collection.images)) {
+      collection.images = collection.images
+        .map((image) => {
+          const filteredImage = this.#filterAccessibleVersions(image)
+
+          if (filteredImage.versions && Array.isArray(filteredImage.versions)) {
+            filteredImage.versions = filteredImage.versions.map((version) => ({
+              ...version,
+              path: this.#getPublicUrlForVersion(version)
+            }))
+          }
+          return filteredImage
+        })
+        .filter((image) => this.#hasAccessibleVersions(image))
+    }
+
+    return collection
   }
 }
 

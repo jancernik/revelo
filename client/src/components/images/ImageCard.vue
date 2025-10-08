@@ -41,7 +41,7 @@ const handleClick = (event) => {
     @touchend="handleClick"
   >
     <img
-      :src="shouldLoad ? `/api/${thumbnail.path}` : null"
+      :src="shouldLoad ? thumbnail.path : null"
       :height="thumbnail.height"
       :width="thumbnail.width"
       :title="image.caption"

@@ -1,6 +1,6 @@
-import storageManager from "#src/config/storageManager.js"
 import { ValidationError } from "#src/core/errors.js"
 import Setting from "#src/models/Setting.js"
+import storageManager from "#src/storage/storageManager.js"
 import multer from "multer"
 
 const storage = multer.diskStorage({
@@ -8,7 +8,9 @@ const storage = multer.diskStorage({
     cb(null, storageManager.uploadsDir)
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${file.originalname.split(".").pop()}`
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${file.originalname
+      .split(".")
+      .pop()}`
     cb(null, uniqueName)
   }
 })

@@ -1,6 +1,7 @@
-import storageManager from "#src/config/storageManager.js"
+import { config } from "#src/config/environment.js"
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
+import storageManager from "#src/storage/storageManager.js"
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
@@ -41,6 +42,7 @@ class Image extends BaseModel {
     height: true,
     path: true,
     size: true,
+    storageType: true,
     type: true,
     width: true
   }
@@ -55,7 +57,10 @@ class Image extends BaseModel {
       const image = result[0]
 
       const imageDir = storageManager.getImageDirectory(image.id)
-      await fs.mkdir(imageDir, { recursive: true })
+
+      if (storageManager.isLocalStorage()) {
+        await fs.mkdir(imageDir, { recursive: true })
+      }
 
       const versions = await this.#createImageVersions(tx, file, image.id, imageDir)
 
@@ -69,14 +74,19 @@ class Image extends BaseModel {
   async findAllByVersion(version, options = {}) {
     const { columns, limit, orderBy } = options
 
-    const query = this.db.query.ImageVersionsTable.findMany({
+    const results = await this.db.query.ImageVersionsTable.findMany({
       columns: columns || undefined,
       limit: limit || undefined,
       orderBy: orderBy || undefined,
       where: eq(ImageVersionsTable.type, version)
     })
 
-    return await query
+    return results.map((v) => {
+      if (v.path !== undefined) {
+        return { ...v, path: this.#getPublicUrlForVersion(v) }
+      }
+      return v
+    })
   }
 
   async findAllWithVersions(options = {}) {
@@ -93,15 +103,13 @@ class Image extends BaseModel {
       }
     }
 
-    if (limit !== undefined) {
-      queryOptions.limit = limit
-    }
+    if (limit !== undefined) queryOptions.limit = limit
+    if (offset !== undefined) queryOptions.offset = offset
 
-    if (offset !== undefined) {
-      queryOptions.offset = offset
-    }
+    const results = await this.db.query.ImagesTable.findMany(queryOptions)
+    const transformed = results.map((img) => this.#transformImageWithUrls(img))
 
-    return await this.db.query.ImagesTable.findMany(queryOptions)
+    return transformed.filter((img) => this.#hasAccessibleVersions(img))
   }
 
   async findByIdWithVersions(id) {
@@ -115,7 +123,11 @@ class Image extends BaseModel {
           }
         }
       })
-      return result || null
+
+      if (!result) return null
+
+      const transformed = this.#transformImageWithUrls(result)
+      return this.#hasAccessibleVersions(transformed) ? transformed : null
     } catch {
       return null
     }
@@ -158,6 +170,10 @@ class Image extends BaseModel {
     return await this.#addImageVersions(results)
   }
 
+  transformImageWithUrls(image) {
+    return this.#transformImageWithUrls(image)
+  }
+
   async #addImageVersions(images = []) {
     if (images.length === 0) return []
 
@@ -168,24 +184,26 @@ class Image extends BaseModel {
       where: sql`${ImageVersionsTable.imageId} IN (${sql.join(ids, sql`, `)})`
     })
 
-    return images.map((i) => ({ ...i, versions: versions.filter((v) => v.imageId === i.id) }))
+    const transformed = images.map((i) =>
+      this.#transformImageWithUrls({ ...i, versions: versions.filter((v) => v.imageId === i.id) })
+    )
+
+    return transformed.filter((img) => this.#hasAccessibleVersions(img))
   }
 
   async #createImageVersions(tx, file, imageId, imageDir) {
     const versions = []
     const originalFilePath = file.path
     const originalFilename = `original.${file.originalname.split(".").pop()}`
-    const originalOutputPath = path.join(imageDir, originalFilename)
-    await sharp(originalFilePath).rotate().toFile(originalOutputPath)
+    const tempOutputPath = path.join(storageManager.stagingDir, `${imageId}-${originalFilename}`)
 
-    const metadata = await sharp(originalOutputPath).metadata()
+    await sharp(originalFilePath).rotate().toFile(tempOutputPath)
+
+    const metadata = await sharp(tempOutputPath).metadata()
     const isVertical = metadata.height > metadata.width
 
     const sizes = {
-      original: {
-        height: metadata.height,
-        width: metadata.width
-      },
+      original: { height: metadata.height, width: metadata.width },
       regular: {
         height: isVertical ? Math.round(2000 * (metadata.height / metadata.width)) : 2000,
         width: isVertical ? 2000 : Math.round(2000 * (metadata.width / metadata.height))
@@ -202,49 +220,108 @@ class Image extends BaseModel {
 
     for (const [type, size] of Object.entries(sizes)) {
       const filename = `${type}.${file.originalname.split(".").pop()}`
-      const outputPath = path.join(imageDir, filename)
+      const tempProcessedPath = path.join(
+        storageManager.stagingDir,
+        `${imageId}-${type}-${filename}`
+      )
+      const finalPath = path.join(imageDir, filename)
 
       if (type === "original") {
-        if (outputPath !== originalOutputPath) {
-          await fs.copyFile(originalOutputPath, outputPath)
-        }
+        await fs.copyFile(tempOutputPath, tempProcessedPath)
       } else {
-        await sharp(originalOutputPath)
+        await sharp(tempOutputPath)
           .resize({
             fit: "inside",
             height: size.height,
             width: size.width,
             withoutEnlargement: true
           })
-          .toFile(outputPath)
+          .toFile(tempProcessedPath)
       }
 
-      const stats = await fs.stat(outputPath)
-      const outputMeta = await sharp(outputPath).metadata()
+      const fileData = await fs.readFile(tempProcessedPath)
+      await storageManager.adapter.writeFile(finalPath, fileData)
+
+      const stats = await fs.stat(tempProcessedPath)
+      const outputMeta = await sharp(tempProcessedPath).metadata()
 
       const versionData = {
         height: outputMeta.height,
         imageId,
         mimetype: file.mimetype,
-        path: outputPath,
+        path: finalPath,
         size: stats.size,
+        storageType: storageManager.isLocalStorage() ? "local" : "s3",
         type,
         width: outputMeta.width
       }
 
       const versionResult = await tx.insert(ImageVersionsTable).values(versionData).returning()
-
       versions.push(versionResult[0])
-    }
-    await fs.unlink(originalFilePath)
 
-    if (
-      originalOutputPath !== path.join(imageDir, `original.${file.originalname.split(".").pop()}`)
-    ) {
-      await fs.unlink(originalOutputPath)
+      await fs.unlink(tempProcessedPath)
     }
+
+    await fs.unlink(originalFilePath)
+    await fs.unlink(tempOutputPath)
 
     return versions
+  }
+
+  #filterAccessibleVersions(image) {
+    if (!image.versions || !Array.isArray(image.versions)) return image
+
+    const shouldExcludeS3 = this.#shouldExcludeS3Images()
+    if (shouldExcludeS3) {
+      return {
+        ...image,
+        versions: image.versions.filter((v) => v.storageType !== "s3")
+      }
+    }
+
+    return image
+  }
+
+  #getPublicUrlForVersion(version) {
+    const storageType = version.storageType || "local"
+
+    if (storageType === "s3") {
+      return storageManager.getPublicUrlForS3(version.path)
+    }
+
+    return `/api/${version.path}`
+  }
+
+  #hasAccessibleVersions(image) {
+    if (!image.versions || !Array.isArray(image.versions) || image.versions.length === 0) {
+      return false
+    }
+
+    const shouldExcludeS3 = this.#shouldExcludeS3Images()
+    if (shouldExcludeS3) {
+      return image.versions.some((v) => v.storageType !== "s3")
+    }
+
+    return true
+  }
+
+  #shouldExcludeS3Images() {
+    return !config.BUCKET_PUBLIC_URL
+  }
+
+  #transformImageWithUrls(image) {
+    if (!image) return image
+
+    const filteredImage = this.#filterAccessibleVersions(image)
+
+    if (filteredImage.versions && Array.isArray(filteredImage.versions)) {
+      filteredImage.versions = filteredImage.versions.map((version) => ({
+        ...version,
+        path: this.#getPublicUrlForVersion(version)
+      }))
+    }
+
+    return filteredImage
   }
 }
 

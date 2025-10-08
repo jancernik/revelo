@@ -1,9 +1,11 @@
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
+import storageManager from "#src/storage/storageManager.js"
 import {
   cleanupTempFiles,
   createImage,
   createImages,
+  createImageWithVersions,
   createMockFile,
   createTempFile,
   getMetadataTestData
@@ -14,6 +16,7 @@ import fs from "fs/promises"
 describe("Image Model", () => {
   beforeEach(async () => {
     await cleanupTempFiles()
+    await storageManager.ensureDirectories()
   })
 
   afterEach(async () => {
@@ -337,7 +340,7 @@ describe("Image Model", () => {
     })
 
     it("should handle where conditions", async () => {
-      const testImage = await createImage({ camera: "Unique Camera Model" })
+      const testImage = await createImageWithVersions({ camera: "Unique Camera Model" })
 
       const filteredImages = await Image.findAllWithVersions({
         where: eq(ImagesTable.camera, "Unique Camera Model")
@@ -354,7 +357,7 @@ describe("Image Model", () => {
     let testImage
 
     beforeEach(async () => {
-      testImage = await createImage({
+      testImage = await createImageWithVersions({
         camera: "Test Camera Model",
         lens: "Test Lens Model"
       })

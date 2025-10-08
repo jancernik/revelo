@@ -1,5 +1,5 @@
-import storageManager from "#src/config/storageManager.js"
 import { closeDb } from "#src/database.js"
+import storageManager from "#src/storage/storageManager.js"
 import { clearTables, connect, disconnect } from "#tests/testDatabase.js"
 
 beforeAll(async () => {

@@ -98,6 +98,8 @@ export const ImageVersionTypes = pgEnum("image_version_types", [
   "tiny"
 ])
 
+export const StorageTypes = pgEnum("storage_types", ["local", "s3"])
+
 export const ImageVersionsTable = pgTable(
   "image_versions",
   {
@@ -110,6 +112,7 @@ export const ImageVersionsTable = pgTable(
     mimetype: varchar("mimetype", { length: 100 }).notNull(),
     path: varchar("path").notNull(),
     size: bigint("size", { mode: "number" }).notNull(),
+    storageType: StorageTypes("storage_type").notNull().default("local"),
     type: ImageVersionTypes("type").notNull(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     width: integer("width").notNull()

@@ -71,6 +71,13 @@
       "when": 1757359378049,
       "tag": "0009_furry_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1759850630607,
+      "tag": "0010_ambiguous_solo",
+      "breakpoints": true
     }
   ]
 }

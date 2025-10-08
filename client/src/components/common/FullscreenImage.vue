@@ -552,7 +552,7 @@ const animateImageSlide = (nextImage, direction) => {
       return
     }
 
-    slideImagePath.value = `/api/${nextThumbnailVersion.path}`
+    slideImagePath.value = nextThumbnailVersion.path
 
     const imageWidthPx = parseFloat(width)
     const imageHeightPx = parseFloat(height)
@@ -995,11 +995,11 @@ onUnmounted(() => {
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
       <img
         class="image"
-        :src="`/api/${regularImageVersion.path}`"
+        :src="regularImageVersion.path"
         @click="handleImageClick"
         @error="handleImageError"
       />
-      <img class="fallback" :src="`/api/${thumbnailImageVersion.path}`" />
+      <img class="fallback" :src="thumbnailImageVersion.path" />
       <img v-show="slideImagePath" class="slide-image" :src="slideImagePath" />
       <ImageMetadata
         v-if="hasMetadata"

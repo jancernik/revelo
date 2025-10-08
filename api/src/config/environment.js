@@ -10,7 +10,7 @@ if (!process.env.CI && fs.existsSync(currentEnvFilePath())) {
 }
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key])
-if (missingEnvVars.length > 0) {
+if (missingEnvVars.length > 0 && process.env.VERIFY_ENV !== "false") {
   error(`Missing required environment variables: ${missingEnvVars.join(", ")}`)
 }
 
@@ -18,6 +18,12 @@ export const config = {
   AI_BASE_URL: process.env.AI_BASE_URL || `http://localhost:${process.env.AI_PORT || 8000}`,
   AI_PORT: process.env.AI_PORT || 8000,
   API_PORT: process.env.API_PORT || 3000,
+  BUCKET_ACCESS_KEY_ID: process.env.BUCKET_ACCESS_KEY_ID,
+  BUCKET_ENDPOINT: process.env.BUCKET_ENDPOINT,
+  BUCKET_NAME: process.env.BUCKET_NAME,
+  BUCKET_PUBLIC_URL: process.env.BUCKET_PUBLIC_URL,
+  BUCKET_REGION: process.env.BUCKET_REGION || "auto",
+  BUCKET_SECRET_ACCESS_KEY: process.env.BUCKET_SECRET_ACCESS_KEY,
   CLIENT_BASE_URL:
     process.env.CLIENT_BASE_URL || `http://localhost:${process.env.CLIENT_PORT || 5173}`,
   CLIENT_PORT: process.env.CLIENT_PORT || 5173,
@@ -35,6 +41,7 @@ export const config = {
   SMTP_PASS: process.env.SMTP_PASS,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
+  STORAGE_TYPE: process.env.STORAGE_TYPE || "local",
   UPLOADS_DIR: process.env.UPLOADS_DIR || "uploads"
 }
 
