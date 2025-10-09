@@ -44,13 +44,18 @@ on:
   workflow_dispatch:
     inputs:
       git_commit_hash:
-        description: "Git commit hash to deploy (leave blank for latest)"
+        description: "Git commit hash to deploy (defaults to latest)"
         required: false
         type: string
         default: ""
 
 permissions:
   contents: read
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+  REPO: ${{ github.event.repository.name }}
 
 jobs:
   deploy:
@@ -70,7 +75,49 @@ jobs:
           sudo chmod +x /usr/local/bin/cloudflared
           sudo apt-get -qq update -y && sudo apt-get -qq install -y rsync &>/dev/null
 
+      - name: Verify that the images exist
+        env:
+          TAG: ${{ inputs.git_commit_hash || github.sha }}
+        run: |
+          set -Eeuo pipefail
+          RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
+
+          REPO_VAR="${REPO:-}"
+          if [ -z "$REPO_VAR" ] && [ -n "${GITHUB_REPOSITORY:-}" ]; then
+            REPO_VAR="${GITHUB_REPOSITORY#*/}"
+          fi
+          if [ -z "$REPO_VAR" ]; then
+            REMOTE_URL=$(git config --get remote.origin.url 2>/dev/null || true)
+            if [ -n "$REMOTE_URL" ]; then
+              REPO_VAR=$(basename -s .git "$REMOTE_URL")
+            fi
+          fi
+          if [ -z "$REPO_VAR" ]; then
+            echo -e "${RED}Repository name not detected${RESET}"
+            exit 1
+          fi
+
+          echo -e "${BLUE}Verifying container images (${TAG})${RESET}"
+          services=("ai" "api" "client")
+          missing=()
+          for s in "${services[@]}"; do
+            image="${REGISTRY}/${OWNER}/${REPO_VAR}-${s}:${TAG}"
+            if docker manifest inspect "$image" >/dev/null 2>&1; then
+              echo -e "${GREEN}  OK${RESET}  ${image}"
+            else
+              echo -e "${RED}  MISSING${RESET}  ${image}"
+              missing+=("$image")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo -e "${RED}Missing images for tag ${TAG}${RESET}"
+            for m in "${missing[@]}"; do echo "  - ${m}"; done
+            exit 1
+          fi
+          echo -e "${GREEN}All required images present${RESET}"
+
       - name: Setup SSH
+        id: setup_ssh
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -90,26 +137,22 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
-          cat > ~/retry_ssh.sh <<EOF
+          cat > ~/retry_ssh.sh <<'EOF'
           retry_ssh() {
             local max_attempts=3
             local delay=5
             local attempt=1
-            
             while [ $attempt -le $max_attempts ]; do
-              if ssh -T revelo "$@"; then
+              if ssh -q -o LogLevel=ERROR -T revelo "$@"; then
                 return 0
               else
                 if [ $attempt -lt $max_attempts ]; then
-                  echo "SSH command failed ($attempt/$max_attempts), retrying in ${delay}s..."
                   sleep $delay
-                  attempt=$((attempt + 1))
-                else
-                  echo "SSH command failed after $max_attempts attempts"
-                  return 1
                 fi
               fi
+              attempt=$((attempt + 1))
             done
+            return 1
           }
           EOF
           chmod +x ~/retry_ssh.sh
@@ -117,7 +160,7 @@ jobs:
       - name: Test connection
         run: |
           source ~/retry_ssh.sh
-          retry_ssh "echo 'SSH connection successful'"
+          retry_ssh true
 
       - name: Prepare deployment files
         run: |
@@ -152,15 +195,14 @@ jobs:
 
           for attempt in 1 2 3; do
             if rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/; then
-              echo "Files copied successfully"
               rm -rf deployment
               break
             else
               if [ $attempt -lt 3 ]; then
-                echo "rsync failed ($attempt/3), retrying in 5s..."
+                echo "Rsync failed ($attempt/3). Retrying in 5s..."
                 sleep 5
               else
-                echo "rsync failed after 3 attempts"
+                echo "Rsync failed after 3 attempts"
                 rm -rf deployment
                 exit 1
               fi
@@ -169,139 +211,202 @@ jobs:
 
       - name: Deploy stack
         run: |
-          source ~/retry_ssh.sh
-          retry_ssh << 'ENDSSH'
+          ssh -q -o LogLevel=ERROR -T revelo bash -s << 'ENDSSH'
+          set -Eeuo pipefail
+          RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
+
           cd ~/revelo
           set -a && source .env && set +a
           rm -f .env
 
           if docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null | grep -q inactive; then
             docker swarm init > /dev/null 2>&1
-            echo "Swarm initialized"
+            echo -e "${YELLOW}Swarm initialized${RESET}"
           fi
 
           if docker stack ps revelo --format "{{.Name}}" 2>/dev/null | grep -q .; then
-            echo "Updating existing stack..."
+            echo -e "${BLUE}Updating revelo stack${RESET}"
           else
-            echo "Deploying new stack..."
+            echo -e "${BLUE}Deploying revelo stack${RESET}"
           fi
 
-          docker stack deploy -c stack.yml revelo --detach=true
-          echo "Stack deployed"
+          output=$(mktemp)
+          if ! docker stack deploy -c stack.yml revelo --detach=true >"$output" 2>&1; then
+            sed 's/^/  /' "$output"
+            echo -e "${RED}Stack deploy command failed${RESET}"
+            rm -f "$output"
+            exit 1
+          fi
+
+          sed 's/^/  /' "$output"
+
+          if grep -Eiq '^[[:space:]]*service[[:space:]]+[^:]+:[[:space:]]' "$output"; then
+            echo -e "${RED}One or more services failed to deploy/update${RESET}"
+            rm -f "$output"
+            exit 1
+          fi
+          if grep -Eiq '(error|failed)' "$output"; then
+            echo -e "${RED}Errors detected during stack deploy${RESET}"
+            rm -f "$output"
+            exit 1
+          fi
+
+          rm -f "$output"
+          echo -e "${GREEN}Stack deploy invoked${RESET}"
           ENDSSH
 
       - name: Verify deployment
         run: |
-          ssh -T revelo << 'ENDSSH'
-          echo ""
-          echo "→ Verifying deployment..."
+          source ~/retry_ssh.sh
+          retry_ssh << 'ENDSSH'
+          set -Eeuo pipefail
+          RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
+
+          svc_exists() {
+            docker service ls --format '{{.Name}}' | grep -qx "$1"
+          }
+
+          migrate_svc="revelo_migrate"
+          if svc_exists "$migrate_svc"; then
+            echo -e "Waiting for migration job"
+            max_wait=600
+            interval=5
+            elapsed=0
+            last_state=""
+            while [ $elapsed -lt $max_wait ]; do
+              raw_state=$(docker service ps "$migrate_svc" --no-trunc --format "{{.CurrentState}}" | head -1 || true)
+              state="${raw_state%% *}"
+              [ -z "$state" ] && state="pending"
+              if [ "$state" != "$last_state" ]; then
+                last_state="$state"
+              fi
+              if [ "$state" = "Complete" ]; then
+                echo -e "${GREEN}Migration completed${RESET}"
+                break
+              fi
+              if [ "$state" = "Failed" ] || [ "$state" = "Rejected" ]; then
+                echo -e "${RED}Migration failed${RESET}"
+                exit 1
+              fi
+              sleep $interval
+              elapsed=$((elapsed + interval))
+            done
+            if [ $elapsed -ge $max_wait ]; then
+              echo -e "${RED}Migration timed out${RESET}"
+              exit 1
+            fi
+          else
+            echo -e "${RED}Migration job not found${RESET}"
+            exit 1
+          fi
+
+          echo -e "${BLUE}Checking services health${RESET}"
+          services=(revelo_postgres revelo_nginx revelo_client revelo_api revelo_ai)
           max_wait=360
-          check_interval=5
+          interval=5
           elapsed=0
+          prev_line=""
 
           while [ $elapsed -lt $max_wait ]; do
-            all_healthy=true
             all_ready=true
-            status_output=""
-            
-            for service in postgres nginx client api ai; do
-              task_info=$(docker service ps revelo_$service \
-                --filter "desired-state=running" \
-                --format "{{.CurrentState}}" \
-                --no-trunc | head -1)
-              
-              health_status=$(docker service inspect revelo_$service \
-                --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null)
-              
-              if [[ $task_info == *"Failed"* ]] || [[ $task_info == *"Rejected"* ]]; then
-                status_output="${status_output}  ✗ $service: Failed\n"
-                all_healthy=false
-                all_ready=true
-              elif [[ $task_info == Running* ]]; then
-                if [ "$health_status" = "enabled" ]; then
-                  task_id=$(docker service ps revelo_$service --filter "desired-state=running" --format "{{.ID}}" --no-trunc | head -1)
+            any_bad=false
+            line=""
+
+            for name in "${services[@]}"; do
+              if ! svc_exists "$name"; then
+                line+=$(printf "%s: %s  " "$name" "${RED}not found${RESET}")
+                any_bad=true
+                continue
+              fi
+
+              task_state=$(docker service ps "$name" --filter "desired-state=running" --format "{{.CurrentState}}" --no-trunc | head -1 || true)
+              hc_enabled=$(docker service inspect "$name" --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "none")
+
+              if [[ "$task_state" == *"Failed"* ]] || [[ "$task_state" == *"Rejected"* ]]; then
+                line+=$(printf "%s: %s  " "$name" "${RED}failed${RESET}")
+                any_bad=true
+                continue
+              fi
+
+              if [[ "$task_state" == Running* ]]; then
+                if [ "$hc_enabled" = "enabled" ]; then
+                  task_id=$(docker service ps "$name" --filter "desired-state=running" --format "{{.ID}}" --no-trunc | head -1 || true)
                   if [ -n "$task_id" ]; then
-                    container_state=$(docker inspect $(docker ps -q --filter "label=com.docker.swarm.task.id=$task_id") \
-                      --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
-                    
-                    case "$container_state" in
-                      healthy)
-                        status_output="${status_output}- $service: Healthy ✓\n"
-                        ;;
-                      starting)
-                        status_output="${status_output}- $service: Health check starting\n"
-                        all_ready=false
-                        ;;
-                      unhealthy)
-                        status_output="${status_output}- $service: Unhealthy ✗\n"
-                        all_healthy=false
-                        all_ready=true
-                        ;;
-                      *)
-                        status_output="${status_output}- $service: Running (no health status)\n"
-                        all_ready=false
-                        ;;
+                    cid=$(docker ps -q --filter "label=com.docker.swarm.task.id=$task_id" | head -1 || true)
+                    health=$(docker inspect "$cid" --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
+                    case "$health" in
+                      healthy)   line+=$(printf "%s: %s  " "$name" "${GREEN}healthy${RESET}") ;;
+                      starting)  line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}"); all_ready=false ;;
+                      unhealthy) line+=$(printf "%s: %s  " "$name" "${RED}unhealthy${RESET}"); any_bad=true ;;
+                      *)         line+=$(printf "%s: %s  " "$name" "${YELLOW}running (no health)${RESET}"); all_ready=false ;;
                     esac
+                  else
+                    line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}")
+                    all_ready=false
                   fi
                 else
-                  status_output="${status_output}- $service: Running ✓\n"
+                  line+=$(printf "%s: %s  " "$name" "${GREEN}running${RESET}")
                 fi
-              elif [[ $task_info == *"Starting"* ]] || [[ $task_info == *"Preparing"* ]] || [[ $task_info == *"Assigned"* ]]; then
-                status_output="${status_output}- $service: Starting\n"
+              elif [[ "$task_state" == *"Starting"* ]] || [[ "$task_state" == *"Preparing"* ]] || [[ "$task_state" == *"Assigned"* ]] || [[ -z "$task_state" ]]; then
+                line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}")
                 all_ready=false
               else
-                status_output="${status_output}- $service: Waiting\n"
+                line+=$(printf "%s: %s  " "$name" "${YELLOW}waiting${RESET}")
                 all_ready=false
               fi
             done
-            
-            printf "\r\033[K"
-            echo -e "Status after ${elapsed}s:"
-            echo -e "$status_output"
-            
-            if [ "$all_healthy" = false ]; then
-              echo "✗ Deployment failed - services unhealthy"
+
+            if [ "$line" != "$prev_line" ]; then
+              echo -e "  $line"
+              prev_line="$line"
+            fi
+
+            if [ "$any_bad" = true ]; then
+              echo -e "${RED}One or more services in bad state${RESET}"
               exit 1
             fi
-            
+
             if [ "$all_ready" = true ]; then
-              echo "✓ All services healthy!"
+              echo -e "${GREEN}All services healthy${RESET}"
               exit 0
             fi
-            
-            sleep $check_interval
-            elapsed=$((elapsed + check_interval))
+
+            sleep $interval
+            elapsed=$((elapsed + interval))
           done
 
-          echo "✗ Timeout after ${max_wait}s"
+          echo -e "${RED}Timeout after ${max_wait}s${RESET}"
           exit 1
           ENDSSH
 
       - name: Save failure logs
-        if: failure()
+        if: failure() && steps.setup_ssh.conclusion == 'success'
         run: |
           source ~/retry_ssh.sh
-          echo "→ Saving logs..."
-
+          echo "Capturing logs"
           retry_ssh << 'ENDSSH'
+          set -Eeuo pipefail
           rm -f ~/revelo/.env
           mkdir -p ~/revelo/logs
           log_file=~/revelo/logs/deploy-$(date +%Y%m%d-%H%M%S).log
 
-          echo "Deployment failed at $(date)" > $log_file
-          echo "----------------------------------------" >> $log_file
-
-          for service in postgres nginx client api ai; do
-            status=$(docker service ps revelo_$service --no-trunc --format "{{.CurrentState}}" | head -1)
-            if [[ $status == *"Failed"* ]] || [[ $status == *"Rejected"* ]]; then
-              echo "" >> $log_file
-              echo "Service: revelo_$service" >> $log_file
-              echo "Status: $status" >> $log_file
-              echo "Logs:" >> $log_file
-              docker service logs revelo_$service --tail 50 --no-task-ids 2>&1 >> $log_file || echo "No logs" >> $log_file
-              echo "----------------------------------------" >> $log_file
-            fi
-          done
+          {
+            echo "deployment failed at $(date)"
+            echo "----------------------------------------"
+            for service in revelo_postgres revelo_nginx revelo_client revelo_api revelo_ai revelo_migrate; do
+              status=$(docker service ps "$service" --no-trunc --format "{{.CurrentState}}" 2>/dev/null | head -1 || true)
+              echo ""
+              echo "service: $service"
+              if [ -z "$status" ]; then
+                echo "status: not found"
+              else
+                echo "status: $status"
+              fi
+              echo ""
+              docker service logs "$service" --tail 200 --no-task-ids 2>&1 || echo "no logs"
+              echo "----------------------------------------"
+            done
+          } > "$log_file"
 
           echo "Logs saved to: $log_file"
           ENDSSH
@@ -309,6 +414,10 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -f ~/.ssh/deploy_key ~/.ssh/config ~/retry_ssh.sh
-          rm -rf deployment
-          ssh revelo "rm -f ~/revelo/.env" 2>/dev/null || true
+          rm -f ~/.ssh/deploy_key ~/.ssh/config ~/retry_ssh.sh || true
+          rm -rf deployment || true
+
+          if [ -f ~/retry_ssh.sh ]; then
+            source ~/retry_ssh.sh
+            retry_ssh "rm -f ~/revelo/.env" || true
+          fi
