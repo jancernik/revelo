@@ -25,9 +25,9 @@ const MIN_COLUMNS = 2 // Minimum number of columns to display
 const MAX_COLUMNS = 5 // Maximum number of columns to display
 const MAX_WIDTH = 1600
 
-const DRAG_FACTOR = 1.5 // Multiplier for drag sensitivity
+const DRAG_FACTOR = 1 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
-const DRAG_IMPULSE = 1.0 // Drag velocity impulse factor
+const DRAG_IMPULSE = 3 // Drag velocity impulse factor
 const KEYBOARD_PAGE_IMPULSE = 2.0 // Page up/down and space bar velocity multiplier
 const KEYBOARD_ARROW_IMPULSE = 2.0 // Arrow key velocity multiplier
 const VELOCITY_DECAY = 4.0 // Rate at which velocity decays over time
@@ -36,8 +36,8 @@ const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
 const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
 
-const MAX_SCROLL_LERP = 0.1 // Lerp factor at center column (fastest response)
-const MIN_SCROLL_LERP = 0.05 // Lerp factor at outermost columns (slowest response)
+const MAX_SCROLL_LERP = 0.08 // Lerp factor at center column (fastest response)
+const MIN_SCROLL_LERP = 0.045 // Lerp factor at outermost columns (slowest response)
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
