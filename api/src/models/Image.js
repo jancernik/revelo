@@ -14,6 +14,7 @@ class Image extends BaseModel {
     caption: ImagesTable.caption,
     collectionId: ImagesTable.collectionId,
     collectionOrder: ImagesTable.collectionOrder,
+    comment: ImagesTable.comment,
     date: ImagesTable.date,
     focalLength: ImagesTable.focalLength,
     focalLengthEquivalent: ImagesTable.focalLengthEquivalent,
@@ -29,6 +30,7 @@ class Image extends BaseModel {
     caption: true,
     collectionId: true,
     collectionOrder: true,
+    comment: true,
     date: true,
     focalLength: true,
     focalLengthEquivalent: true,
@@ -153,8 +155,9 @@ class Image extends BaseModel {
 
     const searchVector = sql`(
       setweight(to_tsvector('english', coalesce(${this.table.caption}, '')), 'A') ||
-      setweight(to_tsvector('english', coalesce(${this.table.camera}, '')), 'B') ||
-      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'B')
+      setweight(to_tsvector('english', coalesce(${this.table.comment}, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(${this.table.camera}, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'C')
     )`
 
     const searchQuery = sql`plainto_tsquery('english', ${text})`

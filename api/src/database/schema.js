@@ -64,6 +64,7 @@ export const ImagesTable = pgTable(
       onDelete: "set null"
     }),
     collectionOrder: integer("collection_order"),
+    comment: varchar("comment", { length: 1000 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     date: timestamp("date"),
     embedding: vector("embedding", { dimensions: 768 }),
@@ -82,8 +83,9 @@ export const ImagesTable = pgTable(
       "gin",
       sql`(
           setweight(to_tsvector('english', coalesce(${table.caption}, '')), 'A') ||
-          setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'B') ||
-          setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'B')
+          setweight(to_tsvector('english', coalesce(${table.comment}, '')), 'B') ||
+          setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'C') ||
+          setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'C')
         )`
     ),
     index("collection_order_index").on(table.collectionId, table.collectionOrder),

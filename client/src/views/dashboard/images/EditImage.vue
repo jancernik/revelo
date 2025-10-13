@@ -38,6 +38,7 @@ const loadImage = async () => {
     const imageMetadata = {
       aperture: image.value.aperture || "",
       camera: image.value.camera || "",
+      comment: image.value.comment || "",
       date: image.value.date ? new Date(image.value.date).toISOString().split("T")[0] : null,
       focalLength: image.value.focalLength || "",
       focalLengthEquivalent: image.value.focalLengthEquivalent || "",

@@ -19,6 +19,7 @@ class Collection extends BaseModel {
     caption: true,
     collectionId: true,
     collectionOrder: true,
+    comment: true,
     date: true,
     focalLength: true,
     focalLengthEquivalent: true,

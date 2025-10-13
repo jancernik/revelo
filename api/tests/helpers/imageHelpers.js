@@ -13,6 +13,7 @@ const baseImageData = (data = {}) => {
     aperture: "f/2.8",
     camera: "Test Camera",
     caption: `Test Image ${uniqueSuffix}`,
+    comment: `Test Comment ${uniqueSuffix}`,
     date: new Date("2023-01-01"),
     focalLength: "50mm",
     focalLengthEquivalent: "75mm",
