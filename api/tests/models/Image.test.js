@@ -31,6 +31,7 @@ describe("Image Model", () => {
       const imageData = {
         aperture: "f/2.8",
         camera: "Test Camera",
+        comment: "Test Comment",
         focalLength: "50mm",
         focalLengthEquivalent: "75mm",
         iso: 200,
@@ -51,6 +52,7 @@ describe("Image Model", () => {
       expect(result.iso).toBe(200)
       expect(result.focalLength).toBe("50mm")
       expect(result.focalLengthEquivalent).toBe("75mm")
+      expect(result.comment).toBe("Test Comment")
       expect(result.versions).toBeDefined()
       expect(Array.isArray(result.versions)).toBe(true)
       expect(result.versions.length).toBe(4)
@@ -124,6 +126,7 @@ describe("Image Model", () => {
       const imageData = {
         aperture: `f/${testData.expected.aperture}`,
         camera: testData.expected.camera,
+        comment: "Test Comment",
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
         focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
@@ -142,6 +145,7 @@ describe("Image Model", () => {
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
       expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
+      expect(result.comment).toBe("Test Comment")
       expect(result.date).toEqual(new Date(testData.expected.date))
     })
 
@@ -153,6 +157,7 @@ describe("Image Model", () => {
       const imageData = {
         aperture: `f/${testData.expected.aperture}`,
         camera: testData.expected.camera,
+        comment: "Test Comment",
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
         focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
@@ -168,6 +173,7 @@ describe("Image Model", () => {
       expect(result.lens).toBe(testData.expected.lens)
       expect(result.aperture).toBe(`f/${testData.expected.aperture}`)
       expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
+      expect(result.comment).toBe("Test Comment")
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
       expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
@@ -182,6 +188,7 @@ describe("Image Model", () => {
       const imageData = {
         aperture: `f/${testData.expected.aperture}`,
         camera: testData.expected.camera,
+        comment: "Test Comment",
         date: new Date(testData.expected.date),
         focalLength: `${testData.expected.focalLength}mm`,
         focalLengthEquivalent: `${testData.expected.focalLengthEquivalent}mm`,
@@ -197,6 +204,7 @@ describe("Image Model", () => {
       expect(result.lens).toBe(testData.expected.lens)
       expect(result.aperture).toBe(`f/${testData.expected.aperture}`)
       expect(result.shutterSpeed).toBe(testData.expected.shutterSpeed)
+      expect(result.comment).toBe("Test Comment")
       expect(result.iso).toBe(parseInt(testData.expected.iso))
       expect(result.focalLength).toBe(`${testData.expected.focalLength}mm`)
       expect(result.focalLengthEquivalent).toBe(`${testData.expected.focalLengthEquivalent}mm`)
@@ -301,6 +309,7 @@ describe("Image Model", () => {
       images.forEach((image) => {
         expect(image.id).toBeDefined()
         expect(image.caption).toBeDefined()
+        expect(image.comment).toBeDefined()
         expect(image.versions).toBeDefined()
         expect(Array.isArray(image.versions)).toBe(true)
         expect(image.versions.length).toBeGreaterThan(0)
@@ -416,6 +425,7 @@ describe("Image Model", () => {
         const imageData = {
           aperture: "f/4",
           camera: "Basic Camera",
+          comment: "Test Comment",
           date: new Date("2023-06-01"),
           focalLength: "35mm",
           focalLengthEquivalent: "52mm",
@@ -435,6 +445,7 @@ describe("Image Model", () => {
         expect(createdImage.aperture).toBe("f/4")
         expect(createdImage.shutterSpeed).toBe("1/60")
         expect(createdImage.iso).toBe(400)
+        expect(createdImage.comment).toBe("Test Comment")
         expect(createdImage.focalLength).toBe("35mm")
         expect(createdImage.focalLengthEquivalent).toBe("52mm")
         expect(createdImage.date).toEqual(imageData.date)
@@ -625,6 +636,7 @@ describe("Image Model", () => {
       const imageData = {
         aperture: null,
         camera: null,
+        comment: null,
         date: null,
         focalLength: null,
         focalLengthEquivalent: null,
@@ -642,6 +654,7 @@ describe("Image Model", () => {
       expect(createdImage.lens).toBeNull()
       expect(createdImage.aperture).toBeNull()
       expect(createdImage.shutterSpeed).toBeNull()
+      expect(createdImage.comment).toBeNull()
       expect(createdImage.iso).toBeNull()
       expect(createdImage.focalLength).toBeNull()
       expect(createdImage.focalLengthEquivalent).toBeNull()

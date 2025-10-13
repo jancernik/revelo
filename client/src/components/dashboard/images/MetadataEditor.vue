@@ -32,6 +32,7 @@ const emit = defineEmits(["update", "remove"])
 const createDefaultMetadata = () => ({
   aperture: "",
   camera: "",
+  comment: "",
   date: "",
   focalLength: "",
   focalLengthEquivalent: "",
@@ -204,6 +205,14 @@ watch(
         </div>
         <div class="form-group">
           <Input v-model="metadata.date" type="date" label="Date Taken" />
+        </div>
+        <div class="form-group">
+          <Input
+            v-model="metadata.comment"
+            type="text"
+            label="Comment"
+            placeholder="Add a comment"
+          />
         </div>
       </div>
     </div>

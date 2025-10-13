@@ -46,6 +46,7 @@ export const confirmUpload = async (sessionId, metadata) => {
   const imageMetadata = {
     aperture: metadata.aperture || null,
     camera: metadata.camera || null,
+    comment: metadata.comment || null,
     date: metadata.date ? new Date(metadata.date) : null,
     focalLength: metadata.focalLength || null,
     focalLengthEquivalent: metadata.focalLengthEquivalent || null,
@@ -128,6 +129,7 @@ export const updateImageMetadata = async (id, metadata) => {
   if (metadata.focalLengthEquivalent !== undefined)
     updateData.focalLengthEquivalent = metadata.focalLengthEquivalent
   if (metadata.camera !== undefined) updateData.camera = metadata.camera
+  if (metadata.comment !== undefined) updateData.comment = metadata.comment
   if (metadata.lens !== undefined) updateData.lens = metadata.lens
   if (metadata.date !== undefined) {
     updateData.date = metadata.date ? new Date(metadata.date) : null
