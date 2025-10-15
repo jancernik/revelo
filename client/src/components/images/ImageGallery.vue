@@ -1,4 +1,5 @@
 <script setup>
+import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
@@ -1065,12 +1066,13 @@ watch(windowHeight, () => {
 })
 
 onMounted(() => {
-  if (!route.path.includes("/images/")) {
-    props.menuVisible && showMenu(true)
-  }
   window.addEventListener("focusin", handleWindowFocusIn)
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
+
+  if (!route.path.includes("/images/")) {
+    props.menuVisible && showMenu(true)
+  }
 
   if (props.continuousScroll) {
     startAutoScroll()
@@ -1133,7 +1135,7 @@ defineExpose({
       />
     </div>
   </div>
-  <div v-else class="no-images">No images found :(</div>
+  <EmptyGalleryState v-else />
   <Loading
     v-if="isFirstLoad && !noImages"
     :progress="initialLoadProgress * 100"
@@ -1181,30 +1183,11 @@ defineExpose({
   }
 }
 
-.no-images {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-
 .gallery-column {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100vh;
   user-select: none;
-}
-
-.debug-info {
-  position: fixed;
-  top: 0;
-  left: 0;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 10px;
-  font-size: 12px;
-  width: 280px;
-  z-index: 1000;
 }
 </style>
