@@ -319,44 +319,53 @@ jobs:
                 continue
               fi
 
-              task_state=$(docker service ps "$name" --filter "desired-state=running" --format "{{.CurrentState}}" --no-trunc | head -1 || true)
+              expected_replicas=$(docker service inspect "$name" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "1")
+
               hc_enabled=$(docker service inspect "$name" --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "none")
 
-              if [[ "$task_state" == *"Failed"* ]] || [[ "$task_state" == *"Rejected"* ]]; then
+              failed_tasks=$(docker service ps "$name" --filter "desired-state=running" --format "{{.CurrentState}}" --no-trunc | grep -E "(Failed|Rejected)" || true)
+              if [ -n "$failed_tasks" ]; then
                 line+=$(printf "%s: %s  " "$name" "${RED}failed${RESET}")
                 any_bad=true
                 continue
               fi
 
-              if [[ "$task_state" == Running* ]]; then
-                if [ "$hc_enabled" = "enabled" ]; then
-                  task_id=$(docker service ps "$name" --filter "desired-state=running" --format "{{.ID}}" --no-trunc | head -1 || true)
+              healthy_count=0
+              starting_count=0
+              unhealthy_count=0
+
+              if [ "$hc_enabled" = "enabled" ]; then
+                while IFS= read -r task_id; do
                   if [ -n "$task_id" ]; then
-                    cid=$(docker ps -q --filter "label=com.docker.swarm.task.id=$task_id" | head -1 || true)
-                    health=$(docker inspect "$cid" --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
-                    case "$health" in
-                      healthy)   line+=$(printf "%s: %s  " "$name" "${GREEN}healthy${RESET}") ;;
-                      starting)  line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}"); all_ready=false ;;
-                      unhealthy) line+=$(printf "%s: %s  " "$name" "${RED}unhealthy${RESET}"); any_bad=true ;;
-                      *)         line+=$(printf "%s: %s  " "$name" "${YELLOW}running (no health)${RESET}"); all_ready=false ;;
-                    esac
-                  else
-                    line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}")
-                    all_ready=false
+                    cid=$(docker ps -q --filter "label=com.docker.swarm.task.id=$task_id" 2>/dev/null | head -1 || true)
+                    if [ -n "$cid" ]; then
+                      health=$(docker inspect "$cid" --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
+                      case "$health" in
+                        healthy)   healthy_count=$((healthy_count + 1)) ;;
+                        starting)  starting_count=$((starting_count + 1)) ;;
+                        unhealthy) unhealthy_count=$((unhealthy_count + 1)) ;;
+                      esac
+                    else
+                      starting_count=$((starting_count + 1))
+                    fi
                   fi
-                else
-                  line+=$(printf "%s: %s  " "$name" "${GREEN}running${RESET}")
-                fi
-              elif [[ "$task_state" == *"Starting"* ]] || [[ "$task_state" == *"Preparing"* ]] || [[ "$task_state" == *"Assigned"* ]] || [[ -z "$task_state" ]]; then
-                line+=$(printf "%s: %s  " "$name" "${YELLOW}starting${RESET}")
-                all_ready=false
+                done < <(docker service ps "$name" --filter "desired-state=running" --format "{{.ID}}" --no-trunc 2>/dev/null)
               else
-                line+=$(printf "%s: %s  " "$name" "${YELLOW}waiting${RESET}")
+                healthy_count=$(docker service ps "$name" --filter "desired-state=running" --format "{{.ID}}" 2>/dev/null | wc -l)
+              fi
+
+              if [ "$unhealthy_count" -gt 0 ]; then
+                line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${RED}unhealthy${RESET}")
+                any_bad=true
+              elif [ "$healthy_count" -eq "$expected_replicas" ]; then
+                line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${GREEN}healthy${RESET}")
+              else
+                line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${YELLOW}starting${RESET}")
                 all_ready=false
               fi
             done
 
-            if [ "$line" != "$prev_line" ]; then
+            if [ "$line" != "$prev_line" ] || [ $elapsed -eq 0 ]; then
               echo -e "  $line"
               prev_line="$line"
             fi
