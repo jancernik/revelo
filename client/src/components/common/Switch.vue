@@ -13,7 +13,6 @@ const props = defineProps({
   },
   options: {
     default: () => [],
-    required: true,
     type: Array
   },
   vertical: {
