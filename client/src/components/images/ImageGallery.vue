@@ -56,7 +56,6 @@ let zoomAnimationStartTimestamp = 0
 let scrollPosition = 0
 let dragStartPosition = 0
 
-let columnsHeights = []
 let columnImageCounts = []
 let imageCardData = []
 let scrollTargets = []
@@ -123,6 +122,7 @@ const isBuildingLayout = ref(false)
 const selectedImage = ref(null)
 const isAutoScrolling = ref(false)
 const autoScrollVelocity = ref(0)
+const columnsHeights = ref([])
 
 let userInactivityTimer = null
 const USER_INACTIVITY_TIMEOUT = 1500
@@ -178,10 +178,18 @@ const initialLoadComplete = computed(() => initialLoadProgress.value === 1)
 
 const maxScrollDistance = computed(() => {
   if (canInfiniteScroll.value) return Infinity
-  return (
-    Math.max(-currentSpacing.value, Math.max(...columnsHeights) - windowHeight.value) +
-    currentSpacing.value
-  )
+  if (columnsHeights.value.length === 0) return 0
+
+  const maxColumnIndex = columnsHeights.value.indexOf(Math.max(...columnsHeights.value))
+  const scalableHeight = columnScalableHeights[maxColumnIndex]
+  const constantSpacing = columnSpacing[maxColumnIndex]
+
+  const contentHeightOnScreen = scalableHeight * resizeFactor.value + constantSpacing
+  const totalHeightOnScreen = contentHeightOnScreen + currentSpacing.value
+  const scrollRangeOnScreen = totalHeightOnScreen - windowHeight.value
+  const scrollRangeInBaseline = scrollRangeOnScreen / resizeFactor.value
+
+  return Math.max(0, scrollRangeInBaseline)
 })
 
 const getBoundedScrollPosition = (targetPosition) => {
@@ -229,7 +237,8 @@ const scrollToImage = (imageId, options = {}) => {
 
   const constantSpacing = (targetCard.cardIndex + 1) * currentSpacing.value
   const scaledCardTop = (targetCard.cardTop - constantSpacing) * resizeFactor.value
-  const adjustedCardTop = scaledCardTop + constantSpacing - VIRTUAL_BUFFER
+  const scaledVirtualBuffer = (VIRTUAL_BUFFER - 1) * resizeFactor.value
+  const adjustedCardTop = scaledCardTop + constantSpacing - scaledVirtualBuffer
 
   const screenCenter = windowHeight.value / 2
   const cardCenter = adjustedCardTop + (targetCard.cardHeight * resizeFactor.value) / 2
@@ -237,7 +246,7 @@ const scrollToImage = (imageId, options = {}) => {
 
   if (canInfiniteScroll.value) {
     const totalSpacing = columnSpacing[targetCard.columnIndex]
-    const columnHeight = columnsHeights[targetCard.columnIndex]
+    const columnHeight = columnsHeights.value[targetCard.columnIndex]
     const scalableHeight = columnHeight - totalSpacing
     const wrapHeight = scalableHeight + totalSpacing
     const currentPos = scrollPosition
@@ -333,7 +342,7 @@ const updateImageGroups = () => {
 }
 
 const calculateImageCardsData = () => {
-  columnsHeights = createArray(columnCount.value, currentSpacing.value + VIRTUAL_BUFFER - 1)
+  columnsHeights.value = createArray(columnCount.value, currentSpacing.value + VIRTUAL_BUFFER - 1)
   columnImageCounts = createArray(columnCount.value, 0)
   clearArray(imageCardData)
 
@@ -345,7 +354,7 @@ const calculateImageCardsData = () => {
         animationDelay: 0,
         cardHeight,
         cardIndex,
-        cardTop: columnsHeights[columnIndex],
+        cardTop: columnsHeights.value[columnIndex],
         columnIndex,
         element: cardElement,
         imageId: img.dataset.id,
@@ -354,13 +363,16 @@ const calculateImageCardsData = () => {
         setY: gsap.quickSetter(cardElement, "y", "px"),
         visible: false
       })
-      columnsHeights[columnIndex] += cardHeight + currentSpacing.value
+      columnsHeights.value[columnIndex] += cardHeight + currentSpacing.value
       columnImageCounts[columnIndex]++
     })
-    columnsHeights[columnIndex] -= currentSpacing.value + VIRTUAL_BUFFER - 1
+    columnsHeights.value[columnIndex] -= currentSpacing.value + VIRTUAL_BUFFER - 1
   })
+  const minColumnHeight = Math.min(...columnsHeights.value)
+  const viewportHeightInBaselineSpace = windowHeight.value / resizeFactor.value
   canInfiniteScroll.value =
-    Math.min(...columnsHeights) - currentSpacing.value >= windowHeight.value + VIRTUAL_BUFFER * 3
+    minColumnHeight - currentSpacing.value >=
+    viewportHeightInBaselineSpace + (VIRTUAL_BUFFER * 3) / resizeFactor.value
 }
 
 const calculateColumnLerpFactors = () => {
@@ -380,7 +392,7 @@ const calculateColumnLerpFactors = () => {
 
 const calculateColumnDimensions = () => {
   columnScalableHeights = createArray(columnCount.value, (columnIndex) => {
-    return columnsHeights[columnIndex] - currentSpacing.value * columnImageCounts[columnIndex]
+    return columnsHeights.value[columnIndex] - currentSpacing.value * columnImageCounts[columnIndex]
   })
   columnSpacing = createArray(columnCount.value, (columnIndex) => {
     return currentSpacing.value * columnImageCounts[columnIndex]
@@ -539,14 +551,15 @@ const calculateWrappedPosition = (card) => {
   const constantSpacing = (card.cardIndex + 1) * currentSpacing.value
   const scaledCardTop = (card.cardTop - constantSpacing) * resizeFactor.value
   const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
-  const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget - VIRTUAL_BUFFER
+  const scaledVirtualBuffer = (VIRTUAL_BUFFER - 1) * resizeFactor.value
+  const cardPosition = scaledCardTop + constantSpacing + scaledScrollTarget - scaledVirtualBuffer
 
   if (canInfiniteScroll.value) {
-    const minY = -card.cardHeight * resizeFactor.value - VIRTUAL_BUFFER
+    const minY = -card.cardHeight * resizeFactor.value - scaledVirtualBuffer
     const totalSpacing = columnSpacing[card.columnIndex]
-    const columnHeight = columnsHeights[card.columnIndex]
+    const columnHeight = columnsHeights.value[card.columnIndex]
     const scalableMaxY = (columnHeight - totalSpacing - card.cardHeight) * resizeFactor.value
-    const maxY = scalableMaxY + totalSpacing - VIRTUAL_BUFFER
+    const maxY = scalableMaxY + totalSpacing - scaledVirtualBuffer
     return gsap.utils.wrap(minY, maxY, cardPosition)
   }
   return cardPosition
@@ -1071,9 +1084,12 @@ watch(initialLoadProgress, (progress) => {
 
 watch(resizeFactor, () => startRenderLoop())
 watch(windowHeight, () => {
-  if (columnsHeights.length > 0) {
+  if (columnsHeights.value.length > 0) {
+    const minColumnHeight = Math.min(...columnsHeights.value)
+    const viewportHeightInBaselineSpace = windowHeight.value / resizeFactor.value
     canInfiniteScroll.value =
-      Math.min(...columnsHeights) - currentSpacing.value >= windowHeight.value + VIRTUAL_BUFFER * 3
+      minColumnHeight - currentSpacing.value >=
+      viewportHeightInBaselineSpace + (VIRTUAL_BUFFER * 3) / resizeFactor.value
   }
 })
 
