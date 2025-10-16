@@ -1091,6 +1091,7 @@ watch(windowHeight, () => {
       minColumnHeight - currentSpacing.value >=
       viewportHeightInBaselineSpace + (VIRTUAL_BUFFER * 3) / resizeFactor.value
   }
+  startRenderLoop()
 })
 
 onMounted(() => {
