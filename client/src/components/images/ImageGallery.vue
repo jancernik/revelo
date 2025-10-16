@@ -41,6 +41,8 @@ const KEY_THROTTLE_DELAY = 100 // Milliseconds between key events
 const MAX_SCROLL_LERP = 0.08 // Lerp factor at center column (fastest response)
 const MIN_SCROLL_LERP = 0.045 // Lerp factor at outermost columns (slowest response)
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
+const TOUCH_LERP_MULTIPLIER = 2.8 // Multiplier for lerp factors on touch devices for more direct feel
+const TOUCH_VELOCITY_LERP_FACTOR = 0.8 // Higher velocity lerp for more responsive touch
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
@@ -77,6 +79,8 @@ let zoomReferencePoint = null
 let lastInputMethod = null
 let lastTabDirection = 1
 let lastKeyEventTime = 0
+let isDraggingWithTouch = false
+let currentDragPositionX = 0
 
 const props = defineProps({
   alternatingScroll: {
@@ -540,7 +544,23 @@ const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, 
 
 const updateScrollTargets = () => {
   for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
-    const lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
+    let lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
+    if (isDraggingWithTouch) {
+      if (columnCount.value === 2) {
+        const columnCenterX =
+          firstColumnMargin.value +
+          columnIndex * (columnWidth.value + currentSpacing.value) +
+          columnWidth.value / 2
+
+        const distanceFromTouch = Math.abs(currentDragPositionX - columnCenterX) / windowWidth.value
+        const proximityMultiplier =
+          1 + (TOUCH_LERP_MULTIPLIER - 1) * (1 - Math.min(1, distanceFromTouch * 1.3))
+
+        lerpFactor = Math.min(1, lerpFactor * proximityMultiplier)
+      } else {
+        lerpFactor = Math.min(1, lerpFactor * TOUCH_LERP_MULTIPLIER)
+      }
+    }
     const shouldReverse = props.alternatingScroll && columnIndex % 2 === 1
     const targetPosition = shouldReverse ? -scrollPosition : scrollPosition
     scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], targetPosition, lerpFactor)
@@ -809,7 +829,9 @@ const handleDragStart = (event) => {
 
   isDragging.value = true
   hasDragged.value = false
+  isDraggingWithTouch = event.touches !== undefined
   dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
+  currentDragPositionX = event.clientX || event.touches?.[0]?.clientX || windowWidth.value / 2
   lastDragTimestamp = performance.now()
   velocity.value = 0
   imageGallery.value?.focus()
@@ -825,6 +847,9 @@ const handleDragMove = (event) => {
   if (Math.abs(deltaY) > 2) hasDragged.value = true
 
   dragStartPosition = currentY
+  if (isDraggingWithTouch) {
+    currentDragPositionX = event.touches?.[0]?.clientX || currentDragPositionX
+  }
   const newScrollPosition = scrollPosition + deltaY / resizeFactor.value
   scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
@@ -833,8 +858,9 @@ const handleDragMove = (event) => {
   lastDragTimestamp = now
 
   const instantaneousVelocity = ((deltaY / resizeFactor.value) * DRAG_IMPULSE) / deltaTime
+  const velocityLerp = isDraggingWithTouch ? TOUCH_VELOCITY_LERP_FACTOR : VELOCITY_LERP_FACTOR
   velocity.value = clamp(
-    lerp(velocity.value, instantaneousVelocity, VELOCITY_LERP_FACTOR),
+    lerp(velocity.value, instantaneousVelocity, velocityLerp),
     -MAX_SPEED,
     MAX_SPEED
   )
@@ -846,6 +872,7 @@ const handleDragEnd = (event) => {
 
   if (isScrollPaused.value) return
   isDragging.value = false
+  isDraggingWithTouch = false
   setTimeout(() => (hasDragged.value = false), 50)
 }
 
