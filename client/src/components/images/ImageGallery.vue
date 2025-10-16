@@ -24,7 +24,7 @@ const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optim
 const MAX_COLUMN_WIDTH = 300 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 2 // Minimum number of columns to display
 const MAX_COLUMNS = 5 // Maximum number of columns to display
-const MAX_WIDTH = 1600
+const MAX_WIDTH = 1600 // Maximum width of the gallery area in pixels
 
 const DRAG_FACTOR = 1 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
@@ -36,6 +36,7 @@ const PAUSED_VELOCITY_DECAY = 10.0 // Rate at which velocity decays over time wh
 const MAX_SPEED = 3000 // Maximum scroll velocity in pixels per second
 const VELOCITY_THRESHOLD = 4 // Minimum velocity below which scrolling stops
 const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
+const KEY_THROTTLE_DELAY = 100 // Milliseconds between key events
 
 const MAX_SCROLL_LERP = 0.08 // Lerp factor at center column (fastest response)
 const MIN_SCROLL_LERP = 0.045 // Lerp factor at outermost columns (slowest response)
@@ -76,6 +77,7 @@ let zoomTargetImageId = null
 let zoomReferencePoint = null
 let lastInputMethod = null
 let lastTabDirection = 1
+let lastKeyEventTime = 0
 
 const props = defineProps({
   alternatingScroll: {
@@ -888,6 +890,11 @@ const handleKeyDown = (event) => {
     case "s": {
       event.preventDefault()
       if (isScrollPaused.value) break
+
+      const now = performance.now()
+      if (selectedImage.value && now - lastKeyEventTime < KEY_THROTTLE_DELAY) break
+      lastKeyEventTime = now
+
       if (selectedImage.value) {
         selectImageVertically(1)
         break
@@ -918,6 +925,11 @@ const handleKeyDown = (event) => {
     case "w": {
       event.preventDefault()
       if (isScrollPaused.value) break
+
+      const now = performance.now()
+      if (selectedImage.value && now - lastKeyEventTime < KEY_THROTTLE_DELAY) break
+      lastKeyEventTime = now
+
       if (selectedImage.value) {
         selectImageVertically(-1)
         break
