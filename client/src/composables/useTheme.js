@@ -171,6 +171,32 @@ export function useTheme() {
   const animateThemeTransition = async (newThemeClass, origin) => {
     isAnimating.value = true
     let clonedBody = null
+    let tween = null
+    let resizeHandler = null
+
+    const cleanup = () => {
+      if (resizeHandler) {
+        window.removeEventListener("resize", resizeHandler)
+        resizeHandler = null
+      }
+    }
+
+    const completeTransition = () => {
+      cleanup()
+
+      document.documentElement.classList.remove("light", "dark")
+      document.documentElement.classList.add(newThemeClass)
+
+      if (clonedBody && clonedBody.parentNode) {
+        document.body.removeChild(clonedBody)
+      }
+
+      const body = document.querySelector("body")
+      setTimeout(() => {
+        document.documentElement.classList.remove("no-transition")
+        body.style.pointerEvents = "all"
+      }, 20)
+    }
 
     try {
       const body = document.querySelector("body")
@@ -217,22 +243,20 @@ export function useTheme() {
       const animationState = { radius: 0 }
 
       return new Promise((resolve) => {
-        gsap.to(animationState, {
+        resizeHandler = () => {
+          if (tween) {
+            tween.kill()
+          }
+          completeTransition()
+          resolve()
+        }
+        window.addEventListener("resize", resizeHandler)
+
+        tween = gsap.to(animationState, {
           duration: 2,
           ease: "power2.inOut",
           onComplete: function () {
-            document.documentElement.classList.remove("light", "dark")
-            document.documentElement.classList.add(newThemeClass)
-
-            if (clonedBody && clonedBody.parentNode) {
-              document.body.removeChild(clonedBody)
-            }
-
-            setTimeout(() => {
-              document.documentElement.classList.remove("no-transition")
-              body.style.pointerEvents = "all"
-            }, 20)
-
+            completeTransition()
             resolve()
           },
           onUpdate: function () {
@@ -247,6 +271,8 @@ export function useTheme() {
       })
     } catch (error) {
       console.error("Theme transition error:", error)
+
+      cleanup()
 
       if (clonedBody && clonedBody.parentNode) {
         try {
