@@ -136,18 +136,26 @@ class Image extends BaseModel {
   }
 
   async searchByEmbedding(embedding, options = {}) {
-    const { limit = 50, minSimilarity = 0.25 } = options
+    const limit = this.#toSafeInt(options.limit, 200)
+    const efSearch = this.#toSafeInt(options.efSearch, 200)
+    const minSimilarity = Number.isFinite(options.minSimilarity) ? options.minSimilarity : 0.25
 
     const similarity = sql`1 - (${cosineDistance(this.table.embedding, embedding)})`
 
-    const results = await this.db
-      .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, similarity })
-      .from(this.table)
-      .where(gt(similarity, minSimilarity))
-      .orderBy((t) => desc(t.similarity))
-      .limit(limit)
+    return await this.db.transaction(async (tx) => {
+      if (efSearch) {
+        await tx.execute(sql.raw(`SET LOCAL hnsw.ef_search = ${efSearch}`))
+      }
 
-    return await this.#addImageVersions(results)
+      const results = await tx
+        .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, similarity })
+        .from(this.table)
+        .where(gt(similarity, minSimilarity))
+        .orderBy((t) => desc(t.similarity))
+        .limit(limit)
+
+      return await this.#addImageVersions(results)
+    })
   }
 
   async searchByText(text, options = {}) {
@@ -310,6 +318,11 @@ class Image extends BaseModel {
 
   #shouldExcludeS3Images() {
     return !config.BUCKET_PUBLIC_URL
+  }
+
+  #toSafeInt(x, fallback) {
+    const n = Math.floor(Number(x))
+    return Number.isFinite(n) && n > 0 ? n : fallback
   }
 
   #transformImageWithUrls(image) {

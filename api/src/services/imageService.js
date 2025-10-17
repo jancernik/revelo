@@ -263,88 +263,101 @@ export const generateCaption = async (image) => {
 }
 
 export const searchWithVersions = async (text, options = {}) => {
-  const MIN_SIMILARITY = 0.25
-  const RANK_BONUS_FACTOR = 0.1
-  const EMBEDDING_SCORE_WEIGHT = 0.7
-  const TEXT_SCORE_WEIGHT = 0.3
-
-  const { limit = 50 } = options
+  const { candidateK = 200, efSearch = 200, limit = 50, useDynamicThreshold = true } = options
 
   const [embeddingResults, textResults] = await Promise.all([
     (async () => {
       const embedding = await generateTextEmbedding(text, { highPriority: true })
       return await Image.searchByEmbedding(embedding, {
-        limit,
-        minSimilarity: MIN_SIMILARITY
+        efSearch,
+        limit: candidateK,
+        minSimilarity: 0.25
       })
     })(),
-    Image.searchByText(text, { limit })
+    Image.searchByText(text, { limit: candidateK })
   ])
 
-  const resultMap = new Map()
+  const rankMapEmbed = new Map()
+  embeddingResults.forEach((r, i) => rankMapEmbed.set(r.id, i + 1))
+  const rankMapText = new Map()
+  textResults.forEach((r, i) => rankMapText.set(r.id, i + 1))
 
-  const embeddingLength = embeddingResults.length
-  embeddingResults.forEach((result, index) => {
-    const rawEmbeddingScore = result.similarity
-    const weightedEmbeddingScore = rawEmbeddingScore * EMBEDDING_SCORE_WEIGHT
-    const rankBonus =
-      embeddingLength > 0 ? ((embeddingLength - index) / embeddingLength) * RANK_BONUS_FACTOR : 0
+  const embedScores = embeddingResults.map((r) => r.similarity ?? 0)
+  const minE = Math.min(...embedScores, 0)
+  const maxE = Math.max(...embedScores, 1e-9)
+  const normEmbed = new Map()
+  embeddingResults.forEach((r) => {
+    const n = maxE > minE ? (r.similarity - minE) / (maxE - minE) : 0
+    normEmbed.set(r.id, n)
+  })
 
-    resultMap.set(result.id, {
-      ...result,
-      embeddingScore: rawEmbeddingScore,
-      finalScore: weightedEmbeddingScore + rankBonus,
+  const textScores = textResults.map((r) => r.score ?? 0)
+  const minT = Math.min(...textScores, 0)
+  const maxT = Math.max(...textScores, 1e-9)
+  const normText = new Map()
+  textResults.forEach((r) => {
+    const n = maxT > minT ? (r.score - minT) / (maxT - minT) : 0
+    normText.set(r.id, n)
+  })
+
+  const RRF_K = 60
+  const allIds = new Set([...rankMapEmbed.keys(), ...rankMapText.keys()])
+
+  const fused = []
+  for (const id of allIds) {
+    const r1 = rankMapEmbed.get(id)
+    const r2 = rankMapText.get(id)
+    const rrf = (r1 ? 1 / (RRF_K + r1) : 0) + (r2 ? 1 / (RRF_K + r2) : 0)
+
+    fused.push({
+      id,
+      rrf,
       scoreBreakdown: {
-        embedding: weightedEmbeddingScore,
-        rankBonus,
-        text: 0
+        embeddingNorm: normEmbed.get(id) ?? 0,
+        embeddingRank: r1 ?? null,
+        rrf,
+        textNorm: normText.get(id) ?? 0,
+        textRank: r2 ?? null
       },
-      source: "embedding",
-      textScore: 0
+      source: r1 && r2 ? "hybrid" : r1 ? "embedding" : "text"
     })
-  })
+  }
 
-  const textLength = textResults.length
-  textResults.forEach((result, index) => {
-    const rawTextScore = result.score ?? 0
-    const weightedTextScore = rawTextScore * TEXT_SCORE_WEIGHT
-    const rankBonus = textLength > 0 ? ((textLength - index) / textLength) * RANK_BONUS_FACTOR : 0
+  if (useDynamicThreshold) {
+    const rrfVals = fused.map((f) => f.rrf)
+    const mean = rrfVals.reduce((a, b) => a + b, 0) / Math.max(rrfVals.length, 1)
+    const stdev = Math.sqrt(
+      rrfVals.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(rrfVals.length, 1)
+    )
+    const floor = Math.max(mean - 0.5 * stdev, 0)
 
-    if (resultMap.has(result.id)) {
-      const existing = resultMap.get(result.id)
-      const finalScore =
-        existing.embeddingScore * EMBEDDING_SCORE_WEIGHT + weightedTextScore + rankBonus
+    const KEEP_NORM = 0.15
 
-      resultMap.set(result.id, {
-        ...existing,
-        finalScore,
-        scoreBreakdown: {
-          embedding: existing.embeddingScore * EMBEDDING_SCORE_WEIGHT,
-          rankBonus,
-          text: weightedTextScore
-        },
-        source: "hybrid",
-        textScore: rawTextScore
-      })
-    } else {
-      resultMap.set(result.id, {
-        ...result,
-        embeddingScore: 0,
-        finalScore: weightedTextScore + rankBonus,
-        scoreBreakdown: {
-          embedding: 0,
-          rankBonus,
-          text: weightedTextScore
-        },
-        source: "text",
-        textScore: rawTextScore
-      })
-    }
-  })
+    fused.sort((a, b) => b.rrf - a.rrf)
+    const filtered = fused.filter(
+      (f) =>
+        f.rrf >= floor ||
+        f.scoreBreakdown.embeddingNorm >= KEEP_NORM ||
+        f.scoreBreakdown.textNorm >= KEEP_NORM
+    )
+    fused.length = 0
+    fused.push(...filtered)
+  }
 
-  const combinedResults = Array.from(resultMap.values())
-    .sort((a, b) => b.finalScore - a.finalScore)
-    .slice(0, limit)
+  const hydrated = []
+  const byIdEmbed = new Map(embeddingResults.map((r) => [r.id, r]))
+  const byIdText = new Map(textResults.map((r) => [r.id, r]))
 
-  return combinedResults
+  fused.sort((a, b) => b.rrf - a.rrf)
+  for (const f of fused.slice(0, limit)) {
+    hydrated.push(byIdEmbed.get(f.id) || byIdText.get(f.id))
+  }
+
+  const byIdBreakdown = new Map(fused.map((f) => [f.id, f.scoreBreakdown]))
+  const finalResults = hydrated.map((r) => ({
+    ...r,
+    scoreBreakdown: byIdBreakdown.get(r.id)
+  }))
+
+  return finalResults
 }
