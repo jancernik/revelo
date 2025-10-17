@@ -119,6 +119,11 @@ const handleClick = (event) => {
     user-select: none;
     pointer-events: none;
     border-radius: var(--radius-lg);
+    color: transparent;
+
+    &:-moz-loading {
+      visibility: hidden;
+    }
   }
 }
 </style>
