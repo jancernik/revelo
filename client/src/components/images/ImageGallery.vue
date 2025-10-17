@@ -353,7 +353,13 @@ const calculateImageCardsData = () => {
   imageGallery.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
     columnElement.querySelectorAll(".image-card").forEach((cardElement, cardIndex) => {
       const img = cardElement.querySelector("img")
-      const cardHeight = (img.height / img.width) * columnWidth.value
+      const attrHeight = parseInt(img.getAttribute("height")) || 0
+      const attrWidth = parseInt(img.getAttribute("width")) || 1
+
+      const imgHeight = img.naturalHeight || attrHeight
+      const imgWidth = img.naturalWidth || attrWidth
+      const cardHeight = imgWidth > 0 ? (imgHeight / imgWidth) * columnWidth.value : 0
+
       imageCardData.push({
         animationDelay: 0,
         cardHeight,

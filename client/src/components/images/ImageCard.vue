@@ -48,7 +48,7 @@ const handleClick = (event) => {
       :alt="image.caption"
       :data-id="image.id"
       @load="emit('load', image.id)"
-      @error="errorLoading = true"
+      @error="errorLoading = shouldLoad ? true : false"
     />
   </div>
 </template>
