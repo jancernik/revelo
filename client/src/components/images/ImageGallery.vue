@@ -20,7 +20,7 @@ import { useRoute } from "vue-router"
 
 const SPACING_BASE = 20 // Space between images and columns in pixels
 const SPACING_SMALL = 8 // Space between images and columns in pixels for small screens
-const VIRTUAL_BUFFER = 200 // Buffer area outside viewport for performance optimization
+const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performance optimization
 const MAX_COLUMN_WIDTH = 300 // Maximum width of individual columns in pixels
 const MIN_COLUMNS = 2 // Minimum number of columns to display
 const MAX_COLUMNS = 5 // Maximum number of columns to display
