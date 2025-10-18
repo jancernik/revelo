@@ -207,6 +207,8 @@ export const fetchByIdWithVersions = async (id) => {
 }
 
 export const generateEmbedding = async (image) => {
+  let tempPath = null
+
   try {
     const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
@@ -216,7 +218,7 @@ export const generateEmbedding = async (image) => {
     let imagePath = originalVersion.path
 
     if (!storageManager.isLocalStorage()) {
-      const tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-embedding.jpg`)
+      tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-embedding.jpg`)
       const data = await storageManager.adapter.readFile(originalVersion.path)
       await fs.writeFile(tempPath, data)
       imagePath = tempPath
@@ -224,17 +226,25 @@ export const generateEmbedding = async (image) => {
 
     const embedding = await generateImageEmbedding(imagePath)
     await Image.db.update(Image.table).set({ embedding }).where(eq(Image.table.id, image.id))
-
-    if (!storageManager.isLocalStorage()) await fs.unlink(imagePath)
   } catch (error) {
     throw new AppError("Failed to generate embedding for image", {
       data: { error },
       isOperational: false
     })
+  } finally {
+    if (tempPath) {
+      try {
+        await fs.unlink(tempPath)
+      } catch (unlinkError) {
+        console.error(`Failed to delete temp file ${tempPath}:`, unlinkError.message)
+      }
+    }
   }
 }
 
 export const generateCaption = async (image) => {
+  let tempPath = null
+
   try {
     const originalVersion = image?.versions?.find((v) => v.type === "original")
     if (!originalVersion) {
@@ -244,7 +254,7 @@ export const generateCaption = async (image) => {
     let imagePath = originalVersion.path
 
     if (!storageManager.isLocalStorage()) {
-      const tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-caption.jpg`)
+      tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-caption.jpg`)
       const data = await storageManager.adapter.readFile(originalVersion.path)
       await fs.writeFile(tempPath, data)
       imagePath = tempPath
@@ -252,13 +262,19 @@ export const generateCaption = async (image) => {
 
     const caption = await generateImageCaption(imagePath)
     await Image.db.update(Image.table).set({ caption }).where(eq(Image.table.id, image.id))
-
-    if (!storageManager.isLocalStorage()) await fs.unlink(imagePath)
   } catch (error) {
     throw new AppError("Failed to generate caption for image", {
       data: { error },
       isOperational: false
     })
+  } finally {
+    if (tempPath) {
+      try {
+        await fs.unlink(tempPath)
+      } catch (unlinkError) {
+        console.error(`Failed to delete temp file ${tempPath}:`, unlinkError.message)
+      }
+    }
   }
 }
 

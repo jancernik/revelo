@@ -114,6 +114,26 @@ class Image extends BaseModel {
     return transformed.filter((img) => this.#hasAccessibleVersions(img))
   }
 
+  async findAllWithVersionsRaw(options = {}) {
+    const { limit, offset, orderBy, where } = options
+
+    const queryOptions = {
+      columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
+      orderBy: orderBy || undefined,
+      where: where || undefined,
+      with: {
+        versions: {
+          columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
+        }
+      }
+    }
+
+    if (limit !== undefined) queryOptions.limit = limit
+    if (offset !== undefined) queryOptions.offset = offset
+
+    return await this.db.query.ImagesTable.findMany(queryOptions)
+  }
+
   async findByIdWithVersions(id) {
     try {
       const result = await this.db.query.ImagesTable.findFirst({
@@ -130,6 +150,22 @@ class Image extends BaseModel {
 
       const transformed = this.#transformImageWithUrls(result)
       return this.#hasAccessibleVersions(transformed) ? transformed : null
+    } catch {
+      return null
+    }
+  }
+
+  async findByIdWithVersionsRaw(id) {
+    try {
+      return await this.db.query.ImagesTable.findFirst({
+        columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
+        where: eq(this.table.id, id),
+        with: {
+          versions: {
+            columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
+          }
+        }
+      })
     } catch {
       return null
     }

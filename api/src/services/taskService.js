@@ -108,7 +108,7 @@ export const cleanupOrphanedImages = async () => {
 export const backfillEmbeddings = async (force = false) => {
   try {
     const options = force ? {} : { where: isNull(Image.table.embedding) }
-    const images = await Image.findAllWithVersions(options)
+    const images = await Image.findAllWithVersionsRaw(options)
 
     if (images.length === 0) {
       return { errors: 0, scanned: 0, successful: 0 }
@@ -135,7 +135,7 @@ export const backfillEmbeddings = async (force = false) => {
 export const backfillCaptions = async (force = false) => {
   try {
     const options = force ? {} : { where: isNull(Image.table.caption) }
-    const images = await Image.findAllWithVersions(options)
+    const images = await Image.findAllWithVersionsRaw(options)
 
     if (images.length === 0) {
       return { errors: 0, scanned: 0, successful: 0 }
