@@ -302,7 +302,7 @@ jobs:
 
           echo -e "${BLUE}Checking services health${RESET}"
           services=(revelo_postgres revelo_nginx revelo_client revelo_api revelo_ai)
-          max_wait=360
+          max_wait=480
           interval=5
           elapsed=0
           prev_line=""
