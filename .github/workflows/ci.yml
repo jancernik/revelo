@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      no-cache:
+        description: "Build without cache"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -34,6 +40,8 @@ jobs:
       - format
       - test
     uses: ./.github/workflows/build.yml
+    with:
+      no-cache: ${{ inputs.no-cache || false }}
 
   deploy:
     name: Deploy

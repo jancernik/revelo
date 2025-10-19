@@ -1,8 +1,20 @@
 name: Build
 
 on:
-  workflow_call: {}
-  workflow_dispatch: {}
+  workflow_call:
+    inputs:
+      no-cache:
+        description: "Build without cache"
+        required: false
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      no-cache:
+        description: "Build without cache"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,5 +80,6 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.id }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.id }}
+          no-cache: ${{ inputs.no-cache }}
+          cache-from: ${{ inputs.no-cache && '' || format('type=gha,scope={0}', matrix.id) }}
+          cache-to: ${{ inputs.no-cache && '' || format('type=gha,mode=max,scope={0}', matrix.id) }}
