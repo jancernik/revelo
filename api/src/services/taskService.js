@@ -134,7 +134,7 @@ export const backfillEmbeddings = async (force = false) => {
 
 export const backfillCaptions = async (force = false) => {
   try {
-    const options = force ? {} : { where: isNull(Image.table.caption) }
+    const options = force ? {} : { where: isNull(Image.table.captions) }
     const images = await Image.findAllWithVersionsRaw(options)
 
     if (images.length === 0) {

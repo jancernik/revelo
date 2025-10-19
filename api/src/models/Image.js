@@ -11,7 +11,7 @@ class Image extends BaseModel {
   static FLUENT_API_IMAGE_COLUMNS = {
     aperture: ImagesTable.aperture,
     camera: ImagesTable.camera,
-    caption: ImagesTable.caption,
+    captions: ImagesTable.captions,
     collectionId: ImagesTable.collectionId,
     collectionOrder: ImagesTable.collectionOrder,
     comment: ImagesTable.comment,
@@ -27,7 +27,7 @@ class Image extends BaseModel {
   static QUERY_API_IMAGE_COLUMNS = {
     aperture: true,
     camera: true,
-    caption: true,
+    captions: true,
     collectionId: true,
     collectionOrder: true,
     comment: true,
@@ -196,21 +196,29 @@ class Image extends BaseModel {
 
   async searchByText(text, options = {}) {
     const { limit = 50 } = options
+    const en = sql`coalesce((${this.table.captions} ->> 'en'), '')`
+    const es = sql`coalesce((${this.table.captions} ->> 'es'), '')`
 
     const searchVector = sql`(
-      setweight(to_tsvector('english', coalesce(${this.table.caption}, '')), 'A') ||
+      setweight(to_tsvector('english', ${en}), 'A') ||
+      setweight(to_tsvector('spanish', ${es}), 'A') ||
       setweight(to_tsvector('english', coalesce(${this.table.comment}, '')), 'B') ||
+      setweight(to_tsvector('spanish', coalesce(${this.table.comment}, '')), 'B') ||
       setweight(to_tsvector('english', coalesce(${this.table.camera}, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'C')
+      setweight(to_tsvector('spanish', coalesce(${this.table.camera}, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'C') ||
+      setweight(to_tsvector('spanish', coalesce(${this.table.lens}, '')), 'C')
     )`
 
-    const searchQuery = sql`plainto_tsquery('english', ${text})`
-    const rank = sql`ts_rank(${searchVector}, ${searchQuery})`
+    const qEn = sql`plainto_tsquery('english', ${text})`
+    const qEs = sql`plainto_tsquery('spanish', ${text})`
+    const query = sql`${searchVector} @@ ${qEn} OR ${searchVector} @@ ${qEs}`
+    const rank = sql`ts_rank(${searchVector}, ${qEn}) + ts_rank(${searchVector}, ${qEs})`
 
     const results = await this.db
       .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, score: rank.as("score") })
       .from(this.table)
-      .where(sql`${searchVector} @@ ${searchQuery}`)
+      .where(query)
       .orderBy(desc(rank))
       .limit(limit)
 
@@ -366,14 +374,16 @@ class Image extends BaseModel {
 
     const filteredImage = this.#filterAccessibleVersions(image)
 
-    if (filteredImage.versions && Array.isArray(filteredImage.versions)) {
-      filteredImage.versions = filteredImage.versions.map((version) => ({
+    const transformedImage = { ...filteredImage }
+
+    if (transformedImage.versions && Array.isArray(transformedImage.versions)) {
+      transformedImage.versions = transformedImage.versions.map((version) => ({
         ...version,
         path: this.#getPublicUrlForVersion(version)
       }))
     }
 
-    return filteredImage
+    return transformedImage
   }
 }
 

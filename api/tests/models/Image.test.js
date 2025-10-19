@@ -308,7 +308,7 @@ describe("Image Model", () => {
 
       images.forEach((image) => {
         expect(image.id).toBeDefined()
-        expect(image.caption).toBeDefined()
+        expect(image.captions).toBeDefined()
         expect(image.comment).toBeDefined()
         expect(image.versions).toBeDefined()
         expect(Array.isArray(image.versions)).toBe(true)

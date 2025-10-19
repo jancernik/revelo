@@ -2,6 +2,7 @@ import { config } from "#src/config/environment.js"
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
 import {
+  checkAiServiceHealth,
   generateImageCaption,
   generateImageEmbedding,
   generateTextEmbedding
@@ -207,6 +208,11 @@ export const fetchByIdWithVersions = async (id) => {
 }
 
 export const generateEmbedding = async (image) => {
+  const isHealthy = await checkAiServiceHealth()
+  if (!isHealthy) {
+    return
+  }
+
   let tempPath = null
 
   try {
@@ -215,11 +221,12 @@ export const generateEmbedding = async (image) => {
       throw new AppError("Original version not found", { isOperational: false })
     }
 
-    let imagePath = originalVersion.path
+    const adapter = storageManager.getAdapterForStorageType(originalVersion.storageType)
+    let imagePath = adapter.getReadablePath(originalVersion.path)
 
-    if (!storageManager.isLocalStorage()) {
+    if (!imagePath) {
       tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-embedding.jpg`)
-      const data = await storageManager.adapter.readFile(originalVersion.path)
+      const data = await adapter.readFile(originalVersion.path)
       await fs.writeFile(tempPath, data)
       imagePath = tempPath
     }
@@ -235,14 +242,19 @@ export const generateEmbedding = async (image) => {
     if (tempPath) {
       try {
         await fs.unlink(tempPath)
-      } catch (unlinkError) {
-        console.error(`Failed to delete temp file ${tempPath}:`, unlinkError.message)
+      } catch {
+        // Do nothing
       }
     }
   }
 }
 
 export const generateCaption = async (image) => {
+  const isHealthy = await checkAiServiceHealth()
+  if (!isHealthy) {
+    return
+  }
+
   let tempPath = null
 
   try {
@@ -251,19 +263,20 @@ export const generateCaption = async (image) => {
       throw new AppError("Original version not found", { isOperational: false })
     }
 
-    let imagePath = originalVersion.path
+    const adapter = storageManager.getAdapterForStorageType(originalVersion.storageType)
+    let imagePath = adapter.getReadablePath(originalVersion.path)
 
-    if (!storageManager.isLocalStorage()) {
+    if (!imagePath) {
       tempPath = path.join(storageManager.stagingDir, `temp-${image.id}-caption.jpg`)
-      const data = await storageManager.adapter.readFile(originalVersion.path)
+      const data = await adapter.readFile(originalVersion.path)
       await fs.writeFile(tempPath, data)
       imagePath = tempPath
     }
 
-    const caption = await generateImageCaption(imagePath)
-    await Image.db.update(Image.table).set({ caption }).where(eq(Image.table.id, image.id))
+    const captions = await generateImageCaption(imagePath)
+    await Image.db.update(Image.table).set({ captions }).where(eq(Image.table.id, image.id))
   } catch (error) {
-    throw new AppError("Failed to generate caption for image", {
+    throw new AppError("Failed to generate captions for image", {
       data: { error },
       isOperational: false
     })
@@ -271,27 +284,63 @@ export const generateCaption = async (image) => {
     if (tempPath) {
       try {
         await fs.unlink(tempPath)
-      } catch (unlinkError) {
-        console.error(`Failed to delete temp file ${tempPath}:`, unlinkError.message)
+      } catch {
+        // Do nothing
       }
     }
   }
 }
 
 export const searchWithVersions = async (text, options = {}) => {
-  const { candidateK = 200, efSearch = 200, limit = 50, useDynamicThreshold = true } = options
+  const {
+    candidateK = 200,
+    efSearch = 200,
+    limit = 50,
+    minSimilarity = 0.27,
+    useDynamicThreshold = true
+  } = options
 
-  const [embeddingResults, textResults] = await Promise.all([
-    (async () => {
-      const embedding = await generateTextEmbedding(text, { highPriority: true })
-      return await Image.searchByEmbedding(embedding, {
-        efSearch,
-        limit: candidateK,
-        minSimilarity: 0.25
-      })
-    })(),
-    Image.searchByText(text, { limit: candidateK })
-  ])
+  console.log(`Search query: "${text}"`)
+  console.log(
+    `Search params - candidateK=${candidateK}, efSearch=${efSearch}, limit=${limit}, minSimilarity=${minSimilarity}`
+  )
+
+  const isAiHealthy = await checkAiServiceHealth()
+  console.log(`AI service health: ${isAiHealthy ? "healthy" : "unavailable"}`)
+
+  let embeddingResults = []
+  let textResults = []
+
+  if (isAiHealthy) {
+    const [embeddingResult, textResult] = await Promise.allSettled([
+      (async () => {
+        try {
+          const embedding = await generateTextEmbedding(text, { highPriority: true })
+          console.log(`Generated text embedding: ${embedding.length} dimensions`)
+          return await Image.searchByEmbedding(embedding, {
+            efSearch,
+            limit: candidateK,
+            minSimilarity
+          })
+        } catch {
+          return []
+        }
+      })(),
+      Image.searchByText(text, { limit: candidateK })
+    ])
+
+    embeddingResults = embeddingResult.status === "fulfilled" ? embeddingResult.value : []
+    textResults = textResult.status === "fulfilled" ? textResult.value : []
+
+    console.log(`Embedding results: ${embeddingResults.length} images`)
+    console.log(`Text search results: ${textResults.length} images`)
+  } else {
+    console.log("AI service unavailable - using caption-only search")
+    textResults = await Image.searchByText(text, { limit: candidateK })
+    console.log(`Text search results: ${textResults.length} images`)
+  }
+
+  const isTextOnlyMode = embeddingResults.length === 0 && textResults.length > 0
 
   const rankMapEmbed = new Map()
   embeddingResults.forEach((r, i) => rankMapEmbed.set(r.id, i + 1))
@@ -301,6 +350,11 @@ export const searchWithVersions = async (text, options = {}) => {
   const embedScores = embeddingResults.map((r) => r.similarity ?? 0)
   const minE = Math.min(...embedScores, 0)
   const maxE = Math.max(...embedScores, 1e-9)
+
+  if (embedScores.length > 0) {
+    console.log(`Embedding similarity range: ${minE.toFixed(4)} - ${maxE.toFixed(4)}`)
+  }
+
   const normEmbed = new Map()
   embeddingResults.forEach((r) => {
     const n = maxE > minE ? (r.similarity - minE) / (maxE - minE) : 0
@@ -310,70 +364,122 @@ export const searchWithVersions = async (text, options = {}) => {
   const textScores = textResults.map((r) => r.score ?? 0)
   const minT = Math.min(...textScores, 0)
   const maxT = Math.max(...textScores, 1e-9)
+
+  if (textScores.length > 0) {
+    console.log(`Text search score range: ${minT.toFixed(4)} - ${maxT.toFixed(4)}`)
+  }
+
   const normText = new Map()
   textResults.forEach((r) => {
     const n = maxT > minT ? (r.score - minT) / (maxT - minT) : 0
     normText.set(r.id, n)
   })
 
-  const RRF_K = 60
   const allIds = new Set([...rankMapEmbed.keys(), ...rankMapText.keys()])
+  console.log(`Total unique images from both sources: ${allIds.size}`)
 
   const fused = []
   for (const id of allIds) {
     const r1 = rankMapEmbed.get(id)
     const r2 = rankMapText.get(id)
+    const embedNorm = normEmbed.get(id) ?? 0
+    const textNorm = normText.get(id) ?? 0
+
+    const embedImg = embeddingResults.find((img) => img.id === id)
+    const rawSimilarity = embedImg?.similarity ?? 0
+
+    let finalScore
+    let textBoost = 0
+
+    if (isTextOnlyMode) {
+      const textImg = textResults.find((img) => img.id === id)
+      finalScore = textImg?.score ?? 0
+    } else {
+      textBoost = r2 && textNorm > 0.5 ? 0.05 : 0
+      finalScore = rawSimilarity + textBoost
+    }
+
+    const RRF_K = 60
     const rrf = (r1 ? 1 / (RRF_K + r1) : 0) + (r2 ? 1 / (RRF_K + r2) : 0)
 
     fused.push({
+      finalScore,
       id,
       rrf,
       scoreBreakdown: {
-        embeddingNorm: normEmbed.get(id) ?? 0,
+        embeddingNorm: embedNorm,
         embeddingRank: r1 ?? null,
+        rawSimilarity,
         rrf,
-        textNorm: normText.get(id) ?? 0,
+        textBoost,
+        textNorm: textNorm,
         textRank: r2 ?? null
       },
       source: r1 && r2 ? "hybrid" : r1 ? "embedding" : "text"
     })
   }
 
-  if (useDynamicThreshold) {
-    const rrfVals = fused.map((f) => f.rrf)
-    const mean = rrfVals.reduce((a, b) => a + b, 0) / Math.max(rrfVals.length, 1)
+  const sourceBreakdown = {
+    embedding: fused.filter((f) => f.source === "embedding").length,
+    hybrid: fused.filter((f) => f.source === "hybrid").length,
+    text: fused.filter((f) => f.source === "text").length
+  }
+  console.log(
+    `Source breakdown - embedding: ${sourceBreakdown.embedding}, text: ${sourceBreakdown.text}, hybrid: ${sourceBreakdown.hybrid}`
+  )
+
+  fused.sort((a, b) => b.finalScore - a.finalScore)
+
+  if (useDynamicThreshold && !isTextOnlyMode) {
+    const scoreVals = fused.map((f) => f.finalScore)
+    const mean = scoreVals.reduce((a, b) => a + b, 0) / Math.max(scoreVals.length, 1)
     const stdev = Math.sqrt(
-      rrfVals.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(rrfVals.length, 1)
+      scoreVals.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(scoreVals.length, 1)
     )
-    const floor = Math.max(mean - 0.5 * stdev, 0)
-
-    const KEEP_NORM = 0.15
-
-    fused.sort((a, b) => b.rrf - a.rrf)
-    const filtered = fused.filter(
-      (f) =>
-        f.rrf >= floor ||
-        f.scoreBreakdown.embeddingNorm >= KEEP_NORM ||
-        f.scoreBreakdown.textNorm >= KEEP_NORM
+    const floor = Math.max(mean - 1.0 * stdev, minSimilarity)
+    console.log(
+      `Score statistics - mean: ${mean.toFixed(4)}, stdev: ${stdev.toFixed(
+        4
+      )}, threshold: ${floor.toFixed(4)}`
     )
+
+    const beforeFilter = fused.length
+    const filtered = fused.filter((f) => f.finalScore >= floor)
     fused.length = 0
     fused.push(...filtered)
+
+    console.log(`Dynamic threshold filtering: ${beforeFilter} → ${fused.length} results`)
+  } else if (isTextOnlyMode) {
+    console.log(`Text-only mode - skipping dynamic threshold, keeping all ${fused.length} results`)
   }
 
   const hydrated = []
   const byIdEmbed = new Map(embeddingResults.map((r) => [r.id, r]))
   const byIdText = new Map(textResults.map((r) => [r.id, r]))
 
-  fused.sort((a, b) => b.rrf - a.rrf)
+  console.log("Top 10 ranked results:")
+  fused.slice(0, 10).forEach((f, i) => {
+    const img = byIdEmbed.get(f.id) || byIdText.get(f.id)
+    const caption = img?.captions?.en?.substring(0, 50) || "No caption"
+    console.log(
+      `  ${i + 1}. score=${f.finalScore.toFixed(
+        4
+      )} (similarity=${f.scoreBreakdown.rawSimilarity.toFixed(
+        4
+      )} + boost=${f.scoreBreakdown.textBoost.toFixed(2)}), source=${
+        f.source
+      }, caption="${caption}..."`
+    )
+  })
+
   for (const f of fused.slice(0, limit)) {
     hydrated.push(byIdEmbed.get(f.id) || byIdText.get(f.id))
   }
 
   const byIdBreakdown = new Map(fused.map((f) => [f.id, f.scoreBreakdown]))
-  const finalResults = hydrated.map((r) => ({
-    ...r,
-    scoreBreakdown: byIdBreakdown.get(r.id)
-  }))
+  const finalResults = hydrated.map((r) => ({ ...r, scoreBreakdown: byIdBreakdown.get(r.id) }))
+
+  console.log(`Returning ${finalResults.length} final results`)
 
   return finalResults
 }

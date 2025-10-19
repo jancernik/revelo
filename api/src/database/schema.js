@@ -5,6 +5,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   serial,
@@ -59,7 +60,7 @@ export const ImagesTable = pgTable(
   {
     aperture: varchar("aperture", { length: 50 }),
     camera: varchar("camera", { length: 255 }),
-    caption: varchar("caption", { length: 1000 }),
+    captions: jsonb("captions"),
     collectionId: uuid("collection_id").references(() => CollectionsTable.id, {
       onDelete: "set null"
     }),
@@ -67,7 +68,7 @@ export const ImagesTable = pgTable(
     comment: varchar("comment", { length: 1000 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     date: timestamp("date"),
-    embedding: vector("embedding", { dimensions: 768 }),
+    embedding: vector("embedding", { dimensions: 512 }),
     focalLength: varchar("focal_length", { length: 50 }),
     focalLengthEquivalent: varchar("focal_length_equivalent", { length: 50 }),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -82,11 +83,15 @@ export const ImagesTable = pgTable(
     index("search_index").using(
       "gin",
       sql`(
-          setweight(to_tsvector('english', coalesce(${table.caption}, '')), 'A') ||
-          setweight(to_tsvector('english', coalesce(${table.comment}, '')), 'B') ||
-          setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'C') ||
-          setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'C')
-        )`
+        setweight(to_tsvector('english', coalesce((${table.captions} ->> 'en'), '')), 'A') ||
+        setweight(to_tsvector('spanish', coalesce((${table.captions} ->> 'es'), '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(${table.comment}, '')), 'B') ||
+        setweight(to_tsvector('spanish', coalesce(${table.comment}, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(${table.camera}, '')), 'C') ||
+        setweight(to_tsvector('spanish', coalesce(${table.camera}, '')), 'C') ||
+        setweight(to_tsvector('english', coalesce(${table.lens}, '')), 'C') ||
+        setweight(to_tsvector('spanish', coalesce(${table.lens}, '')), 'C')
+      )`
     ),
     index("collection_order_index").on(table.collectionId, table.collectionOrder),
     unique("unique_collection_order").on(table.collectionId, table.collectionOrder)

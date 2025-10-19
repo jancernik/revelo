@@ -21,6 +21,10 @@ class LocalStorageAdapter {
     await fs.mkdir(this.uploadsDir, { recursive: true })
   }
 
+  getReadablePath(filePath) {
+    return path.resolve(filePath)
+  }
+
   isLocal() {
     return true
   }

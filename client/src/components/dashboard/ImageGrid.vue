@@ -83,7 +83,7 @@ const openImage = (image) => {
       >
         <img
           :src="srcAttribute ? image[srcAttribute] : getThumbnailPath(image)"
-          :alt="image.caption"
+          :alt="image.captions?.en"
           loading="lazy"
         />
       </div>

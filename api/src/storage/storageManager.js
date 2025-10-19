@@ -51,6 +51,28 @@ class StorageManager {
     }
   }
 
+  getAdapterForStorageType(storageType) {
+    if (storageType === "local") {
+      if (this.storageAdapter.isLocal()) {
+        return this.storageAdapter
+      }
+      return new LocalStorageAdapter(this.uploadsDir)
+    } else if (storageType === "s3") {
+      if (!this.storageAdapter.isLocal()) {
+        return this.storageAdapter
+      }
+      return new S3StorageAdapter({
+        accessKeyId: config.BUCKET_ACCESS_KEY_ID,
+        bucket: config.BUCKET_NAME,
+        endpoint: config.BUCKET_ENDPOINT,
+        publicUrl: config.BUCKET_PUBLIC_URL,
+        region: config.BUCKET_REGION,
+        secretAccessKey: config.BUCKET_SECRET_ACCESS_KEY
+      })
+    }
+    throw new Error(`Unknown storage type: ${storageType}`)
+  }
+
   getImageDirectory(imageId) {
     return path.join(this.uploadsDir, imageId.toString())
   }

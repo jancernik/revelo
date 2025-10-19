@@ -66,6 +66,10 @@ class S3StorageAdapter {
     return this.publicUrl ? `${this.publicUrl}/${key}` : ""
   }
 
+  getReadablePath() {
+    return null
+  }
+
   isLocal() {
     return false
   }

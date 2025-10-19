@@ -16,7 +16,7 @@ class Collection extends BaseModel {
   static QUERY_API_IMAGE_COLUMNS = {
     aperture: true,
     camera: true,
-    caption: true,
+    captions: true,
     collectionId: true,
     collectionOrder: true,
     comment: true,
