@@ -2,6 +2,7 @@ import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
 import { SettingsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
 import { createSettingValueSchema } from "#src/validation/settingSchemas.js"
+import { eq } from "drizzle-orm"
 import fs from "fs"
 import yaml from "js-yaml"
 import path from "path"
@@ -11,7 +12,6 @@ class Setting extends BaseModel {
     super(SettingsTable)
 
     this.fileSettings = []
-    this.dbSettings = []
     this.initialized = false
     this.initializationPromise = null
   }
@@ -21,7 +21,7 @@ class Setting extends BaseModel {
     await this.initialize()
 
     const setting = this.#getFileSetting(name)
-    const dbSetting = this.#getDbSetting(name)
+    const dbSetting = await this.#fetchDbSetting(name)
 
     if (!setting.public && !includeRestricted) {
       throw new NotFoundError(`Setting '${name}' does not exist`, { data: { settingName: name } })
@@ -38,8 +38,10 @@ class Setting extends BaseModel {
       ? this.fileSettings
       : this.fileSettings.filter((setting) => setting.public === true)
 
+    const dbSettings = await this.findAll()
+
     return filteredSettings.map((setting) => {
-      const dbSetting = this.#getDbSetting(setting.name)
+      const dbSetting = dbSettings.find((s) => s && s.name === setting.name)
       return this.#formatSetting(setting, dbSetting, complete)
     })
   }
@@ -66,11 +68,10 @@ class Setting extends BaseModel {
     await this.initialize()
 
     const setting = this.#getFileSetting(name)
-    const dbSetting = this.#getDbSetting(name)
+    const dbSetting = await this.#fetchDbSetting(name)
 
     if (dbSetting) {
       await this.delete(dbSetting.id)
-      this.dbSettings = this.dbSettings.filter((s) => s && s.id !== dbSetting.id)
     }
 
     return this.#formatSetting(setting, null, complete)
@@ -81,7 +82,7 @@ class Setting extends BaseModel {
     await this.initialize()
 
     const setting = this.#getFileSetting(name)
-    const dbSetting = this.#getDbSetting(name)
+    const dbSetting = await this.#fetchDbSetting(name)
 
     const validatedValue = this.#validateSettingValue(value, setting.type, setting.options, name)
 
@@ -90,17 +91,15 @@ class Setting extends BaseModel {
 
     if (!dbSetting) {
       updatedSetting = await this.create({ name, value: stringifiedValue })
-      this.dbSettings.push(updatedSetting)
     } else {
       updatedSetting = await this.update(dbSetting.id, { value: stringifiedValue })
-
-      const index = this.dbSettings.findIndex((s) => s && s.id === dbSetting.id)
-      if (index !== -1) {
-        this.dbSettings[index] = updatedSetting
-      }
     }
 
     return this.#formatSetting(setting, updatedSetting, complete)
+  }
+
+  async #fetchDbSetting(name) {
+    return await this.find(eq(this.table.name, name))
   }
 
   #formatSetting(setting, dbSetting, complete) {
@@ -134,10 +133,6 @@ class Setting extends BaseModel {
       name: setting.name,
       value
     }
-  }
-
-  #getDbSetting(name) {
-    return this.dbSettings.find((s) => s && s.name === name)
   }
 
   #getFileSetting(name) {
@@ -235,7 +230,6 @@ class Setting extends BaseModel {
       }
     })
 
-    this.dbSettings = (await this.findAll()).filter((s) => s !== null && s !== undefined)
     this.initialized = true
   }
 
