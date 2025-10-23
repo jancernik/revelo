@@ -6,7 +6,7 @@ import globals from "globals"
 
 export default [
   {
-    ignores: ["**/dist/", "**/node_modules/", "**/uploads/", "clip/"]
+    ignores: ["**/dist/", "**/node_modules/", "**/uploads/", "ai/**"]
   },
 
   pluginJs.configs.recommended,

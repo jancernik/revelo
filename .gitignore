@@ -19,3 +19,4 @@ api/temp/*
 
 
 ai/__pycache__/*
+ai/.venv/*
