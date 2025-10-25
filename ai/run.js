@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename)
 const projectDir = path.resolve(__dirname)
 const venvDir = path.join(projectDir, ".venv")
 const pythonInVenv = path.join(venvDir, "bin", "python")
+const pipInVenv = path.join(venvDir, "bin", "pip")
 
 function runSyncOrThrow(cmd, args = [], opts = {}) {
   const res = spawnSync(cmd, args, { stdio: "inherit", ...opts })
@@ -17,17 +18,34 @@ function runSyncOrThrow(cmd, args = [], opts = {}) {
 }
 
 function ensureVenv() {
+  if (fs.existsSync(venvDir) && !fs.existsSync(pipInVenv)) {
+    console.log("Virtual environment exists but pip is missing. Recreating...")
+    fs.rmSync(venvDir, { recursive: true, force: true })
+  }
+  
   if (fs.existsSync(pythonInVenv)) return
+  
+  console.log("Creating virtual environment...")
   try {
     runSyncOrThrow(process.env.PYTHON || "python", ["-m", "venv", venvDir], { cwd: projectDir })
   } catch (e) {
     runSyncOrThrow("python3", ["-m", "venv", venvDir], { cwd: projectDir })
   }
+  
+  if (!fs.existsSync(pipInVenv)) {
+    console.log("pip not found after venv creation, installing via ensurepip...")
+    try {
+      runSyncOrThrow(pythonInVenv, ["-m", "ensurepip", "--upgrade"], { cwd: projectDir })
+    } catch (e) {
+      console.error("Failed to install pip.")
+      throw e
+    }
+  }
 }
 
 ensureVenv()
 
-runSyncOrThrow(pythonInVenv, ["-m", "pip", "install",  "--upgrade", "pip"], { cwd: projectDir })
+runSyncOrThrow(pythonInVenv, ["-m", "pip", "install", "--upgrade", "pip"], { cwd: projectDir })
 
 const reqFile = path.join(projectDir, "requirements.txt")
 if (fs.existsSync(reqFile)) {
