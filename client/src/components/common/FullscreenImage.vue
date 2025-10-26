@@ -22,8 +22,9 @@ const REGULAR_EASE = "power3.inOut" // Easing function for fallback animations
 const REGULAR_SCALE = 0.85 // Initial scale factor for fallback show/hide animations
 const SLIDE_EASE = "power2.inOut" // Easing function for metadata/collection slide animations
 const SLIDE_DURATION = 0.4 // Duration for metadata/collection slide animations
-const SPACING = 20 // Spacing offset in pixels for slide animations
-const SPACING_PX = `${SPACING}px` // CSS spacing value derived from SPACING
+const SPACING_BASE = 20 // Spacing offset in pixels for slide animations
+const SPACING_SMALL = 8 // Spacing offset in pixels for narrow screens
+const SPACING_BREAKPOINT = 700 // Screen width threshold for switching to small spacing
 const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
 const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap
 const SLIDE_IMAGE_BUFFER = 5 // Extra pixels to position slide image beyond viewport edge
@@ -103,9 +104,14 @@ const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
 
+const spacing = computed(() =>
+  windowWidth.value < SPACING_BREAKPOINT ? SPACING_SMALL : SPACING_BASE
+)
+const spacingPx = computed(() => `${spacing.value}px`)
+
 const isMobileLayout = computed(() => {
   if (windowWidth.value <= 576) return true
-  const availableSpace = windowWidth.value - SPACING * 2 - initialMetadataWidth.value
+  const availableSpace = windowWidth.value - spacing.value * 2 - initialMetadataWidth.value
   if (imageAspectRatio.value < 1) {
     if (initialMetadataWidth.value > availableSpace * (2 / 3)) {
       return true
@@ -149,15 +155,15 @@ const getScaleRatio = () => {
 const getAvailableImageSpace = (options = {}) => {
   const { collectionVisible = false, metadataVisible = false } = options
 
-  let availableWidth = windowWidth.value - SPACING * 2
-  let availableHeight = windowHeight.value - SPACING * 2
+  let availableWidth = windowWidth.value - spacing.value * 2
+  let availableHeight = windowHeight.value - spacing.value * 2
 
   if (metadataVisible && !isMobileLayout.value) {
-    availableWidth -= initialMetadataWidth.value + SPACING
+    availableWidth -= initialMetadataWidth.value + spacing.value
   }
 
   if (collectionVisible) {
-    availableHeight -= collectionHeight.value + SPACING
+    availableHeight -= collectionHeight.value + spacing.value
   }
 
   return { height: availableHeight, width: availableWidth }
@@ -188,15 +194,15 @@ const calculateOptimalImageSize = (options = {}) => {
 }
 
 const maxImageHeight = (collectionVisible) => {
-  if (!collectionVisible) return `calc(100vh - calc(${SPACING_PX} * 2))`
-  const availableVh = 100 - ((collectionHeight.value + SPACING) / windowHeight.value) * 100
-  return `calc(${availableVh}vh - calc(${SPACING_PX} * 2))`
+  if (!collectionVisible) return `calc(100vh - calc(${spacingPx.value} * 2))`
+  const availableVh = 100 - ((collectionHeight.value + spacing.value) / windowHeight.value) * 100
+  return `calc(${availableVh}vh - calc(${spacingPx.value} * 2))`
 }
 
 const maxImageWidth = (metadataVisible) => {
-  if (!metadataVisible || isMobileLayout.value) return `calc(100vw - calc(${SPACING_PX} * 2))`
-  const availableVw = 100 - ((initialMetadataWidth.value + SPACING) / windowWidth.value) * 100
-  return `calc(${availableVw}vw - calc(${SPACING_PX} * 2))`
+  if (!metadataVisible || isMobileLayout.value) return `calc(100vw - calc(${spacingPx.value} * 2))`
+  const availableVw = 100 - ((initialMetadataWidth.value + spacing.value) / windowWidth.value) * 100
+  return `calc(${availableVw}vw - calc(${spacingPx.value} * 2))`
 }
 
 const setVisibility = (element, visible) => {
@@ -240,8 +246,8 @@ const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
   let metadataOffset = -imageMetadataElement.value.offsetHeight
 
   if (collectionVisible.value) {
-    spacePx += collectionHeight.value + SPACING
-    metadataOffset -= (collectionHeight.value + SPACING) / 2
+    spacePx += collectionHeight.value + spacing.value
+    metadataOffset -= (collectionHeight.value + spacing.value) / 2
   }
 
   const styles = {
@@ -532,10 +538,10 @@ const animateMetadata = (visible, callback) => {
   nextTick(() => {
     if (isMobileLayout.value) {
       let metadataOffset = -imageMetadataElement.value.offsetHeight
-      if (collectionVisible.value) metadataOffset -= (collectionHeight.value + SPACING) / 2
+      if (collectionVisible.value) metadataOffset -= (collectionHeight.value + spacing.value) / 2
       tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
     } else {
-      const metadataOffset = initialMetadataWidth.value + SPACING
+      const metadataOffset = initialMetadataWidth.value + spacing.value
       const centerOffset = metadataOffset / -2
 
       tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 }, 0)
@@ -555,7 +561,7 @@ const animateCollection = (visible, callback) => {
   collectionVisible.value = !!visible
   if (visible) setVisibility(collectionElement.value, true)
 
-  const collectionOffset = -(collectionHeight.value + SPACING)
+  const collectionOffset = -(collectionHeight.value + spacing.value)
   const centerOffset = collectionOffset / 2
 
   const tl = createAnimationTimeline({
@@ -835,7 +841,7 @@ const createSlideTimeline = (targetImage, direction) => {
 
     let metadataCompensation = 0
     if (metadataVisible.value && !isMobileLayout.value) {
-      const metadataOffset = initialMetadataWidth.value + SPACING
+      const metadataOffset = initialMetadataWidth.value + spacing.value
       const centerOffset = metadataOffset / -2
       metadataCompensation = -centerOffset
     }
@@ -1012,7 +1018,12 @@ const updateImageConstraints = () => {
     collectionVisible: collectionVisible.value,
     metadataVisible: metadataVisible.value
   })
-  setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
+  setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
+    height,
+    maxHeight: maxImageHeight(collectionVisible.value),
+    maxWidth: maxImageWidth(metadataVisible.value),
+    width
+  })
 }
 
 const updateMobileLayout = () => {
@@ -1341,8 +1352,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss">
-$spacing: v-bind(SPACING_PX);
-
 .floating-controls {
   position: fixed;
   z-index: z(overlay) + 20;
