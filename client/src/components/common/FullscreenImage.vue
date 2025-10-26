@@ -1105,7 +1105,7 @@ const handleDragMove = async (event) => {
   if (!hasDragMovement.value) return
   if (isSwitchingImage.value) return
 
-  const dragProgress = deltaX / (windowWidth.value / 2)
+  const dragProgress = deltaX / (windowWidth.value / 1.5)
 
   if (activeTimelineOnInterrupt.value) {
     const activeTimeline =

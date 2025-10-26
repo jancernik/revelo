@@ -374,7 +374,7 @@ defineExpose({ collectionImages, scrollTo })
   <div
     ref="collection-images"
     class="collection-images"
-    :class="{ dragging: isDragging }"
+    :class="{ dragging: isDragging, infinite: canInfiniteScroll }"
     @wheel="handleWheel"
     @touchstart="handleDragStart"
     @touchmove="handleDragMove"
@@ -404,9 +404,7 @@ $item-size: v-bind(ITEM_SIZE_PX);
 
 .collection-images {
   background: var(--background);
-  padding: var(--spacing-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
+  padding: var(--spacing-2);
   position: relative;
   user-select: none;
   overflow: hidden;
@@ -420,13 +418,35 @@ $item-size: v-bind(ITEM_SIZE_PX);
     position: relative;
     height: $item-size;
   }
+
+  &.infinite {
+    &::after,
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: clamp(20%, 100px, 200px);
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    &::before {
+      left: 0;
+      background-image: linear-gradient(to left, transparent, var(--background));
+    }
+    &::after {
+      right: 0;
+      background-image: linear-gradient(to right, transparent, var(--background));
+    }
+  }
 }
 
 .thumbnail-item {
   width: $item-size;
   height: $item-size;
   flex-shrink: 0;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
   position: absolute;
