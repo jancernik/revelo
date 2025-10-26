@@ -68,6 +68,10 @@ export function useFullscreenImage() {
     isDifferentImage.value = true
   }
 
+  const imageRestoredToOriginal = () => {
+    isDifferentImage.value = false
+  }
+
   const setPopstateCallback = (callback) => {
     popstateCallback = callback
   }
@@ -102,6 +106,7 @@ export function useFullscreenImage() {
     hide,
     imageChanged,
     imageData,
+    imageRestoredToOriginal,
     isAnimating,
     isThumbnailVisible,
     onReturn,

@@ -768,6 +768,14 @@ const handleFullscreenReturn = (withTarget, isDifferentImage) => {
   forceZoomTargetVisibility = !!isDifferentImage
   if (zoomTargetImageId) {
     updateImagePositions()
+    if (isDifferentImage) {
+      for (const card of imageCardData) {
+        if (card.visible) {
+          card.setOpacity(0)
+          card.setScale(0.8)
+        }
+      }
+    }
     startZoomReturn({ showAllImages: isDifferentImage, withTarget })
   }
 }

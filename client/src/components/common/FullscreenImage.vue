@@ -8,7 +8,7 @@ import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
-import { cssVar } from "#src/utils/helpers"
+import { clamp, cssVar } from "#src/utils/helpers"
 import { getImageVersion } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
@@ -24,6 +24,23 @@ const SLIDE_EASE = "power2.inOut" // Easing function for metadata/collection sli
 const SLIDE_DURATION = 0.4 // Duration for metadata/collection slide animations
 const SPACING = 20 // Spacing offset in pixels for slide animations
 const SPACING_PX = `${SPACING}px` // CSS spacing value derived from SPACING
+const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
+const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap
+const SLIDE_IMAGE_BUFFER = 5 // Extra pixels to position slide image beyond viewport edge
+const CONTROLS_SHOW_DELAY = 150 // Delay in ms before showing floating controls after animation starts
+
+const METADATA_FIELDS = [
+  "camera",
+  "lens",
+  "aperture",
+  "shutterSpeed",
+  "iso",
+  "focalLength",
+  "focalLengthEquivalent",
+  "date"
+]
+
+const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 const {
   callOnReturn,
@@ -32,6 +49,7 @@ const {
   flipId,
   imageChanged,
   imageData,
+  imageRestoredToOriginal,
   isAnimating,
   isThumbnailVisible,
   setPopstateCallback,
@@ -48,16 +66,26 @@ const collectionVisible = ref(false)
 const initialMetadataWidth = ref(0)
 const isSettingInitialWidth = ref(false)
 const originalFlipId = ref(null)
-const isImageSwitching = ref(false)
-const slideImagePath = ref("")
-const metadataImageData = ref(null)
-const isMetadataAnimating = ref(false)
+const isSwitchingImage = ref(false)
+const leftSlideImagePath = ref("")
+const rightSlideImagePath = ref("")
+const isAnimatingMetadata = ref(false)
+const isDragging = ref(false)
+const slideProgress = ref(0)
+const hasDragMovement = ref(false)
+
+const dragStartPosition = ref(0)
+const rightTransitionTimeline = ref(null)
+const leftTransitionTimeline = ref(null)
+const initialProgress = ref(0)
+const activeTimelineOnInterrupt = ref(null)
 
 const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
 const fullscreenElement = useTemplateRef("fullscreen-image")
 const fullscreenImageElement = computed(() => fullscreenElement.value?.querySelector(".image"))
 const fallbackImageElement = computed(() => fullscreenElement.value?.querySelector(".fallback"))
-const slideImageElement = computed(() => fullscreenElement.value?.querySelector(".slide-image"))
+const leftSlideImageElement = useTemplateRef("left-slide-image")
+const rightSlideImageElement = useTemplateRef("right-slide-image")
 const thumbnailElement = computed(() => document.querySelector(`[data-flip-id="${flipId.value}"]`))
 const thumbnailImageElement = computed(() => thumbnailElement.value?.querySelector("img"))
 const imageMetadataRef = useTemplateRef("image-metadata")
@@ -90,18 +118,8 @@ const isMobileLayout = computed(() => {
   return false
 })
 
-const hasMetadata = computed(() =>
-  [
-    "camera",
-    "lens",
-    "aperture",
-    "shutterSpeed",
-    "iso",
-    "focalLength",
-    "focalLengthEquivalent",
-    "date"
-  ].some((k) => imageData?.value?.[k])
-)
+const imageHasMetadata = (image) => METADATA_FIELDS.some((k) => image?.[k])
+const hasMetadata = computed(() => METADATA_FIELDS.some((k) => imageData?.value?.[k]))
 const hasCollection = computed(() => collectionData?.value?.images?.length > 0)
 
 const hasThumbnailAvailable = () => {
@@ -198,7 +216,7 @@ const setStyles = (elements, styles) => {
 const createAnimationTimeline = (options = {}) => {
   return gsap.timeline({
     defaults: {
-      duration: SLIDE_DURATION,
+      duration: 0.3,
       ease: SLIDE_EASE
     },
     ...options
@@ -280,11 +298,6 @@ const setHiddenMetadataStyles = (isMobile) => {
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
 }
 
-const onShowComplete = async () => {
-  isAnimating.value = false
-  await showFloatingControls()
-}
-
 const onHideComplete = () => {
   isAnimating.value = false
   metadataVisible.value = false
@@ -319,14 +332,39 @@ const showWithFlipAnimation = () => {
     thumbnailElement.value.style.visibility = "hidden"
 
     setStyles(fullscreenElement.value, { opacity: 1 })
-    setStyles([fullscreenImageElement.value, fallbackImageElement.value], { visibility: "visible" })
+    setStyles(fallbackImageElement.value, { opacity: 1, visibility: "visible" })
+    setStyles(fullscreenImageElement.value, { opacity: 0, visibility: "visible" })
 
     Flip.from(state, {
       duration: FLIP_DURATION,
       ease: FLIP_EASE,
-      onComplete: onShowComplete,
+      onComplete: () => {
+        if (fullscreenImageElement.value.complete) {
+          gsap.to(fullscreenImageElement.value, {
+            duration: 0.3,
+            ease: "power2.inOut",
+            onComplete: () => {
+              isAnimating.value = false
+            },
+            opacity: 1
+          })
+        } else {
+          fullscreenImageElement.value.onload = () => {
+            gsap.to(fullscreenImageElement.value, {
+              duration: 0.3,
+              ease: "power2.inOut",
+              onComplete: () => {
+                isAnimating.value = false
+              },
+              opacity: 1
+            })
+          }
+        }
+      },
       scale: true
     })
+
+    setTimeout(() => showFloatingControls(), CONTROLS_SHOW_DELAY)
 
     gsap.to([fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value], {
       borderRadius: cssVar("--radius-lg"),
@@ -343,10 +381,10 @@ const showWithFlipAnimation = () => {
     visibility: "hidden"
   })
 
-  if (fullscreenImageElement.value.complete || fallbackImageElement.value.complete) {
+  // Start performing as soon as fallback (thumbnail) is loaded
+  if (fallbackImageElement.value.complete) {
     perform()
   } else {
-    fullscreenImageElement.value.onload = perform
     fallbackImageElement.value.onload = perform
   }
 }
@@ -400,11 +438,15 @@ const showWithRegularAnimation = () => {
       duration: REGULAR_DURATION,
       ease: REGULAR_EASE,
       filter: "blur(0px)",
-      onComplete: onShowComplete,
+      onComplete: () => {
+        isAnimating.value = false
+      },
       opacity: 1,
       scale: 1
     }
   )
+
+  setTimeout(() => showFloatingControls(), CONTROLS_SHOW_DELAY)
 }
 
 const hideWithRegularAnimation = () => {
@@ -473,7 +515,7 @@ const hideImage = async () => {
 const animateMetadata = (visible, callback) => {
   if (!hasMetadata.value || !imageMetadataElement.value) return
 
-  isMetadataAnimating.value = true
+  isAnimatingMetadata.value = true
   metadataVisible.value = !!visible
   if (visible) {
     setHiddenMetadataStyles(isMobileLayout.value)
@@ -482,7 +524,7 @@ const animateMetadata = (visible, callback) => {
   const tl = createAnimationTimeline({
     onComplete: () => {
       if (!visible) setVisibility(imageMetadataElement.value, false)
-      isMetadataAnimating.value = false
+      isAnimatingMetadata.value = false
       callback?.()
     }
   })
@@ -534,63 +576,6 @@ const animateCollection = (visible, callback) => {
   if (metadataVisible.value && isMobileLayout.value) {
     tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), 0)
   }
-}
-
-const animateImageSlide = (nextImage, direction) => {
-  return new Promise((resolve) => {
-    const nextThumbnailVersion = getImageVersion(nextImage, "thumbnail")
-    const nextImageAspectRatio = calculateImageAspectRatio(nextImage)
-
-    const { height, width } = calculateOptimalImageSize({
-      aspectRatio: nextImageAspectRatio,
-      collectionVisible: collectionVisible.value,
-      metadataVisible: false
-    })
-
-    if (!slideImageElement.value) {
-      resolve()
-      return
-    }
-
-    slideImagePath.value = nextThumbnailVersion.path
-
-    const imageWidthPx = parseFloat(width)
-    const imageHeightPx = parseFloat(height)
-    const startOffset = direction > 0 ? windowWidth.value : -windowWidth.value
-
-    setStyles(slideImageElement.value, {
-      height,
-      left: "50%",
-      top: "50%",
-      width,
-      x: startOffset - imageWidthPx / 2,
-      y: -imageHeightPx / 2
-    })
-    setVisibility(slideImageElement.value, true)
-    nextTick(() => {
-      const tl = createAnimationTimeline({
-        onComplete: () => {
-          setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
-            filter: "blur(0px)",
-            height,
-            scale: 1,
-            width
-          })
-          setStyles(fullscreenElement.value, { x: 0 })
-
-          resolve()
-        }
-      })
-
-      tl.to(
-        [fullscreenImageElement.value, fallbackImageElement.value],
-        { filter: "blur(15px)", opacity: 0, scale: REGULAR_SCALE },
-        0
-      )
-
-      tl.to(slideImageElement.value, { x: -imageWidthPx / 2 }, 0)
-    })
-  })
 }
 
 const showFloatingControls = async () => {
@@ -682,6 +667,205 @@ const hideCollection = (callback) => animateCollection(false, callback)
 const toggleMetadata = () => (metadataVisible.value ? hideMetadata() : showMetadata())
 const toggleCollection = () => (collectionVisible.value ? hideCollection() : showCollection())
 
+const onSlideComplete = async (options) => {
+  const { height, targetImage, width } = options
+  const previousHadMetadata = hasMetadata.value
+  const nextImageHasMetadata = imageHasMetadata(targetImage)
+
+  if (imageMetadataElement.value) {
+    metadataVisible.value = false
+    setVisibility(imageMetadataElement.value, false)
+    setStyles(imageMetadataElement.value, { filter: "blur(0px)", opacity: 1, x: 0 })
+    initialMetadataWidth.value = 0
+  }
+
+  setStyles(fullscreenElement.value, { x: 0 })
+  setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
+    filter: "blur(0px)",
+    height,
+    opacity: 1,
+    scale: 1,
+    width
+  })
+
+  const targetFlipId = `img-${targetImage.id}`
+  if (originalFlipId.value && targetFlipId === originalFlipId.value) {
+    flipId.value = originalFlipId.value
+    originalFlipId.value = null
+    imageRestoredToOriginal()
+  } else {
+    if (originalFlipId.value === null && flipId.value !== null) {
+      originalFlipId.value = flipId.value
+    }
+    flipId.value = null
+    imageChanged()
+  }
+
+  history.replaceState({}, "", `/images/${targetImage.id}`)
+  imageData.value = targetImage
+
+  await nextTick()
+
+  const imageElement = fullscreenImageElement.value
+  await new Promise((resolve) => {
+    if (imageElement.complete) {
+      resolve()
+    } else {
+      imageElement.onload = resolve
+      imageElement.onerror = resolve
+    }
+  })
+
+  setStyles([leftSlideImageElement.value, rightSlideImageElement.value], {
+    left: "0%",
+    visibility: "hidden",
+    x: 0
+  })
+
+  leftSlideImagePath.value = ""
+  rightSlideImagePath.value = ""
+
+  if (collectionRef.value?.scrollTo) {
+    collectionRef.value.scrollTo(targetImage.id, true)
+  }
+
+  if (nextImageHasMetadata && !previousHadMetadata && rightControlsRef.value) {
+    await showMetadataButton()
+  } else if (!nextImageHasMetadata && previousHadMetadata && rightControlsRef.value) {
+    await hideMetadataButton()
+  }
+
+  leftTransitionTimeline.value = null
+  rightTransitionTimeline.value = null
+  slideProgress.value = 0
+
+  if (!isDragging.value) {
+    setTimeout(() => (isSwitchingImage.value = false), 0)
+  }
+}
+
+const createSlideTimeline = (targetImage, direction) => {
+  if (!targetImage) return null
+
+  const nextThumbnailVersion = getImageVersion(targetImage, "thumbnail")
+  const nextImageAspectRatio = calculateImageAspectRatio(targetImage)
+
+  const { height, width } = calculateOptimalImageSize({
+    aspectRatio: nextImageAspectRatio,
+    collectionVisible: collectionVisible.value,
+    metadataVisible: false
+  })
+
+  const nextImageWidth = parseFloat(width)
+  const nextImageHeight = parseFloat(height)
+
+  const tl = createAnimationTimeline({
+    onComplete: () => onSlideComplete({ height, targetImage, width }),
+    onReverseComplete: () => {
+      setStyles([leftSlideImageElement.value, rightSlideImageElement.value], {
+        left: "0%",
+        visibility: "hidden",
+        x: 0
+      })
+      setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
+        filter: "blur(0px)",
+        opacity: 1,
+        scale: 1
+      })
+      leftSlideImagePath.value = ""
+      rightSlideImagePath.value = ""
+      leftTransitionTimeline.value = null
+      rightTransitionTimeline.value = null
+      slideProgress.value = 0
+      isSwitchingImage.value = false
+    },
+    onUpdate: function () {
+      slideProgress.value = this.progress() * direction
+    },
+    paused: true
+  })
+
+  const nextImageHasMetadata = imageHasMetadata(targetImage)
+
+  if (hasMetadata.value && !nextImageHasMetadata && rightControlsRef.value) {
+    tl.to(
+      rightControlsRef.value,
+      {
+        duration: 0.3,
+        ease: "back.in(1.4)",
+        opacity: 0,
+        x: 200
+      },
+      0
+    )
+  }
+
+  if (metadataVisible.value && imageMetadataElement.value) {
+    tl.to(
+      imageMetadataElement.value,
+      {
+        filter: "blur(15px)",
+        opacity: 0
+      },
+      0
+    )
+
+    if (!isMobileLayout.value) {
+      tl.to(fullscreenElement.value, { x: 0 }, 0)
+      tl.to(
+        [fullscreenImageElement.value, fallbackImageElement.value],
+        {
+          height,
+          width
+        },
+        0
+      )
+    }
+  }
+
+  const slideImageElement =
+    direction === 1 ? rightSlideImageElement.value : leftSlideImageElement.value
+
+  if (slideImageElement) {
+    if (direction === 1) {
+      rightSlideImagePath.value = nextThumbnailVersion.path
+    } else {
+      leftSlideImagePath.value = nextThumbnailVersion.path
+    }
+
+    let metadataCompensation = 0
+    if (metadataVisible.value && !isMobileLayout.value) {
+      const metadataOffset = initialMetadataWidth.value + SPACING
+      const centerOffset = metadataOffset / -2
+      metadataCompensation = -centerOffset
+    }
+
+    const startOffset =
+      (windowWidth.value / 2 + nextImageWidth / 2 + SLIDE_IMAGE_BUFFER + metadataCompensation) *
+      direction
+
+    setStyles(slideImageElement, {
+      height,
+      left: "50%",
+      top: "50%",
+      width,
+      x: startOffset - nextImageWidth / 2,
+      y: -nextImageHeight / 2
+    })
+    setVisibility(slideImageElement, true)
+
+    tl.to(
+      [fullscreenImageElement.value, fallbackImageElement.value],
+      { filter: "blur(15px)", opacity: 0, scale: REGULAR_SCALE },
+      0
+    )
+
+    tl.to(slideImageElement, { x: -nextImageWidth / 2 }, 0)
+  }
+
+  return tl
+}
+
 const createPopstateCallback = (animationFn) => () => {
   animationFn()
   history.pushState({}, "", "/")
@@ -736,12 +920,12 @@ const getPreviousImage = () => {
   return collectionData.value.images[prevIndex]
 }
 
-const switchToImage = async (image, direction) => {
+const switchToImage = (image, direction) => {
   if (
     !image ||
     image.id === imageData.value?.id ||
-    isImageSwitching.value ||
-    isMetadataAnimating.value
+    isSwitchingImage.value ||
+    isAnimatingMetadata.value
   )
     return
 
@@ -749,100 +933,21 @@ const switchToImage = async (image, direction) => {
     originalFlipId.value = flipId.value
   }
 
-  isImageSwitching.value = true
+  isSwitchingImage.value = true
   flipId.value = null
   imageChanged()
 
-  const previousHadMetadata = hasMetadata.value
-  const wasMetadataVisible = metadataVisible.value
-
   direction ||= getSlideDirection(image) || 1
 
-  const nextImageHasMetadata = [
-    "camera",
-    "lens",
-    "aperture",
-    "shutterSpeed",
-    "iso",
-    "focalLength",
-    "focalLengthEquivalent",
-    "date"
-  ].some((k) => image?.[k])
-
-  if (wasMetadataVisible && imageMetadataElement.value) {
-    metadataImageData.value = imageData.value
-
-    gsap.to(imageMetadataElement.value, {
-      duration: SLIDE_DURATION,
-      ease: SLIDE_EASE,
-      filter: "blur(15px)",
-      onComplete: () => {
-        metadataVisible.value = false
-        metadataImageData.value = null
-        if (imageMetadataElement.value) {
-          setVisibility(imageMetadataElement.value, false)
-          setStyles(imageMetadataElement.value, { filter: "blur(0px)", opacity: 1, x: 0 })
-          initialMetadataWidth.value = 0
-        }
-      },
-      opacity: 0
-    })
-
-    if (!isMobileLayout.value) {
-      gsap.to(fullscreenElement.value, { duration: SLIDE_DURATION, ease: SLIDE_EASE, x: 0 })
-      const { height, width } = calculateOptimalImageSize({
-        collectionVisible: collectionVisible.value,
-        metadataVisible: false
-      })
-      gsap.to([fullscreenImageElement.value, fallbackImageElement.value], {
-        duration: SLIDE_DURATION,
-        ease: SLIDE_EASE,
-        height,
-        width
-      })
+  const timeline = createSlideTimeline(image, direction)
+  if (timeline) {
+    if (direction === 1) {
+      rightTransitionTimeline.value = timeline
+    } else {
+      leftTransitionTimeline.value = timeline
     }
+    timeline.play()
   }
-
-  if (previousHadMetadata && !nextImageHasMetadata && rightControlsRef.value) {
-    hideMetadataButton()
-  }
-
-  await animateImageSlide(image, direction)
-
-  history.replaceState({}, "", `/images/${image.id}`)
-  imageData.value = image
-
-  await nextTick()
-
-  const regularImagePath = getImageVersion(image, "regular").path
-  const imageElement = fullscreenImageElement.value
-
-  if (imageElement && imageElement.src !== `/api/${regularImagePath}`) {
-    await new Promise((resolve) => {
-      if (imageElement.complete) {
-        resolve()
-      } else {
-        imageElement.onload = resolve
-        imageElement.onerror = resolve
-      }
-    })
-  }
-
-  setStyles(slideImageElement.value, { left: "0%", visibility: "hidden", x: 0 })
-  setStyles([fullscreenImageElement.value, fallbackImageElement.value], { opacity: 1 })
-  slideImagePath.value = ""
-
-  if (collectionRef.value?.scrollTo) {
-    collectionRef.value.scrollTo(image.id, true)
-  }
-
-  await nextTick()
-
-  if (nextImageHasMetadata && !previousHadMetadata && rightControlsRef.value) {
-    await showMetadataButton()
-  }
-
-  setTimeout(() => (isImageSwitching.value = false), 0)
 }
 
 const handleCollectionImageClick = (event, image) => {
@@ -852,6 +957,7 @@ const handleCollectionImageClick = (event, image) => {
 
 const handleImageClick = (event) => {
   event.stopPropagation()
+  if (hasDragMovement.value) return
   if (hasCollection.value) {
     toggleCollection()
   }
@@ -871,40 +977,22 @@ const handleImageError = () => {
   setStyles(fullscreenImageElement.value, { visibility: "hidden" })
 }
 
-const handleWindowKeyDown = (event) => {
-  if (isAnimating.value || isImageSwitching.value || !imageData.value) return
+const preloadSlideImages = () => {
+  if (!hasCollection.value) return
 
-  switch (event.key) {
-    case "ArrowDown":
-    case "ArrowUp": {
-      event.preventDefault()
-      if (hasCollection.value) {
-        toggleCollection()
-      }
-      break
-    }
-    case "ArrowLeft": {
-      event.preventDefault()
-      const prevImage = getPreviousImage()
-      if (prevImage) switchToImage(prevImage, -1)
-      break
-    }
-    case "ArrowRight": {
-      event.preventDefault()
-      const nextImage = getNextImage()
-      if (nextImage) switchToImage(nextImage, 1)
-      break
-    }
-    case "Enter":
-    case "i":
-    case "I":
-      event.preventDefault()
-      handleToggleMetadata()
-      break
-    case "Escape":
-      event.preventDefault()
-      handleBackToGallery()
-      break
+  const nextImage = getNextImage()
+  const prevImage = getPreviousImage()
+
+  if (nextImage) {
+    const nextThumbnail = getImageVersion(nextImage, "thumbnail")
+    const img = new Image()
+    img.src = nextThumbnail.path
+  }
+
+  if (prevImage) {
+    const prevThumbnail = getImageVersion(prevImage, "thumbnail")
+    const img = new Image()
+    img.src = prevThumbnail.path
   }
 }
 
@@ -912,7 +1000,8 @@ const onImageUpdate = async (image) => {
   if (image) {
     if (updateRoute.value) setupRouting(image.id)
     if (image.collectionId) collectionData.value = await collectionsStore.fetch(image.collectionId)
-    if (!isImageSwitching.value) nextTick(showImage)
+    if (!isSwitchingImage.value) nextTick(showImage)
+    nextTick(() => preloadSlideImages())
   } else {
     initialMetadataWidth.value = 0
   }
@@ -948,6 +1037,210 @@ const onLayoutChange = (isMobile) => {
   setHiddenMetadataStyles(isMobile)
 }
 
+const handleDragStart = (event) => {
+  const target = event.target
+  const isButton = target.closest("button")
+  const isImage = target.classList?.contains("image")
+  const isInteractiveElement =
+    isButton ||
+    target.closest(".floating-controls") ||
+    target.closest(".image-metadata") ||
+    target.closest(".collection-images")
+  const isTouchEvent = event.type.startsWith("touch")
+
+  if (isInteractiveElement && !isImage) return
+
+  if (!isTouchEvent) {
+    event.preventDefault()
+  } else if (!isImage) {
+    event.preventDefault()
+  }
+
+  if (isAnimating.value || !hasCollection.value) return
+  isDragging.value = true
+  dragStartPosition.value = event.clientX || event.touches?.[0]?.clientX || 0
+
+  if (leftTransitionTimeline.value || rightTransitionTimeline.value) {
+    leftTransitionTimeline.value?.paused(true)
+    rightTransitionTimeline.value?.paused(true)
+    initialProgress.value = slideProgress.value
+
+    if (slideProgress.value > 0) {
+      activeTimelineOnInterrupt.value = "right"
+    } else if (slideProgress.value < 0) {
+      activeTimelineOnInterrupt.value = "left"
+    }
+
+    isSwitchingImage.value = false
+  } else {
+    activeTimelineOnInterrupt.value = null
+  }
+}
+
+const handleDragMove = async (event) => {
+  if (!isDragging.value) return
+
+  const currentX = event.clientX || event.touches?.[0]?.clientX || dragStartPosition.value
+  const deltaX = dragStartPosition.value - currentX
+
+  if (!hasDragMovement.value && Math.abs(deltaX) > DRAG_MOVEMENT_THRESHOLD) {
+    hasDragMovement.value = true
+  }
+
+  if (hasDragMovement.value) {
+    event.preventDefault()
+  }
+
+  if (!hasDragMovement.value) return
+  if (isSwitchingImage.value) return
+
+  const dragProgress = deltaX / (windowWidth.value / 2)
+
+  if (activeTimelineOnInterrupt.value) {
+    const activeTimeline =
+      activeTimelineOnInterrupt.value === "right"
+        ? rightTransitionTimeline.value
+        : leftTransitionTimeline.value
+
+    if (activeTimeline) {
+      let newProgress
+      if (activeTimelineOnInterrupt.value === "right") {
+        newProgress = Math.abs(initialProgress.value) + dragProgress
+      } else {
+        newProgress = Math.abs(initialProgress.value) - dragProgress
+      }
+
+      const clampedProgress = clamp(newProgress, 0, MAX_DRAG_PROGRESS)
+      activeTimeline.progress(clampedProgress)
+
+      if (clampedProgress === 0) {
+        if (activeTimelineOnInterrupt.value === "right" && dragProgress < -0.1) {
+          activeTimelineOnInterrupt.value = "left"
+          if (!leftTransitionTimeline.value) {
+            const targetImage = getPreviousImage()
+            if (targetImage) leftTransitionTimeline.value = createSlideTimeline(targetImage, -1)
+          }
+          initialProgress.value = 0
+        } else if (activeTimelineOnInterrupt.value === "left" && dragProgress > 0.1) {
+          activeTimelineOnInterrupt.value = "right"
+          if (!rightTransitionTimeline.value) {
+            const targetImage = getNextImage()
+            if (targetImage) rightTransitionTimeline.value = createSlideTimeline(targetImage, 1)
+          }
+          initialProgress.value = 0
+        }
+      }
+    }
+  } else {
+    const direction = deltaX > 0 ? 1 : -1
+
+    if (direction === 1 && !rightTransitionTimeline.value) {
+      const targetImage = getNextImage()
+      if (targetImage) rightTransitionTimeline.value = createSlideTimeline(targetImage, 1)
+    } else if (direction === -1 && !leftTransitionTimeline.value) {
+      const targetImage = getPreviousImage()
+      if (targetImage) leftTransitionTimeline.value = createSlideTimeline(targetImage, -1)
+    }
+
+    const progress = dragProgress - initialProgress.value
+    const clampedProgress = clamp(progress, -MAX_DRAG_PROGRESS, MAX_DRAG_PROGRESS)
+
+    if (clampedProgress > 0 && rightTransitionTimeline.value) {
+      rightTransitionTimeline.value.progress(Math.abs(clampedProgress))
+      if (leftTransitionTimeline.value) {
+        leftTransitionTimeline.value.progress(0)
+      }
+    } else if (clampedProgress < 0 && leftTransitionTimeline.value) {
+      leftTransitionTimeline.value.progress(Math.abs(clampedProgress))
+      if (rightTransitionTimeline.value) {
+        rightTransitionTimeline.value.progress(0)
+      }
+    } else if (clampedProgress === 0) {
+      if (leftTransitionTimeline.value) leftTransitionTimeline.value.progress(0)
+      if (rightTransitionTimeline.value) rightTransitionTimeline.value.progress(0)
+    }
+  }
+}
+
+const handleDragEnd = (event) => {
+  if (!isDragging.value) return
+
+  if (hasDragMovement.value) {
+    event.preventDefault()
+  }
+
+  if (isSwitchingImage.value) {
+    isDragging.value = false
+    setTimeout(() => (hasDragMovement.value = false), 0)
+    initialProgress.value = 0
+    dragStartPosition.value = 0
+    activeTimelineOnInterrupt.value = null
+    setTimeout(() => (isSwitchingImage.value = false), 0)
+    return
+  }
+
+  if (!leftTransitionTimeline.value && !rightTransitionTimeline.value) {
+    isDragging.value = false
+    setTimeout(() => (hasDragMovement.value = false), 0)
+    activeTimelineOnInterrupt.value = null
+    return
+  }
+
+  const progress = slideProgress.value
+  const targetTimeline = progress > 0 ? rightTransitionTimeline.value : leftTransitionTimeline.value
+
+  if (Math.abs(progress) >= 0.5) {
+    isSwitchingImage.value = true
+    targetTimeline?.play()
+  } else {
+    isSwitchingImage.value = true
+    targetTimeline?.reverse()
+  }
+
+  isDragging.value = false
+  setTimeout(() => (hasDragMovement.value = false), 0)
+  initialProgress.value = 0
+  dragStartPosition.value = 0
+  activeTimelineOnInterrupt.value = null
+}
+
+const handleWindowKeyDown = (event) => {
+  if (isAnimating.value || isSwitchingImage.value || isDragging.value || !imageData.value) return
+
+  switch (event.key) {
+    case "ArrowDown":
+    case "ArrowUp": {
+      event.preventDefault()
+      if (hasCollection.value) {
+        toggleCollection()
+      }
+      break
+    }
+    case "ArrowLeft": {
+      event.preventDefault()
+      const prevImage = getPreviousImage()
+      if (prevImage) switchToImage(prevImage, -1)
+      break
+    }
+    case "ArrowRight": {
+      event.preventDefault()
+      const nextImage = getNextImage()
+      if (nextImage) switchToImage(nextImage, 1)
+      break
+    }
+    case "Enter":
+    case "i":
+    case "I":
+      event.preventDefault()
+      handleToggleMetadata()
+      break
+    case "Escape":
+      event.preventDefault()
+      handleBackToGallery()
+      break
+  }
+}
+
 watch(imageData, async (image) => onImageUpdate(image))
 watch(windowWidth, onWindowWidthUpdate, { immediate: true })
 watch(windowHeight, onWindowHeightUpdate, { immediate: true })
@@ -955,8 +1248,8 @@ watch(isMobileLayout, onLayoutChange, { immediate: true })
 watch(triggerHide, () => triggerHide.value && nextTick(hideImage))
 
 onMounted(async () => {
+  window.addEventListener("keydown", handleWindowKeyDown)
   gsap.registerPlugin(Flip)
-  document.addEventListener("keydown", handleWindowKeyDown)
 
   if (imageData.value) {
     if (imageData.value.collectionId && !collectionData.value) {
@@ -969,12 +1262,24 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener("keydown", handleWindowKeyDown)
+  window.removeEventListener("keydown", handleWindowKeyDown)
 })
 </script>
 
 <template>
-  <div v-if="imageData" ref="fullscreen-image-container" class="fullscreen-image-container">
+  <div
+    v-if="imageData"
+    ref="fullscreen-image-container"
+    class="fullscreen-image-container"
+    :class="{ dragging: isDragging }"
+    @touchstart="handleDragStart"
+    @touchmove="handleDragMove"
+    @touchend="handleDragEnd"
+    @mousedown="handleDragStart"
+    @mousemove="handleDragMove"
+    @mouseleave="handleDragEnd"
+    @mouseup="handleDragEnd"
+  >
     <div ref="left-controls" class="floating-controls top-left">
       <button class="floating-button" @click="handleBackToGallery">
         <Icon name="ArrowLeft" :size="18" />
@@ -1000,12 +1305,19 @@ onUnmounted(() => {
         @error="handleImageError"
       />
       <img class="fallback" :src="thumbnailImageVersion.path" />
-      <img v-show="slideImagePath" class="slide-image" :src="slideImagePath" />
-      <ImageMetadata
-        v-if="hasMetadata"
-        ref="image-metadata"
-        :image="metadataImageData || imageData"
+      <img
+        v-show="leftSlideImagePath"
+        ref="left-slide-image"
+        class="slide-image"
+        :src="leftSlideImagePath"
       />
+      <img
+        v-show="rightSlideImagePath"
+        ref="right-slide-image"
+        class="slide-image"
+        :src="rightSlideImagePath"
+      />
+      <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
     </div>
     <CollectionImages
       v-if="hasCollection"
@@ -1014,6 +1326,17 @@ onUnmounted(() => {
       :current-image-id="imageData?.id"
       @click="handleCollectionImageClick"
     />
+  </div>
+  <div v-if="SHOW_DEBUG_INFO" class="debug-info">
+    <p>Metadata visible: {{ metadataVisible }}</p>
+    <p>Collection visible: {{ collectionVisible }}</p>
+    <p>Is switching images: {{ isSwitchingImage }}</p>
+    <p>Temp slide image path: {{ leftSlideImagePath }}</p>
+    <p>Is dragging: {{ isDragging }}</p>
+    <p>Left timeline: {{ leftTransitionTimeline ? "exists" : "null" }}</p>
+    <p>Right timeline: {{ rightTransitionTimeline ? "exists" : "null" }}</p>
+    <p>Slide progress: {{ slideProgress.toFixed(3) }}</p>
+    <p>Initial progress: {{ initialProgress.toFixed(3) }}</p>
   </div>
 </template>
 
@@ -1068,6 +1391,11 @@ $spacing: v-bind(SPACING_PX);
   top: 0;
   left: 0;
   z-index: z(overlay);
+  user-select: none;
+
+  &.dragging {
+    cursor: grabbing;
+  }
 
   .fullscreen-image {
     position: relative;
