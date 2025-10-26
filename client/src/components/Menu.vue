@@ -35,14 +35,6 @@ const menuConfig = reactive({
     },
     {
       hasIndicator: true,
-      icon: "FolderOpen",
-      id: "collections",
-      label: "Collections",
-      path: "/collections",
-      visible: true
-    },
-    {
-      hasIndicator: true,
       icon: "Settings",
       id: "dashboard",
       label: "Dashboard",
