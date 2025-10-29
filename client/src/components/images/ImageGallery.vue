@@ -114,6 +114,7 @@ const imageGallery = useTemplateRef("image-gallery")
 
 const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
+const loadedTinyImageIds = ref(new Set())
 const visibleImageIds = ref(new Set())
 const imageCountForInitialLoad = ref(0)
 const isDragging = ref(false)
@@ -174,8 +175,13 @@ const resizeFactor = computed(() => {
 
 const initialLoadProgress = computed(() => {
   if (imageCountForInitialLoad.value === 0) return 0
-  if (loadedImageIds.value.size >= imageCountForInitialLoad.value) return 1
-  return clamp(loadedImageIds.value.size / imageCountForInitialLoad.value, 0, 1)
+
+  const totalTinyImages = imageCardData.length
+  const totalNeeded = totalTinyImages + imageCountForInitialLoad.value
+  const totalLoaded = loadedTinyImageIds.value.size + loadedImageIds.value.size
+
+  if (totalLoaded >= totalNeeded) return 1
+  return clamp(totalLoaded / totalNeeded, 0, 1)
 })
 
 const initialLoadComplete = computed(() => initialLoadProgress.value === 1)
@@ -808,6 +814,10 @@ const handleImageLoad = (imageId) => {
   loadedImageIds.value.add(imageId)
 }
 
+const handleTinyImageLoad = (imageId) => {
+  loadedTinyImageIds.value.add(imageId)
+}
+
 const handleWheel = (event) => {
   event.preventDefault?.()
 
@@ -1089,6 +1099,9 @@ watch(
     loadedImageIds.value = new Set(
       [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
     )
+    loadedTinyImageIds.value = new Set(
+      [...loadedTinyImageIds.value].filter((id) => currentImageIds.has(id))
+    )
     visibleImageIds.value.clear()
 
     if (imagesStore.filteredImages.length > 0) {
@@ -1201,6 +1214,7 @@ defineExpose({
         :should-load="visibleImageIds.has(image.id)"
         :has-dragged="hasDragged && !isZoomTransitionActive"
         @load="handleImageLoad"
+        @tiny-load="handleTinyImageLoad"
         @click="handleImageClick"
       />
     </div>
