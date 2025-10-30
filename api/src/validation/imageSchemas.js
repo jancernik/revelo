@@ -37,7 +37,9 @@ export const updateMetadataSchemas = {
 export const fetchAllSchemas = {
   query: z.object({
     limit: limit.optional(),
-    offset: offset.optional()
+    offset: offset.optional(),
+    order: z.enum(["asc", "desc"]).optional(),
+    orderBy: z.enum(["date", "id"]).optional()
   })
 }
 

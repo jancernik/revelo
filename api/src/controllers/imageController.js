@@ -1,7 +1,8 @@
+import { ImagesTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
 import Setting from "#src/models/Setting.js"
 import * as imageService from "#src/services/imageService.js"
-import { sql } from "drizzle-orm"
+import { desc, sql } from "drizzle-orm"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files
@@ -45,16 +46,32 @@ export const confirmUpload = async (req, res) => {
 }
 
 export const fetchAll = async (req, res) => {
-  const { limit, offset } = req.parsedQuery
+  const { limit, offset, order, orderBy } = req.parsedQuery
 
   const options = {}
-  if (limit) options.limit = limit
-  if (offset) options.offset = offset
+  const metadata = {}
+
+  if (limit) {
+    options.limit = limit
+    metadata.limit = limit
+  }
+  if (offset) {
+    options.offset = offset
+    metadata.offset = offset
+  }
+
+  if (orderBy) {
+    const field = ImagesTable[orderBy]
+    const direction = order === "asc" ? "asc" : "desc"
+    options.orderBy = direction === "desc" ? desc(field) : field
+    metadata.orderBy = orderBy
+    metadata.order = direction
+  }
 
   const images = await Image.findAllWithVersions(options)
 
   res.status(200).json({
-    data: { images, metadata: options },
+    data: { images, metadata },
     status: "success"
   })
 }
