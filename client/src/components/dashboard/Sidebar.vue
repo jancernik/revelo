@@ -38,6 +38,12 @@ const sidebar = reactive({
   ],
   top: [
     {
+      icon: "Home",
+      key: "gallery",
+      label: "Gallery",
+      path: "/"
+    },
+    {
       icon: "LayoutDashboard",
       key: "dashboard",
       label: "Dashboard",
@@ -69,7 +75,7 @@ const handleItemClick = (item) => {
 
 const isActive = (path) => {
   if (!path) return false
-  if (path === "/dashboard") {
+  if (path === "/" || path === "/dashboard") {
     return route?.path === path
   }
   return route?.path.startsWith(path)
@@ -89,7 +95,7 @@ const isActive = (path) => {
       </ul>
 
       <ul class="bottom">
-        <li v-for="item in sidebar.bottom" :key="item.key">
+        <li v-for="item in sidebar.bottom" :key="item.key" :class="{ active: isActive(item.path) }">
           <button :class="item.className" @click="handleItemClick(item)">
             <Icon :name="item.icon" size="16" />
             <span>{{ item.label }}</span>
