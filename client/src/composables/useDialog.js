@@ -15,7 +15,8 @@ export function useDialog() {
       description: options.description || "",
       dismissible: options.dismissible !== false,
       isOpen: true,
-      title: options.title || ""
+      title: options.title || "",
+      useX: options.useX || false
     })
   }
 
@@ -24,6 +25,7 @@ export function useDialog() {
     dialogState.title = ""
     dialogState.description = ""
     dialogState.dismissible = true
+    dialogState.useX = false
     dialogState.actions = []
   }
 

@@ -1,10 +1,12 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
+import Icon from "#src/components/common/Icon.vue"
 import { useDialog } from "#src/composables/useDialog"
+import { watch } from "vue"
 
 const { dialogState, hide } = useDialog()
 
-const handleOverlayClick = () => {
+const handleHide = () => {
   if (dialogState.dismissible) {
     hide()
   }
@@ -16,11 +18,26 @@ const handleAction = (action) => {
   }
   hide()
 }
+
+const handleKeyDown = (event) => {
+  if (dialogState.dismissible && event.key === "Escape") {
+    event.preventDefault()
+    handleHide()
+  }
+}
+
+watch(dialogState, ({ isOpen }) => {
+  if (isOpen) {
+    window.addEventListener("keydown", handleKeyDown)
+  } else {
+    window.removeEventListener("keydown", handleKeyDown)
+  }
+})
 </script>
 
 <template>
   <Transition name="dialog">
-    <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleOverlayClick">
+    <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleHide">
       <div class="dialog" @click.stop>
         <div v-if="dialogState.title || dialogState.description" class="dialog-body">
           <h5 v-if="dialogState.title">
@@ -30,8 +47,14 @@ const handleAction = (action) => {
           <p v-html="dialogState.description"></p>
         </div>
 
-        <div class="dialog-footer">
-          <Button v-if="dialogState.dismissible" color="secondary" @click="hide"> Cancel </Button>
+        <div v-if="!dialogState.useX || dialogState.actions.length" class="dialog-footer">
+          <Button
+            v-if="dialogState.dismissible && !dialogState.useX"
+            color="secondary"
+            @click="hide"
+          >
+            Cancel
+          </Button>
 
           <Button
             v-for="(action, index) in dialogState.actions"
@@ -43,6 +66,14 @@ const handleAction = (action) => {
             {{ action.name }}
           </Button>
         </div>
+        <button class="close-x">
+          <Icon
+            v-if="dialogState.useX && dialogState.dismissible"
+            name="X"
+            size="20"
+            @click="handleHide"
+          />
+        </button>
       </div>
     </div>
   </Transition>
@@ -61,6 +92,7 @@ const handleAction = (action) => {
 }
 
 .dialog {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
@@ -86,6 +118,23 @@ const handleAction = (action) => {
   .dialog-footer {
     @include flex(row, flex-end);
     gap: var(--spacing-2);
+  }
+
+  .close-x {
+    @include flex-center;
+    position: absolute;
+    right: var(--spacing-3);
+    top: var(--spacing-3);
+    color: var(--foreground);
+    padding: 0.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: 0.1s ease-in-out;
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
