@@ -53,7 +53,7 @@ const showResetDefaultDialog = () => {
 }
 
 const inputType = computed(() => {
-  return props.setting.type === "string" ? "text" : "number"
+  return props.setting.type
 })
 
 const inputStep = computed(() => {
@@ -75,7 +75,7 @@ const parseValue = (value) => {
 }
 
 const handleUpdate = (newValue) => {
-  const parsedValue = props.setting.type !== "string" ? parseValue(newValue) : newValue
+  const parsedValue = props.setting.type !== "text" ? parseValue(newValue) : newValue
   emit("update", parsedValue)
 }
 </script>
@@ -92,6 +92,7 @@ const handleUpdate = (newValue) => {
         :model-value="currentValue"
         :type="inputType"
         :step="inputStep"
+        :multiline="setting.type === 'text'"
         @update:model-value="handleUpdate"
       />
 

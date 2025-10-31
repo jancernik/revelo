@@ -18,6 +18,27 @@ maxAdmins:
   type: integer
   default: 1
 
+showAboutDialog:
+  description: Show the about dialog button in the menu
+  category: Menu
+  type: toggle
+  default: false
+  public: true
+
+aboutDialogTitle:
+  description: Title to show in the about dialog (optional)
+  category: Menu
+  type: text
+  default: ""
+  public: true
+
+aboutDialogDescription:
+  description: Description to show in the about dialog (HTML allowed)
+  category: Menu
+  type: text
+  default: ""
+  public: true
+
 maxUploadFiles:
   description: The maximum number of files allowed to be uploaded at once
   category: Admin

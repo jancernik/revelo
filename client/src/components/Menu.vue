@@ -1,8 +1,10 @@
 <script setup>
+import AboutDialog from "#src/components/AboutDialog.vue"
 import Icon from "#src/components/common/Icon.vue"
 import ImageSearcher from "#src/components/ImageSearcher.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
 import { useMenu } from "#src/composables/useMenu"
+import { useSettings } from "#src/composables/useSettings"
 import { useAuthStore } from "#src/stores/auth"
 import { useImagesStore } from "#src/stores/images"
 import gsap from "gsap"
@@ -13,6 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const imagesStore = useImagesStore()
+const { settings } = useSettings()
 const { isVisible, shouldAnimate } = useMenu("menu")
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
@@ -76,6 +79,12 @@ const menuConfig = reactive({
       id: "theme-toggler",
       props: {},
       visible: true
+    },
+    {
+      component: markRaw(AboutDialog),
+      id: "about-dialog",
+      props: {},
+      visible: settings.value?.showAboutDialog && settings.value?.aboutDialogDescription
     }
   ]
 })

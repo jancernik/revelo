@@ -2,6 +2,7 @@
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
+import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
@@ -108,6 +109,7 @@ const props = defineProps({
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { hide: hideMenu, show: showMenu } = useMenu()
+const { dialogState } = useDialog()
 const route = useRoute()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
@@ -926,6 +928,7 @@ const handleWindowFocusIn = (event) => {
 
 const handleKeyDown = (event) => {
   if (fullscreenImageData.value) return
+  if (dialogState.isOpen) return
 
   switch (event.key) {
     case " ": {
@@ -1021,6 +1024,7 @@ const handleKeyDown = (event) => {
 
 const handleWindowKeyDown = (event) => {
   if (fullscreenImageData.value) return
+  if (dialogState.isOpen) return
 
   switch (event.key) {
     case "Enter": {
