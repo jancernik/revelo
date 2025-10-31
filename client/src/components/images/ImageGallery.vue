@@ -347,8 +347,16 @@ const clearImageSelection = () => {
 }
 
 const updateImageGroups = () => {
-  const groups = groupImages(imagesStore.filteredImages, columnCount.value)
-  imageGroups.value = groups.map((group) => gsap.utils.shuffle(group))
+  const groups = groupImages(imagesStore.filteredImages, columnCount.value, {
+    preserveOrder: imagesStore.orderBy !== null
+  })
+
+  // Only shuffle within columns if orderBy is null (random mode)
+  if (imagesStore.orderBy === null) {
+    imageGroups.value = groups.map((group) => gsap.utils.shuffle(group))
+  } else {
+    imageGroups.value = groups
+  }
 }
 
 const calculateImageCardsData = () => {

@@ -4,6 +4,7 @@ import ImageSearcher from "#src/components/ImageSearcher.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
 import { useMenu } from "#src/composables/useMenu"
 import { useAuthStore } from "#src/stores/auth"
+import { useImagesStore } from "#src/stores/images"
 import gsap from "gsap"
 import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
@@ -11,6 +12,7 @@ import { useRoute, useRouter } from "vue-router"
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const imagesStore = useImagesStore()
 const { isVisible, shouldAnimate } = useMenu("menu")
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
@@ -22,6 +24,17 @@ const activeIndicator = useTemplateRef("active-indicator")
 const isAdmin = computed(() => authStore && !!authStore.user?.admin)
 const isAnimating = ref(false)
 const isMenuAnimating = ref(false)
+const sortIcon = ref("Shuffle")
+
+const toggleSort = () => {
+  if (imagesStore.orderBy === null) {
+    sortIcon.value = "Calendar"
+    imagesStore.setOrder({ orderBy: "date" })
+  } else {
+    sortIcon.value = "Shuffle"
+    imagesStore.setOrder({ orderBy: null })
+  }
+}
 
 const menuConfig = reactive({
   center: [
@@ -44,19 +57,27 @@ const menuConfig = reactive({
   ],
   left: [
     {
-      component: markRaw(ThemeToggler),
-      id: "theme-toggler",
-      props: {},
-      visible: true
-    },
-    {
       component: markRaw(ImageSearcher),
       id: "image-searcher",
       props: { menu },
       visible: () => !!menu.value
+    },
+
+    {
+      action: toggleSort,
+      icon: sortIcon,
+      id: "sort-toggler",
+      visible: true
     }
   ],
-  right: []
+  right: [
+    {
+      component: markRaw(ThemeToggler),
+      id: "theme-toggler",
+      props: {},
+      visible: true
+    }
+  ]
 })
 
 const visibleMenuItems = computed(() => {

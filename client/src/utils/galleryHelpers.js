@@ -10,16 +10,20 @@ export const calculateImageAspectRatio = (imageObject = {}) => {
   return Number(aspectRatio.toFixed(3))
 }
 
-export const groupImages = (images = [], groupCount) => {
+export const groupImages = (images = [], groupCount, options = {}) => {
   if (!Array.isArray(images) || images.length === 0) return []
   if (!groupCount || groupCount <= 0) return images
+
+  const { preserveOrder = false } = options
 
   const imagesWithWeights = images.map((image) => {
     const weight = calculateImageAspectRatio(image)
     return { ...image, _weight: weight }
   })
 
-  imagesWithWeights.sort((a, b) => b._weight - a._weight)
+  if (!preserveOrder) {
+    imagesWithWeights.sort((a, b) => b._weight - a._weight)
+  }
 
   const groups = Array.from({ length: groupCount }, () => [])
   const totals = Array.from({ length: groupCount }, () => 0)

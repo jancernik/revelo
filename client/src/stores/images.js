@@ -14,6 +14,8 @@ export const useImagesStore = defineStore("images", () => {
   const loading = ref(false)
   const images = ref([])
   const filteredImages = ref([])
+  const orderBy = ref(null)
+  const order = ref("asc")
 
   async function fetchAll(options = {}) {
     const { force } = options
@@ -24,7 +26,13 @@ export const useImagesStore = defineStore("images", () => {
     error.value = null
 
     try {
-      const response = await api.get("/images")
+      const params = {}
+      if (orderBy.value) {
+        params.orderBy = orderBy.value
+        params.order = order.value
+      }
+
+      const response = await api.get("/images", { params })
       images.value = response.data?.data?.images || []
       filteredImages.value = images.value
       initialized.value = true
@@ -174,6 +182,14 @@ export const useImagesStore = defineStore("images", () => {
     if (index !== -1) images.value[index] = { ...images.value[index], ...image }
   }
 
+  function setOrder(options = {}) {
+    const { order: newOrder, orderBy: newOrderBy } = options
+    orderBy.value = newOrderBy
+    order.value = newOrder
+
+    fetchAll({ force: true })
+  }
+
   return {
     confirmUpload,
     error,
@@ -184,9 +200,12 @@ export const useImagesStore = defineStore("images", () => {
     initialize,
     initialized,
     loading,
+    order,
+    orderBy,
     refreshImages,
     remove,
     search,
+    setOrder,
     updateLocal,
     updateMetadata,
     uploadForReview
