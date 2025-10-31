@@ -1,8 +1,11 @@
 <script setup>
 import Button from "#src/components/common/Button.vue"
+import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import api from "#src/utils/api"
+import { onMounted, onUnmounted } from "vue"
 
+const { resetHeader, setHeader } = useDashboardLayout()
 const { show: showToast } = useToast()
 
 const handleCleanupStaged = async () => {
@@ -88,11 +91,18 @@ const handleBackfillCaptions = async () => {
     })
   }
 }
+
+onMounted(() => {
+  setHeader({
+    title: "Tasks"
+  })
+})
+
+onUnmounted(resetHeader)
 </script>
 
 <template>
   <div class="tasks">
-    <h4>Tasks</h4>
     <div class="tasks-content">
       <Button @click="handleCleanupStaged"> Cleanup Staged Images </Button>
       <Button @click="handleCleanupOrphaned"> Cleanup Orphaned Images </Button>

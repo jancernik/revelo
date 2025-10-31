@@ -1,13 +1,14 @@
 <script setup>
-import Button from "#src/components/common/Button.vue"
 import InputSetting from "#src/components/dashboard/settings/InputSetting.vue"
 import SwitchSetting from "#src/components/dashboard/settings/SwitchSetting.vue"
 import TextPairsSetting from "#src/components/dashboard/settings/TextPairsSetting.vue"
 import ToggleSetting from "#src/components/dashboard/settings/ToggleSetting.vue"
+import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useSettings } from "#src/composables/useSettings"
 import api from "#src/utils/api"
-import { computed, onMounted, reactive, ref } from "vue"
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 
+const { reset, setFooter, setHeader } = useDashboardLayout()
 const settings = ref([])
 const currentValues = reactive({})
 const originalValues = reactive({})
@@ -180,7 +181,51 @@ const fetchSettings = async () => {
   }
 }
 
-onMounted(fetchSettings)
+const setupLayout = () => {
+  setHeader({
+    title: "Settings"
+  })
+}
+
+watch(
+  () => [hasChanges.value, changedSettingsCount.value, isSaving.value],
+  () => {
+    if (hasChanges.value) {
+      setFooter({
+        actions: [
+          {
+            color: "secondary",
+            disabled: isSaving.value,
+            icon: "X",
+            key: "cancel",
+            onClick: () => cancelAllChanges(),
+            text: "Cancel"
+          },
+          {
+            color: "primary",
+            disabled: isSaving.value,
+            icon: "Check",
+            key: "save",
+            onClick: () => saveAllChanges(),
+            text: `Save ${changedSettingsCount.value} ${changedSettingsCount.value === 1 ? "change" : "changes"}`
+          }
+        ]
+      })
+    } else {
+      setFooter({
+        actions: []
+      })
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  setupLayout()
+  fetchSettings()
+})
+
+onUnmounted(reset)
 </script>
 
 <template>
@@ -254,19 +299,6 @@ onMounted(fetchSettings)
         </div>
       </div>
     </div>
-    <div v-if="hasChanges" class="setting-actions">
-      <div class="info">
-        <h6>
-          {{ changedSettingsCount }} unsaved {{ changedSettingsCount === 1 ? "change" : "changes" }}
-        </h6>
-      </div>
-      <Button icon="X" color="secondary" :disabled="isSaving" @click="cancelAllChanges">
-        Cancel
-      </Button>
-      <Button icon="Check" color="primary" :disabled="isSaving" @click="saveAllChanges">
-        Save
-      </Button>
-    </div>
   </div>
 </template>
 
@@ -299,21 +331,6 @@ onMounted(fetchSettings)
 
   .category-header {
     padding-bottom: var(--spacing-3);
-  }
-
-  .setting-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-top: var(--spacing-6);
-    border-top: 1px solid var(--border);
-    gap: var(--spacing-3);
-    flex-shrink: 0;
-    background-color: var(--background);
-
-    .info {
-      margin-right: auto;
-    }
   }
 
   .unknown-type {
