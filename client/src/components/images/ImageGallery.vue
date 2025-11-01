@@ -39,7 +39,7 @@ const MAX_SCROLL_DELTA = 80 // Maximum scroll delta per wheel event
 const KEY_THROTTLE_DELAY = 100 // Milliseconds between key events
 
 const MAX_SCROLL_LERP = 0.08 // Lerp factor at center column (fastest response)
-const MIN_SCROLL_LERP = 0.045 // Lerp factor at outermost columns (slowest response)
+const MIN_SCROLL_LERP = 0.05 // Lerp factor at outermost columns (slowest response)
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
 const TOUCH_LERP_MULTIPLIER = 2.8 // Multiplier for lerp factors on touch devices for more direct feel
 const TOUCH_VELOCITY_LERP_FACTOR = 0.8 // Higher velocity lerp for more responsive touch

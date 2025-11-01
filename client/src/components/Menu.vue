@@ -361,6 +361,7 @@ watch(
 <style lang="scss">
 .menu {
   @include flex-center;
+  @include floating-shadow;
   background-color: var(--menu-background);
   position: fixed;
   top: var(--spacing-4);
