@@ -31,12 +31,24 @@ const isMenuAnimating = ref(false)
 const sortIcon = ref("Shuffle")
 
 const toggleSort = () => {
+  const sortButton = menuUl.value?.querySelector('[data-item-id="sort-toggler"]')
+  const iconElement = sortButton?.querySelector(".icon")
+
   if (imagesStore.orderBy === null) {
     sortIcon.value = "Calendar"
     imagesStore.setOrder({ orderBy: "date" })
   } else {
     sortIcon.value = "Shuffle"
     imagesStore.setOrder({ orderBy: null })
+  }
+
+  if (iconElement) {
+    gsap.set(iconElement, { rotation: -90 })
+    gsap.to(iconElement, {
+      duration: 0.4,
+      ease: "back.out(1.5)",
+      rotation: 0
+    })
   }
 }
 
