@@ -17,7 +17,6 @@ import {
 import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
-import { useRoute } from "vue-router"
 
 const SPACING_BASE = 20 // Space between images and columns in pixels
 const SPACING_SMALL = 8 // Space between images and columns in pixels for small screens
@@ -110,7 +109,6 @@ const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscr
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { hide: hideMenu, show: showMenu } = useMenu()
 const { dialogState } = useDialog()
-const route = useRoute()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
@@ -806,6 +804,7 @@ const onFirstLoadComplete = () => {
   isScrollPaused.value = false
   updateImagePositions()
   startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
+  props.menuVisible && showMenu(true)
 }
 
 const handleImageClick = (event, image, flipId) => {
@@ -1164,10 +1163,6 @@ onMounted(() => {
   window.addEventListener("focusin", handleWindowFocusIn)
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
-
-  if (!route.path.includes("/images/")) {
-    props.menuVisible && showMenu(true)
-  }
 
   if (props.continuousScroll) {
     startAutoScroll()

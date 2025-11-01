@@ -1,6 +1,7 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
 import { useElementRect } from "#src/composables/useElementRect"
+import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import { gsap } from "gsap"
 import { computed, ref, useTemplateRef } from "vue"
@@ -18,15 +19,17 @@ const searchInput = useTemplateRef("search-input")
 const searchInputContainer = useTemplateRef("search-input-container")
 const clearButton = useTemplateRef("clear-button")
 
-const { width: searchButtonWidth, x: searchButtonX } = useElementRect(searchButton)
-const { x: menuX } = useElementRect(props.menu)
+const { width: searchButtonWidth } = useElementRect(searchButton)
+const { width: windowWidth } = useWindowSize()
+
+const maxSearchWidth = computed(() => Math.min(windowWidth.value - 32, 400))
+
+let initialWidth = 0
 
 const menuOffset = computed(() => {
   const style = getComputedStyle(props.menu)
   return parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth)
 })
-
-const searchButtonOffset = computed(() => -searchButtonX.value + menuX.value + menuOffset.value)
 
 const createAnimationTimeline = (options = {}) => {
   return gsap.timeline({
@@ -52,19 +55,28 @@ const animateSearchInput = (visible, callback) => {
   const animateOut = { filter: "blur(15px)", opacity: 0 }
 
   if (visible) {
+    const menuRect = props.menu.getBoundingClientRect()
+    const buttonRect = searchButton.value.getBoundingClientRect()
+    const menuStyle = getComputedStyle(props.menu)
+    const padding = parseFloat(menuStyle.paddingLeft)
+    const border = parseFloat(menuStyle.borderLeftWidth)
+    const currentOffset = -buttonRect.left + menuRect.left + padding + border
+    const inputPadding = buttonRect.width + padding + border - 1
+
+    initialWidth = menuRect.width
+
+    tl.to(".menu", { width: maxSearchWidth.value })
     tl.to(staggeredElements, { ...animateOut, stagger: 0.03 }, 0)
     tl.to(nonStaggeredElements, { ...animateOut }, 0)
     gsap.set(menuListItems, { pointerEvents: "none" })
     gsap.set(searchInputContainer.value, { pointerEvents: "auto" })
+    gsap.set(searchInput.value, { paddingLeft: inputPadding })
 
     tl.to(searchInputElements, { ...animateIn, duration: 0.3, stagger: 0.05 }, 0.2)
-    tl.to(
-      searchButton.value,
-      { duration: 0.3, ease: "power2.inOut", x: searchButtonOffset.value },
-      0
-    )
+    tl.to(searchButton.value, { duration: 0.3, ease: "power2.inOut", x: currentOffset }, 0)
     document.querySelectorAll(menuButtons).forEach((b) => (b.tabIndex = -1))
   } else {
+    tl.to(".menu", { width: initialWidth })
     tl.to(staggeredElements, { ...animateIn, stagger: 0.03 }, 0)
     tl.to(nonStaggeredElements, { ...animateIn }, 0)
     gsap.set(menuListItems, { pointerEvents: "auto" })
@@ -122,7 +134,7 @@ const handleBlur = (event) => {
         class="search-input"
         placeholder="Search images..."
         :tabindex="isSearchExpanded ? 0 : -1"
-        :style="{ paddingLeft: searchButtonWidth + menuOffset + 'px' }"
+        :style="{ paddingLeft: searchButtonWidth + menuOffset - 1 + 'px' }"
         @blur="handleBlur"
         @keydown.esc.prevent="collapseSearch"
         @input="handleInput"
@@ -142,11 +154,9 @@ const handleBlur = (event) => {
 
 <style lang="scss">
 .image-searcher {
-  padding-inline: var(--spacing-2);
-
   .search-button {
     @include flex-center;
-    width: 2.25rem;
+    width: 2.75rem;
     height: 2.25rem;
     background: none;
     border: none;
@@ -164,9 +174,11 @@ const handleBlur = (event) => {
     width: 100%;
     height: 100%;
     pointer-events: none;
+    // flex: 1 1 auto;
   }
 
   .search-input {
+    // flex: 1 1 auto;
     height: 100%;
     border: none;
     background: transparent;

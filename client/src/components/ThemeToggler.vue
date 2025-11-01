@@ -34,16 +34,15 @@ const toggleTheme = () => {
 
 <style lang="scss">
 .theme-toggler {
-  padding-inline: var(--spacing-1);
-
   .theme-toggler-button {
     @include flex-center;
-    width: 2.25rem;
+    width: 2.75rem;
     height: 2.25rem;
     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
+    color: var(--foreground);
 
     .light-icon {
       @include light-dark-property(display, block, none);

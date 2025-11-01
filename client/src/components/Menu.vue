@@ -16,7 +16,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const imagesStore = useImagesStore()
 const { settings } = useSettings()
-const { isVisible, shouldAnimate } = useMenu("menu")
+const { hide, isVisible, shouldAnimate } = useMenu("menu")
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
 
@@ -24,7 +24,8 @@ const menu = useTemplateRef("menu")
 const menuUl = useTemplateRef("menu-ul")
 const activeIndicator = useTemplateRef("active-indicator")
 
-const isAdmin = computed(() => authStore && !!authStore.user?.admin)
+const isLoggedIn = computed(() => authStore && !!authStore.user)
+const isAdmin = computed(() => isLoggedIn.value && authStore.user.admin)
 const isAnimating = ref(false)
 const isMenuAnimating = ref(false)
 const sortIcon = ref("Shuffle")
@@ -42,38 +43,17 @@ const toggleSort = () => {
 const menuConfig = reactive({
   center: [
     {
-      hasIndicator: true,
-      icon: "Images",
-      id: "gallery",
-      label: "Gallery",
-      path: "/",
+      action: toggleSort,
+      icon: sortIcon,
+      id: "sort-toggler",
       visible: true
     },
-    {
-      hasIndicator: true,
-      icon: "Settings",
-      id: "dashboard",
-      label: "Dashboard",
-      path: "/dashboard",
-      visible: () => isAdmin.value
-    }
-  ],
-  left: [
     {
       component: markRaw(ImageSearcher),
       id: "image-searcher",
       props: { menu },
       visible: () => !!menu.value
     },
-
-    {
-      action: toggleSort,
-      icon: sortIcon,
-      id: "sort-toggler",
-      visible: true
-    }
-  ],
-  right: [
     {
       component: markRaw(ThemeToggler),
       id: "theme-toggler",
@@ -84,7 +64,22 @@ const menuConfig = reactive({
       component: markRaw(AboutDialog),
       id: "about-dialog",
       props: {},
-      visible: settings.value?.showAboutDialog && settings.value?.aboutDialogDescription
+      visible: () => settings.value?.showAboutDialog && settings.value?.aboutDialogDescription
+    }
+  ],
+  left: [],
+  right: [
+    {
+      icon: "LogIn",
+      id: "login",
+      path: "/login",
+      visible: () => settings.value?.showLoginLink && !isLoggedIn.value
+    },
+    {
+      icon: "Settings",
+      id: "dashboard",
+      path: "/dashboard",
+      visible: () => isAdmin.value
     }
   ]
 })
@@ -251,6 +246,16 @@ watch(
     }, 50)
   }
 )
+
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath !== "/") {
+      hide()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -347,11 +352,6 @@ watch(
   background-color: var(--menu-background);
   position: fixed;
   top: var(--spacing-4);
-  left: 50%;
-  transform: translateX(-50%);
-  top: var(--spacing-4);
-  left: 50%;
-  transform: translateX(-50%);
   border-radius: calc(var(--radius-lg) + var(--spacing-2));
   border: 1px solid var(--border);
   transform-origin: bottom;
@@ -359,6 +359,11 @@ watch(
   padding: var(--spacing-2);
   z-index: z(menu);
   transition: none;
+
+  .inner {
+    width: 100%;
+    // pointer-events: none;
+  }
 
   &.menu-hidden {
     pointer-events: none;
@@ -375,13 +380,14 @@ watch(
     align-items: center;
     align-items: center;
     position: relative;
+    gap: var(--spacing-1);
   }
 
   .divider {
     width: 1px;
     height: 20px;
     background-color: var(--border);
-    margin: 0 var(--spacing-2);
+    margin: 0 var(--spacing-1);
   }
 
   .active-indicator {
@@ -402,13 +408,15 @@ watch(
     border-radius: var(--radius-md);
 
     > button {
+      @include flex-center;
       border: none;
       display: flex;
       align-items: center;
       gap: var(--spacing-2);
-      gap: var(--spacing-2);
       width: 100%;
-      padding: var(--spacing-2) var(--spacing-4);
+      height: 2.25rem;
+      width: 2.75rem;
+
       background: none;
       cursor: pointer;
       color: inherit;
