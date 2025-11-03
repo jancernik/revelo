@@ -80,7 +80,7 @@ export function useFullscreenImage() {
     if (popstateHandler) return
 
     popstateHandler = () => {
-      if (imageData.value && !isAnimating.value && popstateCallback) {
+      if (imageData.value && popstateCallback) {
         popstateCallback()
         cleanup()
       }

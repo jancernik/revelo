@@ -80,6 +80,10 @@ const rightTransitionTimeline = ref(null)
 const leftTransitionTimeline = ref(null)
 const initialProgress = ref(0)
 const activeTimelineOnInterrupt = ref(null)
+const showHideTimeline = ref(null)
+const isShowingImage = ref(false)
+const isReturningToGallery = ref(false)
+const isProcessingHide = ref(false)
 
 const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
 const fullscreenElement = useTemplateRef("fullscreen-image")
@@ -304,12 +308,48 @@ const setHiddenMetadataStyles = (isMobile) => {
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
 }
 
+const onShowComplete = () => {
+  isAnimating.value = false
+  isShowingImage.value = true
+  isProcessingHide.value = false
+  showHideTimeline.value = null
+}
+
 const onHideComplete = () => {
   isAnimating.value = false
+  isShowingImage.value = false
+  isReturningToGallery.value = false
+  isProcessingHide.value = false
   metadataVisible.value = false
   collectionVisible.value = false
   originalFlipId.value = null
+  showHideTimeline.value = null
   hideFullscreenElements()
+  completeHide()
+}
+
+const onShowReverseComplete = () => {
+  isAnimating.value = false
+  isShowingImage.value = false
+  isReturningToGallery.value = false
+  isProcessingHide.value = false
+  metadataVisible.value = false
+  collectionVisible.value = false
+  originalFlipId.value = null
+  showHideTimeline.value = null
+
+  if (thumbnailElement.value) {
+    thumbnailElement.value.style.visibility = "visible"
+  }
+
+  hideFullscreenElements()
+
+  if (hasThumbnailAvailable()) {
+    history.pushState({}, "", "/")
+  } else {
+    router.push("/")
+  }
+
   completeHide()
 }
 
@@ -341,42 +381,51 @@ const showWithFlipAnimation = () => {
     setStyles(fallbackImageElement.value, { opacity: 1, visibility: "visible" })
     setStyles(fullscreenImageElement.value, { opacity: 0, visibility: "visible" })
 
-    Flip.from(state, {
+    const timeline = Flip.from(state, {
       duration: FLIP_DURATION,
       ease: FLIP_EASE,
-      onComplete: () => {
-        if (fullscreenImageElement.value.complete) {
-          gsap.to(fullscreenImageElement.value, {
-            duration: 0.3,
-            ease: "power2.inOut",
-            onComplete: () => {
-              isAnimating.value = false
-            },
-            opacity: 1
-          })
-        } else {
-          fullscreenImageElement.value.onload = () => {
-            gsap.to(fullscreenImageElement.value, {
-              duration: 0.3,
-              ease: "power2.inOut",
-              onComplete: () => {
-                isAnimating.value = false
-              },
-              opacity: 1
-            })
-          }
-        }
-      },
+      onComplete: onShowComplete,
+      onReverseComplete: onShowReverseComplete,
+      paused: true,
       scale: true
     })
 
+    timeline.to(
+      [fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value],
+      {
+        borderRadius: cssVar("--radius-lg"),
+        duration: FLIP_DURATION,
+        ease: FLIP_EASE
+      },
+      0
+    )
+
+    if (fullscreenImageElement.value.complete) {
+      timeline.to(
+        fullscreenImageElement.value,
+        {
+          duration: 0.3,
+          ease: "power2.inOut",
+          opacity: 1
+        },
+        FLIP_DURATION
+      )
+    }
+
+    showHideTimeline.value = timeline
+    timeline.play()
+
     setTimeout(() => showFloatingControls(), CONTROLS_SHOW_DELAY)
 
-    gsap.to([fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value], {
-      borderRadius: cssVar("--radius-lg"),
-      duration: FLIP_DURATION,
-      ease: FLIP_EASE
-    })
+    if (!fullscreenImageElement.value.complete) {
+      fullscreenImageElement.value.onload = () => {
+        gsap.to(fullscreenImageElement.value, {
+          duration: 0.3,
+          ease: "power2.inOut",
+          opacity: 1
+        })
+      }
+    }
   }
 
   showFullscreenElements()
@@ -437,20 +486,26 @@ const showWithRegularAnimation = () => {
     visibility: "visible"
   })
 
-  gsap.fromTo(
+  const timeline = gsap.timeline({
+    onComplete: onShowComplete,
+    onReverseComplete: onShowReverseComplete,
+    paused: true
+  })
+
+  timeline.fromTo(
     fullscreenElement.value,
     { filter: "blur(15px)", opacity: 0, scale: REGULAR_SCALE },
     {
       duration: REGULAR_DURATION,
       ease: REGULAR_EASE,
       filter: "blur(0px)",
-      onComplete: () => {
-        isAnimating.value = false
-      },
       opacity: 1,
       scale: 1
     }
   )
+
+  showHideTimeline.value = timeline
+  timeline.play()
 
   setTimeout(() => showFloatingControls(), CONTROLS_SHOW_DELAY)
 }
@@ -468,7 +523,11 @@ const hideWithRegularAnimation = () => {
 
 const showImage = (forceRegularAnimation = false) => {
   if (isAnimating.value) return
+  if (isProcessingHide.value) return
+  if (isReturningToGallery.value) return
+
   isAnimating.value = true
+  isShowingImage.value = true
 
   hideMenu(!!flipId.value)
 
@@ -485,9 +544,81 @@ const showImage = (forceRegularAnimation = false) => {
   }
 }
 
+const canReverseShowAnimation = () => {
+  return isAnimating.value && isShowingImage.value && showHideTimeline.value
+}
+
+const waitForGalleryToSettle = () => {
+  return new Promise((resolve) => {
+    const checkSettled = () => {
+      callUpdatePositions()
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          resolve()
+        }, 50)
+      })
+    }
+
+    checkSettled()
+  })
+}
+
+const reverseShowAnimation = async () => {
+  if (!canReverseShowAnimation()) return false
+  if (isProcessingHide.value) return false
+  if (isReturningToGallery.value) return false
+
+  isProcessingHide.value = true
+
+  if (hasThumbnailAvailable()) {
+    await waitForGalleryToSettle()
+  }
+
+  if (!canReverseShowAnimation()) {
+    isProcessingHide.value = false
+    return false
+  }
+
+  const MIN_REVERSE_DURATION = 0.35
+  const progress = showHideTimeline.value.progress()
+  const duration = showHideTimeline.value.duration()
+  const naturalReverseDuration = progress * duration
+
+  if (naturalReverseDuration < MIN_REVERSE_DURATION) {
+    showHideTimeline.value.timeScale(naturalReverseDuration / MIN_REVERSE_DURATION)
+  } else {
+    showHideTimeline.value.timeScale(1)
+  }
+
+  isReturningToGallery.value = true
+  isShowingImage.value = false
+
+  callOnReturn(true, 0.2)
+
+  hideFloatingControls()
+  showHideTimeline.value.reverse()
+
+  return true
+}
+
 const hideImage = async () => {
-  if (isAnimating.value) return
+  if (isProcessingHide.value) return
+  if (isReturningToGallery.value) return
+
+  isProcessingHide.value = true
+
+  const reversed = await reverseShowAnimation()
+  if (reversed) return
+
+  if (!isShowingImage.value) {
+    isProcessingHide.value = false
+    return
+  }
+
+  isReturningToGallery.value = true
   isAnimating.value = true
+  isShowingImage.value = false
 
   if (metadataVisible.value) {
     gsap.to(imageMetadataElement.value, {
@@ -506,6 +637,7 @@ const hideImage = async () => {
       opacity: 0
     })
   }
+
   await hideFloatingControls()
 
   if (hasThumbnailAvailable()) {
@@ -872,17 +1004,13 @@ const createSlideTimeline = (targetImage, direction) => {
   return tl
 }
 
-const createPopstateCallback = (animationFn) => () => {
-  animationFn()
-  history.pushState({}, "", "/")
+const createPopstateCallback = () => {
+  hideImage()
 }
 
 const setupRouting = (imageId) => {
   history.pushState({}, "", `/images/${imageId}`)
-  const callback = hasThumbnailAvailable()
-    ? createPopstateCallback(hideWithFlipAnimation)
-    : createPopstateCallback(hideWithRegularAnimation)
-  setPopstateCallback(callback)
+  setPopstateCallback(createPopstateCallback)
 }
 
 const getSlideDirection = (image) => {
@@ -1218,6 +1346,12 @@ const handleDragEnd = (event) => {
 }
 
 const handleWindowKeyDown = (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault()
+    handleBackToGallery()
+    return
+  }
+
   if (isAnimating.value || isSwitchingImage.value || isDragging.value || !imageData.value) return
 
   switch (event.key) {
@@ -1246,10 +1380,6 @@ const handleWindowKeyDown = (event) => {
     case "I":
       event.preventDefault()
       handleToggleMetadata()
-      break
-    case "Escape":
-      event.preventDefault()
-      handleBackToGallery()
       break
   }
 }
