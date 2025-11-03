@@ -419,25 +419,32 @@ $item-size: v-bind(ITEM_SIZE_PX);
     height: $item-size;
   }
 
+  &::after,
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: clamp(15%, 60px, 100px);
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: 0.15s ease-in-out;
+  }
+
+  &::before {
+    left: 0;
+    background-image: linear-gradient(to left, transparent, var(--background));
+  }
+  &::after {
+    right: 0;
+    background-image: linear-gradient(to right, transparent, var(--background));
+  }
+
   &.infinite {
     &::after,
     &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      width: clamp(20%, 100px, 200px);
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    &::before {
-      left: 0;
-      background-image: linear-gradient(to left, transparent, var(--background));
-    }
-    &::after {
-      right: 0;
-      background-image: linear-gradient(to right, transparent, var(--background));
+      opacity: 1;
     }
   }
 }
@@ -453,6 +460,11 @@ $item-size: v-bind(ITEM_SIZE_PX);
   visibility: hidden;
   will-change: transform;
   position: absolute;
+
+  &.active {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
 
   img {
     width: 100%;
