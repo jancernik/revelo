@@ -4,11 +4,13 @@ import FullscreenImage from "#src/components/common/FullscreenImage.vue"
 import Toast from "#src/components/common/Toast.vue"
 import Menu from "#src/components/Menu.vue"
 import { useFavicon } from "#src/composables/useFavicon"
+import { usePWAUpdate } from "#src/composables/usePWAUpdate"
 import { useTheme } from "#src/composables/useTheme"
 import Main from "#src/layouts/Main.vue"
 import { onMounted, watch } from "vue"
 
 useFavicon()
+usePWAUpdate()
 
 const { isAnimating, themeClass } = useTheme()
 
