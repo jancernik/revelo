@@ -1296,7 +1296,6 @@ onUnmounted(() => {
     <div ref="left-controls" class="floating-controls top-left">
       <button class="floating-button" @click="handleBackToGallery">
         <Icon name="ArrowLeft" :size="18" />
-        <span class="button-text">Gallery</span>
       </button>
     </div>
     <div v-if="hasMetadata" ref="right-controls" class="floating-controls top-right">
@@ -1306,7 +1305,6 @@ onUnmounted(() => {
         @click="handleToggleMetadata"
       >
         <Icon name="Info" :size="18" />
-        <span class="button-text">Info</span>
       </button>
     </div>
 
@@ -1356,9 +1354,14 @@ onUnmounted(() => {
 
 <style lang="scss">
 .floating-controls {
+  @include floating-shadow;
   position: fixed;
   z-index: z(overlay) + 20;
   opacity: 0;
+  background-color: var(--menu-background);
+  backdrop-filter: blur(5px);
+  border-radius: calc(var(--radius-lg) + var(--spacing-2));
+  border: 1px solid var(--border);
 
   &.top-left {
     top: var(--spacing-4);
@@ -1369,30 +1372,17 @@ onUnmounted(() => {
     top: var(--spacing-4);
     right: var(--spacing-4);
   }
-  background-color: var(--menu-background);
-  backdrop-filter: blur(5px);
-  border-radius: calc(var(--radius-lg) + var(--spacing-2));
 }
 
 .floating-button {
+  @include flex-center;
   border: none;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
-  background-color: transparent;
-
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius-lg) + var(--spacing-2));
+  width: 3.75rem;
+  height: 3.25rem;
+  background: none;
   cursor: pointer;
   color: inherit;
-  @include text("base");
-  font-weight: var(--font-normal);
-  text-transform: uppercase;
-}
-
-.button-text {
-  white-space: nowrap;
+  padding: 0;
 }
 
 .fullscreen-image-container {
