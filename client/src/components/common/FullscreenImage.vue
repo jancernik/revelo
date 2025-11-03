@@ -1069,7 +1069,7 @@ const handleDragStart = (event) => {
 
   if (isAnimating.value || !hasCollection.value) return
   isDragging.value = true
-  dragStartPosition.value = event.clientX || event.touches?.[0]?.clientX || 0
+  dragStartPosition.value = event.clientX ?? event.touches?.[0]?.clientX ?? 0
 
   if (leftTransitionTimeline.value || rightTransitionTimeline.value) {
     leftTransitionTimeline.value?.paused(true)
@@ -1091,7 +1091,9 @@ const handleDragStart = (event) => {
 const handleDragMove = async (event) => {
   if (!isDragging.value) return
 
-  const currentX = event.clientX || event.touches?.[0]?.clientX || dragStartPosition.value
+  const currentX = event.clientX ?? event.touches?.[0]?.clientX
+  if (currentX === undefined) return
+
   const deltaX = dragStartPosition.value - currentX
 
   if (!hasDragMovement.value && Math.abs(deltaX) > DRAG_MOVEMENT_THRESHOLD) {
@@ -1342,7 +1344,8 @@ onUnmounted(() => {
     <p>Metadata visible: {{ metadataVisible }}</p>
     <p>Collection visible: {{ collectionVisible }}</p>
     <p>Is switching images: {{ isSwitchingImage }}</p>
-    <p>Temp slide image path: {{ leftSlideImagePath }}</p>
+    <p>Temp slide left image path: {{ leftSlideImagePath }}</p>
+    <p>Temp slide right image path: {{ rightSlideImagePath }}</p>
     <p>Is dragging: {{ isDragging }}</p>
     <p>Left timeline: {{ leftTransitionTimeline ? "exists" : "null" }}</p>
     <p>Right timeline: {{ rightTransitionTimeline ? "exists" : "null" }}</p>
