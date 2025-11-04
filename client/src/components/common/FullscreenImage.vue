@@ -2,6 +2,7 @@
 import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
+import { useDevice } from "#src/composables/useDevice"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
@@ -15,7 +16,6 @@ import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
 
-const FLIP_DURATION = 0.6 // Duration for FLIP animation when transitioning between thumbnail and fullscreen
 const FLIP_EASE = "power2.inOut" // Easing function for FLIP animation transitions
 const REGULAR_DURATION = 0.4 // Duration for fallback fade/scale animation when no thumbnail available
 const REGULAR_EASE = "power3.inOut" // Easing function for fallback animations
@@ -28,7 +28,7 @@ const SPACING_BREAKPOINT = 700 // Screen width threshold for switching to small 
 const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
 const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap
 const SLIDE_IMAGE_BUFFER = 5 // Extra pixels to position slide image beyond viewport edge
-const CONTROLS_SHOW_DELAY = 150 // Delay in ms before showing floating controls after animation starts
+const CONTROLS_SHOW_DELAY = 100 // Delay in ms before showing floating controls after animation starts
 
 const METADATA_FIELDS = [
   "camera",
@@ -60,6 +60,7 @@ const {
 const router = useRouter()
 const collectionsStore = useCollectionsStore()
 const { hide: hideMenu } = useMenu()
+const { isMobile } = useDevice()
 
 const collectionData = ref(null)
 const metadataVisible = ref(false)
@@ -107,6 +108,8 @@ const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.valu
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
+
+const flipDuration = computed(() => (isMobile.value ? 0.35 : 0.5))
 
 const spacing = computed(() =>
   windowWidth.value < SPACING_BREAKPOINT ? SPACING_SMALL : SPACING_BASE
@@ -389,7 +392,7 @@ const showWithFlipAnimation = () => {
     setStyles(fullscreenImageElement.value, { opacity: 0, visibility: "visible" })
 
     const timeline = Flip.from(state, {
-      duration: FLIP_DURATION,
+      duration: flipDuration.value,
       ease: FLIP_EASE,
       onComplete: onShowComplete,
       onReverseComplete: onShowReverseComplete,
@@ -401,7 +404,7 @@ const showWithFlipAnimation = () => {
       [fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value],
       {
         borderRadius: targetBorderRadius,
-        duration: FLIP_DURATION,
+        duration: flipDuration.value,
         ease: FLIP_EASE
       },
       0
@@ -415,7 +418,7 @@ const showWithFlipAnimation = () => {
           ease: "power2.inOut",
           opacity: 1
         },
-        FLIP_DURATION
+        flipDuration.value
       )
     }
 
@@ -469,7 +472,7 @@ const hideWithFlipAnimation = () => {
   thumbnailElement.value.style.visibility = "visible"
 
   Flip.from(state, {
-    duration: FLIP_DURATION,
+    duration: flipDuration.value,
     ease: FLIP_EASE,
     onComplete: onHideComplete,
     opacity: 1,
@@ -478,7 +481,7 @@ const hideWithFlipAnimation = () => {
 
   gsap.from([thumbnailElement.value, thumbnailImageElement.value], {
     borderRadius: `${scaledBorderRadius}px`,
-    duration: FLIP_DURATION,
+    duration: flipDuration.value,
     ease: FLIP_EASE
   })
 
@@ -1344,7 +1347,7 @@ const handleDragEnd = (event) => {
   const progress = slideProgress.value
   const targetTimeline = progress > 0 ? rightTransitionTimeline.value : leftTransitionTimeline.value
 
-  if (Math.abs(progress) >= 0.5) {
+  if (Math.abs(progress) >= 0.1) {
     isSwitchingImage.value = true
     targetTimeline?.play()
   } else {

@@ -2,6 +2,7 @@
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
+import { useDevice } from "#src/composables/useDevice"
 import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
@@ -47,7 +48,6 @@ const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
-const ZOOM_TOTAL_DURATION = 0.5 // Total duration for all staggered fade animations to complete
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
@@ -109,8 +109,11 @@ const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscr
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { hide: hideMenu, show: showMenu } = useMenu()
 const { dialogState } = useDialog()
+const { isMobile } = useDevice()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
+
+const zoomTotalDuration = computed(() => (isMobile.value ? 0.35 : 0.5))
 
 const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
@@ -462,9 +465,10 @@ const initializeScrollTargets = () => {
   })
 }
 
-const assignFadeDelays = (imageCardData, duration = ZOOM_TOTAL_DURATION) => {
+const assignFadeDelays = (imageCardData, duration) => {
+  const effectiveDuration = duration ?? zoomTotalDuration.value
   const totalImages = imageCardData.length
-  const dynamicStagger = totalImages > 1 ? duration / (totalImages - 1) : 0
+  const dynamicStagger = totalImages > 1 ? effectiveDuration / (totalImages - 1) : 0
   imageCardData.forEach((state, index) => {
     state.animationDelay = index * dynamicStagger * 1000
   })
@@ -507,7 +511,8 @@ const startZoomTransition = (imageId, referenceElement) => {
 
 const startZoomReturn = (options = {}) => {
   props.menuVisible && setTimeout(() => showMenu(true), 200)
-  const { duration = ZOOM_TOTAL_DURATION, showAllImages = false, withTarget = false } = options
+  const { duration, showAllImages = false, withTarget = false } = options
+  const effectiveDuration = duration ?? zoomTotalDuration.value
 
   const visibleNonTargetStates = imageCardData.filter(
     (state) =>
@@ -520,7 +525,7 @@ const startZoomReturn = (options = {}) => {
     : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
 
   const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
-  assignFadeDelays(sortedStates, duration)
+  assignFadeDelays(sortedStates, effectiveDuration)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
   zoomAnimationStartTimestamp = timing.startTime
@@ -803,7 +808,7 @@ const onFirstLoadComplete = () => {
   isFirstLoad = false
   isScrollPaused.value = false
   updateImagePositions()
-  startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
+  startZoomReturn({ duration: zoomTotalDuration.value / 2, withTarget: false })
   props.menuVisible && showMenu(true)
 }
 
@@ -1143,7 +1148,7 @@ watch(initialLoadProgress, (progress) => {
         card.setScale(0.8)
       }
     }
-    startZoomReturn({ duration: ZOOM_TOTAL_DURATION / 2, withTarget: false })
+    startZoomReturn({ duration: zoomTotalDuration.value / 2, withTarget: false })
   }
 })
 

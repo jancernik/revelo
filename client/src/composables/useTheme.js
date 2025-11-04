@@ -253,7 +253,7 @@ export function useTheme() {
         window.addEventListener("resize", resizeHandler)
 
         tween = gsap.to(animationState, {
-          duration: 2,
+          duration: 1.5,
           ease: "power2.inOut",
           onComplete: function () {
             completeTransition()
