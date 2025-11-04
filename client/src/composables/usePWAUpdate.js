@@ -1,20 +1,5 @@
-import { useRegisterSW } from "virtual:pwa-register/vue"
+import { registerSW } from "virtual:pwa-register"
 
 export function usePWAUpdate() {
-  useRegisterSW({
-    immediate: true,
-    onNeedRefresh() {
-      window.location.reload()
-    },
-    onRegisteredSW(swUrl, registration) {
-      if (registration) {
-        setInterval(
-          () => {
-            registration.update()
-          },
-          60 * 60 * 1000
-        )
-      }
-    }
-  })
+  registerSW({ immediate: true })
 }
