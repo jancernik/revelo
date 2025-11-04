@@ -144,6 +144,12 @@ const getThumbnailBorderRadius = () => {
   return parseFloat(styles.borderRadius) || 0
 }
 
+const getTargetBorderRadius = () => {
+  if (!fullscreenImageElement.value) return 12
+  const styles = window.getComputedStyle(fullscreenImageElement.value)
+  return parseFloat(styles.borderRadius) || 12
+}
+
 const getScaleRatio = () => {
   if (!thumbnailElement.value || !fullscreenElement.value) return 1
 
@@ -368,6 +374,7 @@ const showWithFlipAnimation = () => {
     const borderRadius = getThumbnailBorderRadius()
     const scaleRatio = getScaleRatio()
     const scaledBorderRadius = borderRadius / scaleRatio
+    const targetBorderRadius = getTargetBorderRadius()
 
     fallbackImageElement.value.style.borderRadius = `${scaledBorderRadius}px`
     fullscreenImageElement.value.style.borderRadius = `${scaledBorderRadius}px`
@@ -393,7 +400,7 @@ const showWithFlipAnimation = () => {
     timeline.to(
       [fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value],
       {
-        borderRadius: "var(--radius-lg)",
+        borderRadius: targetBorderRadius,
         duration: FLIP_DURATION,
         ease: FLIP_EASE
       },
@@ -817,9 +824,11 @@ const onSlideComplete = async (options) => {
     initialMetadataWidth.value = 0
   }
 
-  setStyles(fullscreenElement.value, { borderRadius: "var(--radius-lg)", x: 0 })
+  const targetBorderRadius = getTargetBorderRadius()
+
+  setStyles(fullscreenElement.value, { borderRadius: targetBorderRadius, x: 0 })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
-    borderRadius: "var(--radius-lg)",
+    borderRadius: targetBorderRadius,
     filter: "blur(0px)",
     height,
     opacity: 1,
