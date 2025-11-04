@@ -42,17 +42,7 @@ export default defineConfig({
         start_url: "/",
         theme_color: "#000"
       },
-      registerType: "autoUpdate",
-      workbox: {
-        navigateFallbackDenylist: [/^\/api\/images\/search/],
-        runtimeCaching: [
-          {
-            handler: "NetworkOnly",
-            method: "GET",
-            urlPattern: /^\/api\/images\/search\//
-          }
-        ]
-      }
+      registerType: "autoUpdate"
     })
   ],
   resolve: {
