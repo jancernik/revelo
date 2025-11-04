@@ -1133,7 +1133,11 @@ const preloadSlideImages = () => {
 const onImageUpdate = async (image) => {
   if (image) {
     if (updateRoute.value) setupRouting(image.id)
-    if (image.collectionId) collectionData.value = await collectionsStore.fetch(image.collectionId)
+    if (image.collectionId) {
+      collectionData.value = await collectionsStore.fetch(image.collectionId)
+    } else {
+      collectionData.value = null
+    }
     if (!isSwitchingImage.value) nextTick(showImage)
     nextTick(() => preloadSlideImages())
   } else {
