@@ -45,6 +45,7 @@ watch(
 <template>
   <div ref="loading-indicator" class="loading-indicator" :class="{ hidden: !visible }">
     <div class="loading">
+      <h4>{{ parseInt(progress, 10) }}%</h4>
       <Progress :value="progress" :indeterminate="isIndeterminate" />
     </div>
   </div>
@@ -62,6 +63,10 @@ $delay: v-bind(HIDE_DELAY_MS);
   z-index: z(overlay);
   opacity: 1;
   padding: var(--spacing-8);
+
+  h4 {
+    margin-bottom: var(--spacing-1);
+  }
 
   &.hidden {
     transition: 0.2s opacity $delay ease-in-out;
