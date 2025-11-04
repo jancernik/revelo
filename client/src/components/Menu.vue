@@ -240,7 +240,7 @@ onMounted(() => {
 })
 
 watch(
-  isVisible,
+  () => isVisible.value,
   () => {
     if (shouldAnimate.value) {
       animateMenuVisibility()
@@ -263,7 +263,7 @@ watch(
   () => route.path,
   (newPath) => {
     if (newPath !== "/") {
-      hide()
+      hide(false)
     }
   },
   { immediate: true }
