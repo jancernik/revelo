@@ -80,6 +80,8 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            GIT_COMMIT_HASH=${{ github.sha }}
           no-cache: ${{ inputs.no-cache }}
           cache-from: ${{ inputs.no-cache && '' || format('type=gha,scope={0}', matrix.id) }}
           cache-to: ${{ inputs.no-cache && '' || format('type=gha,mode=max,scope={0}', matrix.id) }}

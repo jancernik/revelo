@@ -7,6 +7,7 @@ import { useImagesStore } from "#src/stores/images"
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 
+const commitHash = import.meta.env.VITE_COMMIT_HASH || "dev"
 const { resetHeader, setHeader, setSelection } = useDashboardLayout()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
@@ -193,6 +194,10 @@ onUnmounted(resetHeader)
       <div class="collections">
         <p>Collections</p>
         <h4>{{ collections.length }}</h4>
+      </div>
+      <div class="version">
+        <p>Version</p>
+        <h4>{{ commitHash.slice(0, 7) }}</h4>
       </div>
     </div>
     <div class="dashboard-section">

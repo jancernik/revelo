@@ -17,6 +17,9 @@ RUN pnpm install --frozen-lockfile
 # Build stage
 FROM base AS builder
 
+# Accept build arg for commit hash
+ARG GIT_COMMIT_HASH
+
 # Copy dependencies and workspace files
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/client/node_modules ./client/node_modules
@@ -32,7 +35,8 @@ WORKDIR /app/client
 # Install dependencies for this specific package
 RUN pnpm install
 
-# Build the application
+# Build the application with commit hash
+ENV VITE_COMMIT_HASH=${GIT_COMMIT_HASH}
 RUN pnpm build
 
 FROM nginx:alpine AS runner
