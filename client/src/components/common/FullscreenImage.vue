@@ -8,7 +8,7 @@ import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
-import { clamp, cssVar } from "#src/utils/helpers"
+import { clamp } from "#src/utils/helpers"
 import { getImageVersion } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
@@ -393,7 +393,7 @@ const showWithFlipAnimation = () => {
     timeline.to(
       [fullscreenImageElement.value, fallbackImageElement.value, fullscreenElement.value],
       {
-        borderRadius: cssVar("--radius-lg"),
+        borderRadius: "var(--radius-lg)",
         duration: FLIP_DURATION,
         ease: FLIP_EASE
       },
@@ -817,8 +817,9 @@ const onSlideComplete = async (options) => {
     initialMetadataWidth.value = 0
   }
 
-  setStyles(fullscreenElement.value, { x: 0 })
+  setStyles(fullscreenElement.value, { borderRadius: "var(--radius-lg)", x: 0 })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
+    borderRadius: "var(--radius-lg)",
     filter: "blur(0px)",
     height,
     opacity: 1,
