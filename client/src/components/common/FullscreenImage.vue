@@ -100,6 +100,8 @@ const collectionRef = useTemplateRef("collection-images")
 const collectionElement = computed(() => collectionRef.value?.$el)
 const leftControlsRef = useTemplateRef("left-controls")
 const rightControlsRef = useTemplateRef("right-controls")
+const centerControlsRef = useTemplateRef("center-controls")
+const commentRef = useTemplateRef("comment")
 
 const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
 const thumbnailImageVersion = computed(() => getImageVersion(imageData.value, "thumbnail"))
@@ -709,6 +711,7 @@ const animateCollection = (visible, callback) => {
   const tl = createAnimationTimeline({
     onComplete: () => {
       if (!visible) setVisibility(collectionElement.value, false)
+      if (!visible && centerControlsRef.value) setVisibility(centerControlsRef.value, false)
       callback?.()
     }
   })
@@ -723,6 +726,35 @@ const animateCollection = (visible, callback) => {
 
   if (metadataVisible.value && isMobileLayout.value) {
     tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), 0)
+  }
+
+  // Animate center controls (title/description)
+  if (centerControlsRef.value) {
+    if (visible) {
+      setVisibility(centerControlsRef.value, true)
+      tl.fromTo(
+        centerControlsRef.value,
+        { filter: "blur(15px)", opacity: 0 },
+        {
+          duration: 0.3,
+          ease: "power2.out",
+          filter: "blur(0px)",
+          opacity: 1
+        },
+        0
+      )
+    } else {
+      tl.to(
+        centerControlsRef.value,
+        {
+          duration: 0.3,
+          ease: "power2.in",
+          filter: "blur(15px)",
+          opacity: 0
+        },
+        0
+      )
+    }
   }
 }
 
@@ -755,6 +787,35 @@ const showFloatingControls = async () => {
       }
     )
     promises.push(rightPromise)
+  }
+
+  if (centerControlsRef.value) {
+    const centerPromise = gsap.fromTo(
+      centerControlsRef.value,
+      { filter: "blur(15px)", opacity: 0 },
+      {
+        duration: 0.3,
+        ease: "power2.out",
+        filter: "blur(0px)",
+        opacity: 1
+      }
+    )
+    promises.push(centerPromise)
+  }
+
+  if (commentRef.value) {
+    const commentPromise = gsap.fromTo(
+      commentRef.value,
+      { filter: "blur(15px)", opacity: 0, y: 20 },
+      {
+        duration: 0.3,
+        ease: "power2.out",
+        filter: "blur(0px)",
+        opacity: 1,
+        y: 0
+      }
+    )
+    promises.push(commentPromise)
   }
 
   await Promise.all(promises)
@@ -804,6 +865,27 @@ const hideFloatingControls = async () => {
     promises.push(hideMetadataButton())
   }
 
+  if (centerControlsRef.value) {
+    const centerPromise = gsap.to(centerControlsRef.value, {
+      duration: 0.3,
+      ease: "power2.in",
+      filter: "blur(15px)",
+      opacity: 0
+    })
+    promises.push(centerPromise)
+  }
+
+  if (commentRef.value) {
+    const commentPromise = gsap.to(commentRef.value, {
+      duration: 0.3,
+      ease: "power2.in",
+      filter: "blur(15px)",
+      opacity: 0,
+      y: 20
+    })
+    promises.push(commentPromise)
+  }
+
   await Promise.all(promises)
 }
 
@@ -838,6 +920,10 @@ const onSlideComplete = async (options) => {
     scale: 1,
     width
   })
+
+  if (commentRef.value) {
+    setStyles(commentRef.value, { filter: "blur(0px)", opacity: 1, y: 0 })
+  }
 
   const targetFlipId = `img-${targetImage.id}`
   if (originalFlipId.value && targetFlipId === originalFlipId.value) {
@@ -972,6 +1058,18 @@ const createSlideTimeline = (targetImage, direction) => {
         0
       )
     }
+  }
+
+  if (commentRef.value) {
+    tl.to(
+      commentRef.value,
+      {
+        filter: "blur(15px)",
+        opacity: 0,
+        y: 20
+      },
+      0
+    )
   }
 
   const slideImageElement =
@@ -1417,6 +1515,7 @@ onMounted(async () => {
     }
 
     isAnimating.value = false
+    console.log(collectionData.value)
     nextTick(() => showImage(true))
   }
 })
@@ -1445,6 +1544,20 @@ onUnmounted(() => {
         <Icon name="ArrowLeft" :size="18" />
       </button>
     </div>
+
+    <div
+      v-if="collectionData?.title || collectionData?.description"
+      ref="center-controls"
+      class="floating-controls top-center"
+    >
+      <div class="collection-info">
+        <h2 v-if="collectionData?.title" class="collection-title">{{ collectionData.title }}</h2>
+        <p v-if="collectionData?.description" class="collection-description">
+          {{ collectionData.description }}
+        </p>
+      </div>
+    </div>
+
     <div v-if="hasMetadata" ref="right-controls" class="floating-controls top-right">
       <button
         class="floating-button"
@@ -1476,6 +1589,7 @@ onUnmounted(() => {
         :src="rightSlideImagePath"
       />
       <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
+      <div v-if="imageData.comment" ref="comment" class="comment">{{ imageData.comment }}</div>
     </div>
     <CollectionImages
       v-if="hasCollection"
@@ -1515,10 +1629,54 @@ onUnmounted(() => {
     left: var(--spacing-4);
   }
 
+  &.top-center {
+    top: var(--spacing-4);
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    visibility: hidden;
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
   &.top-right {
     top: var(--spacing-4);
     right: var(--spacing-4);
   }
+}
+
+.collection-info {
+  text-align: center;
+
+  .collection-title {
+    font-size: 1rem; // base
+    font-weight: var(--font-semibold);
+    line-height: 1.5;
+    margin: 0;
+    color: var(--foreground);
+  }
+
+  .collection-description {
+    font-size: 0.875rem; // sm
+    font-weight: var(--font-normal);
+    line-height: 1.43;
+    margin: var(--spacing-1) 0 0;
+    color: var(--muted-foreground);
+  }
+}
+
+.comment {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(100% + var(--spacing-4)));
+  font-size: 0.875rem; // sm
+  font-weight: var(--font-normal);
+  line-height: 1.43;
+  color: var(--muted-foreground);
+  text-align: center;
+  max-width: 80%;
+  opacity: 0;
+  will-change: transform, opacity, filter;
 }
 
 .floating-button {

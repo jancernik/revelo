@@ -18,7 +18,7 @@ const MAX_DELTA_TIME = 0.05
 const MIN_DELTA_TIME = 0.001
 
 const SPACING = 12
-const ITEM_SIZE = 60
+const ITEM_SIZE = 55
 const ITEM_SIZE_PX = `${ITEM_SIZE}px`
 const TOTAL_ITEM_WIDTH = ITEM_SIZE + SPACING
 
