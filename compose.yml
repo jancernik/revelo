@@ -17,9 +17,34 @@ services:
     networks:
       - revelo_network
 
+  migrate:
+    container_name: revelo_migrate
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    image: revelo-api:local
+    command: ["node", "src/database/migrate.js", "production"]
+    environment:
+      VERIFY_ENV: "false"
+      NODE_ENV: production
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD?}
+      DB_NAME: ${DB_NAME:-revelo_production}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - revelo_network
+
   ai:
     container_name: revelo_ai
-    image: ghcr.io/jancernik/revelo-ai:${GIT_COMMIT_HASH:-latest}
+    build:
+      context: ./ai
+      dockerfile: ./Dockerfile
+    image: revelo-ai:local
     environment:
       AI_PORT: ${AI_PORT:-8000}
     restart: unless-stopped
@@ -43,7 +68,10 @@ services:
 
   api:
     container_name: revelo_api
-    image: ghcr.io/jancernik/revelo-api:${GIT_COMMIT_HASH:-latest}
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    image: revelo-api:local
     environment:
       VERIFY_ENV: "true"
       NODE_ENV: production
@@ -75,6 +103,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:${API_PORT:-3000}/health"]
@@ -87,8 +117,12 @@ services:
 
   client:
     container_name: revelo_client
-    image: ghcr.io/jancernik/revelo-client:${GIT_COMMIT_HASH:-latest}
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+      args:
+        GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-local-dev}
+    image: revelo-client:local
     depends_on:
       api:
         condition: service_healthy
