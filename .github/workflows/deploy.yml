@@ -162,6 +162,31 @@ jobs:
           source ~/retry_ssh.sh
           retry_ssh true
 
+      - name: Check and clean disk space
+        run: |
+          source ~/retry_ssh.sh
+          retry_ssh << 'ENDSSH'
+          set -Eeuo pipefail
+          RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
+
+          available_gb=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+          echo -e "${BLUE}Available disk space: ${available_gb}GB${RESET}"
+
+          if [ "$available_gb" -lt 10 ]; then
+            echo -e "${YELLOW}Low disk space, cleaning up${RESET}"
+            
+            docker container prune -f >/dev/null 2>&1
+            docker image prune -f >/dev/null 2>&1
+            docker network prune -f >/dev/null 2>&1
+            available_gb=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+            echo -e "${GREEN}Cleanup complete: ${available_gb}GB available${RESET}"
+            if [ "$available_gb" -lt 10 ]; then
+              echo -e "${RED}Insufficient space after cleanup${RESET}"
+              exit 1
+            fi
+          fi
+          ENDSSH
+
       - name: Prepare deployment files
         run: |
           mkdir -p deployment
@@ -386,6 +411,25 @@ jobs:
 
           echo -e "${RED}Timeout after ${max_wait}s${RESET}"
           exit 1
+          ENDSSH
+
+      - name: Post-deployment cleanup
+        if: success()
+        run: |
+          source ~/retry_ssh.sh
+          retry_ssh << 'ENDSSH'
+          set -Eeuo pipefail
+          RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
+
+          echo -e "${BLUE}Cleaning up old images${RESET}"
+          for service in ai api client; do
+            docker images --format "{{.ID}} {{.Repository}} {{.CreatedAt}}" | \
+              grep "ghcr.io/jancernik/revelo-${service}" | \
+              sort -k3 -r | \
+              awk 'NR>3 {print $1}' | \
+              xargs -r docker rmi -f 2>/dev/null || true
+          done
+          echo -e "${GREEN}Cleanup complete${RESET}"
           ENDSSH
 
       - name: Save failure logs
