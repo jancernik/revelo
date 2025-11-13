@@ -65,6 +65,7 @@ const { isMobile } = useDevice()
 const collectionData = ref(null)
 const metadataVisible = ref(false)
 const collectionVisible = ref(false)
+const titleDescriptionVisible = ref(false)
 const initialMetadataWidth = ref(0)
 const isSettingInitialWidth = ref(false)
 const originalFlipId = ref(null)
@@ -98,6 +99,8 @@ const imageMetadataRef = useTemplateRef("image-metadata")
 const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
 const collectionRef = useTemplateRef("collection-images")
 const collectionElement = computed(() => collectionRef.value?.$el)
+const titleDescriptionRef = useTemplateRef("title-description")
+const titleDescriptionElement = computed(() => titleDescriptionRef.value)
 const leftControlsRef = useTemplateRef("left-controls")
 const rightControlsRef = useTemplateRef("right-controls")
 
@@ -108,6 +111,7 @@ const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.valu
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
+const { height: titleDescriptionHeight } = useElementSize(titleDescriptionElement)
 
 const flipDuration = computed(() => (isMobile.value ? 0.35 : 0.5))
 
@@ -134,6 +138,9 @@ const isMobileLayout = computed(() => {
 const imageHasMetadata = (image) => METADATA_FIELDS.some((k) => image?.[k])
 const hasMetadata = computed(() => METADATA_FIELDS.some((k) => imageData?.value?.[k]))
 const hasCollection = computed(() => collectionData?.value?.images?.length > 0)
+const hasTitleDescription = computed(
+  () => !!(collectionData?.value?.title || collectionData?.value?.description)
+)
 
 const hasThumbnailAvailable = () => {
   if (!flipId.value) return false
@@ -166,7 +173,11 @@ const getScaleRatio = () => {
 }
 
 const getAvailableImageSpace = (options = {}) => {
-  const { collectionVisible = false, metadataVisible = false } = options
+  const {
+    collectionVisible = false,
+    metadataVisible = false,
+    titleDescriptionVisible = false
+  } = options
 
   let availableWidth = windowWidth.value - spacing.value * 2
   let availableHeight = windowHeight.value - spacing.value * 2
@@ -179,18 +190,28 @@ const getAvailableImageSpace = (options = {}) => {
     availableHeight -= collectionHeight.value + spacing.value
   }
 
+  if (titleDescriptionVisible) {
+    availableHeight -= titleDescriptionHeight.value + spacing.value
+  }
+
   return { height: availableHeight, width: availableWidth }
 }
 
 const calculateOptimalImageSize = (options = {}) => {
-  const { aspectRatio = null, collectionVisible = false, metadataVisible = false } = options
+  const {
+    aspectRatio = null,
+    collectionVisible = false,
+    metadataVisible = false,
+    titleDescriptionVisible = false
+  } = options
 
   const targetAspectRatio = aspectRatio || imageAspectRatio.value
   if (!targetAspectRatio) return { height: "auto", width: "auto" }
 
   const { height: maxHeight, width: maxWidth } = getAvailableImageSpace({
     collectionVisible,
-    metadataVisible
+    metadataVisible,
+    titleDescriptionVisible
   })
 
   let height, width
@@ -206,9 +227,23 @@ const calculateOptimalImageSize = (options = {}) => {
   return { height: `${height}px`, width: `${width}px` }
 }
 
-const maxImageHeight = (collectionVisible) => {
-  if (!collectionVisible) return `calc(100vh - calc(${spacingPx.value} * 2))`
-  const availableVh = 100 - ((collectionHeight.value + spacing.value) / windowHeight.value) * 100
+const maxImageHeight = (collectionVisible, titleDescriptionVisible) => {
+  let availableVh = 100
+  let totalReduction = spacing.value * 2
+
+  if (collectionVisible) {
+    totalReduction += collectionHeight.value + spacing.value
+  }
+
+  if (titleDescriptionVisible) {
+    totalReduction += titleDescriptionHeight.value + spacing.value
+  }
+
+  if (totalReduction === spacing.value * 2) {
+    return `calc(100vh - calc(${spacingPx.value} * 2))`
+  }
+
+  availableVh = 100 - (totalReduction / windowHeight.value) * 100
   return `calc(${availableVh}vh - calc(${spacingPx.value} * 2))`
 }
 
@@ -312,7 +347,8 @@ const setHiddenMetadataStyles = (isMobile) => {
   setStyles(fullscreenElement.value, { x: 0 })
   const { height, width } = calculateOptimalImageSize({
     collectionVisible: collectionVisible.value,
-    metadataVisible: false
+    metadataVisible: false,
+    titleDescriptionVisible: false
   })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
 }
@@ -331,6 +367,7 @@ const onHideComplete = () => {
   isProcessingHide.value = false
   metadataVisible.value = false
   collectionVisible.value = false
+  titleDescriptionVisible.value = false
   originalFlipId.value = null
   showHideTimeline.value = null
   hideFullscreenElements()
@@ -344,6 +381,7 @@ const onShowReverseComplete = () => {
   isProcessingHide.value = false
   metadataVisible.value = false
   collectionVisible.value = false
+  titleDescriptionVisible.value = false
   originalFlipId.value = null
   showHideTimeline.value = null
 
@@ -441,7 +479,7 @@ const showWithFlipAnimation = () => {
   showFullscreenElements()
   setStyles(fullscreenElement.value, { opacity: 0 })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
-    maxHeight: maxImageHeight(false),
+    maxHeight: maxImageHeight(false, false),
     maxWidth: maxImageWidth(false),
     visibility: "hidden"
   })
@@ -491,7 +529,7 @@ const hideWithFlipAnimation = () => {
 const showWithRegularAnimation = () => {
   showFullscreenElements()
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
-    maxHeight: maxImageHeight(false),
+    maxHeight: maxImageHeight(false, false),
     maxWidth: maxImageWidth(false),
     visibility: "visible"
   })
@@ -543,7 +581,8 @@ const showImage = (forceRegularAnimation = false) => {
 
   const { height, width } = calculateOptimalImageSize({
     collectionVisible: collectionVisible.value,
-    metadataVisible: metadataVisible.value
+    metadataVisible: metadataVisible.value,
+    titleDescriptionVisible: titleDescriptionVisible.value
   })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
 
@@ -648,6 +687,15 @@ const hideImage = async () => {
     })
   }
 
+  if (titleDescriptionVisible.value) {
+    gsap.to(titleDescriptionElement.value, {
+      duration: SLIDE_DURATION,
+      ease: SLIDE_EASE,
+      filter: "blur(15px)",
+      opacity: 0
+    })
+  }
+
   await hideFloatingControls()
 
   if (hasThumbnailAvailable()) {
@@ -690,11 +738,33 @@ const animateMetadata = (visible, callback) => {
       tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, 0)
       const { height, width } = calculateOptimalImageSize({
         collectionVisible: collectionVisible.value,
-        metadataVisible: visible
+        metadataVisible: visible,
+        titleDescriptionVisible: titleDescriptionVisible.value
       })
       tl.to([fullscreenImageElement.value, fallbackImageElement.value], { height, width }, 0)
     }
   })
+}
+
+const getFullscreenElementYOffset = (options = {}) => {
+  const {
+    collectionVisible: isCollectionVisible = collectionVisible.value,
+    titleDescriptionVisible: isTitleDescriptionVisible = titleDescriptionVisible.value
+  } = options
+
+  let offset = 0
+
+  if (isCollectionVisible && collectionHeight.value) {
+    const collectionOffset = -(collectionHeight.value + spacing.value)
+    offset += collectionOffset / 2
+  }
+
+  if (isTitleDescriptionVisible && titleDescriptionHeight.value) {
+    const titleDescriptionOffset = titleDescriptionHeight.value + spacing.value
+    offset += titleDescriptionOffset / 2
+  }
+
+  return offset
 }
 
 const animateCollection = (visible, callback) => {
@@ -703,23 +773,45 @@ const animateCollection = (visible, callback) => {
   collectionVisible.value = !!visible
   if (visible) setVisibility(collectionElement.value, true)
 
+  const shouldShowTitleDescription = visible && hasTitleDescription.value
+  titleDescriptionVisible.value = shouldShowTitleDescription
+
   const collectionOffset = -(collectionHeight.value + spacing.value)
-  const centerOffset = collectionOffset / 2
+  const imageYOffset = getFullscreenElementYOffset({
+    collectionVisible: visible,
+    titleDescriptionVisible: shouldShowTitleDescription
+  })
 
   const tl = createAnimationTimeline({
     onComplete: () => {
       if (!visible) setVisibility(collectionElement.value, false)
+      if (!shouldShowTitleDescription && titleDescriptionElement.value) {
+        setVisibility(titleDescriptionElement.value, false)
+      }
       callback?.()
     }
   })
 
   tl.to(collectionElement.value, { y: visible ? collectionOffset : 0 }, 0)
-  tl.to(fullscreenElement.value, { y: visible ? centerOffset : 0 }, 0)
+  tl.to(fullscreenElement.value, { y: imageYOffset }, 0)
   const { height, width } = calculateOptimalImageSize({
     collectionVisible: visible,
-    metadataVisible: metadataVisible.value
+    metadataVisible: metadataVisible.value,
+    titleDescriptionVisible: shouldShowTitleDescription
   })
   tl.to([fullscreenImageElement.value, fallbackImageElement.value], { height, width }, 0)
+
+  if (hasTitleDescription.value && titleDescriptionElement.value) {
+    const hiddenY = -(titleDescriptionHeight.value + spacing.value)
+    const visibleY = spacing.value
+
+    if (shouldShowTitleDescription) {
+      setStyles(titleDescriptionElement.value, { y: hiddenY })
+      setVisibility(titleDescriptionElement.value, true)
+    }
+
+    tl.to(titleDescriptionElement.value, { y: shouldShowTitleDescription ? visibleY : hiddenY }, 0)
+  }
 
   if (metadataVisible.value && isMobileLayout.value) {
     tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), 0)
@@ -827,9 +919,24 @@ const onSlideComplete = async (options) => {
     initialMetadataWidth.value = 0
   }
 
+  const shouldRestoreTitleDescription = collectionVisible.value && hasTitleDescription.value
+
+  if (titleDescriptionElement.value) {
+    if (shouldRestoreTitleDescription) {
+      titleDescriptionVisible.value = true
+      setVisibility(titleDescriptionElement.value, true)
+      setStyles(titleDescriptionElement.value, { filter: "blur(0px)", opacity: 1 })
+    } else {
+      titleDescriptionVisible.value = false
+      setVisibility(titleDescriptionElement.value, false)
+      setStyles(titleDescriptionElement.value, { filter: "blur(0px)", opacity: 1, y: 0 })
+    }
+  }
+
   const targetBorderRadius = getTargetBorderRadius()
 
-  setStyles(fullscreenElement.value, { borderRadius: targetBorderRadius, x: 0 })
+  const imageYOffset = getFullscreenElementYOffset()
+  setStyles(fullscreenElement.value, { borderRadius: targetBorderRadius, x: 0, y: imageYOffset })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
     borderRadius: targetBorderRadius,
     filter: "blur(0px)",
@@ -904,7 +1011,8 @@ const createSlideTimeline = (targetImage, direction) => {
   const { height, width } = calculateOptimalImageSize({
     aspectRatio: nextImageAspectRatio,
     collectionVisible: collectionVisible.value,
-    metadataVisible: false
+    metadataVisible: false,
+    titleDescriptionVisible: titleDescriptionVisible.value
   })
 
   const nextImageWidth = parseFloat(width)
@@ -1161,11 +1269,12 @@ const onImageUpdate = async (image) => {
 const updateImageConstraints = () => {
   const { height, width } = calculateOptimalImageSize({
     collectionVisible: collectionVisible.value,
-    metadataVisible: metadataVisible.value
+    metadataVisible: metadataVisible.value,
+    titleDescriptionVisible: titleDescriptionVisible.value
   })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], {
     height,
-    maxHeight: maxImageHeight(collectionVisible.value),
+    maxHeight: maxImageHeight(collectionVisible.value, titleDescriptionVisible.value),
     maxWidth: maxImageWidth(metadataVisible.value),
     width
   })
@@ -1417,6 +1526,7 @@ onMounted(async () => {
     }
 
     isAnimating.value = false
+    console.log(collectionData.value)
     nextTick(() => showImage(true))
   }
 })
@@ -1445,6 +1555,20 @@ onUnmounted(() => {
         <Icon name="ArrowLeft" :size="18" />
       </button>
     </div>
+
+    <div
+      v-if="collectionData?.title || collectionData?.description"
+      ref="title-description"
+      class="title-description"
+    >
+      <div class="title-description-content">
+        <h2 v-if="collectionData?.title" class="collection-title">{{ collectionData.title }}</h2>
+        <p v-if="collectionData?.description" class="collection-description">
+          {{ collectionData.description }}
+        </p>
+      </div>
+    </div>
+
     <div v-if="hasMetadata" ref="right-controls" class="floating-controls top-right">
       <button
         class="floating-button"
@@ -1518,6 +1642,45 @@ onUnmounted(() => {
   &.top-right {
     top: var(--spacing-4);
     right: var(--spacing-4);
+  }
+}
+
+.title-description {
+  position: absolute;
+  width: 100vw;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: -1;
+  visibility: hidden;
+  background: var(--background);
+  padding: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(50px + var(--spacing-4));
+  will-change: transform;
+
+  .title-description-content {
+    text-align: center;
+    max-width: min(600px, calc(100vw - (3.75rem * 2 + var(--spacing-12))));
+    margin: 0 auto;
+  }
+
+  .collection-title {
+    font-size: 1rem; // base
+    font-weight: var(--font-semibold);
+    line-height: 1.5;
+    margin: 0;
+    color: var(--foreground);
+  }
+
+  .collection-description {
+    font-size: 0.875rem; // sm
+    font-weight: var(--font-normal);
+    line-height: 1.43;
+    margin: var(--spacing-1) 0 0;
+    color: var(--muted-foreground);
   }
 }
 

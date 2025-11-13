@@ -18,7 +18,7 @@ const MAX_DELTA_TIME = 0.05
 const MIN_DELTA_TIME = 0.001
 
 const SPACING = 12
-const ITEM_SIZE = 60
+const ITEM_SIZE = 50
 const ITEM_SIZE_PX = `${ITEM_SIZE}px`
 const TOTAL_ITEM_WIDTH = ITEM_SIZE + SPACING
 
@@ -436,6 +436,7 @@ $item-size: v-bind(ITEM_SIZE_PX);
     left: 0;
     background-image: linear-gradient(to left, transparent, var(--background));
   }
+
   &::after {
     right: 0;
     background-image: linear-gradient(to right, transparent, var(--background));
