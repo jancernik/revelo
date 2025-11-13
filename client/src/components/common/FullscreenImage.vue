@@ -696,7 +696,7 @@ const hideImage = async () => {
     })
   }
 
-  await hideFloatingControls()
+  hideFloatingControls()
 
   if (hasThumbnailAvailable()) {
     hideWithFlipAnimation()
