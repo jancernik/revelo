@@ -348,7 +348,7 @@ const setHiddenMetadataStyles = (isMobile) => {
   const { height, width } = calculateOptimalImageSize({
     collectionVisible: collectionVisible.value,
     metadataVisible: false,
-    titleDescriptionVisible: false
+    titleDescriptionVisible: titleDescriptionVisible.value
   })
   setStyles([fullscreenImageElement.value, fallbackImageElement.value], { height, width })
 }
@@ -727,9 +727,11 @@ const animateMetadata = (visible, callback) => {
 
   nextTick(() => {
     if (isMobileLayout.value) {
-      let metadataOffset = -imageMetadataElement.value.offsetHeight
-      if (collectionVisible.value) metadataOffset -= (collectionHeight.value + spacing.value) / 2
-      tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
+      nextTick(() => {
+        let metadataOffset = -imageMetadataElement.value.offsetHeight
+        if (collectionVisible.value) metadataOffset -= (collectionHeight.value + spacing.value) / 2
+        tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
+      })
     } else {
       const metadataOffset = initialMetadataWidth.value + spacing.value
       const centerOffset = metadataOffset / -2
@@ -1059,7 +1061,21 @@ const createSlideTimeline = (targetImage, direction) => {
     )
   }
 
-  if (metadataVisible.value && imageMetadataElement.value) {
+  if (metadataVisible.value && imageMetadataElement.value && !isMobileLayout.value) {
+    const metadataOffset = initialMetadataWidth.value + spacing.value
+    const centerOffset = metadataOffset / -2
+
+    tl.to(fullscreenElement.value, { x: 0 }, 0)
+    tl.to(
+      imageMetadataElement.value,
+      {
+        filter: "blur(15px)",
+        opacity: 0,
+        x: -centerOffset
+      },
+      0
+    )
+  } else if (metadataVisible.value && imageMetadataElement.value) {
     tl.to(
       imageMetadataElement.value,
       {
@@ -1068,18 +1084,6 @@ const createSlideTimeline = (targetImage, direction) => {
       },
       0
     )
-
-    if (!isMobileLayout.value) {
-      tl.to(fullscreenElement.value, { x: 0 }, 0)
-      tl.to(
-        [fullscreenImageElement.value, fallbackImageElement.value],
-        {
-          height,
-          width
-        },
-        0
-      )
-    }
   }
 
   const slideImageElement =
