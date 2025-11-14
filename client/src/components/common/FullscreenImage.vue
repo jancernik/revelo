@@ -97,6 +97,7 @@ const thumbnailElement = computed(() => document.querySelector(`[data-flip-id="$
 const thumbnailImageElement = computed(() => thumbnailElement.value?.querySelector("img"))
 const imageMetadataRef = useTemplateRef("image-metadata")
 const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
+const metadataOverlay = useTemplateRef("metadata-overlay")
 const collectionRef = useTemplateRef("collection-images")
 const collectionElement = computed(() => collectionRef.value?.$el)
 const titleDescriptionRef = useTemplateRef("title-description")
@@ -109,7 +110,6 @@ const thumbnailImageVersion = computed(() => getImageVersion(imageData.value, "t
 const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.value))
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
-const { height: imageHeight } = useElementSize(fullscreenElement)
 const { height: collectionHeight } = useElementSize(collectionElement)
 const { height: titleDescriptionHeight } = useElementSize(titleDescriptionElement)
 
@@ -290,21 +290,20 @@ const hideFullscreenElements = () => {
 const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
   if (!imageMetadataElement.value) return
 
-  let spacePx = (windowHeight.value - imageHeight.value) / 2
-  let metadataOffset = -imageMetadataElement.value.offsetHeight
+  const metadataHeight = imageMetadataElement.value.offsetHeight
+  const bottomSpacing = spacing.value
 
-  if (collectionVisible.value) {
-    spacePx += collectionHeight.value + spacing.value
-    metadataOffset -= (collectionHeight.value + spacing.value) / 2
-  }
+  const bottomOffset = bottomSpacing
 
   const styles = {
+    bottom: metadataVisible ? `${bottomOffset}px` : `-${metadataHeight}px`,
     height: "max-content",
-    right: "50%",
-    top: `calc(100% + ${spacePx}px`,
-    width: "100vw",
-    x: "50%",
-    y: metadataVisible ? metadataOffset : 0
+    left: "50%",
+    right: "auto",
+    top: "auto",
+    width: `calc(100vw - ${spacing.value * 2}px)`,
+    x: "-50%",
+    y: 0
   }
 
   if (animate) {
@@ -321,27 +320,46 @@ const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
 const setHiddenMetadataStyles = (isMobile) => {
   if (!imageMetadataElement.value) return
 
-  imageMetadataElement.value.style.zIndex = isMobile ? 1 : -1
-
-  setStyles(imageMetadataElement.value, {
-    height: isMobile ? "max-content" : "100%",
-    right: 0,
-    top: 0,
-    width: "max-content",
-    x: 0,
-    y: 0
-  })
-
-  isSettingInitialWidth.value = true
-  nextTick(() => {
-    if (imageMetadataElement.value) {
-      initialMetadataWidth.value = imageMetadataElement.value.offsetWidth
-    }
-    isSettingInitialWidth.value = false
-  })
-
   if (isMobile) {
+    setStyles(imageMetadataElement.value, {
+      bottom: "auto",
+      height: "max-content",
+      left: "auto",
+      right: 0,
+      top: 0,
+      width: "max-content",
+      x: 0,
+      y: 0
+    })
+
+    isSettingInitialWidth.value = true
+    nextTick(() => {
+      if (imageMetadataElement.value) {
+        initialMetadataWidth.value = imageMetadataElement.value.offsetWidth
+      }
+      isSettingInitialWidth.value = false
+    })
+
     setBaseMobileMetadataStyles(false)
+  } else {
+    setStyles(imageMetadataElement.value, {
+      bottom: "auto",
+      height: "100%",
+      left: "auto",
+      right: 0,
+      top: 0,
+      width: "max-content",
+      x: 0,
+      y: 0
+    })
+
+    isSettingInitialWidth.value = true
+    nextTick(() => {
+      if (imageMetadataElement.value) {
+        initialMetadataWidth.value = imageMetadataElement.value.offsetWidth
+      }
+      isSettingInitialWidth.value = false
+    })
   }
 
   setStyles(fullscreenElement.value, { x: 0 })
@@ -484,7 +502,6 @@ const showWithFlipAnimation = () => {
     visibility: "hidden"
   })
 
-  // Start performing as soon as fallback (thumbnail) is loaded
   if (fallbackImageElement.value.complete) {
     perform()
   } else {
@@ -716,10 +733,20 @@ const animateMetadata = (visible, callback) => {
   if (visible) {
     setHiddenMetadataStyles(isMobileLayout.value)
     setVisibility(imageMetadataElement.value, true)
+    if (isMobileLayout.value && metadataOverlay.value) {
+      setVisibility(metadataOverlay.value, true)
+      metadataOverlay.value.classList.add("active")
+    }
   }
   const tl = createAnimationTimeline({
     onComplete: () => {
-      if (!visible) setVisibility(imageMetadataElement.value, false)
+      if (!visible) {
+        setVisibility(imageMetadataElement.value, false)
+        if (isMobileLayout.value && metadataOverlay.value) {
+          setVisibility(metadataOverlay.value, false)
+          metadataOverlay.value.classList.remove("active")
+        }
+      }
       isAnimatingMetadata.value = false
       callback?.()
     }
@@ -727,10 +754,16 @@ const animateMetadata = (visible, callback) => {
 
   nextTick(() => {
     if (isMobileLayout.value) {
+      if (metadataOverlay.value) {
+        tl.to(metadataOverlay.value, { opacity: visible ? 1 : 0 }, 0)
+      }
+
       nextTick(() => {
-        let metadataOffset = -imageMetadataElement.value.offsetHeight
-        if (collectionVisible.value) metadataOffset -= (collectionHeight.value + spacing.value) / 2
-        tl.to(imageMetadataElement.value, { y: visible ? metadataOffset : 0 })
+        const metadataHeight = imageMetadataElement.value.offsetHeight
+        const bottomOffset = spacing.value
+
+        const bottomValue = visible ? `${bottomOffset}px` : `-${metadataHeight}px`
+        tl.to(imageMetadataElement.value, { bottom: bottomValue }, 0)
       })
     } else {
       const metadataOffset = initialMetadataWidth.value + spacing.value
@@ -1232,6 +1265,12 @@ const handleToggleMetadata = () => {
   }
 }
 
+const handleOverlayClick = () => {
+  if (metadataVisible.value && isMobileLayout.value) {
+    hideMetadata()
+  }
+}
+
 const handleImageError = () => {
   setStyles(fullscreenImageElement.value, { visibility: "hidden" })
 }
@@ -1307,6 +1346,8 @@ const onLayoutChange = (isMobile) => {
 }
 
 const handleDragStart = (event) => {
+  if (metadataVisible.value && isMobileLayout.value) return
+
   const target = event.target
   const isButton = target.closest("button")
   const isImage = target.classList?.contains("image")
@@ -1603,8 +1644,21 @@ onUnmounted(() => {
         class="slide-image"
         :src="rightSlideImagePath"
       />
-      <ImageMetadata v-if="hasMetadata" ref="image-metadata" :image="imageData" />
+      <ImageMetadata
+        v-if="hasMetadata && !isMobileLayout"
+        ref="image-metadata"
+        :image="imageData"
+      />
     </div>
+
+    <div
+      v-if="isMobileLayout"
+      ref="metadata-overlay"
+      class="metadata-overlay"
+      @click="handleOverlayClick"
+    ></div>
+    <ImageMetadata v-if="hasMetadata && isMobileLayout" ref="image-metadata" :image="imageData" />
+
     <CollectionImages
       v-if="hasCollection"
       ref="collection-images"
@@ -1628,6 +1682,24 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss">
+.metadata-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  @include fill-parent;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: z(overlay) + 25;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: opacity;
+
+  &.active {
+    pointer-events: auto;
+  }
+}
+
 .floating-controls {
   @include floating-shadow;
   position: fixed;
@@ -1672,7 +1744,7 @@ onUnmounted(() => {
   }
 
   .collection-title {
-    font-size: 1rem; // base
+    font-size: 1rem;
     font-weight: var(--font-semibold);
     line-height: 1.5;
     margin: 0;
@@ -1680,7 +1752,7 @@ onUnmounted(() => {
   }
 
   .collection-description {
-    font-size: 0.875rem; // sm
+    font-size: 0.875rem;
     font-weight: var(--font-normal);
     line-height: 1.43;
     margin: var(--spacing-1) 0 0;
@@ -1753,6 +1825,28 @@ onUnmounted(() => {
     right: 0;
     z-index: -1;
     visibility: hidden;
+    padding: var(--spacing-4);
+  }
+
+  > .image-metadata {
+    @include floating-shadow;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: z(overlay) + 30;
+    max-height: calc(100vh - var(--spacing-4) * 2);
+    height: auto;
+    overflow-y: auto;
+    will-change: transform;
+    background-color: var(--menu-background);
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--spacing-4) var(--spacing-4) calc(var(--spacing-4) + env(safe-area-inset-bottom));
+    padding-bottom: var(--spacing-8);
+    margin-bottom: calc(var(--spacing-5) * -1);
   }
 
   .collection-images {

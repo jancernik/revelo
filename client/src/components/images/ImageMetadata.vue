@@ -112,42 +112,36 @@ const formatDate = (dateString) => {
 <style lang="scss">
 .image-metadata {
   @include hide-scrollbar;
-  background: var(--background);
-  padding: var(--spacing-4);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-5);
+  gap: var(--spacing-6);
 
   .metadata-group {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-3);
+    gap: var(--spacing-2);
 
     .metadata-title {
       @include flex(row, flex-start, center);
       gap: var(--spacing-2);
-      padding-bottom: var(--spacing-2);
-      margin-bottom: var(--spacing-2);
-      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--spacing-1);
 
       h4 {
         @include text("sm");
         font-weight: var(--font-semibold);
         color: var(--foreground);
         margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
     }
 
     .metadata-item {
       @include flex(row, space-between, center);
       gap: var(--spacing-4);
-      padding: var(--spacing-2) var(--spacing-3);
-      background: var(--secondary);
-      border-radius: var(--radius-md);
-      transition: all 0.15s ease-in-out;
+      padding: var(--spacing-2) 0;
+      min-height: 2rem;
 
       .label {
         @include text("sm");
@@ -158,7 +152,7 @@ const formatDate = (dateString) => {
 
       .value {
         @include text("sm");
-        font-weight: var(--font-semibold);
+        font-weight: var(--font-medium);
         color: var(--foreground);
         text-align: right;
       }
