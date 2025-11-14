@@ -412,7 +412,11 @@ const onShowReverseComplete = () => {
   if (hasThumbnailAvailable()) {
     history.pushState({}, "", "/")
   } else {
-    router.push("/")
+    if (updateRoute.value) {
+      history.pushState({}, "", "/")
+    } else {
+      router.push("/")
+    }
   }
 
   completeHide()
@@ -721,7 +725,11 @@ const hideImage = async () => {
   } else {
     callOnReturn(false)
     hideWithRegularAnimation()
-    router.push("/")
+    if (updateRoute.value) {
+      history.pushState({}, "", "/")
+    } else {
+      router.push("/")
+    }
   }
 }
 
@@ -994,7 +1002,6 @@ const onSlideComplete = async (options) => {
     imageChanged()
   }
 
-  history.replaceState({}, "", `/images/${targetImage.id}`)
   imageData.value = targetImage
 
   await nextTick()
@@ -1296,7 +1303,7 @@ const preloadSlideImages = () => {
 
 const onImageUpdate = async (image) => {
   if (image) {
-    if (updateRoute.value) setupRouting(image.id)
+    if (updateRoute.value && !isSwitchingImage.value) setupRouting(image.id)
     if (image.collectionId) {
       collectionData.value = await collectionsStore.fetch(image.collectionId)
     } else {
