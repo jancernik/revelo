@@ -109,7 +109,7 @@ watch(dialogState, ({ isOpen }) => {
     gap: var(--spacing-2);
 
     p {
-      @include text("sm");
+      @include text("base");
       font-weight: var(--font-normal);
       color: var(--muted-foreground);
     }
