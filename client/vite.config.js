@@ -19,7 +19,7 @@ export default defineConfig({
     VitePWA({
       manifest: {
         background_color: "#000",
-        description: "Photo Gallery",
+        description: "Image gallery by Jan Cernik",
         display: "standalone",
         icons: [
           {
