@@ -1,5 +1,5 @@
-import { registerSW } from "virtual:pwa-register"
+// import { registerSW } from "virtual:pwa-register"
 
-export function usePWAUpdate() {
-  registerSW({ immediate: true })
-}
+// export function usePWAUpdate() {
+//   registerSW({ immediate: true })
+// }
