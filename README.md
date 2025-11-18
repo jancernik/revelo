@@ -15,7 +15,7 @@ I have too many hobbies, but the only one most people would call _artistic_ is p
 **Revelo** (from _photographic development_ in Spanish) is my playground for experimenting with modern web technologies, AI integrations, and infrastructure. It’s very much a work in progress, but you can check it out live at [revelo.app](https://revelo.app)!
 
 > [!WARNING]
-> The live instance is hosted on my own _homelab server_. This gives me flexibility to tinker with the stack, and direct access to the hardware, but it also means uptime might be spotty depending on my ISP's mood.
+> The live instance is hosted on my own _homelab server_. This gives me flexibility to tinker with the stack, and direct access to the hardware, but it also means uptime might be spotty depending on my ISP's mood (not the best at the moment).
 
 ## Features
 
