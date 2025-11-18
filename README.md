@@ -16,3 +16,24 @@ I have too many hobbies, but the only one most people would call _artistic_ is p
 
 > [!WARNING]
 > The live instance is hosted on my own _homelab server_. This gives me flexibility to tinker with the stack, and direct access to the hardware, but it also means uptime might be spotty depending on my ISP's mood.
+
+## Features
+
+- **Custom Homepage Render Loop**: Infinite, seamless, smooth-scrolling masonry layout
+- **AI-Powered Captions**: Automatic image descriptions in English and Spanish
+- **Hybrid Search**: Find images by meaning, using embeddings and Postgres Full Text Search
+- **Automatic Image Versions**: Generate optimized thumbnails and multiple resolutions automatically
+- **EXIF Metadata**: Extract and parse camera settings, lens info, and shooting details
+- **S3 Compatible Storage**: Support for local storage or cloud providers (Cloudflare R2, AWS S3, etc.)
+- **Dark/Light Theme**: Adaptive theming with smooth transitions
+- **Kiosk Mode**: Configurable autoscroll without a menu for display
+- **Custom Full CI/CD**: Automated testing, building, and deployment pipelines
+- **YAML Settings Configuration**: Dynamic Admin Settings UI based on a configuration file
+
+## Future Improvements
+
+- **Enhanced Mobile Experience**: More native-like gestures for touch devices
+- **Advanced Search Filters**: Filter by date ranges, camera models, and EXIF parameters
+- **Batch Operations**: Edit metadata and move images in bulk
+- **Multi-language Support**: Full internationalization beyond captions
+- **Simplified Self-Hosting**: Self-hosting instructions and removal of hardcoded configuration details
