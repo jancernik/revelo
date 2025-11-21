@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout (${{ matrix.title }})
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx (${{ matrix.title }})
         uses: docker/setup-buildx-action@v3
