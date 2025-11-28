@@ -41,11 +41,11 @@
     "eslint": "^9.39.1",
     "eslint-plugin-perfectionist": "^4.15.1",
     "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-vue": "^10.6.1",
+    "eslint-plugin-vue": "^10.6.2",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.6.2"
+    "prettier": "^3.7.1"
   },
   "lint-staged": {
     "*.{js,mjs,vue}": [
