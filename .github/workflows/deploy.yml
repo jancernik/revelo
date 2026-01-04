@@ -142,17 +142,36 @@ jobs:
             local max_attempts=3
             local delay=5
             local attempt=1
+            local rc=0
+            local tmp=""
+
+            if [ $# -eq 0 ]; then
+              tmp="$(mktemp)"
+              cat > "$tmp"
+            fi
+
             while [ $attempt -le $max_attempts ]; do
-              if ssh -q -o LogLevel=ERROR -T revelo "$@"; then
-                return 0
+              if [ $# -eq 0 ]; then
+                ssh -q -o LogLevel=ERROR -T revelo bash -s < "$tmp"
+                rc=$?
               else
-                if [ $attempt -lt $max_attempts ]; then
-                  sleep $delay
-                fi
+                ssh -q -o LogLevel=ERROR -T revelo "$@"
+                rc=$?
+              fi
+
+              if [ $rc -eq 0 ]; then
+                [ -n "$tmp" ] && rm -f "$tmp"
+                return 0
+              fi
+
+              if [ $attempt -lt $max_attempts ]; then
+                sleep $delay
               fi
               attempt=$((attempt + 1))
             done
-            return 1
+
+            [ -n "$tmp" ] && rm -f "$tmp"
+            return $rc
           }
           EOF
           chmod +x ~/retry_ssh.sh
@@ -174,7 +193,7 @@ jobs:
 
           if [ "$available_gb" -lt 10 ]; then
             echo -e "${YELLOW}Low disk space, cleaning up${RESET}"
-            
+
             docker container prune -f >/dev/null 2>&1
             docker image prune -f >/dev/null 2>&1
             docker network prune -f >/dev/null 2>&1
@@ -291,6 +310,23 @@ jobs:
             docker service ls --format '{{.Name}}' | grep -qx "$1"
           }
 
+          latest_slot_fail() {
+            docker service ps "$1" --no-trunc --format '{{.Name}}|{{.CurrentState}}|{{.Error}}' \
+              | awk -F'|' '{
+                  n=$1;
+                  slot=n;
+                  sub(/.*\./,"",slot);
+                  if (!seen[slot]++) print slot "|" $2 "|" $3;
+                }' \
+              | awk -F'|' '{
+                  split($2,a," "); st=a[1];
+                  if (st=="Rejected" || st=="Failed") {
+                    print st "|" $3;
+                    exit
+                  }
+                }'
+          }
+
           migrate_svc="revelo_migrate"
           if svc_exists "$migrate_svc"; then
             echo -e "Waiting for migration job"
@@ -348,9 +384,13 @@ jobs:
 
               hc_enabled=$(docker service inspect "$name" --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "none")
 
-              failed_tasks=$(docker service ps "$name" --filter "desired-state=running" --format "{{.CurrentState}}" --no-trunc | grep -E "(Failed|Rejected)" || true)
-              if [ -n "$failed_tasks" ]; then
+              fail="$(latest_slot_fail "$name" || true)"
+              if [ -n "$fail" ]; then
+                fail_state="${fail%%|*}"
+                fail_err="${fail#*|}"
+                [ -z "$fail_err" ] && fail_err="(no error message)"
                 line+=$(printf "%s: %s  " "$name" "${RED}failed${RESET}")
+                echo -e "\n${RED}${name}${RESET} latest task is ${RED}${fail_state}${RESET}: ${fail_err}\n" >&2
                 any_bad=true
                 continue
               fi
