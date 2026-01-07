@@ -23,7 +23,7 @@
     "@vue/test-utils": "^2.4.6",
     "dotenv": "^17.2.3",
     "jsdom": "^27.4.0",
-    "sass": "^1.97.1",
+    "sass": "^1.97.2",
     "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-vue-devtools": "^8.0.5",
