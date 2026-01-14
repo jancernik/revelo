@@ -104,6 +104,8 @@ const titleDescriptionRef = useTemplateRef("title-description")
 const titleDescriptionElement = computed(() => titleDescriptionRef.value)
 const leftControlsRef = useTemplateRef("left-controls")
 const rightControlsRef = useTemplateRef("right-controls")
+const navLeftRef = useTemplateRef("nav-left")
+const navRightRef = useTemplateRef("nav-right")
 
 const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
 const thumbnailImageVersion = computed(() => getImageVersion(imageData.value, "thumbnail"))
@@ -892,6 +894,26 @@ const showFloatingControls = async () => {
     promises.push(rightPromise)
   }
 
+  if (navLeftRef.value) {
+    promises.push(
+      gsap.fromTo(
+        navLeftRef.value,
+        { filter: "blur(15px)", opacity: 0 },
+        { duration: 0.3, ease: "power2.out", filter: "blur(0px)", opacity: 1 }
+      )
+    )
+  }
+
+  if (navRightRef.value) {
+    promises.push(
+      gsap.fromTo(
+        navRightRef.value,
+        { filter: "blur(15px)", opacity: 0 },
+        { duration: 0.3, ease: "power2.out", filter: "blur(0px)", opacity: 1 }
+      )
+    )
+  }
+
   await Promise.all(promises)
 }
 
@@ -937,6 +959,28 @@ const hideFloatingControls = async () => {
 
   if (rightControlsRef.value) {
     promises.push(hideMetadataButton())
+  }
+
+  if (navLeftRef.value) {
+    promises.push(
+      gsap.to(navLeftRef.value, {
+        duration: 0.3,
+        ease: "power2.in",
+        filter: "blur(15px)",
+        opacity: 0
+      })
+    )
+  }
+
+  if (navRightRef.value) {
+    promises.push(
+      gsap.to(navRightRef.value, {
+        duration: 0.3,
+        ease: "power2.in",
+        filter: "blur(15px)",
+        opacity: 0
+      })
+    )
   }
 
   await Promise.all(promises)
@@ -1631,6 +1675,24 @@ onUnmounted(() => {
       </button>
     </div>
 
+    <button
+      v-if="hasCollection && !isMobile"
+      ref="nav-left"
+      class="nav-arrow nav-arrow-left"
+      @click.stop="switchToImage(getPreviousImage(), -1)"
+    >
+      <Icon name="ChevronLeft" :size="24" />
+    </button>
+
+    <button
+      v-if="hasCollection && !isMobile"
+      ref="nav-right"
+      class="nav-arrow nav-arrow-right"
+      @click.stop="switchToImage(getNextImage(), 1)"
+    >
+      <Icon name="ChevronRight" :size="24" />
+    </button>
+
     <div ref="fullscreen-image" class="fullscreen-image" :data-flip-id="flipId">
       <img
         class="image"
@@ -1776,6 +1838,33 @@ onUnmounted(() => {
   cursor: pointer;
   color: inherit;
   padding: 0;
+}
+
+.nav-arrow {
+  @include flex-center;
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: z(overlay) + 20;
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--foreground);
+  padding: var(--spacing-4);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--muted-foreground);
+  }
+
+  &.nav-arrow-left {
+    left: var(--spacing-4);
+  }
+
+  &.nav-arrow-right {
+    right: var(--spacing-4);
+  }
 }
 
 .fullscreen-image-container {
