@@ -53,6 +53,7 @@ const {
   imageRestoredToOriginal,
   isAnimating,
   isThumbnailVisible,
+  queryParams,
   setPopstateCallback,
   triggerHide,
   updateRoute
@@ -412,12 +413,12 @@ const onShowReverseComplete = () => {
   hideFullscreenElements()
 
   if (hasThumbnailAvailable()) {
-    history.pushState({}, "", "/")
+    history.pushState({}, "", `/${queryParams.value}`)
   } else {
     if (updateRoute.value) {
-      history.pushState({}, "", "/")
+      history.pushState({}, "", `/${queryParams.value}`)
     } else {
-      router.push("/")
+      router.push(`/${queryParams.value}`)
     }
   }
 
@@ -723,14 +724,14 @@ const hideImage = async () => {
 
   if (hasThumbnailAvailable()) {
     hideWithFlipAnimation()
-    history.pushState({}, "", "/")
+    history.pushState({}, "", `/${queryParams.value}`)
   } else {
     callOnReturn(false)
     hideWithRegularAnimation()
     if (updateRoute.value) {
-      history.pushState({}, "", "/")
+      history.pushState({}, "", `/${queryParams.value}`)
     } else {
-      router.push("/")
+      router.push(`/${queryParams.value}`)
     }
   }
 }

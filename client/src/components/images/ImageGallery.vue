@@ -133,7 +133,7 @@ const autoScrollVelocity = ref(0)
 const columnsHeights = ref([])
 
 let userInactivityTimer = null
-const USER_INACTIVITY_TIMEOUT = 1500
+const USER_INACTIVITY_TIMEOUT = 3000
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
 const noImages = computed(() => imagesStore.filteredImages.length === 0)
 
@@ -683,6 +683,10 @@ const startAutoScroll = () => {
 const stopAutoScroll = () => {
   isAutoScrolling.value = false
   autoScrollVelocity.value = 0
+  if (userInactivityTimer) {
+    clearTimeout(userInactivityTimer)
+    userInactivityTimer = null
+  }
 }
 
 const resetUserInactivityTimer = () => {
@@ -696,7 +700,10 @@ const resetUserInactivityTimer = () => {
     stopAutoScroll()
   }
 
+  if (!props.menuVisible) showMenu(true)
+
   userInactivityTimer = setTimeout(() => {
+    if (!props.menuVisible) hideMenu(true)
     startAutoScroll()
   }, USER_INACTIVITY_TIMEOUT)
 }
@@ -737,6 +744,7 @@ const updateZoomTransitionState = (timestamp) => {
       pauseScrolling()
     } else {
       resumeScrolling()
+      if (props.continuousScroll) startAutoScroll()
       zoomTargetImageId = null
       forceZoomTargetVisibility = false
       selectedImage.value?.element?.focus()
@@ -745,7 +753,8 @@ const updateZoomTransitionState = (timestamp) => {
 }
 
 const isRenderLoopIdle = () => {
-  if (isBuildingLayout.value || isDragging.value || isZoomTransitionActive) return false
+  if (isBuildingLayout.value || isDragging.value || isZoomTransitionActive || isAutoScrolling.value)
+    return false
 
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
@@ -815,11 +824,13 @@ const onFirstLoadComplete = () => {
 const handleImageClick = (event, image, flipId) => {
   if (zoomTargetImageId) return
   pauseScrolling()
+  stopAutoScroll()
   startZoomTransition(image.id, event.currentTarget)
   showFullscreenImage(image, {
     flipId,
     isThumbnailVisible: () => checkImageVisibility(image.id),
     onReturn: handleFullscreenReturn,
+    queryParams: window.location.search,
     updatePositions: () => updateImagePositions({ forcePosition: true })
   })
 }
@@ -863,7 +874,8 @@ const handleWheel = (event) => {
 const handleDragStart = (event) => {
   event.preventDefault?.()
 
-  resetUserInactivityTimer()
+  stopAutoScroll()
+  if (props.continuousScroll && !props.menuVisible) showMenu(true)
 
   isDragging.value = true
   hasDragged.value = false
@@ -909,9 +921,11 @@ const handleDragEnd = (event) => {
   event.preventDefault?.()
 
   if (isScrollPaused.value) return
+  const wasDragging = isDragging.value
   isDragging.value = false
   isDraggingWithTouch = false
   setTimeout(() => (hasDragged.value = false), 50)
+  if (wasDragging) resetUserInactivityTimer()
 }
 
 const handleWindowPointerDown = (event) => {

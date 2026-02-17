@@ -11,6 +11,7 @@ const onReturn = ref(null)
 const onReturnCalled = ref(false)
 const isThumbnailVisible = ref(null)
 const isDifferentImage = ref(false)
+const queryParams = ref("")
 
 let popstateHandler = null
 let popstateCallback = null
@@ -26,6 +27,7 @@ export function useFullscreenImage() {
     onReturn.value = options.onReturn || null
     onReturnCalled.value = false
     isThumbnailVisible.value = options.isThumbnailVisible || null
+    queryParams.value = options.queryParams || ""
 
     imageData.value = image
     triggerHide.value = false
@@ -44,6 +46,7 @@ export function useFullscreenImage() {
     onReturnCalled.value = false
     isThumbnailVisible.value = null
     isDifferentImage.value = false
+    queryParams.value = ""
 
     imageData.value = null
     triggerHide.value = false
@@ -110,6 +113,7 @@ export function useFullscreenImage() {
     isAnimating,
     isThumbnailVisible,
     onReturn,
+    queryParams,
     setPopstateCallback,
     show,
     triggerHide,
