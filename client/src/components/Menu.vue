@@ -59,7 +59,7 @@ const menuConfig = reactive({
       action: toggleSort,
       icon: sortIcon,
       id: "sort-toggler",
-      visible: true
+      visible: false
     },
     {
       component: markRaw(ImageSearcher),
