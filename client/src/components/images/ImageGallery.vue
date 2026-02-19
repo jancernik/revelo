@@ -107,7 +107,14 @@ const props = defineProps({
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { height: windowHeight, width: windowWidth } = useWindowSize()
-const { hide: hideMenu, show: showMenu } = useMenu()
+const {
+  cancelPendingHide: cancelPendingHideMenu,
+  hide: hideMenu,
+  requestHide: requestHideMenu,
+  setHideCallback,
+  setSearchCollapseCallback,
+  show: showMenu
+} = useMenu()
 const { dialogState } = useDialog()
 const { isMobile } = useDevice()
 const imagesStore = useImagesStore()
@@ -676,6 +683,7 @@ const updateImagePositions = (options = {}) => {
 
 const startAutoScroll = () => {
   if (!props.continuousScroll) return
+  if (document.activeElement?.closest(".image-searcher")) return
   isAutoScrolling.value = true
   autoScrollVelocity.value = props.scrollSpeed
 }
@@ -689,7 +697,7 @@ const stopAutoScroll = () => {
   }
 }
 
-const resetUserInactivityTimer = () => {
+const resetUserInactivityTimer = (showMenuIfHidden = true) => {
   if (!props.continuousScroll) return
 
   if (userInactivityTimer) {
@@ -700,13 +708,31 @@ const resetUserInactivityTimer = () => {
     stopAutoScroll()
   }
 
-  if (!props.menuVisible) showMenu(true)
+  cancelPendingHideMenu()
+  if (showMenuIfHidden && !props.menuVisible) showMenu(true)
 
   userInactivityTimer = setTimeout(() => {
-    if (!props.menuVisible) hideMenu(true)
-    startAutoScroll()
+    if (!props.menuVisible) {
+      requestHideMenu(true, startAutoScroll)
+    } else {
+      setHideCallback(startAutoScroll)
+    }
   }, USER_INACTIVITY_TIMEOUT)
 }
+
+const queueAutoScrollResume = () => {
+  if (!props.continuousScroll) return
+  if (userInactivityTimer) clearTimeout(userInactivityTimer)
+  userInactivityTimer = setTimeout(() => {
+    if (!props.menuVisible) {
+      requestHideMenu(true, startAutoScroll)
+    } else {
+      setHideCallback(startAutoScroll)
+    }
+  }, USER_INACTIVITY_TIMEOUT)
+}
+
+setSearchCollapseCallback(queueAutoScrollResume)
 
 const updateVelocity = (deltaTime) => {
   if (!isBuildingLayout.value && !isDragging.value) {
@@ -875,7 +901,7 @@ const handleDragStart = (event) => {
   event.preventDefault?.()
 
   stopAutoScroll()
-  if (props.continuousScroll && !props.menuVisible) showMenu(true)
+  cancelPendingHideMenu()
 
   isDragging.value = true
   hasDragged.value = false
@@ -894,7 +920,10 @@ const handleDragMove = (event) => {
   const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartPosition
   const deltaY = (currentY - dragStartPosition) * DRAG_FACTOR
 
-  if (Math.abs(deltaY) > 2) hasDragged.value = true
+  if (Math.abs(deltaY) > 2) {
+    if (!hasDragged.value && props.continuousScroll && !props.menuVisible) showMenu(true)
+    hasDragged.value = true
+  }
 
   dragStartPosition = currentY
   if (isDraggingWithTouch) {
@@ -925,7 +954,7 @@ const handleDragEnd = (event) => {
   isDragging.value = false
   isDraggingWithTouch = false
   setTimeout(() => (hasDragged.value = false), 50)
-  if (wasDragging) resetUserInactivityTimer()
+  if (wasDragging) resetUserInactivityTimer(hasDragged.value)
 }
 
 const handleWindowPointerDown = (event) => {
@@ -1200,9 +1229,13 @@ onUnmounted(() => {
 
 defineExpose({
   isAnimating: () => !isRenderLoopIdle(),
+  isAutoScrollActive: () => isAutoScrolling.value,
   isScrollPaused: () => isScrollPaused.value,
   pauseScrolling,
-  resumeScrolling
+  queueAutoScrollResume,
+  resumeScrolling,
+  startAutoScroll,
+  stopAutoScroll
 })
 </script>
 

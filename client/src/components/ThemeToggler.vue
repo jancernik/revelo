@@ -6,14 +6,15 @@ import { useTemplateRef } from "vue"
 const { isWaitingForGallery, setTheme, themeClass } = useTheme()
 const button = useTemplateRef("button")
 
-const toggleTheme = () => {
+const toggleTheme = async () => {
   if (isWaitingForGallery.value) return
 
   const rect = button.value.getBoundingClientRect()
   const x = rect.left + rect.width / 2
   const y = rect.top + rect.height / 2
   const newTheme = themeClass.value === "dark" ? "light" : "dark"
-  setTheme(newTheme, { origin: { x, y } })
+  await setTheme(newTheme, { origin: { x, y } })
+  button.value?.blur()
 }
 </script>
 

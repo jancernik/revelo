@@ -1,6 +1,7 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
 import { useElementRect } from "#src/composables/useElementRect"
+import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import { gsap } from "gsap"
@@ -11,6 +12,7 @@ const props = defineProps({
 })
 
 const imagesStore = useImagesStore()
+const { cancelPendingHide, flushSearchCollapseCallback } = useMenu()
 const isSearchExpanded = ref(false)
 const searchValue = ref("")
 
@@ -94,6 +96,7 @@ const hideSearchInput = (callback) => animateSearchInput(false, callback)
 const expandSearch = () => {
   if (isSearchExpanded.value) return
   isSearchExpanded.value = true
+  cancelPendingHide()
   showSearchInput()
   searchInput.value?.focus()
 }
@@ -101,11 +104,14 @@ const expandSearch = () => {
 const collapseSearch = () => {
   if (!isSearchExpanded.value) return
   isSearchExpanded.value = false
+  cancelPendingHide()
   searchInput.value?.blur()
+  clearButton.value?.blur()
   imagesStore.search("")
   hideSearchInput(() => {
     searchValue.value = ""
   })
+  flushSearchCollapseCallback()
 }
 
 const handleInput = (event) => {
@@ -118,10 +124,17 @@ const handleBlur = (event) => {
     collapseSearch()
   }
 }
+
+const handleFocusOut = (event) => {
+  if (!isSearchExpanded.value) return
+  if (props.menu.value?.contains(event.relatedTarget)) return
+  cancelPendingHide()
+  flushSearchCollapseCallback()
+}
 </script>
 
 <template>
-  <div ref="search-container" class="image-searcher">
+  <div ref="search-container" class="image-searcher" @focusout="handleFocusOut">
     <button ref="search-button" class="search-button" @click="expandSearch">
       <Icon name="Search" :size="18" class="search-icon" />
     </button>

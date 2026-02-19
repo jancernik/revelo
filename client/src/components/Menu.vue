@@ -16,7 +16,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const imagesStore = useImagesStore()
 const { settings } = useSettings()
-const { hide, isVisible, shouldAnimate } = useMenu("menu")
+const { flushPendingHide, hide, isVisible, pendingCallback, pendingHide, shouldAnimate } =
+  useMenu("menu")
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
 
@@ -239,6 +240,14 @@ onMounted(() => {
   initializeIndicator()
 })
 
+const handleFocusOut = () => {
+  setTimeout(() => {
+    if (!menu.value?.contains(document.activeElement)) {
+      flushPendingHide()
+    }
+  }, 50)
+}
+
 watch(
   () => isVisible.value,
   () => {
@@ -248,6 +257,13 @@ watch(
   },
   { immediate: false }
 )
+
+watch([pendingHide, pendingCallback], () => {
+  if (pendingHide.value === null && pendingCallback.value === null) return
+  if (!menu.value?.contains(document.activeElement)) {
+    flushPendingHide()
+  }
+})
 
 watch(
   () => route.path,
@@ -279,6 +295,7 @@ watch(
       'menu-animating': isMenuAnimating
     }"
     :style="{ display: !isVisible && !shouldAnimate ? 'none' : 'flex' }"
+    @focusout="handleFocusOut"
   >
     <div class="menu-inner inner">
       <ul ref="menu-ul">
