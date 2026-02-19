@@ -756,11 +756,15 @@ const startRenderLoop = () => {
   renderLoopId = requestAnimationFrame(renderFrame)
 }
 
+let settleCallback = null
+
 const stopRenderLoop = () => {
   if (!renderLoopId) return
   cancelAnimationFrame(renderLoopId)
   renderLoopId = 0
   lastFrameTimestamp = 0
+  settleCallback?.()
+  settleCallback = null
 }
 
 const updateZoomTransitionState = (timestamp) => {
@@ -784,7 +788,11 @@ const isRenderLoopIdle = () => {
 
   const scrollTargetsSettled =
     scrollTargets.length === columnCount.value &&
-    scrollTargets.every((target) => Math.abs(target - scrollPosition) < 0.5)
+    scrollTargets.every((target, index) => {
+      const expectedPosition =
+        props.alternatingScroll && index % 2 === 1 ? -scrollPosition : scrollPosition
+      return Math.abs(target - expectedPosition) < 0.5
+    })
   const velocitySettled = Math.abs(velocity.value) < VELOCITY_THRESHOLD
   const resizeFactorStable = Math.abs(resizeFactor.value - lastResizeFactor) < 1e-6
   return scrollTargetsSettled && velocitySettled && resizeFactorStable
@@ -1195,6 +1203,9 @@ watch(initialLoadProgress, (progress) => {
   }
 })
 
+watch(isAutoScrolling, (value) => {
+  if (value) startRenderLoop()
+})
 watch(resizeFactor, () => startRenderLoop())
 watch(windowHeight, () => {
   if (columnsHeights.value.length > 0) {
@@ -1231,6 +1242,13 @@ defineExpose({
   isAnimating: () => !isRenderLoopIdle(),
   isAutoScrollActive: () => isAutoScrolling.value,
   isScrollPaused: () => isScrollPaused.value,
+  onSettle: (cb) => {
+    if (isRenderLoopIdle()) cb()
+    else {
+      startRenderLoop()
+      settleCallback = cb
+    }
+  },
   pauseScrolling,
   queueAutoScrollResume,
   resumeScrolling,

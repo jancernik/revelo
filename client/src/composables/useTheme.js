@@ -26,15 +26,10 @@ export function useTheme() {
     isWaitingForGallery.value = true
 
     return new Promise((resolve) => {
-      const checkSettled = () => {
-        if (!imageGallery.isAnimating()) {
-          isWaitingForGallery.value = false
-          resolve()
-        } else {
-          setTimeout(checkSettled, 10)
-        }
-      }
-      checkSettled()
+      imageGallery.onSettle(() => {
+        isWaitingForGallery.value = false
+        resolve()
+      })
     })
   }
 
@@ -56,9 +51,14 @@ export function useTheme() {
       return
     }
 
+    const wasAutoScrolling = imageGallery?.isAutoScrollActive?.() ?? false
+
     if (imageGallery && !imageGallery.isScrollPaused()) {
-      imageGallery.pauseScrolling()
-      await waitForGalleryToSettle()
+      imageGallery.stopAutoScroll()
+      if (!wasAutoScrolling) {
+        imageGallery.pauseScrolling()
+        await waitForGalleryToSettle()
+      }
     }
 
     if (options.animate) {
@@ -77,8 +77,13 @@ export function useTheme() {
       }, 20)
     }
 
-    if (imageGallery && imageGallery.isScrollPaused()) {
-      imageGallery.resumeScrolling()
+    if (imageGallery) {
+      if (wasAutoScrolling) {
+        imageGallery.startAutoScroll()
+      } else if (imageGallery.isScrollPaused()) {
+        imageGallery.resumeScrolling()
+      }
+      imageGallery.queueAutoScrollResume?.()
     }
   }
 

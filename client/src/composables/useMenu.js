@@ -41,8 +41,9 @@ export function useMenu() {
   }
 
   const flushPendingHide = () => {
+    const callback = pendingCallback.value
     if (pendingHide.value !== null) hide(pendingHide.value)
-    pendingCallback.value?.()
+    callback?.()
     pendingHide.value = null
     pendingCallback.value = null
   }
