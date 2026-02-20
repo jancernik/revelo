@@ -6,6 +6,7 @@ import { useDevice } from "#src/composables/useDevice"
 import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
+import { useSettings } from "#src/composables/useSettings"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import {
@@ -41,18 +42,29 @@ const KEY_THROTTLE_DELAY = 100 // Milliseconds between key events
 
 const MAX_SCROLL_LERP = 0.08 // Lerp factor at center column (fastest response)
 const MIN_SCROLL_LERP = 0.05 // Lerp factor at outermost columns (slowest response)
+const TOUCH_SCROLL_LERP = 0.6 // Uniform lerp factor for touch devices
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
-const TOUCH_LERP_MULTIPLIER = 2.8 // Multiplier for lerp factors on touch devices for more direct feel
-const TOUCH_VELOCITY_LERP_FACTOR = 0.8 // Higher velocity lerp for more responsive touch
+const TOUCH_VELOCITY_LERP_FACTOR = 0.9 // Higher velocity lerp for more responsive touch
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
+const TARGET_FPS = 60 // Target frame rate when capping is enabled
+const REFRESH_RATE_DETECT_SAMPLES = 20 // Frames to sample for initial refresh rate detection
+const REFRESH_RATE_MONITOR_SAMPLES = 10 // Frames to sample when monitoring for refresh rate changes
+const REFRESH_RATE_CHANGE_THRESHOLD = 0.3 // Percentage change that triggers recalibration
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
+let detectedRefreshRate = 0
+let refreshRateDetected = false
+let frameSkipRatio = 1
+let frameCounter = 0
+let refreshRateFrameTimes = []
+let monitorFrameTimes = []
+let lastDetectedMedianFrameTime = 0
 let zoomAnimationEndTimestamp = 0
 let zoomAnimationStartTimestamp = 0
 let scrollPosition = 0
@@ -79,8 +91,6 @@ let zoomReferencePoint = null
 let lastInputMethod = null
 let lastTabDirection = 1
 let lastKeyEventTime = 0
-let isDraggingWithTouch = false
-let currentDragPositionX = 0
 
 const props = defineProps({
   alternatingScroll: {
@@ -116,7 +126,8 @@ const {
   show: showMenu
 } = useMenu()
 const { dialogState } = useDialog()
-const { isMobile } = useDevice()
+const { isMobile, isTouchPrimary } = useDevice()
+const { settings } = useSettings()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
@@ -576,23 +587,9 @@ const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, 
 
 const updateScrollTargets = () => {
   for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
-    let lerpFactor = columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP
-    if (isDraggingWithTouch) {
-      if (columnCount.value === 2) {
-        const columnCenterX =
-          firstColumnMargin.value +
-          columnIndex * (columnWidth.value + currentSpacing.value) +
-          columnWidth.value / 2
-
-        const distanceFromTouch = Math.abs(currentDragPositionX - columnCenterX) / windowWidth.value
-        const proximityMultiplier =
-          1 + (TOUCH_LERP_MULTIPLIER - 1) * (1 - Math.min(1, distanceFromTouch * 1.3))
-
-        lerpFactor = Math.min(1, lerpFactor * proximityMultiplier)
-      } else {
-        lerpFactor = Math.min(1, lerpFactor * TOUCH_LERP_MULTIPLIER)
-      }
-    }
+    const lerpFactor = isTouchPrimary.value
+      ? TOUCH_SCROLL_LERP
+      : (columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP)
     const shouldReverse = props.alternatingScroll && columnIndex % 2 === 1
     const targetPosition = shouldReverse ? -scrollPosition : scrollPosition
     scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], targetPosition, lerpFactor)
@@ -801,10 +798,69 @@ const isRenderLoopIdle = () => {
 const renderFrame = (timestamp) => {
   renderLoopId = requestAnimationFrame(renderFrame)
 
+  const nativeFrameTime = timestamp - (lastFrameTimestamp || timestamp)
+  let shouldSkipRender = false
+
+  if (settings.value.capFrameRate) {
+    if (nativeFrameTime > 0 && nativeFrameTime < 50) {
+      if (!refreshRateDetected) {
+        refreshRateFrameTimes.push(nativeFrameTime)
+      } else {
+        monitorFrameTimes.push(nativeFrameTime)
+        if (monitorFrameTimes.length > REFRESH_RATE_MONITOR_SAMPLES) {
+          monitorFrameTimes.shift()
+        }
+      }
+    }
+
+    if (!refreshRateDetected) {
+      if (refreshRateFrameTimes.length >= REFRESH_RATE_DETECT_SAMPLES) {
+        const sorted = [...refreshRateFrameTimes].sort((a, b) => a - b)
+        const medianFrameTime = sorted[Math.floor(sorted.length / 2)]
+        lastDetectedMedianFrameTime = medianFrameTime
+        detectedRefreshRate = Math.round(1000 / medianFrameTime)
+        frameSkipRatio = Math.max(1, Math.round(detectedRefreshRate / TARGET_FPS))
+        refreshRateDetected = true
+      }
+
+      frameCounter++
+      if (frameCounter % 2 !== 0) {
+        shouldSkipRender = true
+      }
+    } else {
+      if (monitorFrameTimes.length >= REFRESH_RATE_MONITOR_SAMPLES) {
+        const sorted = [...monitorFrameTimes].sort((a, b) => a - b)
+        const currentMedianFrameTime = sorted[Math.floor(sorted.length / 2)]
+        const change =
+          Math.abs(currentMedianFrameTime - lastDetectedMedianFrameTime) /
+          lastDetectedMedianFrameTime
+
+        if (change > REFRESH_RATE_CHANGE_THRESHOLD) {
+          lastDetectedMedianFrameTime = currentMedianFrameTime
+          detectedRefreshRate = Math.round(1000 / currentMedianFrameTime)
+          frameSkipRatio = Math.max(1, Math.round(detectedRefreshRate / TARGET_FPS))
+          frameCounter = 0
+          monitorFrameTimes = []
+        }
+      }
+
+      if (frameSkipRatio > 1) {
+        frameCounter++
+        if (frameCounter % frameSkipRatio !== 0) {
+          shouldSkipRender = true
+        }
+      }
+    }
+  }
+
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
   lastFrameTimestamp = timestamp
-
   updateVelocity(deltaTime)
+
+  if (shouldSkipRender) {
+    return
+  }
+
   updateImagePositions()
   updateZoomTransitionState(timestamp)
 
@@ -913,9 +969,7 @@ const handleDragStart = (event) => {
 
   isDragging.value = true
   hasDragged.value = false
-  isDraggingWithTouch = event.touches !== undefined
   dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
-  currentDragPositionX = event.clientX || event.touches?.[0]?.clientX || windowWidth.value / 2
   lastDragTimestamp = performance.now()
   velocity.value = 0
   imageGallery.value?.focus()
@@ -934,9 +988,6 @@ const handleDragMove = (event) => {
   }
 
   dragStartPosition = currentY
-  if (isDraggingWithTouch) {
-    currentDragPositionX = event.touches?.[0]?.clientX || currentDragPositionX
-  }
   const newScrollPosition = scrollPosition + deltaY / resizeFactor.value
   scrollPosition = getBoundedScrollPosition(newScrollPosition)
 
@@ -945,7 +996,7 @@ const handleDragMove = (event) => {
   lastDragTimestamp = now
 
   const instantaneousVelocity = ((deltaY / resizeFactor.value) * DRAG_IMPULSE) / deltaTime
-  const velocityLerp = isDraggingWithTouch ? TOUCH_VELOCITY_LERP_FACTOR : VELOCITY_LERP_FACTOR
+  const velocityLerp = isTouchPrimary.value ? TOUCH_VELOCITY_LERP_FACTOR : VELOCITY_LERP_FACTOR
   velocity.value = clamp(
     lerp(velocity.value, instantaneousVelocity, velocityLerp),
     -MAX_SPEED,
@@ -960,7 +1011,6 @@ const handleDragEnd = (event) => {
   if (isScrollPaused.value) return
   const wasDragging = isDragging.value
   isDragging.value = false
-  isDraggingWithTouch = false
   setTimeout(() => (hasDragged.value = false), 50)
   if (wasDragging) resetUserInactivityTimer(hasDragged.value)
 }
