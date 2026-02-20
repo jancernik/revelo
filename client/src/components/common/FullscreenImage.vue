@@ -6,6 +6,7 @@ import { useDevice } from "#src/composables/useDevice"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
+import { useSettings } from "#src/composables/useSettings"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
@@ -62,6 +63,7 @@ const router = useRouter()
 const collectionsStore = useCollectionsStore()
 const { hide: hideMenu } = useMenu()
 const { isMobile } = useDevice()
+const { settings } = useSettings()
 
 const collectionData = ref(null)
 const metadataVisible = ref(false)
@@ -1616,6 +1618,10 @@ watch(triggerHide, () => triggerHide.value && nextTick(hideImage))
 onMounted(async () => {
   window.addEventListener("keydown", handleWindowKeyDown)
   gsap.registerPlugin(Flip)
+
+  if (settings.value.capFrameRate) {
+    gsap.ticker.fps(60)
+  }
 
   if (imageData.value) {
     if (imageData.value.collectionId && !collectionData.value) {

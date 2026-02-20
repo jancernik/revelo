@@ -1273,6 +1273,10 @@ onMounted(() => {
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
 
+  if (settings.value.capFrameRate) {
+    gsap.ticker.fps(60)
+  }
+
   if (props.continuousScroll) {
     startAutoScroll()
   }
