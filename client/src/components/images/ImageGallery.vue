@@ -801,7 +801,7 @@ const renderFrame = (timestamp) => {
   const nativeFrameTime = timestamp - (lastFrameTimestamp || timestamp)
   let shouldSkipRender = false
 
-  if (settings.value.capFrameRate) {
+  if (settings.value.capFrameRate && isTouchPrimary.value) {
     if (nativeFrameTime > 0 && nativeFrameTime < 50) {
       if (!refreshRateDetected) {
         refreshRateFrameTimes.push(nativeFrameTime)
@@ -1273,7 +1273,7 @@ onMounted(() => {
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
 
-  if (settings.value.capFrameRate) {
+  if (settings.value.capFrameRate && isTouchPrimary.value) {
     gsap.ticker.fps(60)
   }
 

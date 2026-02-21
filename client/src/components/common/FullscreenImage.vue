@@ -62,7 +62,7 @@ const {
 const router = useRouter()
 const collectionsStore = useCollectionsStore()
 const { hide: hideMenu } = useMenu()
-const { isMobile } = useDevice()
+const { isMobile, isTouchPrimary } = useDevice()
 const { settings } = useSettings()
 
 const collectionData = ref(null)
@@ -1619,7 +1619,7 @@ onMounted(async () => {
   window.addEventListener("keydown", handleWindowKeyDown)
   gsap.registerPlugin(Flip)
 
-  if (settings.value.capFrameRate) {
+  if (settings.value.capFrameRate && isTouchPrimary.value) {
     gsap.ticker.fps(60)
   }
 
