@@ -1,3 +1,5 @@
+import { useDevice } from "#src/composables/useDevice"
+import { useSettings } from "#src/composables/useSettings"
 import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -8,6 +10,9 @@ const isWaitingForGallery = ref(false)
 let imageGallery = null
 
 export function useTheme() {
+  const { settings } = useSettings()
+  const { isTouchPrimary } = useDevice()
+
   const themeClass = computed(() => {
     if (theme.value !== "system") {
       return theme.value
@@ -303,6 +308,10 @@ export function useTheme() {
 
   onMounted(() => {
     mediaQuery.addEventListener("change", handleSystemChange)
+
+    if (settings.value.capFrameRate && isTouchPrimary.value) {
+      gsap.ticker.fps(60)
+    }
   })
 
   onUnmounted(() => {

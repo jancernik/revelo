@@ -62,3 +62,10 @@ replaceLensNames:
   category: Metadata
   type: textpairs
   default: []
+
+capFrameRate:
+  description: Cap frame rate to 60fps for mobile/touch-first devices
+  category: Interface
+  type: toggle
+  default: true
+  public: true
