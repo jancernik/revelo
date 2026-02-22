@@ -3,6 +3,7 @@ import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
 import { useDevice } from "#src/composables/useDevice"
+import { useDragNavigation } from "#src/composables/useDragNavigation"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
@@ -10,7 +11,6 @@ import { useSettings } from "#src/composables/useSettings"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
-import { clamp } from "#src/utils/helpers"
 import { getImageVersion } from "#src/utils/helpers"
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
@@ -26,8 +26,6 @@ const SLIDE_DURATION = 0.4 // Duration for metadata/collection slide animations
 const SPACING_BASE = 20 // Spacing offset in pixels for slide animations
 const SPACING_SMALL = 8 // Spacing offset in pixels for narrow screens
 const SPACING_BREAKPOINT = 700 // Screen width threshold for switching to small spacing
-const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
-const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap
 const SLIDE_IMAGE_BUFFER = 5 // Extra pixels to position slide image beyond viewport edge
 const CONTROLS_SHOW_DELAY = 100 // Delay in ms before showing floating controls after animation starts
 
@@ -72,19 +70,9 @@ const titleDescriptionVisible = ref(false)
 const initialMetadataWidth = ref(0)
 const isSettingInitialWidth = ref(false)
 const originalFlipId = ref(null)
-const isSwitchingImage = ref(false)
 const leftSlideImagePath = ref("")
 const rightSlideImagePath = ref("")
 const isAnimatingMetadata = ref(false)
-const isDragging = ref(false)
-const slideProgress = ref(0)
-const hasDragMovement = ref(false)
-
-const dragStartPosition = ref(0)
-const rightTransitionTimeline = ref(null)
-const leftTransitionTimeline = ref(null)
-const initialProgress = ref(0)
-const activeTimelineOnInterrupt = ref(null)
 const showHideTimeline = ref(null)
 const isShowingImage = ref(false)
 const isReturningToGallery = ref(false)
@@ -146,6 +134,27 @@ const hasCollection = computed(() => collectionData?.value?.images?.length > 0)
 const hasTitleDescription = computed(
   () => !!(collectionData?.value?.title || collectionData?.value?.description)
 )
+
+const {
+  handleDragEnd,
+  handleDragMove,
+  handleDragStart,
+  hasDragMovement,
+  isDragging,
+  isSwitchingImage,
+  leftTransitionTimeline,
+  rightTransitionTimeline,
+  slideProgress
+} = useDragNavigation({
+  createSlideTimeline: (...args) => createSlideTimeline(...args),
+  getNextImage: () => getNextImage(),
+  getPreviousImage: () => getPreviousImage(),
+  hasCollection,
+  isAnimating,
+  isMobileLayout,
+  metadataVisible,
+  windowWidth
+})
 
 const hasThumbnailAvailable = () => {
   if (!flipId.value) return false
@@ -1399,177 +1408,6 @@ const onLayoutChange = (isMobile) => {
   setHiddenMetadataStyles(isMobile)
 }
 
-const handleDragStart = (event) => {
-  if (metadataVisible.value && isMobileLayout.value) return
-
-  const target = event.target
-  const isButton = target.closest("button")
-  const isImage = target.classList?.contains("image")
-  const isInteractiveElement =
-    isButton ||
-    target.closest(".floating-controls") ||
-    target.closest(".image-metadata") ||
-    target.closest(".collection-images")
-  const isTouchEvent = event.type.startsWith("touch")
-
-  if (isInteractiveElement && !isImage) return
-
-  if (!isTouchEvent) {
-    event.preventDefault()
-  } else if (!isImage) {
-    event.preventDefault()
-  }
-
-  if (isAnimating.value || !hasCollection.value) return
-  isDragging.value = true
-  dragStartPosition.value = event.clientX ?? event.touches?.[0]?.clientX ?? 0
-
-  if (leftTransitionTimeline.value || rightTransitionTimeline.value) {
-    leftTransitionTimeline.value?.paused(true)
-    rightTransitionTimeline.value?.paused(true)
-    initialProgress.value = slideProgress.value
-
-    if (slideProgress.value > 0) {
-      activeTimelineOnInterrupt.value = "right"
-    } else if (slideProgress.value < 0) {
-      activeTimelineOnInterrupt.value = "left"
-    }
-
-    isSwitchingImage.value = false
-  } else {
-    activeTimelineOnInterrupt.value = null
-  }
-}
-
-const handleDragMove = async (event) => {
-  if (!isDragging.value) return
-
-  const currentX = event.clientX ?? event.touches?.[0]?.clientX
-  if (currentX === undefined) return
-
-  const deltaX = dragStartPosition.value - currentX
-
-  if (!hasDragMovement.value && Math.abs(deltaX) > DRAG_MOVEMENT_THRESHOLD) {
-    hasDragMovement.value = true
-  }
-
-  if (hasDragMovement.value) {
-    event.preventDefault()
-  }
-
-  if (!hasDragMovement.value) return
-  if (isSwitchingImage.value) return
-
-  const dragProgress = deltaX / (windowWidth.value / 1.5)
-
-  if (activeTimelineOnInterrupt.value) {
-    const activeTimeline =
-      activeTimelineOnInterrupt.value === "right"
-        ? rightTransitionTimeline.value
-        : leftTransitionTimeline.value
-
-    if (activeTimeline) {
-      let newProgress
-      if (activeTimelineOnInterrupt.value === "right") {
-        newProgress = Math.abs(initialProgress.value) + dragProgress
-      } else {
-        newProgress = Math.abs(initialProgress.value) - dragProgress
-      }
-
-      const clampedProgress = clamp(newProgress, 0, MAX_DRAG_PROGRESS)
-      activeTimeline.progress(clampedProgress)
-
-      if (clampedProgress === 0) {
-        if (activeTimelineOnInterrupt.value === "right" && dragProgress < -0.1) {
-          activeTimelineOnInterrupt.value = "left"
-          if (!leftTransitionTimeline.value) {
-            const targetImage = getPreviousImage()
-            if (targetImage) leftTransitionTimeline.value = createSlideTimeline(targetImage, -1)
-          }
-          initialProgress.value = 0
-        } else if (activeTimelineOnInterrupt.value === "left" && dragProgress > 0.1) {
-          activeTimelineOnInterrupt.value = "right"
-          if (!rightTransitionTimeline.value) {
-            const targetImage = getNextImage()
-            if (targetImage) rightTransitionTimeline.value = createSlideTimeline(targetImage, 1)
-          }
-          initialProgress.value = 0
-        }
-      }
-    }
-  } else {
-    const direction = deltaX > 0 ? 1 : -1
-
-    if (direction === 1 && !rightTransitionTimeline.value) {
-      const targetImage = getNextImage()
-      if (targetImage) rightTransitionTimeline.value = createSlideTimeline(targetImage, 1)
-    } else if (direction === -1 && !leftTransitionTimeline.value) {
-      const targetImage = getPreviousImage()
-      if (targetImage) leftTransitionTimeline.value = createSlideTimeline(targetImage, -1)
-    }
-
-    const progress = dragProgress - initialProgress.value
-    const clampedProgress = clamp(progress, -MAX_DRAG_PROGRESS, MAX_DRAG_PROGRESS)
-
-    if (clampedProgress > 0 && rightTransitionTimeline.value) {
-      rightTransitionTimeline.value.progress(Math.abs(clampedProgress))
-      if (leftTransitionTimeline.value) {
-        leftTransitionTimeline.value.progress(0)
-      }
-    } else if (clampedProgress < 0 && leftTransitionTimeline.value) {
-      leftTransitionTimeline.value.progress(Math.abs(clampedProgress))
-      if (rightTransitionTimeline.value) {
-        rightTransitionTimeline.value.progress(0)
-      }
-    } else if (clampedProgress === 0) {
-      if (leftTransitionTimeline.value) leftTransitionTimeline.value.progress(0)
-      if (rightTransitionTimeline.value) rightTransitionTimeline.value.progress(0)
-    }
-  }
-}
-
-const handleDragEnd = (event) => {
-  if (!isDragging.value) return
-
-  if (hasDragMovement.value) {
-    event.preventDefault()
-  }
-
-  if (isSwitchingImage.value) {
-    isDragging.value = false
-    setTimeout(() => (hasDragMovement.value = false), 0)
-    initialProgress.value = 0
-    dragStartPosition.value = 0
-    activeTimelineOnInterrupt.value = null
-    setTimeout(() => (isSwitchingImage.value = false), 0)
-    return
-  }
-
-  if (!leftTransitionTimeline.value && !rightTransitionTimeline.value) {
-    isDragging.value = false
-    setTimeout(() => (hasDragMovement.value = false), 0)
-    activeTimelineOnInterrupt.value = null
-    return
-  }
-
-  const progress = slideProgress.value
-  const targetTimeline = progress > 0 ? rightTransitionTimeline.value : leftTransitionTimeline.value
-
-  if (Math.abs(progress) >= 0.1) {
-    isSwitchingImage.value = true
-    targetTimeline?.play()
-  } else {
-    isSwitchingImage.value = true
-    targetTimeline?.reverse()
-  }
-
-  isDragging.value = false
-  setTimeout(() => (hasDragMovement.value = false), 0)
-  initialProgress.value = 0
-  dragStartPosition.value = 0
-  activeTimelineOnInterrupt.value = null
-}
-
 const handleWindowKeyDown = (event) => {
   if (event.key === "Escape") {
     event.preventDefault()
@@ -1629,7 +1467,6 @@ onMounted(async () => {
     }
 
     isAnimating.value = false
-    console.log(collectionData.value)
     nextTick(() => showImage(true))
   }
 })
@@ -1753,7 +1590,6 @@ onUnmounted(() => {
     <p>Left timeline: {{ leftTransitionTimeline ? "exists" : "null" }}</p>
     <p>Right timeline: {{ rightTransitionTimeline ? "exists" : "null" }}</p>
     <p>Slide progress: {{ slideProgress.toFixed(3) }}</p>
-    <p>Initial progress: {{ initialProgress.toFixed(3) }}</p>
   </div>
 </template>
 
