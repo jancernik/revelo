@@ -2,7 +2,7 @@ import { useDevice } from "#src/composables/useDevice"
 import { useSettings } from "#src/composables/useSettings"
 import { gsap } from "gsap"
 
-const TARGET_FPS = 60
+const TARGET_FPS = 75
 const DETECT_SAMPLES = 20
 const MONITOR_SAMPLES = 10
 const CHANGE_THRESHOLD = 0.3

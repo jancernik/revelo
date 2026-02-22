@@ -64,7 +64,7 @@ replaceLensNames:
   default: []
 
 capFrameRate:
-  description: Cap frame rate to 60fps for mobile/touch-first devices
+  description: Limit the frame rate on mobile devices
   category: Interface
   type: toggle
   default: true
