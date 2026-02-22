@@ -2,11 +2,11 @@
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
+import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 import { useDevice } from "#src/composables/useDevice"
 import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
-import { useSettings } from "#src/composables/useSettings"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 import {
@@ -49,22 +49,11 @@ const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
-const TARGET_FPS = 60 // Target frame rate when capping is enabled
-const REFRESH_RATE_DETECT_SAMPLES = 20 // Frames to sample for initial refresh rate detection
-const REFRESH_RATE_MONITOR_SAMPLES = 10 // Frames to sample when monitoring for refresh rate changes
-const REFRESH_RATE_CHANGE_THRESHOLD = 0.3 // Percentage change that triggers recalibration
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
 let lastDragTimestamp = 0
-let detectedRefreshRate = 0
-let refreshRateDetected = false
-let frameSkipRatio = 1
-let frameCounter = 0
-let refreshRateFrameTimes = []
-let monitorFrameTimes = []
-let lastDetectedMedianFrameTime = 0
 let zoomAnimationEndTimestamp = 0
 let zoomAnimationStartTimestamp = 0
 let scrollPosition = 0
@@ -127,7 +116,7 @@ const {
 } = useMenu()
 const { dialogState } = useDialog()
 const { isMobile, isTouchPrimary } = useDevice()
-const { settings } = useSettings()
+const frameRateAdapter = useAdaptiveFrameRate()
 const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
@@ -798,69 +787,15 @@ const isRenderLoopIdle = () => {
 const renderFrame = (timestamp) => {
   renderLoopId = requestAnimationFrame(renderFrame)
 
-  const nativeFrameTime = timestamp - (lastFrameTimestamp || timestamp)
-  let shouldSkipRender = false
-
-  if (settings.value.capFrameRate && isTouchPrimary.value) {
-    if (nativeFrameTime > 0 && nativeFrameTime < 50) {
-      if (!refreshRateDetected) {
-        refreshRateFrameTimes.push(nativeFrameTime)
-      } else {
-        monitorFrameTimes.push(nativeFrameTime)
-        if (monitorFrameTimes.length > REFRESH_RATE_MONITOR_SAMPLES) {
-          monitorFrameTimes.shift()
-        }
-      }
-    }
-
-    if (!refreshRateDetected) {
-      if (refreshRateFrameTimes.length >= REFRESH_RATE_DETECT_SAMPLES) {
-        const sorted = [...refreshRateFrameTimes].sort((a, b) => a - b)
-        const medianFrameTime = sorted[Math.floor(sorted.length / 2)]
-        lastDetectedMedianFrameTime = medianFrameTime
-        detectedRefreshRate = Math.round(1000 / medianFrameTime)
-        frameSkipRatio = Math.max(1, Math.round(detectedRefreshRate / TARGET_FPS))
-        refreshRateDetected = true
-      }
-
-      frameCounter++
-      if (frameCounter % 2 !== 0) {
-        shouldSkipRender = true
-      }
-    } else {
-      if (monitorFrameTimes.length >= REFRESH_RATE_MONITOR_SAMPLES) {
-        const sorted = [...monitorFrameTimes].sort((a, b) => a - b)
-        const currentMedianFrameTime = sorted[Math.floor(sorted.length / 2)]
-        const change =
-          Math.abs(currentMedianFrameTime - lastDetectedMedianFrameTime) /
-          lastDetectedMedianFrameTime
-
-        if (change > REFRESH_RATE_CHANGE_THRESHOLD) {
-          lastDetectedMedianFrameTime = currentMedianFrameTime
-          detectedRefreshRate = Math.round(1000 / currentMedianFrameTime)
-          frameSkipRatio = Math.max(1, Math.round(detectedRefreshRate / TARGET_FPS))
-          frameCounter = 0
-          monitorFrameTimes = []
-        }
-      }
-
-      if (frameSkipRatio > 1) {
-        frameCounter++
-        if (frameCounter % frameSkipRatio !== 0) {
-          shouldSkipRender = true
-        }
-      }
-    }
-  }
-
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
-  lastFrameTimestamp = timestamp
   updateVelocity(deltaTime)
 
-  if (shouldSkipRender) {
+  if (frameRateAdapter.shouldSkipFrame(timestamp, lastFrameTimestamp || timestamp)) {
+    lastFrameTimestamp = timestamp
     return
   }
 
+  lastFrameTimestamp = timestamp
   updateImagePositions()
   updateZoomTransitionState(timestamp)
 
@@ -933,6 +868,16 @@ const handleTinyImageLoad = (imageId) => {
   loadedTinyImageIds.value.add(imageId)
 }
 
+const applyScrollImpulse = (delta, impulseMultiplier) => {
+  scrollPosition = getBoundedScrollPosition(scrollPosition + delta / resizeFactor.value)
+  velocity.value = clamp(
+    velocity.value + (delta / resizeFactor.value) * impulseMultiplier,
+    -MAX_SPEED,
+    MAX_SPEED
+  )
+  startRenderLoop()
+}
+
 const handleWheel = (event) => {
   event.preventDefault?.()
 
@@ -950,15 +895,7 @@ const handleWheel = (event) => {
   }
 
   const clampedDelta = clamp(deltaY, -MAX_SCROLL_DELTA, MAX_SCROLL_DELTA)
-  scrollPosition -= clampedDelta / resizeFactor.value
-  const newScrollPosition = scrollPosition - clampedDelta / resizeFactor.value
-  scrollPosition = getBoundedScrollPosition(newScrollPosition)
-  velocity.value += clamp(
-    (-clampedDelta / resizeFactor.value) * WHEEL_IMPULSE,
-    -MAX_SPEED,
-    MAX_SPEED
-  )
-  startRenderLoop()
+  applyScrollImpulse(-clampedDelta, WHEEL_IMPULSE)
 }
 
 const handleDragStart = (event) => {
@@ -1045,13 +982,7 @@ const handleKeyDown = (event) => {
       }
 
       const scrollDelta = event.shiftKey ? windowHeight.value : -windowHeight.value * 0.6
-      scrollPosition += scrollDelta / resizeFactor.value
-      velocity.value += clamp(
-        (scrollDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
-        -MAX_SPEED,
-        MAX_SPEED
-      )
-      startRenderLoop()
+      applyScrollImpulse(scrollDelta, KEYBOARD_PAGE_IMPULSE)
       break
     }
 
@@ -1079,14 +1010,7 @@ const handleKeyDown = (event) => {
         selectImageVertically(1)
         break
       }
-      const downDelta = -windowHeight.value * 0.2
-      scrollPosition += downDelta / resizeFactor.value
-      velocity.value += clamp(
-        (downDelta / resizeFactor.value) * KEYBOARD_ARROW_IMPULSE,
-        -MAX_SPEED,
-        MAX_SPEED
-      )
-      startRenderLoop()
+      applyScrollImpulse(-windowHeight.value * 0.2, KEYBOARD_ARROW_IMPULSE)
       break
     }
 
@@ -1114,14 +1038,7 @@ const handleKeyDown = (event) => {
         selectImageVertically(-1)
         break
       }
-      const upDelta = windowHeight.value * 0.2
-      scrollPosition += upDelta / resizeFactor.value
-      velocity.value += clamp(
-        (upDelta / resizeFactor.value) * KEYBOARD_ARROW_IMPULSE,
-        -MAX_SPEED,
-        MAX_SPEED
-      )
-      startRenderLoop()
+      applyScrollImpulse(windowHeight.value * 0.2, KEYBOARD_ARROW_IMPULSE)
       break
     }
   }
@@ -1149,28 +1066,14 @@ const handleWindowKeyDown = (event) => {
     case "PageDown": {
       event.preventDefault()
       if (isScrollPaused.value) break
-      const pageDownDelta = -windowHeight.value * 0.6
-      scrollPosition += pageDownDelta / resizeFactor.value
-      velocity.value += clamp(
-        (pageDownDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
-        -MAX_SPEED,
-        MAX_SPEED
-      )
-      startRenderLoop()
+      applyScrollImpulse(-windowHeight.value * 0.6, KEYBOARD_PAGE_IMPULSE)
       break
     }
 
     case "PageUp": {
       event.preventDefault()
       if (isScrollPaused.value) break
-      const pageUpDelta = windowHeight.value * 0.6
-      scrollPosition += pageUpDelta / resizeFactor.value
-      velocity.value += clamp(
-        (pageUpDelta / resizeFactor.value) * KEYBOARD_PAGE_IMPULSE,
-        -MAX_SPEED,
-        MAX_SPEED
-      )
-      startRenderLoop()
+      applyScrollImpulse(windowHeight.value * 0.6, KEYBOARD_PAGE_IMPULSE)
       break
     }
 
@@ -1273,9 +1176,7 @@ onMounted(() => {
   window.addEventListener("keydown", handleWindowKeyDown)
   window.addEventListener("pointerdown", handleWindowPointerDown)
 
-  if (settings.value.capFrameRate && isTouchPrimary.value) {
-    gsap.ticker.fps(60)
-  }
+  frameRateAdapter.init()
 
   if (props.continuousScroll) {
     startAutoScroll()

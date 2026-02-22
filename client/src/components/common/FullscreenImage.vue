@@ -2,12 +2,12 @@
 import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
+import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 import { useDevice } from "#src/composables/useDevice"
 import { useDragNavigation } from "#src/composables/useDragNavigation"
 import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
-import { useSettings } from "#src/composables/useSettings"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
@@ -60,8 +60,8 @@ const {
 const router = useRouter()
 const collectionsStore = useCollectionsStore()
 const { hide: hideMenu } = useMenu()
-const { isMobile, isTouchPrimary } = useDevice()
-const { settings } = useSettings()
+const { isMobile } = useDevice()
+const frameRateAdapter = useAdaptiveFrameRate()
 
 const collectionData = ref(null)
 const metadataVisible = ref(false)
@@ -1457,9 +1457,7 @@ onMounted(async () => {
   window.addEventListener("keydown", handleWindowKeyDown)
   gsap.registerPlugin(Flip)
 
-  if (settings.value.capFrameRate && isTouchPrimary.value) {
-    gsap.ticker.fps(60)
-  }
+  frameRateAdapter.init()
 
   if (imageData.value) {
     if (imageData.value.collectionId && !collectionData.value) {

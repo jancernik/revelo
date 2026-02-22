@@ -1,3 +1,4 @@
+import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 import { clamp } from "#src/utils/helpers"
 import { ref } from "vue"
 
@@ -23,6 +24,9 @@ export function useDragNavigation({
   const initialProgress = ref(0)
   const activeTimelineOnInterrupt = ref(null)
   const isSwitchingImage = ref(false)
+
+  const frameRateAdapter = useAdaptiveFrameRate()
+  let lastDragTimestamp = 0
 
   const resetDragState = () => {
     isDragging.value = false
@@ -88,6 +92,13 @@ export function useDragNavigation({
     if (hasDragMovement.value) event.preventDefault()
     if (!hasDragMovement.value) return
     if (isSwitchingImage.value) return
+
+    if (frameRateAdapter.shouldSkipFrame(event.timeStamp, lastDragTimestamp)) {
+      lastDragTimestamp = event.timeStamp
+      return
+    }
+
+    lastDragTimestamp = event.timeStamp
 
     const dragProgress = deltaX / (windowWidth.value / 1.5)
 
