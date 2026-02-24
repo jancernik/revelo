@@ -27,18 +27,24 @@ const showFooter = computed(() => footer.actions.length > 0)
 <style lang="scss">
 .dashboard-footer {
   @include flex(row, flex-end, center);
-  padding: var(--spacing-5) var(--spacing-8);
+  padding: var(--spacing-4) var(--spacing-5);
   background-color: var(--background);
   border-top: 1px solid var(--border);
-  gap: var(--spacing-6);
+  gap: var(--spacing-3);
   height: 4.5rem;
   position: sticky;
   bottom: 0;
   z-index: 400;
+
   .actions {
     @include flex(row, flex-end, center);
     gap: var(--spacing-3);
     flex-shrink: 0;
+  }
+
+  @include breakpoint("lg") {
+    padding: var(--spacing-5) var(--spacing-8);
+    gap: var(--spacing-6);
   }
 }
 </style>

@@ -117,9 +117,25 @@ onUnmounted(resetHeader)
   @include flex-center;
   flex-direction: column;
   gap: var(--spacing-2);
+
   .tasks-content {
-    @include flex-center;
+    @include flex-center(column);
+    width: 100%;
     gap: var(--spacing-2);
+
+    button {
+      width: 100%;
+    }
+
+    @include breakpoint("md") {
+      flex-direction: row;
+      flex-wrap: wrap;
+      width: auto;
+
+      button {
+        width: auto;
+      }
+    }
   }
 }
 </style>

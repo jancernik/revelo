@@ -12,6 +12,10 @@ defineProps({
   icon: {
     default: "",
     type: String
+  },
+  iconOnly: {
+    default: false,
+    type: Boolean
   }
 })
 </script>
@@ -19,7 +23,7 @@ defineProps({
 <template>
   <button :class="['button', `color-${color}`]" v-bind="$attrs">
     <Icon v-if="icon" :size="16" :name="icon" />
-    <span v-if="$slots.default" class="content">
+    <span v-if="$slots.default && !iconOnly" class="content">
       <slot></slot>
     </span>
   </button>

@@ -1,14 +1,24 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useWindowSize } from "#src/composables/useWindowSize"
 import { useAuthStore } from "#src/stores/auth"
-import { reactive } from "vue"
+import { computed, reactive, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-const { resetSelection } = useDashboardLayout()
+const LG_BREAKPOINT = 992
+
+const { closeMobileMenu, mobileMenu, resetSelection } = useDashboardLayout()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value < LG_BREAKPOINT)
+
+watch(() => route.path, closeMobileMenu)
+watch(isMobile, (mobile) => {
+  if (!mobile) closeMobileMenu()
+})
 
 const sidebar = reactive({
   bottom: [
@@ -83,7 +93,10 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <aside class="dashboard-sidebar">
+  <Transition name="sidebar-backdrop">
+    <div v-if="mobileMenu.isOpen" class="sidebar-backdrop" @click="closeMobileMenu" />
+  </Transition>
+  <aside class="dashboard-sidebar" :class="{ 'is-open': mobileMenu.isOpen }">
     <div class="sidebar-content">
       <ul class="top">
         <li v-for="item in sidebar.top" :key="item.key" :class="{ active: isActive(item.path) }">
@@ -193,43 +206,36 @@ const isActive = (path) => {
     }
   }
 
-  @media (max-width: 991px) {
-    position: relative;
-    width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
 
-    .sidebar-content {
-      flex-direction: row;
-      align-items: center;
-      height: auto;
-    }
+  &.is-open {
+    transform: translateX(0);
+    box-shadow: 0.5rem 0 2rem rgba(0, 0, 0, 0.15);
+  }
 
-    .top {
-      flex: 1;
-      flex-direction: row;
-      padding: var(--spacing-4);
-    }
+  @include breakpoint("lg") {
+    transform: none;
+    transition: none;
+    box-shadow: none;
+  }
+}
 
-    .bottom {
-      flex-direction: row;
-      padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) 0;
-      gap: var(--spacing-2);
-    }
+.sidebar-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: z(overlay);
+  backdrop-filter: blur(2px);
 
-    .bottom {
-      border-top: none;
-      border-left: 1px solid var(--border);
-      margin-top: 0;
-      margin-left: var(--spacing-2);
-    }
+  &.sidebar-backdrop-enter-active,
+  &.sidebar-backdrop-leave-active {
+    transition: opacity 0.3s ease-in-out;
+  }
 
-    button span {
-      @media (max-width: 640px) {
-        display: none;
-      }
-    }
+  &.sidebar-backdrop-enter-from,
+  &.sidebar-backdrop-leave-to {
+    opacity: 0;
   }
 }
 </style>

@@ -242,6 +242,7 @@ onUnmounted(resetHeader)
 
     &.stats {
       flex-direction: row;
+      flex-wrap: wrap;
       > div {
         p {
           color: var(--muted-foreground);
@@ -257,27 +258,31 @@ onUnmounted(resetHeader)
         background-color: var(--secondary);
         gap: var(--spacing-1);
         padding: var(--spacing-4);
-        width: 100%;
+        flex: 1 0 calc(50% - var(--spacing-2));
+
+        @include breakpoint("md") {
+          flex: 1;
+        }
       }
     }
   }
 
   @include flex(column, stretch, flex-start);
-  gap: var(--spacing-10);
+  gap: var(--spacing-6);
 
   > * {
     &:not(:first-child) {
       border-top: 1px solid var(--border);
-      padding-top: var(--spacing-10);
+      padding-top: var(--spacing-6);
     }
   }
 
-  @include breakpoint("md") {
-    gap: var(--spacing-6);
+  @include breakpoint("lg") {
+    gap: var(--spacing-10);
 
     > * {
       &:not(:first-child) {
-        padding-top: var(--spacing-6);
+        padding-top: var(--spacing-10);
       }
     }
   }

@@ -15,6 +15,8 @@ const selection = reactive({
   items: 0
 })
 
+const mobileMenu = reactive({ isOpen: false })
+
 export function useDashboardLayout() {
   const setHeader = (config) => {
     Object.assign(header, config)
@@ -55,9 +57,19 @@ export function useDashboardLayout() {
     resetSelection()
   }
 
+  const toggleMobileMenu = () => {
+    mobileMenu.isOpen = !mobileMenu.isOpen
+  }
+
+  const closeMobileMenu = () => {
+    mobileMenu.isOpen = false
+  }
+
   return {
+    closeMobileMenu,
     footer: readonly(footer),
     header: readonly(header),
+    mobileMenu: readonly(mobileMenu),
     reset,
     resetFooter,
     resetHeader,
@@ -65,6 +77,7 @@ export function useDashboardLayout() {
     selection: readonly(selection),
     setFooter,
     setHeader,
-    setSelection
+    setSelection,
+    toggleMobileMenu
   }
 }

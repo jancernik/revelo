@@ -305,7 +305,6 @@ onUnmounted(reset)
 <style lang="scss">
 .settings {
   @include fill-parent;
-  padding: var(--spacing-6);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -314,8 +313,11 @@ onUnmounted(reset)
     @include flex(column, center);
     flex: 1;
     overflow-y: auto;
-    margin-bottom: var(--spacing-6);
-    gap: var(--spacing-6);
+    gap: var(--spacing-4);
+
+    @include breakpoint("md") {
+      gap: var(--spacing-6);
+    }
 
     .section {
       max-width: 40rem;

@@ -30,7 +30,7 @@ import Sidebar from "#src/components/dashboard/Sidebar.vue"
 
     .dashboard-content {
       flex: 1;
-      padding: var(--spacing-6) var(--spacing-8);
+      padding: var(--spacing-4);
       overflow-y: auto;
       @include hide-scrollbar;
     }
@@ -40,17 +40,15 @@ import Sidebar from "#src/components/dashboard/Sidebar.vue"
         padding: var(--spacing-4) var(--spacing-6);
       }
     }
-  }
 
-  @media (max-width: 991px) {
-    flex-direction: column;
-
-    .dashboard-main {
-      margin-left: 0;
+    @include breakpoint("lg") {
+      .dashboard-content {
+        padding: var(--spacing-6) var(--spacing-8);
+      }
     }
   }
 
-  @media (min-width: 992px) {
+  @include breakpoint("lg") {
     .dashboard-main {
       margin-left: 16rem;
     }

@@ -129,6 +129,7 @@ onUnmounted(resetHeader)
   .image-content {
     @include fill-parent;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     gap: var(--spacing-8);
 
@@ -151,14 +152,14 @@ onUnmounted(resetHeader)
 
     .image-metadata {
       flex: 1;
-      width: max-content;
+      width: 100%;
     }
 
-    @media (max-width: 768px) {
-      flex-direction: column;
+    @include breakpoint("md") {
+      flex-direction: row;
 
       .image-metadata {
-        width: 100%;
+        width: max-content;
       }
     }
   }
