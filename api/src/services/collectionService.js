@@ -1,7 +1,7 @@
 import { NotFoundError } from "#src/core/errors.js"
 import { ImagesTable } from "#src/database/schema.js"
 import Collection from "#src/models/Collection.js"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 
 export const createCollection = async (data) => {
   const collectionData = {
@@ -55,6 +55,18 @@ export const deleteCollection = async (id) => {
       .where(eq(ImagesTable.collectionId, id))
 
     await tx.delete(Collection.table).where(eq(Collection.table.id, id))
+    return true
+  })
+}
+
+export const bulkDeleteCollections = async (ids) => {
+  return await Collection.db.transaction(async (tx) => {
+    await tx
+      .update(ImagesTable)
+      .set({ collectionId: null, collectionOrder: null })
+      .where(inArray(ImagesTable.collectionId, ids))
+
+    await tx.delete(Collection.table).where(inArray(Collection.table.id, ids))
     return true
   })
 }

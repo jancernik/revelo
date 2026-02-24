@@ -55,6 +55,19 @@ export const deleteImageSchemas = {
   })
 }
 
+export const bulkDeleteImagesSchemas = {
+  body: z.object({
+    ids: z.array(definedSchema).min(1, "At least one image ID is required")
+  })
+}
+
+export const bulkUpdateMetadataSchemas = {
+  body: z.object({
+    ids: z.array(definedSchema).min(1, "At least one image ID is required"),
+    metadata: metadataSchema
+  })
+}
+
 export const searchSchemas = {
   query: z.object({
     limit: limit.optional(),

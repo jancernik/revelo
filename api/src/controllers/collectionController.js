@@ -21,6 +21,16 @@ export const updateCollection = async (req, res) => {
   })
 }
 
+export const bulkDeleteCollections = async (req, res) => {
+  const { ids } = req.body
+  await collectionService.bulkDeleteCollections(ids)
+
+  res.status(200).json({
+    data: null,
+    status: "success"
+  })
+}
+
 export const deleteCollection = async (req, res) => {
   const { id } = req.params
   await collectionService.deleteCollection(id)

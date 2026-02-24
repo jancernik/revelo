@@ -8,7 +8,7 @@ import {
   generateTextEmbedding
 } from "#src/services/aiService.js"
 import storageManager from "#src/storage/storageManager.js"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
 import path from "path"
@@ -114,13 +114,7 @@ export const extractMetadata = async (filePath, options = {}) => {
   return applyMetadataReplacements(metadata, replaceCameraNames, replaceLensNames)
 }
 
-export const updateImageMetadata = async (id, metadata) => {
-  const image = await Image.findByIdWithVersions(id)
-
-  if (!image) {
-    throw new NotFoundError("Image not found")
-  }
-
+const buildMetadataUpdate = (metadata) => {
   const updateData = {}
 
   if (metadata.iso !== undefined) updateData.iso = metadata.iso ? parseInt(metadata.iso, 10) : null
@@ -132,9 +126,19 @@ export const updateImageMetadata = async (id, metadata) => {
   if (metadata.camera !== undefined) updateData.camera = metadata.camera
   if (metadata.comment !== undefined) updateData.comment = metadata.comment
   if (metadata.lens !== undefined) updateData.lens = metadata.lens
-  if (metadata.date !== undefined) {
-    updateData.date = metadata.date ? new Date(metadata.date) : null
+  if (metadata.date !== undefined) updateData.date = metadata.date ? new Date(metadata.date) : null
+
+  return updateData
+}
+
+export const updateImageMetadata = async (id, metadata) => {
+  const image = await Image.findByIdWithVersions(id)
+
+  if (!image) {
+    throw new NotFoundError("Image not found")
   }
+
+  const updateData = buildMetadataUpdate(metadata)
 
   const result = await Image.db
     .update(Image.table)
@@ -195,6 +199,26 @@ export const deleteImage = async (id) => {
   }
 
   return true
+}
+
+export const deleteImages = async (ids) => {
+  await Promise.all(
+    ids.map((id) =>
+      deleteImage(id).catch((error) => {
+        if (!(error instanceof NotFoundError)) throw error
+      })
+    )
+  )
+  return true
+}
+
+export const bulkUpdateImageMetadata = async (ids, metadata) => {
+  const updateData = buildMetadataUpdate(metadata)
+
+  if (Object.keys(updateData).length === 0) return []
+
+  await Image.db.update(Image.table).set(updateData).where(inArray(Image.table.id, ids))
+  return Image.findAllWithVersions({ where: inArray(Image.table.id, ids) })
 }
 
 export const fetchByIdWithVersions = async (id) => {

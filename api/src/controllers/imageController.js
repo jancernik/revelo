@@ -126,6 +126,26 @@ export const deleteImage = async (req, res) => {
   })
 }
 
+export const bulkDeleteImages = async (req, res) => {
+  const { ids } = req.body
+  await imageService.deleteImages(ids)
+
+  res.status(200).json({
+    data: null,
+    status: "success"
+  })
+}
+
+export const bulkUpdateMetadata = async (req, res) => {
+  const { ids, metadata } = req.body
+  const images = await imageService.bulkUpdateImageMetadata(ids, metadata)
+
+  res.status(200).json({
+    data: { images },
+    status: "success"
+  })
+}
+
 export const search = async (req, res) => {
   const { limit, offset, text } = req.parsedQuery
 

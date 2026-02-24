@@ -380,4 +380,197 @@ describe("Image Endpoints", () => {
       expect(response.body.status).toBe("fail")
     })
   })
+
+  describe("DELETE /images (bulk delete)", () => {
+    it("should delete multiple images", async () => {
+      const images = await Promise.all([
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions()
+      ])
+      const ids = images.map((i) => i.id)
+
+      const response = await request(api)
+        .delete("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids })
+        .expect(200)
+
+      expect(response.body.status).toBe("success")
+      expect(response.body.data).toBeNull()
+
+      for (const id of ids) {
+        await request(api).get(`/images/${id}`).expect(404)
+      }
+    })
+
+    it("should delete a single image via bulk endpoint", async () => {
+      const image = await createImageWithVersions()
+
+      await request(api)
+        .delete("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image.id] })
+        .expect(200)
+
+      await request(api).get(`/images/${image.id}`).expect(404)
+    })
+
+    it("should not affect images not in the ids list", async () => {
+      const toDelete = await createImageWithVersions()
+      const toKeep = await createImageWithVersions()
+
+      await request(api)
+        .delete("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [toDelete.id] })
+        .expect(200)
+
+      const fetchResponse = await request(api).get(`/images/${toKeep.id}`).expect(200)
+      expect(fetchResponse.body.data.image.id).toBe(toKeep.id)
+    })
+
+    it("should return 400 when ids array is empty", async () => {
+      const response = await request(api)
+        .delete("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [] })
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 400 when ids field is missing", async () => {
+      const response = await request(api)
+        .delete("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({})
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api)
+        .delete("/images")
+        .send({ ids: [image.id] })
+        .expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
+
+  describe("PUT /images/metadata (bulk update)", () => {
+    it("should update metadata for multiple images", async () => {
+      const images = await Promise.all([
+        createImageWithVersions(),
+        createImageWithVersions(),
+        createImageWithVersions()
+      ])
+      const ids = images.map((i) => i.id)
+
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids, metadata: { camera: "Bulk Camera", iso: "1600" } })
+        .expect(200)
+
+      expect(response.body.status).toBe("success")
+      expect(Array.isArray(response.body.data.images)).toBe(true)
+      expect(response.body.data.images).toHaveLength(3)
+      response.body.data.images.forEach((img) => {
+        expect(img.camera).toBe("Bulk Camera")
+        expect(img.iso).toBe(1600)
+      })
+    })
+
+    it("should only update provided fields leaving others unchanged", async () => {
+      const image = await createImageWithVersions({
+        camera: "Original Camera",
+        lens: "Original Lens"
+      })
+      const id = image.id
+
+      await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [id], metadata: { camera: "New Camera" } })
+        .expect(200)
+
+      const fetchResponse = await request(api).get(`/images/${id}`).expect(200)
+      expect(fetchResponse.body.data.image.camera).toBe("New Camera")
+      expect(fetchResponse.body.data.image.lens).toBe("Original Lens")
+    })
+
+    it("should parse iso string to integer", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image.id], metadata: { iso: "3200" } })
+        .expect(200)
+
+      expect(response.body.data.images[0].iso).toBe(3200)
+    })
+
+    it("should set fields to null when passed as null", async () => {
+      const image = await createImageWithVersions({ camera: "Some Camera", lens: "Some Lens" })
+
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image.id], metadata: { camera: null, lens: null } })
+        .expect(200)
+
+      expect(response.body.data.images[0].camera).toBeNull()
+      expect(response.body.data.images[0].lens).toBeNull()
+    })
+
+    it("should return empty array when no metadata fields are provided", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image.id], metadata: {} })
+        .expect(200)
+
+      expect(response.body.status).toBe("success")
+      expect(response.body.data.images).toEqual([])
+    })
+
+    it("should return 400 when ids array is empty", async () => {
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [], metadata: { camera: "Test" } })
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 400 when ids field is missing", async () => {
+      const response = await request(api)
+        .put("/images/metadata")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ metadata: { camera: "Test" } })
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api)
+        .put("/images/metadata")
+        .send({ ids: [image.id], metadata: { camera: "Test" } })
+        .expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
 })
