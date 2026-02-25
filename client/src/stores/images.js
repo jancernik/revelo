@@ -142,6 +142,42 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
+  async function bulkRemove(ids) {
+    try {
+      await api.delete("/images", { data: { ids } })
+      images.value = images.value.filter((i) => !ids.includes(i.id))
+      ids.forEach((id) => collectionsStore.removeImageLocal(id))
+    } catch (error) {
+      showToast({
+        description: error.response?.data?.message || error.message,
+        title: "Error Deleting Images",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
+  async function bulkUpdateMetadata(ids, metadata) {
+    try {
+      const response = await api.put("/images/metadata", { ids, metadata })
+      const updatedImages = response.data?.data?.images || []
+
+      updatedImages.forEach((image) => {
+        updateLocal(image.id, image)
+        collectionsStore.updateImageLocal(image.id, image)
+      })
+
+      return updatedImages
+    } catch (error) {
+      showToast({
+        description: error.response?.data?.message || error.message,
+        title: "Error Updating Metadata",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
   const search = debounce(async (query) => {
     const text = query.toString().toLowerCase().trim()
     if (!text) {
@@ -191,6 +227,8 @@ export const useImagesStore = defineStore("images", () => {
   }
 
   return {
+    bulkRemove,
+    bulkUpdateMetadata,
     confirmUpload,
     error,
     fetch,

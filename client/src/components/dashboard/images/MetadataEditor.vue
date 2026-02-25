@@ -21,6 +21,10 @@ const props = defineProps({
     default: false,
     type: Boolean
   },
+  showPreview: {
+    default: true,
+    type: Boolean
+  },
   showResetButton: {
     default: false,
     type: Boolean
@@ -144,7 +148,7 @@ watch(
       </div>
     </div>
     <div class="metadata-editor-content">
-      <div class="image-preview">
+      <div v-if="showPreview" class="image-preview">
         <img :src="previewUrl" :alt="previewFilename" />
       </div>
       <div class="metadata-form">
@@ -264,38 +268,46 @@ watch(
   }
 
   .metadata-editor-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: var(--spacing-6);
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-6);
+    flex-direction: column;
 
     .image-preview {
       @include flex-center;
-      flex: 1;
-      min-width: 250px;
+      height: 200px;
+      background-color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      flex-shrink: 0;
+
+      @include breakpoint("md") {
+        height: 300px;
+      }
 
       img {
         max-width: 100%;
-        max-height: 300px;
+        max-height: 100%;
         object-fit: contain;
       }
     }
 
     .metadata-form {
-      flex: 2;
-      min-width: 300px;
+      padding: var(--spacing-4);
       display: flex;
       flex-direction: column;
       gap: var(--spacing-4);
 
+      @include breakpoint("md") {
+        padding: var(--spacing-5);
+      }
+
       .form-row {
         display: flex;
+        flex-wrap: wrap;
         gap: var(--spacing-4);
 
         .form-group {
           flex: 1;
+          min-width: 120px;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;

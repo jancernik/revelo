@@ -112,6 +112,20 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
+  async function bulkRemove(ids) {
+    try {
+      await api.delete("/collections", { data: { ids } })
+      collections.value = collections.value.filter((c) => !ids.includes(c.id))
+    } catch (error) {
+      showToast({
+        description: error.response?.data?.message || error.message,
+        title: "Error Deleting Collections",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
   async function addImages(id, imageIds) {
     try {
       const existingImageIds = await getImageIdsInCollection(id)
@@ -245,6 +259,7 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   return {
     addImages,
+    bulkRemove,
     collections,
     create,
     error,

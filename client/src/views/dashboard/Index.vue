@@ -2,13 +2,19 @@
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useDialog } from "#src/composables/useDialog"
+import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { useImagesStore } from "#src/stores/images"
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
+import { useRouter } from "vue-router"
 
 const commitHash = import.meta.env.VITE_COMMIT_HASH || "dev"
-const { resetHeader, setHeader, setSelection } = useDashboardLayout()
+const router = useRouter()
+const { reset, setHeader, setSelection } = useDashboardLayout()
+const { show: showDialog } = useDialog()
+const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 const collectionsStore = useCollectionsStore()
@@ -27,21 +33,63 @@ const handleSelectCollection = (collection) => {
 
 const handleEditCollection = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: edit single collection\n${collectionId}`)
+  router.push(`/dashboard/collections/${collectionId}/edit`)
 }
 
 const handleSelectCollectionImages = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: select collection images\n${collectionId}`)
+  router.push(`/dashboard/collections/${collectionId}/images`)
 }
 
 const handleDeleteCollection = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: delete single collection\n${collectionId}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await collectionsStore.remove(collectionId)
+            showToast({
+              description: "Collection deleted.",
+              title: "Collection Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: "This action cannot be undone.",
+    title: "Delete Collection"
+  })
 }
 
 const handleBulkDeleteCollections = (collectionIds) => {
-  window.alert(`NOT IMPLEMENTED: delete multiple collections\n${collectionIds.join("\n")}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await collectionsStore.bulkRemove(collectionIds)
+            showToast({
+              description: `Deleted ${collectionIds.length} collection${collectionIds.length !== 1 ? "s" : ""}.`,
+              title: "Collections Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: `Delete ${collectionIds.length} collection${collectionIds.length !== 1 ? "s" : ""}? This action cannot be undone.`,
+    title: "Delete Collections"
+  })
 }
 
 const handleSelectImage = (image) => {
@@ -54,24 +102,57 @@ const handleSelectImage = (image) => {
 
 const handleEditImage = (imageOrId) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
-  window.alert(`NOT IMPLEMENTED: edit single image\n${imageId}`)
+  router.push(`/dashboard/images/${imageId}/edit`)
 }
 
 const handleBulkEditImages = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: edit multiple images\n${imageIds.join("\n")}`)
-}
-
-const handleAddImagesToCollection = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: add images to collection\n${imageIds.join("\n")}`)
+  router.push({ name: "images-edit", query: { ids: imageIds.join(",") } })
 }
 
 const handleDeleteImage = (imageOrId) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
-  window.alert(`NOT IMPLEMENTED: delete single image\n${imageId}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await imagesStore.remove(imageId)
+            showToast({ description: "Image deleted.", title: "Image Deleted", type: "success" })
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: "This action cannot be undone.",
+    title: "Delete Image"
+  })
 }
 
 const handleBulkDeleteImages = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: delete multiple images\n${imageIds.join("\n")}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await imagesStore.bulkRemove(imageIds)
+            showToast({
+              description: `Deleted ${imageIds.length} image${imageIds.length !== 1 ? "s" : ""}.`,
+              title: "Images Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: `Delete ${imageIds.length} image${imageIds.length !== 1 ? "s" : ""}? This action cannot be undone.`,
+    title: "Delete Images"
+  })
 }
 
 const clearSelection = () => {
@@ -108,12 +189,6 @@ const baseImageActions = [
     key: "image-delete-bulk",
     onClick: () => handleBulkDeleteImages(selectedImagesIds.value),
     text: "Delete"
-  },
-  {
-    icon: "Plus",
-    key: "image-add-to-collection",
-    onClick: () => handleAddImagesToCollection(selectedImagesIds.value),
-    text: "Add to collection"
   }
 ]
 
@@ -177,7 +252,7 @@ watch(
 )
 
 onMounted(() => setHeader({ title: "Dashboard" }))
-onUnmounted(resetHeader)
+onUnmounted(reset)
 </script>
 
 <template>

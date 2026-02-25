@@ -130,10 +130,11 @@ onUnmounted(resetHeader)
     @include fill-parent;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: var(--spacing-8);
 
     .image-wrapper {
+      flex: 1;
+      min-width: 0;
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -150,16 +151,25 @@ onUnmounted(resetHeader)
       }
     }
 
-    .image-metadata {
-      flex: 1;
+    .metadata-wrapper {
       width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background-color: var(--background);
+      overflow: hidden;
+
+      .image-metadata {
+        padding: var(--spacing-4);
+      }
     }
 
     @include breakpoint("md") {
       flex-direction: row;
+      align-items: flex-start;
 
-      .image-metadata {
-        width: max-content;
+      .metadata-wrapper {
+        flex: 0 0 260px;
+        width: auto;
       }
     }
   }

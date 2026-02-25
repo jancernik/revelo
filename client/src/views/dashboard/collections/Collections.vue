@@ -1,13 +1,17 @@
 <script setup>
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useDialog } from "#src/composables/useDialog"
+import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
-const { resetHeader, setHeader, setSelection } = useDashboardLayout()
+const { reset, setHeader, setSelection } = useDashboardLayout()
+const { show: showDialog } = useDialog()
+const { show: showToast } = useToast()
 const collectionsStore = useCollectionsStore()
 const { collections } = storeToRefs(collectionsStore)
 
@@ -27,21 +31,63 @@ const handleSelectCollection = (collection) => {
 
 const handleEditCollection = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: edit single collection\n${collectionId}`)
+  router.push(`/dashboard/collections/${collectionId}/edit`)
 }
 
 const handleSelectCollectionImages = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: select collection images\n${collectionId}`)
+  router.push(`/dashboard/collections/${collectionId}/images`)
 }
 
 const handleDeleteCollection = (collectionOrId) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
-  window.alert(`NOT IMPLEMENTED: delete single collection\n${collectionId}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await collectionsStore.remove(collectionId)
+            showToast({
+              description: "Collection deleted.",
+              title: "Collection Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: "This action cannot be undone.",
+    title: "Delete Collection"
+  })
 }
 
 const handleBulkDeleteCollections = (collectionIds) => {
-  window.alert(`NOT IMPLEMENTED: delete multiple collections\n${collectionIds.join("\n")}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await collectionsStore.bulkRemove(collectionIds)
+            showToast({
+              description: `Deleted ${collectionIds.length} collection${collectionIds.length !== 1 ? "s" : ""}.`,
+              title: "Collections Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: `Delete ${collectionIds.length} collection${collectionIds.length !== 1 ? "s" : ""}? This action cannot be undone.`,
+    title: "Delete Collections"
+  })
 }
 
 const clearSelection = () => {
@@ -114,7 +160,7 @@ onMounted(() => {
   })
 })
 
-onUnmounted(resetHeader)
+onUnmounted(reset)
 </script>
 
 <template>

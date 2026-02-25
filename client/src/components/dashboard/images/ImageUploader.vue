@@ -173,7 +173,7 @@ defineExpose({
         <h3 class="title">Select images or drag and drop them here</h3>
         <h4 class="subtitle">JPEG and PNG, up to {{ maxUploadSize }}MB</h4>
       </div>
-      <Button icon="FolderOpen" @click="handleSelectImages"> Select Images </Button>
+      <Button icon="Plus" @click="handleSelectImages"> Select Images </Button>
     </div>
 
     <div v-else class="section">

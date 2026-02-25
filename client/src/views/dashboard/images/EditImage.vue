@@ -54,7 +54,7 @@ const loadImage = async () => {
   }
 }
 
-const handleSaveImage = async () => {
+const handleSave = async () => {
   try {
     saving.value = true
     await imagesStore.updateMetadata(props.id, metadata.value)
@@ -118,7 +118,7 @@ const setupLayout = () => {
         disabled: !hasChanges.value || saving.value,
         icon: "Save",
         key: "save",
-        onClick: handleSaveImage,
+        onClick: handleSave,
         text: "Save Changes"
       }
     ]
@@ -137,14 +137,24 @@ onUnmounted(reset)
 
 <template>
   <div class="edit-image">
-    <div v-if="image" class="edit-form">
-      <MetadataEditor
-        :initial-metadata="metadata"
-        :preview-url="regularImageVersion.path"
-        :show-header="false"
-        :show-reset-button="false"
-        @update="handleMetadataUpdate"
-      />
+    <div v-if="image" class="edit-layout">
+      <div class="image-preview">
+        <img
+          :src="regularImageVersion.path"
+          :alt="image.captions?.en"
+          :title="image.captions?.en"
+        />
+      </div>
+      <div class="edit-form">
+        <MetadataEditor
+          :initial-metadata="metadata"
+          :preview-url="regularImageVersion.path"
+          :show-header="false"
+          :show-preview="false"
+          :show-reset-button="false"
+          @update="handleMetadataUpdate"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -152,16 +162,52 @@ onUnmounted(reset)
 <style lang="scss">
 .edit-image {
   @include fill-parent;
-  display: flex;
-  justify-content: center;
+  padding: var(--spacing-4);
 
-  .edit-form {
-    padding: var(--spacing-8);
-    width: 100%;
-    max-width: 800px;
+  .edit-layout {
+    @include fill-parent;
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-5);
     height: fit-content;
+
+    @include breakpoint("md") {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--spacing-8);
+      height: auto;
+    }
+
+    .image-preview {
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+
+      @include breakpoint("md") {
+        flex: 1;
+        min-width: 0;
+        align-items: flex-start;
+      }
+
+      img {
+        max-width: 100%;
+        max-height: 220px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: var(--radius-lg);
+
+        @include breakpoint("md") {
+          max-height: calc(100vh - 10rem);
+        }
+      }
+    }
+
+    .edit-form {
+      @include breakpoint("md") {
+        flex: 0 0 320px;
+      }
+    }
   }
 }
 </style>

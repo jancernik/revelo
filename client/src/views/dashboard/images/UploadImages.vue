@@ -138,7 +138,7 @@ const setupUploadLayout = () => {
     actions: [
       {
         disabled: !canAddMoreFiles.value,
-        icon: "FolderOpen",
+        icon: "Plus",
         key: hasImages.value ? "add-more" : "select-images",
         onClick: () => imageUploader.value?.handleSelectImages(),
         text: hasImages.value ? "Add More" : "Select Images"
@@ -342,17 +342,32 @@ onUnmounted(reset)
     .split-view {
       @include fill-parent;
       display: flex;
-      gap: var(--spacing-6);
-      padding: var(--spacing-6);
+      flex-direction: column;
+      gap: var(--spacing-4);
+      padding: var(--spacing-4);
+      overflow-y: auto;
+
+      @include breakpoint("md") {
+        flex-direction: row;
+        gap: var(--spacing-6);
+        padding: var(--spacing-6);
+        overflow-y: visible;
+      }
 
       .image-list {
-        flex: 0 0 320px;
+        flex: 0 0 auto;
+        max-height: 240px;
         display: flex;
         flex-direction: column;
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         background-color: var(--background);
         padding: var(--spacing-4);
+
+        @include breakpoint("md") {
+          flex: 0 0 320px;
+          max-height: unset;
+        }
 
         .image-list-content {
           display: flex;

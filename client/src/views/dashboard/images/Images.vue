@@ -1,13 +1,17 @@
 <script setup>
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
+import { useDialog } from "#src/composables/useDialog"
+import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
-const { resetHeader, setHeader, setSelection } = useDashboardLayout()
+const { reset, setHeader, setSelection } = useDashboardLayout()
+const { show: showDialog } = useDialog()
+const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
@@ -27,24 +31,57 @@ const handleSelectImage = (image) => {
 
 const handleEditImage = (imageOrId) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
-  window.alert(`NOT IMPLEMENTED: edit single image\n${imageId}`)
+  router.push(`/dashboard/images/${imageId}/edit`)
 }
 
 const handleBulkEditImages = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: edit multiple images\n${imageIds.join("\n")}`)
-}
-
-const handleAddImagesToCollection = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: add images to collection\n${imageIds.join("\n")}`)
+  router.push({ name: "images-edit", query: { ids: imageIds.join(",") } })
 }
 
 const handleDeleteImage = (imageOrId) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
-  window.alert(`NOT IMPLEMENTED: delete single image\n${imageId}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await imagesStore.remove(imageId)
+            showToast({ description: "Image deleted.", title: "Image Deleted", type: "success" })
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: "This action cannot be undone.",
+    title: "Delete Image"
+  })
 }
 
 const handleBulkDeleteImages = (imageIds) => {
-  window.alert(`NOT IMPLEMENTED: delete multiple images\n${imageIds.join("\n")}`)
+  showDialog({
+    actions: [
+      {
+        callback: async () => {
+          try {
+            await imagesStore.bulkRemove(imageIds)
+            showToast({
+              description: `Deleted ${imageIds.length} image${imageIds.length !== 1 ? "s" : ""}.`,
+              title: "Images Deleted",
+              type: "success"
+            })
+            clearSelection()
+          } catch {
+            // error handled by store
+          }
+        },
+        name: "Delete"
+      }
+    ],
+    description: `Delete ${imageIds.length} image${imageIds.length !== 1 ? "s" : ""}? This action cannot be undone.`,
+    title: "Delete Images"
+  })
 }
 
 const clearSelection = () => {
@@ -80,12 +117,6 @@ const baseImageActions = [
     key: "image-delete-bulk",
     onClick: () => handleBulkDeleteImages(selectedImagesIds.value),
     text: "Delete"
-  },
-  {
-    icon: "Plus",
-    key: "image-add-to-collection",
-    onClick: () => handleAddImagesToCollection(selectedImagesIds.value),
-    text: "Add to collection"
   }
 ]
 
@@ -117,7 +148,7 @@ onMounted(() => {
   })
 })
 
-onUnmounted(resetHeader)
+onUnmounted(reset)
 </script>
 
 <template>

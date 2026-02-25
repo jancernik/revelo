@@ -7,6 +7,7 @@ import Collections from "#src/views/dashboard/collections/Collections.vue"
 import CreateOrEditCollection from "#src/views/dashboard/collections/CreateOrEditCollection.vue"
 import SelectCollectionImages from "#src/views/dashboard/collections/SelectCollectionImages.vue"
 import EditImage from "#src/views/dashboard/images/EditImage.vue"
+import EditImages from "#src/views/dashboard/images/EditImages.vue"
 import Image from "#src/views/dashboard/images/Image.vue"
 import Images from "#src/views/dashboard/images/Images.vue"
 import UploadImages from "#src/views/dashboard/images/UploadImages.vue"
@@ -76,6 +77,11 @@ const routes = [
             component: Images,
             name: "images-list",
             path: ""
+          },
+          {
+            component: EditImages,
+            name: "images-edit",
+            path: "edit"
           },
           {
             component: EditImage,
