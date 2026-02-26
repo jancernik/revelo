@@ -1,7 +1,8 @@
 <script setup>
 import Icon from "#src/components/common/Icon.vue"
+import { useSortableGrid } from "#src/composables/useSortableGrid"
 import { getThumbnailPath } from "#src/utils/helpers"
-import { computed } from "vue"
+import { computed, nextTick, onUnmounted, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
 
 const props = defineProps({
@@ -10,6 +11,10 @@ const props = defineProps({
     type: Boolean
   },
   allowRemove: {
+    default: false,
+    type: Boolean
+  },
+  allowReorder: {
     default: false,
     type: Boolean
   },
@@ -52,7 +57,32 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const emit = defineEmits(["select", "edit", "delete", "remove"])
+const emit = defineEmits(["select", "edit", "delete", "remove", "reorder"])
+
+const imageGrid = useTemplateRef("image-grid")
+const sortableGrid = useSortableGrid()
+
+const initReorder = async () => {
+  await nextTick()
+  if (imageGrid.value && props.images.length > 0) {
+    sortableGrid.init(imageGrid.value, props.images, (newImages) => {
+      emit("reorder", newImages)
+    })
+  }
+}
+
+watch(
+  () => props.allowReorder,
+  (value) => {
+    if (value) {
+      initReorder()
+    } else {
+      sortableGrid.cleanup()
+    }
+  }
+)
+
+onUnmounted(() => sortableGrid.cleanup())
 
 const displayedImages = computed(() => {
   return props.shortGrid ? props.images.slice(0, 5) : props.images
@@ -69,7 +99,11 @@ const openImage = (image) => {
 </script>
 
 <template>
-  <div class="dashboard-image-grid" :class="{ 'is-selecting': isSelecting }">
+  <div
+    ref="image-grid"
+    class="dashboard-image-grid"
+    :class="{ 'is-selecting': isSelecting, 'is-reordering': allowReorder }"
+  >
     <div
       v-for="image in displayedImages"
       :key="image.id"
@@ -182,6 +216,10 @@ const openImage = (image) => {
 
   &.is-selecting .select-button {
     opacity: 0.5;
+  }
+
+  &.is-reordering .image-container.clickable {
+    cursor: inherit;
   }
 
   .image-container {

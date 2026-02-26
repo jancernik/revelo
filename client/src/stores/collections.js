@@ -183,25 +183,35 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function setImages(id, imageIds) {
     try {
+      const collectionIndex = collections.value.findIndex((c) => c.id === id)
+      const existingImages = collections.value[collectionIndex]?.images || []
+      const removedImageIds = existingImages
+        .map((img) => img.id)
+        .filter((imageId) => !imageIds.includes(imageId))
+
       const response = await api.put(`/collections/${id}/images`, { imageIds })
       const collection = response.data?.data?.collection
 
-      const oldImageIds = await getImageIdsInCollection(id)
-      const removedImageIds = oldImageIds.filter((imageId) => !imageIds.includes(imageId))
-      const addedImageIds = imageIds.filter((imageId) => !oldImageIds.includes(imageId))
+      if (collectionIndex !== -1) {
+        const findImage = (imageId) =>
+          existingImages.find((img) => img.id === imageId) ||
+          imagesStore.images.find((img) => img.id === imageId)
 
-      const index = collections.value.findIndex((c) => c.id === id)
-      if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
+        collections.value[collectionIndex] = {
+          ...collections.value[collectionIndex],
+          ...collection,
+          images: imageIds
+            .map(findImage)
+            .filter(Boolean)
+            .map((img, order) => ({ ...img, collectionOrder: order }))
+        }
+      }
 
-      removedImageIds.forEach((id) => {
-        imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
+      removedImageIds.forEach((imageId) => {
+        imagesStore.updateLocal(imageId, { collectionId: null, collectionOrder: null })
       })
-
-      addedImageIds.forEach((imageId) => {
-        imagesStore.updateLocal(imageId, {
-          collectionId: id,
-          collectionOrder: imageIds.indexOf(imageId)
-        })
+      imageIds.forEach((imageId, order) => {
+        imagesStore.updateLocal(imageId, { collectionId: id, collectionOrder: order })
       })
 
       return collection

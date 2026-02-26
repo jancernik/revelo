@@ -23,6 +23,9 @@ const collectionsStore = useCollectionsStore()
 const selectedImagesIds = ref([])
 const collection = ref(null)
 const loading = ref(true)
+const reordering = ref(false)
+const pendingImages = ref([])
+const saving = ref(false)
 
 const handleSelectImage = (image) => {
   if (selectedImagesIds.value.includes(image.id)) {
@@ -76,30 +79,96 @@ const handleDelete = () => {
   })
 }
 
+const enableReorder = () => {
+  reordering.value = true
+  pendingImages.value = [...(collection.value?.images || [])]
+  clearSelection()
+  setupLayout()
+}
+
+const cancelReorder = () => {
+  reordering.value = false
+  pendingImages.value = []
+  setupLayout()
+}
+
+const saveOrder = async () => {
+  try {
+    saving.value = true
+    await collectionsStore.setImages(
+      props.id,
+      pendingImages.value.map((img) => img.id)
+    )
+    collection.value =
+      collectionsStore.collections.find((c) => c.id === props.id) || collection.value
+    showToast({ description: "Image order saved.", title: "Order Saved", type: "success" })
+  } catch {
+    // error handled by store
+  } finally {
+    saving.value = false
+    reordering.value = false
+    pendingImages.value = []
+    setupLayout()
+  }
+}
+
+const handleReorder = (newImages) => {
+  pendingImages.value = newImages
+}
+
 const setupLayout = () => {
-  setHeader({
-    actions: [
-      {
-        icon: "Pencil",
-        key: "edit",
-        onClick: () => router.push(`/dashboard/collections/${props.id}/edit`),
-        text: "Edit"
-      },
-      {
-        icon: "Grid",
-        key: "select-images",
-        onClick: () => router.push(`/dashboard/collections/${props.id}/images`),
-        text: "Select Images"
-      },
-      {
-        icon: "Trash",
-        key: "delete",
-        onClick: handleDelete,
-        text: "Delete"
-      }
-    ],
-    title: collection.value?.title || "Collection"
-  })
+  if (reordering.value) {
+    setHeader({
+      actions: [
+        {
+          color: "primary",
+          disabled: saving.value,
+          icon: "Save",
+          key: "save-order",
+          onClick: saveOrder,
+          text: "Save Order"
+        },
+        {
+          color: "secondary",
+          icon: "X",
+          key: "cancel-reorder",
+          onClick: cancelReorder,
+          text: "Cancel"
+        }
+      ],
+      title: collection.value?.title || "Collection"
+    })
+  } else {
+    setHeader({
+      actions: [
+        {
+          icon: "Pencil",
+          key: "edit",
+          onClick: () => router.push(`/dashboard/collections/${props.id}/edit`),
+          text: "Edit"
+        },
+        {
+          icon: "ArrowLeftRight",
+          key: "reorder",
+          onClick: enableReorder,
+          text: "Reorder"
+        },
+        {
+          icon: "Grid",
+          key: "select-images",
+          onClick: () => router.push(`/dashboard/collections/${props.id}/images`),
+          text: "Select Images"
+        },
+        {
+          icon: "Trash",
+          key: "delete",
+          onClick: handleDelete,
+          text: "Delete"
+        }
+      ],
+      title: collection.value?.title || "Collection"
+    })
+  }
 }
 
 const cancelSelectionAction = {
@@ -147,10 +216,12 @@ onUnmounted(resetHeader)
     <ImageGrid
       v-if="collection.images?.length"
       :images="collection.images"
-      :allow-select="true"
+      :allow-select="!reordering"
+      :allow-reorder="reordering"
       :show-actions="false"
       :selected-images-ids="selectedImagesIds"
       @select="handleSelectImage"
+      @reorder="handleReorder"
     />
 
     <div v-else class="empty-state">
