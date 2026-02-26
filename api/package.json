@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.994.0",
+    "@aws-sdk/client-s3": "^3.998.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -31,7 +31,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "2.0.2",
     "nodemailer": "^8.0.1",
-    "pg": "^8.18.0",
+    "pg": "^8.19.0",
     "postgres": "^3.4.8",
     "sharp": "^0.34.5",
     "uuid": "^13.0.0",
