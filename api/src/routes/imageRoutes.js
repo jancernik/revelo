@@ -1,8 +1,10 @@
 import {
   bulkDeleteImages,
+  bulkDownloadImages,
   bulkUpdateMetadata,
   confirmUpload,
   deleteImage,
+  downloadImage,
   fetchAll,
   fetchById,
   fetchTiny,
@@ -15,9 +17,11 @@ import { uploadImages } from "#src/middlewares/uploadMiddleware.js"
 import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
   bulkDeleteImagesSchemas,
+  bulkDownloadImagesSchemas,
   bulkUpdateMetadataSchemas,
   confirmUploadSchemas,
   deleteImageSchemas,
+  downloadImageSchemas,
   fetchAllSchemas,
   fetchByIdSchemas,
   searchSchemas,
@@ -32,6 +36,12 @@ router.post("/upload/confirm", auth.required(), validate(confirmUploadSchemas), 
 router.get("/images", validate(fetchAllSchemas), fetchAll)
 router.get("/tiny-images", fetchTiny)
 router.get("/images/search", validate(searchSchemas), search)
+router.post(
+  "/images/download",
+  auth.required(),
+  validate(bulkDownloadImagesSchemas),
+  bulkDownloadImages
+)
 router.delete("/images", auth.required(), validate(bulkDeleteImagesSchemas), bulkDeleteImages)
 router.put(
   "/images/metadata",
@@ -40,6 +50,7 @@ router.put(
   bulkUpdateMetadata
 )
 router.get("/images/:id", validate(fetchByIdSchemas), fetchById)
+router.get("/images/:id/download", auth.required(), validate(downloadImageSchemas), downloadImage)
 router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchemas), updateMetadata)
 router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage)
 

@@ -146,6 +146,30 @@ export const bulkUpdateMetadata = async (req, res) => {
   })
 }
 
+export const downloadImage = async (req, res) => {
+  const { id } = req.params
+  const { buffer, contentType, filename } = await imageService.downloadImage(id)
+
+  res.set({
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": buffer.length,
+    "Content-Type": contentType
+  })
+  res.send(buffer)
+}
+
+export const bulkDownloadImages = async (req, res) => {
+  const { ids } = req.body
+  const archive = await imageService.downloadImages(ids)
+
+  res.set({
+    "Content-Disposition": `attachment; filename="images-${Date.now()}.zip"`,
+    "Content-Type": "application/zip"
+  })
+  archive.pipe(res)
+  archive.finalize()
+}
+
 export const search = async (req, res) => {
   const { limit, offset, text } = req.parsedQuery
 

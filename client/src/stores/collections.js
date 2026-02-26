@@ -1,6 +1,7 @@
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images.js"
 import api from "#src/utils/api"
+import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
 import { defineStore } from "pinia"
 import { ref } from "vue"
 
@@ -225,6 +226,38 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
+  async function download(id) {
+    try {
+      const response = await api.get(`/collections/${id}/download`, { responseType: "blob" })
+      const filename =
+        getFilenameFromDisposition(response.headers["content-disposition"]) || "collection.zip"
+      triggerDownload(response.data, filename)
+    } catch (error) {
+      showToast({
+        description: error.message || "Failed to download collection.",
+        title: "Download Failed",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
+  async function bulkDownload(ids) {
+    try {
+      const response = await api.post("/collections/download", { ids }, { responseType: "blob" })
+      const filename =
+        getFilenameFromDisposition(response.headers["content-disposition"]) || "collections.zip"
+      triggerDownload(response.data, filename)
+    } catch (error) {
+      showToast({
+        description: error.message || "Failed to download collections.",
+        title: "Download Failed",
+        type: "error"
+      })
+      throw error
+    }
+  }
+
   async function getImageIdsInCollection(collectionOrId) {
     const collection =
       typeof collectionOrId === "object" ? collectionOrId : await fetch(collectionOrId)
@@ -269,9 +302,11 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   return {
     addImages,
+    bulkDownload,
     bulkRemove,
     collections,
     create,
+    download,
     error,
     fetch,
     fetchAll,

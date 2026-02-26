@@ -421,4 +421,139 @@ describe("Collection Endpoints", () => {
       expect(response.body.status).toBe("fail")
     })
   })
+
+  describe("GET /collections/:id/download", () => {
+    it("should return a ZIP archive named after the collection", async () => {
+      const collection = await createCollectionWithImages(2, { title: "My Collection" })
+
+      const response = await request(api)
+        .get(`/collections/${collection.id}/download`)
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.headers["content-disposition"]).toContain("My Collection.zip")
+      expect(response.body[0]).toBe(0x50)
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return a ZIP archive for a collection without images", async () => {
+      const collection = await createCollection({ title: "Empty" })
+
+      const response = await request(api)
+        .get(`/collections/${collection.id}/download`)
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.body[0]).toBe(0x50)
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return 404 for non-existent collection", async () => {
+      const response = await request(api)
+        .get("/collections/550e8400-e29b-41d4-a716-446655440000/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(404)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const collection = await createCollection()
+
+      const response = await request(api).get(`/collections/${collection.id}/download`).expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
+
+  describe("POST /collections/download (bulk download)", () => {
+    it("should return a ZIP archive with subfolders per collection", async () => {
+      const [col1, col2] = await Promise.all([
+        createCollectionWithImages(2, { title: "Collection A" }),
+        createCollectionWithImages(2, { title: "Collection B" })
+      ])
+
+      const response = await request(api)
+        .post("/collections/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [col1.id, col2.id] })
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.headers["content-disposition"]).toMatch(/\.zip"$/)
+      expect(response.body[0]).toBe(0x50)
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return a ZIP archive for a single collection", async () => {
+      const collection = await createCollectionWithImages(1)
+
+      const response = await request(api)
+        .post("/collections/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [collection.id] })
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.body[0]).toBe(0x50)
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return 400 when ids array is empty", async () => {
+      const response = await request(api)
+        .post("/collections/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [] })
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 400 when ids field is missing", async () => {
+      const response = await request(api)
+        .post("/collections/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({})
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const collection = await createCollection()
+
+      const response = await request(api)
+        .post("/collections/download")
+        .send({ ids: [collection.id] })
+        .expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
 })

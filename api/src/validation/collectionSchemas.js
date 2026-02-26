@@ -42,6 +42,18 @@ export const bulkDeleteCollectionsSchemas = {
   })
 }
 
+export const downloadCollectionSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const bulkDownloadCollectionsSchemas = {
+  body: z.object({
+    ids: z.array(definedSchema).min(1, "At least one collection ID is required")
+  })
+}
+
 export const setCollectionImagesSchemas = {
   body: z.object({
     imageIds: z.array(definedSchema).min(0, "Image IDs array is required")

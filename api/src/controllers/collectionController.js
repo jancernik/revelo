@@ -66,6 +66,30 @@ export const fetchCollectionById = async (req, res) => {
   })
 }
 
+export const downloadCollection = async (req, res) => {
+  const { id } = req.params
+  const { archive, filename } = await collectionService.downloadCollection(id)
+
+  res.set({
+    "Content-Disposition": `attachment; filename="${filename}.zip"`,
+    "Content-Type": "application/zip"
+  })
+  archive.pipe(res)
+  archive.finalize()
+}
+
+export const bulkDownloadCollections = async (req, res) => {
+  const { ids } = req.body
+  const archive = await collectionService.downloadCollections(ids)
+
+  res.set({
+    "Content-Disposition": `attachment; filename="collections-${Date.now()}.zip"`,
+    "Content-Type": "application/zip"
+  })
+  archive.pipe(res)
+  archive.finalize()
+}
+
 export const setCollectionImages = async (req, res) => {
   const { id } = req.params
   const { imageIds } = req.body

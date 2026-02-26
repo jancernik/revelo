@@ -1,5 +1,9 @@
 import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
-import { createImageWithVersions, createMockFile } from "#tests/helpers/imageHelpers.js"
+import {
+  createImageWithFile,
+  createImageWithVersions,
+  createMockFile
+} from "#tests/helpers/imageHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
 import request from "supertest"
 import { v4 as uuid } from "uuid"
@@ -60,6 +64,14 @@ describe("Image Endpoints", () => {
       expect(Array.isArray(response.body.data.images)).toBe(true)
       expect(response.body.data.images.length).toBe(3)
     })
+
+    it("should not expose originalFilename in the response", async () => {
+      await createImageWithVersions()
+
+      const response = await request(api).get("/images").expect(200)
+
+      expect(response.body.data.images[0].originalFilename).toBeUndefined()
+    })
   })
 
   describe("GET /tiny-images", () => {
@@ -85,6 +97,14 @@ describe("Image Endpoints", () => {
       expect(response.body.data.image.camera).toBe(image.camera)
       expect(Array.isArray(response.body.data.image.versions)).toBe(true)
       expect(response.body.data.image.versions.length).toBeGreaterThan(0)
+    })
+
+    it("should not expose originalFilename in the response", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api).get(`/images/${image.id}`).expect(200)
+
+      expect(response.body.data.image.originalFilename).toBeUndefined()
     })
 
     it("should return 404 for non-existent image", async () => {
@@ -568,6 +588,124 @@ describe("Image Endpoints", () => {
       const response = await request(api)
         .put("/images/metadata")
         .send({ ids: [image.id], metadata: { camera: "Test" } })
+        .expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
+
+  describe("GET /images/:id/download", () => {
+    it("should download an image file with correct headers", async () => {
+      const image = await createImageWithFile()
+
+      const response = await request(api)
+        .get(`/images/${image.id}/download`)
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(200)
+
+      expect(response.headers["content-type"]).toMatch(/image\//)
+      expect(response.headers["content-disposition"]).toMatch(/attachment/)
+      expect(response.headers["content-disposition"]).toContain(image.originalFilename)
+      expect(response.body).toBeTruthy()
+    })
+
+    it("should use originalFilename in Content-Disposition when available", async () => {
+      const image = await createImageWithFile({ originalFilename: "my-photo.jpg" })
+
+      const response = await request(api)
+        .get(`/images/${image.id}/download`)
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(200)
+
+      expect(response.headers["content-disposition"]).toContain("my-photo.jpg")
+    })
+
+    it("should return 404 for non-existent image", async () => {
+      const response = await request(api)
+        .get("/images/550e8400-e29b-41d4-a716-446655440000/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(404)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api).get(`/images/${image.id}/download`).expect(401)
+
+      expect(response.body.status).toBe("fail")
+    })
+  })
+
+  describe("POST /images/download (bulk download)", () => {
+    it("should return a ZIP archive for multiple images", async () => {
+      const [image1, image2] = await Promise.all([createImageWithFile(), createImageWithFile()])
+
+      const response = await request(api)
+        .post("/images/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image1.id, image2.id] })
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.headers["content-disposition"]).toMatch(/\.zip"$/)
+      expect(response.body[0]).toBe(0x50) // ZIP magic bytes: PK
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return a ZIP archive for a single image", async () => {
+      const image = await createImageWithFile()
+
+      const response = await request(api)
+        .post("/images/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [image.id] })
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks = []
+          res.on("data", (chunk) => chunks.push(chunk))
+          res.on("end", () => callback(null, Buffer.concat(chunks)))
+        })
+        .expect(200)
+
+      expect(response.headers["content-type"]).toContain("application/zip")
+      expect(response.body[0]).toBe(0x50)
+      expect(response.body[1]).toBe(0x4b)
+    })
+
+    it("should return 400 when ids array is empty", async () => {
+      const response = await request(api)
+        .post("/images/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({ ids: [] })
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 400 when ids field is missing", async () => {
+      const response = await request(api)
+        .post("/images/download")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .send({})
+        .expect(400)
+
+      expect(response.body.status).toBe("fail")
+    })
+
+    it("should return 401 for unauthenticated request", async () => {
+      const image = await createImageWithVersions()
+
+      const response = await request(api)
+        .post("/images/download")
+        .send({ ids: [image.id] })
         .expect(401)
 
       expect(response.body.status).toBe("fail")

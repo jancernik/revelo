@@ -27,6 +27,7 @@ export function createServer(options = {}) {
   app.use(
     cors({
       credentials: true,
+      // exposedHeaders: ["Content-Disposition"],console.log();
       origin: config.CLIENT_BASE_URL
     })
   )

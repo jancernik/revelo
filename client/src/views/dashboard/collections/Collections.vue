@@ -2,6 +2,7 @@
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
+import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { storeToRefs } from "pinia"
@@ -16,17 +17,13 @@ const collectionsStore = useCollectionsStore()
 const { collections } = storeToRefs(collectionsStore)
 
 const selectedCollectionsIds = ref([])
+const { clearLastSelected, handleSelect: handleSelectCollection } = useRangeSelect(
+  collections,
+  selectedCollectionsIds
+)
 
 const handleNewCollection = () => {
   router.push("/dashboard/collections/new")
-}
-
-const handleSelectCollection = (collection) => {
-  if (selectedCollectionsIds.value.includes(collection.id)) {
-    selectedCollectionsIds.value = selectedCollectionsIds.value.filter((id) => id !== collection.id)
-  } else {
-    selectedCollectionsIds.value.push(collection.id)
-  }
 }
 
 const handleEditCollection = (collectionOrId) => {
@@ -92,6 +89,7 @@ const handleBulkDeleteCollections = (collectionIds) => {
 
 const clearSelection = () => {
   selectedCollectionsIds.value = []
+  clearLastSelected()
   setSelection({ items: 0 })
 }
 
@@ -108,6 +106,13 @@ const bulkDeleteCollectionsAction = {
   key: "collection-delete-bulk",
   onClick: () => handleBulkDeleteCollections(selectedCollectionsIds.value),
   text: "Delete"
+}
+
+const downloadCollectionsAction = {
+  icon: "Download",
+  key: "collection-download",
+  onClick: () => collectionsStore.bulkDownload(selectedCollectionsIds.value),
+  text: "Download"
 }
 
 const editCollectionAction = {
@@ -131,6 +136,7 @@ watch(
       setSelection({
         actions: [
           bulkDeleteCollectionsAction,
+          downloadCollectionsAction,
           editCollectionAction,
           selectCollectionImagesAction,
           cancelSelectionAction
@@ -139,7 +145,7 @@ watch(
       })
     } else {
       setSelection({
-        actions: [bulkDeleteCollectionsAction, cancelSelectionAction],
+        actions: [bulkDeleteCollectionsAction, downloadCollectionsAction, cancelSelectionAction],
         items: ids.length
       })
     }

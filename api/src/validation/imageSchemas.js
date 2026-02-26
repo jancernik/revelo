@@ -68,6 +68,18 @@ export const bulkUpdateMetadataSchemas = {
   })
 }
 
+export const downloadImageSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const bulkDownloadImagesSchemas = {
+  body: z.object({
+    ids: z.array(definedSchema).min(1, "At least one image ID is required")
+  })
+}
+
 export const searchSchemas = {
   query: z.object({
     limit: limit.optional(),

@@ -192,6 +192,13 @@ const baseImageActions = [
   }
 ]
 
+const downloadImagesAction = {
+  icon: "Download",
+  key: "image-download",
+  onClick: () => imagesStore.bulkDownload(selectedImagesIds.value),
+  text: "Download"
+}
+
 const bulkDeleteCollectionsAction = {
   icon: "Trash",
   key: "collection-delete-bulk",
@@ -213,12 +220,20 @@ const selectCollectionImagesAction = {
   text: "Select Images"
 }
 
+const downloadCollectionsAction = {
+  icon: "Download",
+  key: "collection-download",
+  onClick: () => collectionsStore.bulkDownload(selectedCollectionsIds.value),
+  text: "Download"
+}
+
 watch(
   selectedImagesIds,
   (ids) => {
     setSelection({
       actions: [
         ...baseImageActions,
+        downloadImagesAction,
         ids.length === 1 ? editImageAction : bulkEditImagesAction,
         cancelSelectionAction
       ],
@@ -235,6 +250,7 @@ watch(
       setSelection({
         actions: [
           bulkDeleteCollectionsAction,
+          downloadCollectionsAction,
           editCollectionAction,
           selectCollectionImagesAction,
           cancelSelectionAction
@@ -243,7 +259,7 @@ watch(
       })
     } else {
       setSelection({
-        actions: [bulkDeleteCollectionsAction, cancelSelectionAction],
+        actions: [bulkDeleteCollectionsAction, downloadCollectionsAction, cancelSelectionAction],
         items: ids.length
       })
     }

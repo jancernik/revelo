@@ -1,5 +1,5 @@
 import { CollectionsTable } from "#src/database/schema.js"
-import { createImageWithVersions } from "#tests/helpers/imageHelpers.js"
+import { createImageWithFile } from "#tests/helpers/imageHelpers.js"
 import { getDb } from "#tests/testDatabase.js"
 
 const baseCollectionData = (data = {}) => {
@@ -39,7 +39,7 @@ export async function createCollectionWithImages(count = 2, collectionData = {})
   const images = []
 
   for (let i = 0; i < count; i++) {
-    images.push(await createImageWithVersions({ collectionId: collection.id, collectionOrder: i }))
+    images.push(await createImageWithFile({ collectionId: collection.id, collectionOrder: i }))
   }
 
   return { ...collection, images }

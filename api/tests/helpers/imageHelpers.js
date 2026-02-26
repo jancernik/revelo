@@ -80,6 +80,21 @@ export async function createImageVersion(imageId, type = "original", data = {}) 
   return result[0] || null
 }
 
+export async function createImageWithFile(data = {}) {
+  const image = await createImage(data)
+  const types = ["original", "regular", "thumbnail", "tiny"]
+  const versions = []
+
+  for (const type of types) {
+    const imagePath = storageManager.getImagePath(image.id, `${type}.jpg`)
+    await storageManager.adapter.writeFile(imagePath, createMockImageBuffer())
+    const version = await createImageVersion(image.id, type, { path: imagePath })
+    versions.push(version)
+  }
+
+  return { ...image, versions }
+}
+
 export async function createImageWithVersions(imageData = {}) {
   const image = await createImage(imageData)
 

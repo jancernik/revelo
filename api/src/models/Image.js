@@ -115,10 +115,10 @@ class Image extends BaseModel {
   }
 
   async findAllWithVersionsRaw(options = {}) {
-    const { limit, offset, orderBy, where } = options
+    const { columns, limit, offset, orderBy, where } = options
 
     const queryOptions = {
-      columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
+      columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS, ...columns },
       orderBy: orderBy || undefined,
       where: where || undefined,
       with: {
@@ -155,10 +155,11 @@ class Image extends BaseModel {
     }
   }
 
-  async findByIdWithVersionsRaw(id) {
+  async findByIdWithVersionsRaw(id, options = {}) {
+    const { columns } = options
     try {
       return await this.db.query.ImagesTable.findFirst({
-        columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
+        columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS, ...columns },
         where: eq(this.table.id, id),
         with: {
           versions: {

@@ -80,6 +80,12 @@ const setupLayout = () => {
   setHeader({
     actions: [
       {
+        icon: "Download",
+        key: "download",
+        onClick: () => imagesStore.download(props.id),
+        text: "Download"
+      },
+      {
         icon: "Pencil",
         key: "edit",
         onClick: () => router.push(`/dashboard/images/${props.id}/edit`),

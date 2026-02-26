@@ -8,12 +8,20 @@ import {
   generateTextEmbedding
 } from "#src/services/aiService.js"
 import storageManager from "#src/storage/storageManager.js"
+import archiver from "archiver"
 import { eq, inArray } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
 import { v4 as uuid } from "uuid"
+
+const mimeTypes = {
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp"
+}
 
 export const uploadForReview = async (file, options = {}) => {
   const sessionId = uuid()
@@ -313,6 +321,76 @@ export const generateCaption = async (image) => {
       }
     }
   }
+}
+
+export const downloadImage = async (id) => {
+  const image = await Image.findByIdWithVersionsRaw(id, { columns: { originalFilename: true } })
+  if (!image) throw new NotFoundError("Image not found")
+
+  const originalVersion = image.versions?.find((v) => v.type === "original")
+  if (!originalVersion) throw new NotFoundError("Image file not found")
+
+  const adapter = storageManager.getAdapterForStorageType(originalVersion.storageType)
+  const extension = path.extname(originalVersion.path).slice(1).toLowerCase() || "jpg"
+  const filename = image.originalFilename ? image.originalFilename : `${image.id}.${extension}`
+  const contentType = mimeTypes[extension] || "application/octet-stream"
+  const buffer = await adapter.readFile(originalVersion.path)
+
+  return { buffer, contentType, filename }
+}
+
+export const getImageFileEntry = async (image) => {
+  try {
+    const originalVersion = image.versions?.find((v) => v.type === "original")
+    if (!originalVersion) return null
+
+    const adapter = storageManager.getAdapterForStorageType(originalVersion.storageType)
+    const extension = path.extname(originalVersion.path).slice(1).toLowerCase() || "jpg"
+    const filename = image.originalFilename ? image.originalFilename : `${image.id}.${extension}`
+
+    if (adapter.isLocal())
+      return { filename, localPath: adapter.getReadablePath(originalVersion.path) }
+
+    const buffer = await adapter.readFile(originalVersion.path)
+    return { buffer, filename }
+  } catch {
+    return null
+  }
+}
+
+export const appendEntriesToArchive = (archive, entries, folder = "") => {
+  const usedNames = new Set()
+
+  for (const entry of entries) {
+    if (!entry) continue
+
+    const baseName = folder ? `${folder}/${entry.filename}` : entry.filename
+    let name = baseName
+
+    if (usedNames.has(name)) {
+      const ext = path.extname(baseName)
+      const stem = baseName.slice(0, baseName.length - ext.length)
+      let counter = 1
+      while (usedNames.has(`${stem} (${counter})${ext}`)) counter++
+      name = `${stem} (${counter})${ext}`
+    }
+
+    usedNames.add(name)
+    if (entry.localPath) archive.file(entry.localPath, { name })
+    else archive.append(entry.buffer, { name })
+  }
+}
+
+export const downloadImages = async (ids) => {
+  const images = await Image.findAllWithVersionsRaw({
+    columns: { originalFilename: true },
+    where: inArray(Image.table.id, ids)
+  })
+  const archive = archiver("zip", { zlib: { level: 6 } })
+
+  appendEntriesToArchive(archive, await Promise.all(images.map(getImageFileEntry)))
+
+  return archive
 }
 
 export const searchWithVersions = async (text, options = {}) => {

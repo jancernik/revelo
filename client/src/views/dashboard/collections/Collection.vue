@@ -2,9 +2,10 @@
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
+import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
-import { onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 
 const props = defineProps({
@@ -26,17 +27,15 @@ const loading = ref(true)
 const reordering = ref(false)
 const pendingImages = ref([])
 const saving = ref(false)
-
-const handleSelectImage = (image) => {
-  if (selectedImagesIds.value.includes(image.id)) {
-    selectedImagesIds.value = selectedImagesIds.value.filter((id) => id !== image.id)
-  } else {
-    selectedImagesIds.value.push(image.id)
-  }
-}
+const collectionImages = computed(() => collection.value?.images || [])
+const { clearLastSelected, handleSelect: handleSelectImage } = useRangeSelect(
+  collectionImages,
+  selectedImagesIds
+)
 
 const clearSelection = () => {
   selectedImagesIds.value = []
+  clearLastSelected()
   setSelection({ items: 0 })
 }
 
@@ -146,6 +145,12 @@ const setupLayout = () => {
           key: "edit",
           onClick: () => router.push(`/dashboard/collections/${props.id}/edit`),
           text: "Edit"
+        },
+        {
+          icon: "Download",
+          key: "download",
+          onClick: () => collectionsStore.download(props.id),
+          text: "Download"
         },
         {
           icon: "ArrowLeftRight",

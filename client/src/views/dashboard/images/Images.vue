@@ -2,6 +2,7 @@
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
+import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 import { storeToRefs } from "pinia"
@@ -16,17 +17,13 @@ const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
 const selectedImagesIds = ref([])
+const { clearLastSelected, handleSelect: handleSelectImage } = useRangeSelect(
+  images,
+  selectedImagesIds
+)
 
 const handleUploadImages = () => {
   router.push("/dashboard/images/upload")
-}
-
-const handleSelectImage = (image) => {
-  if (selectedImagesIds.value.includes(image.id)) {
-    selectedImagesIds.value = selectedImagesIds.value.filter((id) => id !== image.id)
-  } else {
-    selectedImagesIds.value.push(image.id)
-  }
 }
 
 const handleEditImage = (imageOrId) => {
@@ -86,6 +83,7 @@ const handleBulkDeleteImages = (imageIds) => {
 
 const clearSelection = () => {
   selectedImagesIds.value = []
+  clearLastSelected()
   setSelection({ items: 0 })
 }
 
@@ -95,6 +93,13 @@ const cancelSelectionAction = {
   key: "selection-cancel",
   onClick: () => clearSelection(),
   text: "Cancel"
+}
+
+const downloadImagesAction = {
+  icon: "Download",
+  key: "image-download",
+  onClick: () => imagesStore.bulkDownload(selectedImagesIds.value),
+  text: "Download"
 }
 
 const editImageAction = {
@@ -126,6 +131,7 @@ watch(
     setSelection({
       actions: [
         ...baseImageActions,
+        downloadImagesAction,
         ids.length === 1 ? editImageAction : bulkEditImagesAction,
         cancelSelectionAction
       ],

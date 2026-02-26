@@ -1,7 +1,9 @@
 import {
   bulkDeleteCollections,
+  bulkDownloadCollections,
   createCollection,
   deleteCollection,
+  downloadCollection,
   fetchAllCollections,
   fetchCollectionById,
   setCollectionImages,
@@ -11,8 +13,10 @@ import { auth } from "#src/middlewares/authMiddleware.js"
 import { validate } from "#src/middlewares/validationMiddleware.js"
 import {
   bulkDeleteCollectionsSchemas,
+  bulkDownloadCollectionsSchemas,
   createCollectionSchemas,
   deleteCollectionSchemas,
+  downloadCollectionSchemas,
   fetchAllCollectionsSchemas,
   fetchCollectionByIdSchemas,
   setCollectionImagesSchemas,
@@ -24,6 +28,12 @@ const router = Router()
 
 router.post("/collections", auth.required(), validate(createCollectionSchemas), createCollection)
 router.get("/collections", validate(fetchAllCollectionsSchemas), fetchAllCollections)
+router.post(
+  "/collections/download",
+  auth.required(),
+  validate(bulkDownloadCollectionsSchemas),
+  bulkDownloadCollections
+)
 router.delete(
   "/collections",
   auth.required(),
@@ -31,6 +41,12 @@ router.delete(
   bulkDeleteCollections
 )
 router.get("/collections/:id", validate(fetchCollectionByIdSchemas), fetchCollectionById)
+router.get(
+  "/collections/:id/download",
+  auth.required(),
+  validate(downloadCollectionSchemas),
+  downloadCollection
+)
 router.put("/collections/:id", auth.required(), validate(updateCollectionSchemas), updateCollection)
 router.delete(
   "/collections/:id",

@@ -1,6 +1,9 @@
 import { NotFoundError } from "#src/core/errors.js"
 import { ImagesTable } from "#src/database/schema.js"
 import Collection from "#src/models/Collection.js"
+import Image from "#src/models/Image.js"
+import { appendEntriesToArchive, getImageFileEntry } from "#src/services/imageService.js"
+import archiver from "archiver"
 import { eq, inArray } from "drizzle-orm"
 
 export const createCollection = async (data) => {
@@ -83,6 +86,60 @@ export const fetchCollectionById = async (id) => {
   }
 
   return collection
+}
+
+export const downloadCollection = async (id) => {
+  const collection = await Collection.findByIdWithImages(id)
+  if (!collection) throw new NotFoundError("Collection not found")
+
+  const imageIds = (collection.images || []).map((img) => img.id)
+  const images = imageIds.length
+    ? await Image.findAllWithVersionsRaw({
+        columns: { originalFilename: true },
+        where: inArray(Image.table.id, imageIds)
+      })
+    : []
+
+  const orderMap = new Map(collection.images.map((img) => [img.id, img.collectionOrder ?? 0]))
+  images.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0))
+
+  const archive = archiver("zip", { zlib: { level: 6 } })
+  appendEntriesToArchive(archive, await Promise.all(images.map(getImageFileEntry)))
+
+  return { archive, filename: `${collection.title || "collection"}` }
+}
+
+export const downloadCollections = async (ids) => {
+  const collections = await Collection.findAllWithImages({
+    where: inArray(Collection.table.id, ids)
+  })
+  const archive = archiver("zip", { zlib: { level: 6 } })
+  const usedFolders = new Set()
+
+  for (const collection of collections) {
+    const imageIds = (collection.images || []).map((img) => img.id)
+    if (!imageIds.length) continue
+
+    const images = await Image.findAllWithVersionsRaw({
+      columns: { originalFilename: true },
+      where: inArray(Image.table.id, imageIds)
+    })
+    const orderMap = new Map(collection.images.map((img) => [img.id, img.collectionOrder ?? 0]))
+    images.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0))
+
+    const baseFolder = collection.title || "Untitled"
+    let folder = baseFolder
+    if (usedFolders.has(folder)) {
+      let counter = 1
+      while (usedFolders.has(`${baseFolder} (${counter})`)) counter++
+      folder = `${baseFolder} (${counter})`
+    }
+    usedFolders.add(folder)
+
+    appendEntriesToArchive(archive, await Promise.all(images.map(getImageFileEntry)), folder)
+  }
+
+  return archive
 }
 
 export const setCollectionImages = async (collectionId, imageIds) => {
