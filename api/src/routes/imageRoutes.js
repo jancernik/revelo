@@ -7,7 +7,6 @@ import {
   downloadImage,
   fetchAll,
   fetchById,
-  fetchTiny,
   search,
   updateMetadata,
   uploadForReview
@@ -34,7 +33,6 @@ const router = Router()
 router.post("/upload/review", auth.required(), uploadImages, uploadForReview)
 router.post("/upload/confirm", auth.required(), validate(confirmUploadSchemas), confirmUpload)
 router.get("/images", validate(fetchAllSchemas), fetchAll)
-router.get("/tiny-images", fetchTiny)
 router.get("/images/search", validate(searchSchemas), search)
 router.post(
   "/images/download",

@@ -2,7 +2,7 @@ import { ImagesTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
 import Setting from "#src/models/Setting.js"
 import * as imageService from "#src/services/imageService.js"
-import { desc, sql } from "drizzle-orm"
+import { desc } from "drizzle-orm"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files
@@ -72,25 +72,6 @@ export const fetchAll = async (req, res) => {
 
   res.status(200).json({
     data: { images, metadata },
-    status: "success"
-  })
-}
-
-export const fetchTiny = async (req, res) => {
-  const options = {
-    columns: {
-      height: true,
-      path: true,
-      width: true
-    },
-    limit: 24,
-    orderBy: sql`random()`
-  }
-
-  const images = await Image.findAllByVersion("tiny", options)
-
-  res.status(200).json({
-    data: { images },
     status: "success"
   })
 }

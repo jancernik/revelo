@@ -74,17 +74,6 @@ describe("Image Endpoints", () => {
     })
   })
 
-  describe("GET /tiny-images", () => {
-    it("should get tiny images successfully", async () => {
-      await Promise.all([createImageWithVersions(), createImageWithVersions()])
-
-      const response = await request(api).get("/tiny-images").expect(200)
-
-      expect(response.body.status).toBe("success")
-      expect(Array.isArray(response.body.data.images)).toBe(true)
-    })
-  })
-
   describe("GET /images/:id", () => {
     it("should get image by id successfully", async () => {
       const image = await createImageWithVersions()
