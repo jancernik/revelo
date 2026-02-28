@@ -2,7 +2,7 @@ import { config } from "#src/config/environment.js"
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
 import storageManager from "#src/storage/storageManager.js"
-import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
+import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
@@ -18,6 +18,7 @@ class Image extends BaseModel {
     date: ImagesTable.date,
     focalLength: ImagesTable.focalLength,
     focalLengthEquivalent: ImagesTable.focalLengthEquivalent,
+    hidden: ImagesTable.hidden,
     id: ImagesTable.id,
     iso: ImagesTable.iso,
     lens: ImagesTable.lens,
@@ -34,6 +35,7 @@ class Image extends BaseModel {
     date: true,
     focalLength: true,
     focalLengthEquivalent: true,
+    hidden: true,
     id: true,
     iso: true,
     lens: true,
@@ -74,20 +76,25 @@ class Image extends BaseModel {
   }
 
   async findAllByVersion(version, options = {}) {
-    const { columns, limit, orderBy } = options
+    const { columns, imageWhere, limit, orderBy } = options
 
     const results = await this.db.query.ImageVersionsTable.findMany({
       columns: columns || undefined,
       limit: limit || undefined,
       orderBy: orderBy || undefined,
-      where: eq(ImageVersionsTable.type, version)
+      where: eq(ImageVersionsTable.type, version),
+      with: imageWhere ? { image: { columns: { id: true }, where: imageWhere } } : undefined
     })
 
-    return results.map((v) => {
-      if (v.path !== undefined) {
-        return { ...v, path: this.#getPublicUrlForVersion(v) }
+    const filtered = imageWhere ? results.filter((v) => v.image !== null) : results
+
+    return filtered.map((v) => {
+      // eslint-disable-next-line no-unused-vars
+      const { image: _image, ...rest } = v
+      if (rest.path !== undefined) {
+        return { ...rest, path: this.#getPublicUrlForVersion(rest) }
       }
-      return v
+      return rest
     })
   }
 
@@ -176,8 +183,13 @@ class Image extends BaseModel {
     const limit = this.#toSafeInt(options.limit, 200)
     const efSearch = this.#toSafeInt(options.efSearch, 200)
     const minSimilarity = Number.isFinite(options.minSimilarity) ? options.minSimilarity : 0.25
+    const { includeHidden = false } = options
 
     const similarity = sql`1 - (${cosineDistance(this.table.embedding, embedding)})`
+    const similarityFilter = gt(similarity, minSimilarity)
+    const whereClause = includeHidden
+      ? similarityFilter
+      : and(similarityFilter, eq(this.table.hidden, false))
 
     return await this.db.transaction(async (tx) => {
       if (efSearch) {
@@ -187,7 +199,7 @@ class Image extends BaseModel {
       const results = await tx
         .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, similarity })
         .from(this.table)
-        .where(gt(similarity, minSimilarity))
+        .where(whereClause)
         .orderBy((t) => desc(t.similarity))
         .limit(limit)
 
@@ -196,7 +208,7 @@ class Image extends BaseModel {
   }
 
   async searchByText(text, options = {}) {
-    const { limit = 50 } = options
+    const { includeHidden = false, limit = 50 } = options
     const en = sql`coalesce((${this.table.captions} ->> 'en'), '')`
     const es = sql`coalesce((${this.table.captions} ->> 'es'), '')`
 
@@ -213,13 +225,14 @@ class Image extends BaseModel {
 
     const qEn = sql`plainto_tsquery('english', ${text})`
     const qEs = sql`plainto_tsquery('spanish', ${text})`
-    const query = sql`${searchVector} @@ ${qEn} OR ${searchVector} @@ ${qEs}`
+    const textMatch = sql`${searchVector} @@ ${qEn} OR ${searchVector} @@ ${qEs}`
+    const whereClause = includeHidden ? textMatch : and(textMatch, eq(this.table.hidden, false))
     const rank = sql`ts_rank(${searchVector}, ${qEn}) + ts_rank(${searchVector}, ${qEs})`
 
     const results = await this.db
       .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, score: rank.as("score") })
       .from(this.table)
-      .where(query)
+      .where(whereClause)
       .orderBy(desc(rank))
       .limit(limit)
 

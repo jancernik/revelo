@@ -19,6 +19,7 @@ export const updateCollectionSchemas = {
 
 export const fetchAllCollectionsSchemas = {
   query: z.object({
+    includeHidden: z.coerce.boolean().optional(),
     limit: limit.optional(),
     offset: offset.optional()
   })
@@ -27,6 +28,9 @@ export const fetchAllCollectionsSchemas = {
 export const fetchCollectionByIdSchemas = {
   params: z.object({
     id: definedSchema
+  }),
+  query: z.object({
+    includeHidden: z.coerce.boolean().optional()
   })
 }
 
