@@ -23,6 +23,7 @@ class Collection extends BaseModel {
     date: true,
     focalLength: true,
     focalLengthEquivalent: true,
+    hidden: true,
     id: true,
     iso: true,
     lens: true,
@@ -43,7 +44,7 @@ class Collection extends BaseModel {
   }
 
   async findAllWithImages(options = {}) {
-    const { limit, offset, orderBy, where } = options
+    const { imageWhere, limit, offset, orderBy, where } = options
 
     const queryOptions = {
       columns: { ...this.constructor.QUERY_API_COLLECTION_COLUMNS },
@@ -53,6 +54,7 @@ class Collection extends BaseModel {
         images: {
           columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
           orderBy: asc(ImagesTable.collectionOrder),
+          where: imageWhere || undefined,
           with: {
             versions: {
               columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
@@ -74,7 +76,8 @@ class Collection extends BaseModel {
     return results.map((collection) => this.#transformCollectionWithUrls(collection))
   }
 
-  async findByIdWithImages(id) {
+  async findByIdWithImages(id, options = {}) {
+    const { imageWhere } = options
     try {
       const result = await this.db.query.CollectionsTable.findFirst({
         columns: { ...this.constructor.QUERY_API_COLLECTION_COLUMNS },
@@ -83,6 +86,7 @@ class Collection extends BaseModel {
           images: {
             columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
             orderBy: asc(ImagesTable.collectionOrder),
+            where: imageWhere || undefined,
             with: {
               versions: {
                 columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }

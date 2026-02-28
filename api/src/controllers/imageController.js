@@ -2,7 +2,7 @@ import { ImagesTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
 import Setting from "#src/models/Setting.js"
 import * as imageService from "#src/services/imageService.js"
-import { desc } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files
@@ -68,6 +68,10 @@ export const fetchAll = async (req, res) => {
     metadata.order = direction
   }
 
+  if (!req.user?.admin || !req.parsedQuery.includeHidden) {
+    options.where = eq(ImagesTable.hidden, false)
+  }
+
   const images = await Image.findAllWithVersions(options)
 
   res.status(200).json({
@@ -78,7 +82,9 @@ export const fetchAll = async (req, res) => {
 
 export const fetchById = async (req, res) => {
   const { id } = req.params
-  const image = await imageService.fetchByIdWithVersions(id)
+  const image = await imageService.fetchByIdWithVersions(id, {
+    includeHidden: !!(req.user?.admin && req.parsedQuery.includeHidden)
+  })
 
   res.status(200).json({
     data: { image },
@@ -154,7 +160,7 @@ export const bulkDownloadImages = async (req, res) => {
 export const search = async (req, res) => {
   const { limit, offset, text } = req.parsedQuery
 
-  const options = {}
+  const options = { includeHidden: !!(req.user?.admin && req.parsedQuery.includeHidden) }
   if (limit) options.limit = limit
   if (offset) options.offset = offset
 

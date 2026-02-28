@@ -75,11 +75,15 @@ export const bulkDeleteCollections = async (ids) => {
 }
 
 export const fetchAllCollections = async (options = {}) => {
-  return await Collection.findAllWithImages(options)
+  const { includeHidden = false, ...rest } = options
+  const imageWhere = includeHidden ? undefined : eq(ImagesTable.hidden, false)
+  return await Collection.findAllWithImages({ ...rest, imageWhere })
 }
 
-export const fetchCollectionById = async (id) => {
-  const collection = await Collection.findByIdWithImages(id)
+export const fetchCollectionById = async (id, options = {}) => {
+  const { includeHidden = false } = options
+  const imageWhere = includeHidden ? undefined : eq(ImagesTable.hidden, false)
+  const collection = await Collection.findByIdWithImages(id, { imageWhere })
 
   if (!collection) {
     throw new NotFoundError("Collection not found")
