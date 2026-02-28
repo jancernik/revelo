@@ -71,6 +71,7 @@ export const ImagesTable = pgTable(
     embedding: vector("embedding", { dimensions: 512 }),
     focalLength: varchar("focal_length", { length: 50 }),
     focalLengthEquivalent: varchar("focal_length_equivalent", { length: 50 }),
+    hidden: boolean("hidden").notNull().default(false),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     iso: integer("iso"),
     lens: varchar("lens", { length: 255 }),
