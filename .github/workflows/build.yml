@@ -63,7 +63,7 @@ jobs:
 
       - name: Docker Metadata (${{ matrix.title }})
         id: metadata
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.REPO }}-${{ matrix.id }}
