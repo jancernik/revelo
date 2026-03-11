@@ -11,6 +11,7 @@ const metadataSchema = z.object({
     .nullable(),
   focalLength: z.string().max(50).optional().nullable(),
   focalLengthEquivalent: z.string().max(50).optional().nullable(),
+  hidden: z.boolean().optional(),
   iso: z.string().max(50).optional().nullable(),
   lens: z.string().max(255).optional().nullable(),
   shutterSpeed: z.string().max(50).optional().nullable()
@@ -36,6 +37,7 @@ export const updateMetadataSchemas = {
 
 export const fetchAllSchemas = {
   query: z.object({
+    includeHidden: z.coerce.boolean().optional(),
     limit: limit.optional(),
     offset: offset.optional(),
     order: z.enum(["asc", "desc"]).optional(),
@@ -46,6 +48,9 @@ export const fetchAllSchemas = {
 export const fetchByIdSchemas = {
   params: z.object({
     id: definedSchema
+  }),
+  query: z.object({
+    includeHidden: z.coerce.boolean().optional()
   })
 }
 
@@ -82,6 +87,7 @@ export const bulkDownloadImagesSchemas = {
 
 export const searchSchemas = {
   query: z.object({
+    includeHidden: z.coerce.boolean().optional(),
     limit: limit.optional(),
     offset: offset.optional(),
     text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")
