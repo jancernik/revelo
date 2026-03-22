@@ -32,8 +32,8 @@ const router = Router()
 
 router.post("/upload/review", auth.required(), uploadImages, uploadForReview)
 router.post("/upload/confirm", auth.required(), validate(confirmUploadSchemas), confirmUpload)
-router.get("/images", validate(fetchAllSchemas), fetchAll)
-router.get("/images/search", validate(searchSchemas), search)
+router.get("/images", auth.optional(), validate(fetchAllSchemas), fetchAll)
+router.get("/images/search", auth.optional(), validate(searchSchemas), search)
 router.post(
   "/images/download",
   auth.required(),
@@ -47,7 +47,7 @@ router.put(
   validate(bulkUpdateMetadataSchemas),
   bulkUpdateMetadata
 )
-router.get("/images/:id", validate(fetchByIdSchemas), fetchById)
+router.get("/images/:id", auth.optional(), validate(fetchByIdSchemas), fetchById)
 router.get("/images/:id/download", auth.required(), validate(downloadImageSchemas), downloadImage)
 router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchemas), updateMetadata)
 router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage)

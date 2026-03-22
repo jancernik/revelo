@@ -27,7 +27,12 @@ import { Router } from "express"
 const router = Router()
 
 router.post("/collections", auth.required(), validate(createCollectionSchemas), createCollection)
-router.get("/collections", validate(fetchAllCollectionsSchemas), fetchAllCollections)
+router.get(
+  "/collections",
+  auth.optional(),
+  validate(fetchAllCollectionsSchemas),
+  fetchAllCollections
+)
 router.post(
   "/collections/download",
   auth.required(),
@@ -40,7 +45,12 @@ router.delete(
   validate(bulkDeleteCollectionsSchemas),
   bulkDeleteCollections
 )
-router.get("/collections/:id", validate(fetchCollectionByIdSchemas), fetchCollectionById)
+router.get(
+  "/collections/:id",
+  auth.optional(),
+  validate(fetchCollectionByIdSchemas),
+  fetchCollectionById
+)
 router.get(
   "/collections/:id/download",
   auth.required(),
