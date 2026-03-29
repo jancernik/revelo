@@ -367,7 +367,7 @@ watch(canInfiniteScroll, () => {
   }
 })
 
-defineExpose({ collectionImages, scrollTo })
+defineExpose({ canInfiniteScroll, collectionImages, scrollTo })
 </script>
 
 <template>
@@ -460,11 +460,12 @@ $item-size: v-bind(ITEM_SIZE_PX);
   position: absolute;
   visibility: hidden;
   will-change: transform;
-  position: absolute;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 0.15s ease-in-out;
 
   &.active {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
+    outline-color: var(--primary);
   }
 
   img {
