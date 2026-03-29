@@ -790,7 +790,7 @@ const renderFrame = (timestamp) => {
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
   updateVelocity(deltaTime)
 
-  if (frameRateAdapter.shouldSkipFrame(timestamp, lastFrameTimestamp || timestamp)) {
+  if (frameRateAdapter.shouldSkipFrame(timestamp)) {
     lastFrameTimestamp = timestamp
     return
   }
