@@ -1006,6 +1006,8 @@ const hideCollection = (callback) => animateCollection(false, callback)
 const toggleMetadata = () => (metadataVisible.value ? hideMetadata() : showMetadata())
 const toggleCollection = () => (collectionVisible.value ? hideCollection() : showCollection())
 
+let slideCompletionGeneration = 0
+
 const onSlideComplete = async (options) => {
   const { height, targetImage, width } = options
   const previousHadMetadata = hasMetadata.value
@@ -1040,7 +1042,7 @@ const onSlideComplete = async (options) => {
     borderRadius: targetBorderRadius,
     filter: "blur(0px)",
     height,
-    opacity: 1,
+    opacity: 0,
     scale: 1,
     width
   })
@@ -1063,21 +1065,31 @@ const onSlideComplete = async (options) => {
   await nextTick()
 
   const imageElement = fullscreenImageElement.value
+  const fallbackElement = fallbackImageElement.value
+
+  leftTransitionTimeline.value = null
+  rightTransitionTimeline.value = null
+  slideProgress.value = 0
+
+  const generation = slideCompletionGeneration
+
   await new Promise((resolve) => {
-    if (imageElement.complete) {
+    if (fallbackElement.complete && fallbackElement.naturalWidth > 0) {
       resolve()
     } else {
-      imageElement.onload = resolve
-      imageElement.onerror = resolve
+      fallbackElement.addEventListener("load", resolve, { once: true })
+      fallbackElement.addEventListener("error", resolve, { once: true })
     }
   })
 
+  if (generation !== slideCompletionGeneration) return
+
+  setStyles(fallbackElement, { opacity: 1 })
   setStyles([leftSlideImageElement.value, rightSlideImageElement.value], {
     left: "0%",
     visibility: "hidden",
     x: 0
   })
-
   leftSlideImagePath.value = ""
   rightSlideImagePath.value = ""
 
@@ -1086,22 +1098,24 @@ const onSlideComplete = async (options) => {
   }
 
   if (nextImageHasMetadata && !previousHadMetadata && rightControlsRef.value) {
-    await showMetadataButton()
+    showMetadataButton()
   } else if (!nextImageHasMetadata && previousHadMetadata && rightControlsRef.value) {
-    await hideMetadataButton()
+    hideMetadataButton()
   }
-
-  leftTransitionTimeline.value = null
-  rightTransitionTimeline.value = null
-  slideProgress.value = 0
 
   if (!isDragging.value) {
     setTimeout(() => (isSwitchingImage.value = false), 0)
   }
+
+  loadRegularImageInBackground(imageElement)
 }
 
 const createSlideTimeline = (targetImage, direction) => {
   if (!targetImage) return null
+
+  slideCompletionGeneration++
+  cancelPendingRegularImageFadeIn()
+  gsap.killTweensOf(fullscreenImageElement.value, "opacity")
 
   const nextThumbnailVersion = getImageVersion(targetImage, "thumbnail")
   const nextImageAspectRatio = calculateImageAspectRatio(targetImage)
@@ -1338,22 +1352,61 @@ const handleImageError = () => {
   setStyles(fullscreenImageElement.value, { visibility: "hidden" })
 }
 
-const preloadSlideImages = () => {
+const preloadedCollectionIds = new Set()
+
+const preloadCollectionThumbnails = () => {
+  if (!hasCollection.value || !collectionData.value?.images) return
+
+  const collectionId = collectionData.value.id
+  if (preloadedCollectionIds.has(collectionId)) return
+  preloadedCollectionIds.add(collectionId)
+
+  for (const image of collectionData.value.images) {
+    const thumbnail = getImageVersion(image, "thumbnail")
+    if (thumbnail.path) {
+      const img = new Image()
+      img.src = thumbnail.path
+    }
+  }
+}
+
+const preloadAdjacentRegularImages = () => {
   if (!hasCollection.value) return
 
-  const nextImage = getNextImage()
-  const prevImage = getPreviousImage()
+  for (const image of [getNextImage(), getPreviousImage()]) {
+    if (!image) continue
+    const regular = getImageVersion(image, "regular")
+    if (regular.path) {
+      const img = new Image()
+      img.src = regular.path
+    }
+  }
+}
 
-  if (nextImage) {
-    const nextThumbnail = getImageVersion(nextImage, "thumbnail")
-    const img = new Image()
-    img.src = nextThumbnail.path
+let pendingRegularImageFadeIn = null
+
+const loadRegularImageInBackground = (imageElement) => {
+  if (!imageElement) return
+
+  cancelPendingRegularImageFadeIn()
+
+  const fadeIn = () => {
+    pendingRegularImageFadeIn = null
+    gsap.to(imageElement, { duration: 0.3, ease: "power2.inOut", opacity: 1 })
   }
 
-  if (prevImage) {
-    const prevThumbnail = getImageVersion(prevImage, "thumbnail")
-    const img = new Image()
-    img.src = prevThumbnail.path
+  if (imageElement.complete && imageElement.naturalWidth > 0) {
+    fadeIn()
+  } else {
+    pendingRegularImageFadeIn = fadeIn
+    imageElement.addEventListener("load", fadeIn, { once: true })
+  }
+}
+
+const cancelPendingRegularImageFadeIn = () => {
+  if (pendingRegularImageFadeIn) {
+    fullscreenImageElement.value?.removeEventListener("load", pendingRegularImageFadeIn)
+    pendingRegularImageFadeIn = null
   }
 }
 
@@ -1366,7 +1419,10 @@ const onImageUpdate = async (image) => {
       collectionData.value = null
     }
     if (!isSwitchingImage.value) nextTick(showImage)
-    nextTick(() => preloadSlideImages())
+    nextTick(() => {
+      preloadCollectionThumbnails()
+      preloadAdjacentRegularImages()
+    })
   } else {
     initialMetadataWidth.value = 0
   }
