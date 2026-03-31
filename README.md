@@ -10,30 +10,40 @@
 
 </div>
 
-I have too many hobbies, but the only one most people would call _artistic_ is photography. I mostly take pictures for myself, but I wanted a place to collect and showcase them, something that felt a bit more special than the usual platforms out there.
+I have too many hobbies, but the only one most people would call _artistic_ is photography. I mostly take pictures for myself, but I wanted a place to collect and showcase them somewhere that felt a bit more special than the usual platforms.
 
-**Revelo** (from _photographic development_ in Spanish) is my playground for experimenting with modern web technologies, AI integrations, and infrastructure. It’s very much a work in progress, but you can check it out live at [revelo.app](https://revelo.app)!
+**Revelo** (from _photographic development_ in Spanish) is where I mess with frontend animation, AI integrations, and infrastructure stuff, while also giving my photos a home.
 
-> [!WARNING]
-> The live instance is hosted on my own _homelab server_. This gives me flexibility to tinker with the stack, and direct access to the hardware, but it also means uptime might be spotty depending on my ISP's mood (not the best at the moment).
+It's still very much a work in progress, but you can check it out live at [revelo.app](https://revelo.app).
+
+> [!NOTE]
+> The live instance is hosted on my own _homelab server_. That gives me a lot of freedom to tinker with the stack and the hardware, but it also means uptime might be a bit spotty depending on my ISP's mood.
+
+> [!NOTE]
+> I use it mostly on desktop, and that's still the best experience.
+>
+> On mobile, the UI is intentionally capped to 60fps. This is not really a performance or optimization issue. It has to do with how mobile browsers handle `requestAnimationFrame`: most of them run it at 60Hz while you're not touching the screen, then switch to 120Hz while you are. Since the homepage uses a custom render loop, that constant switching feels worse than just keeping things consistent.
+
+---
 
 ## Features
 
-- **Custom Homepage Render Loop**: Infinite, seamless, smooth-scrolling masonry layout
-- **AI-Powered Captions**: Automatic image descriptions in English and Spanish
-- **Hybrid Search**: Find images by meaning, using embeddings and Postgres Full Text Search
-- **Automatic Image Versions**: Generate optimized thumbnails and multiple resolutions automatically
-- **EXIF Metadata**: Extract and parse camera settings, lens info, and shooting details
-- **S3 Compatible Storage**: Support for local storage or cloud providers (Cloudflare R2, AWS S3, etc.)
-- **Dark/Light Theme**: Adaptive theming with smooth transitions
-- **Kiosk Mode**: Configurable autoscroll without a menu for display
-- **Custom Full CI/CD**: Automated testing, building, and deployment pipelines
-- **YAML Settings Configuration**: Dynamic Admin Settings UI based on a configuration file
+- Infinite, seamless, smooth-scrolling gallery with a custom render loop.
+- AI-generated captions in English and Spanish.
+- Search by meaning using embeddings, plus regular text search.
+- Automatic image processing with thumbnails and multiple sizes.
+- EXIF parsing for camera settings, lens info, and shooting details.
+- Support for local storage or S3-compatible storage.
+- Adaptive theming with smooth transitions.
+- Kiosk mode with autoscroll for fullscreen display.
+- Custom CI/CD setup for testing, building, and deployment.
+- Admin settings UI driven by a YAML config file.
 
-## Future Improvements
+---
 
-- **Enhanced Mobile Experience**: More native-like gestures for touch devices
-- **Advanced Search Filters**: Filter by date ranges, camera models, and EXIF parameters
-- **Batch Operations**: Edit metadata and move images in bulk
-- **Multi-language Support**: Full internationalization beyond captions
-- **Simplified Self-Hosting**: Self-hosting instructions and removal of hardcoded configuration details
+## Future improvements
+
+- Better touch and mobile interactions.
+- More search filters.
+- More complete language support.
+- Self-hosting instructions.
