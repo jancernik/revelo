@@ -17,39 +17,45 @@ function runSyncOrThrow(cmd, args = [], opts = {}) {
   if (res.status !== 0) throw new Error(`Command failed: ${cmd} ${args.join(" ")}`)
 }
 
+function pipWorks() {
+  if (!fs.existsSync(pipInVenv)) return false
+  const res = spawnSync(pipInVenv, ["--version"], { stdio: "pipe" })
+  return res.status === 0
+}
+
 function ensureVenv() {
-  if (fs.existsSync(venvDir) && !fs.existsSync(pipInVenv)) {
-    console.log("Virtual environment exists but pip is missing. Recreating...")
+  if (fs.existsSync(venvDir) && !pipWorks()) {
+    console.log("Virtual environment exists but pip is broken. Recreating...")
     fs.rmSync(venvDir, { recursive: true, force: true })
   }
-  
+
   if (fs.existsSync(pythonInVenv)) return
-  
+
   console.log("Creating virtual environment...")
   try {
     runSyncOrThrow(process.env.PYTHON || "python", ["-m", "venv", venvDir], { cwd: projectDir })
-  } catch (e) {
+  } catch {
     runSyncOrThrow("python3", ["-m", "venv", venvDir], { cwd: projectDir })
   }
-  
-  if (!fs.existsSync(pipInVenv)) {
-    console.log("pip not found after venv creation, installing via ensurepip...")
+
+  if (!pipWorks()) {
+    console.log("Bootstrapping pip via ensurepip...")
     try {
       runSyncOrThrow(pythonInVenv, ["-m", "ensurepip", "--upgrade"], { cwd: projectDir })
     } catch (e) {
-      console.error("Failed to install pip.")
+      console.error("Failed to bootstrap pip via ensurepip.")
       throw e
     }
   }
+
+  runSyncOrThrow(pipInVenv, ["install", "--upgrade", "pip"], { cwd: projectDir })
 }
 
 ensureVenv()
 
-runSyncOrThrow(pythonInVenv, ["-m", "pip", "install", "--upgrade", "pip"], { cwd: projectDir })
-
 const reqFile = path.join(projectDir, "requirements.txt")
 if (fs.existsSync(reqFile)) {
-  runSyncOrThrow(pythonInVenv, ["-m", "pip", "install", "-r", "requirements.txt"], { cwd: projectDir })
+  runSyncOrThrow(pipInVenv, ["install", "-r", "requirements.txt"], { cwd: projectDir })
 }
 
 console.log(`Starting AI service on port ${config.AI_PORT}`)
@@ -57,7 +63,7 @@ console.log(`Starting AI service on port ${config.AI_PORT}`)
 const python = spawn(
   pythonInVenv,
   ["-m", "uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", String(config.AI_PORT)],
-  { env: { ...process.env }, stdio: "inherit", cwd: projectDir }
+  { stdio: "inherit", cwd: projectDir }
 )
 
 python.on("error", (error) => {
@@ -69,16 +75,9 @@ python.on("close", (code) => {
   process.exit(code)
 })
 
-python.on("exit", (code) => {
-  process.exit(code)
-})
-
-process.on("SIGINT", () => {
-  console.log("Shutting down AI service...")
-  python.kill("SIGINT")
-})
-
-process.on("SIGTERM", () => {
-  console.log("Shutting down AI service...")
-  python.kill("SIGTERM")
-})
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    console.log("Shutting down AI service...")
+    python.kill(signal)
+  })
+}
