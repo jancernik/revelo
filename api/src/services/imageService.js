@@ -133,6 +133,7 @@ const buildMetadataUpdate = (metadata) => {
     updateData.focalLengthEquivalent = metadata.focalLengthEquivalent
   if (metadata.camera !== undefined) updateData.camera = metadata.camera
   if (metadata.comment !== undefined) updateData.comment = metadata.comment
+  if (metadata.hidden !== undefined) updateData.hidden = metadata.hidden
   if (metadata.lens !== undefined) updateData.lens = metadata.lens
   if (metadata.date !== undefined) updateData.date = metadata.date ? new Date(metadata.date) : null
 
@@ -229,10 +230,15 @@ export const bulkUpdateImageMetadata = async (ids, metadata) => {
   return Image.findAllWithVersions({ where: inArray(Image.table.id, ids) })
 }
 
-export const fetchByIdWithVersions = async (id) => {
+export const fetchByIdWithVersions = async (id, options = {}) => {
+  const { includeHidden = false } = options
   const image = await Image.findByIdWithVersions(id)
 
   if (!image) {
+    throw new NotFoundError("Image not found")
+  }
+
+  if (!includeHidden && image.hidden) {
     throw new NotFoundError("Image not found")
   }
 
@@ -397,6 +403,7 @@ export const searchWithVersions = async (text, options = {}) => {
   const {
     candidateK = 200,
     efSearch = 200,
+    includeHidden = false,
     limit = 50,
     minSimilarity = 0.27,
     useDynamicThreshold = true
@@ -421,6 +428,7 @@ export const searchWithVersions = async (text, options = {}) => {
           console.log(`Generated text embedding: ${embedding.length} dimensions`)
           return await Image.searchByEmbedding(embedding, {
             efSearch,
+            includeHidden,
             limit: candidateK,
             minSimilarity
           })
@@ -428,7 +436,7 @@ export const searchWithVersions = async (text, options = {}) => {
           return []
         }
       })(),
-      Image.searchByText(text, { limit: candidateK })
+      Image.searchByText(text, { includeHidden, limit: candidateK })
     ])
 
     embeddingResults = embeddingResult.status === "fulfilled" ? embeddingResult.value : []
@@ -438,7 +446,7 @@ export const searchWithVersions = async (text, options = {}) => {
     console.log(`Text search results: ${textResults.length} images`)
   } else {
     console.log("AI service unavailable - using caption-only search")
-    textResults = await Image.searchByText(text, { limit: candidateK })
+    textResults = await Image.searchByText(text, { includeHidden, limit: candidateK })
     console.log(`Text search results: ${textResults.length} images`)
   }
 

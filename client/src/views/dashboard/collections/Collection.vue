@@ -187,11 +187,10 @@ const cancelSelectionAction = {
 const removeImagesFromCollectionAction = {
   icon: "Trash",
   key: "selection-remove",
-  onClick: () => {
-    collectionsStore.removeImages(props.id, selectedImagesIds.value)
-    collection.value.images = collection.value.images.filter(
-      (img) => !selectedImagesIds.value.includes(img.id)
-    )
+  onClick: async () => {
+    await collectionsStore.removeImages(props.id, selectedImagesIds.value)
+    collection.value =
+      collectionsStore.collections.find((c) => c.id === props.id) || collection.value
     clearSelection()
   },
   text: "Remove from collection"

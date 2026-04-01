@@ -142,7 +142,7 @@ const columnsHeights = ref([])
 let userInactivityTimer = null
 const USER_INACTIVITY_TIMEOUT = 3000
 const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
-const noImages = computed(() => imagesStore.filteredImages.length === 0)
+const noImages = computed(() => imagesStore.visibleFilteredImages.length === 0)
 
 const columnCount = computed(() => {
   if (props.columns && props.columns >= MIN_COLUMNS && props.columns <= MAX_COLUMNS) {
@@ -357,7 +357,7 @@ const clearImageSelection = () => {
 }
 
 const updateImageGroups = () => {
-  const groups = groupImages(imagesStore.filteredImages, columnCount.value, {
+  const groups = groupImages(imagesStore.visibleFilteredImages, columnCount.value, {
     preserveOrder: imagesStore.orderBy !== null
   })
 
@@ -1111,11 +1111,11 @@ const handleWindowKeyDown = (event) => {
 }
 
 watch(
-  () => imagesStore.filteredImages,
+  () => imagesStore.visibleFilteredImages,
   async (images) => {
     if (!images.length) return
     updateImageGroups()
-    const currentImageIds = new Set(imagesStore.filteredImages.map((image) => image.id))
+    const currentImageIds = new Set(imagesStore.visibleFilteredImages.map((image) => image.id))
     loadedImageIds.value = new Set(
       [...loadedImageIds.value].filter((id) => currentImageIds.has(id))
     )
@@ -1124,7 +1124,7 @@ watch(
     )
     visibleImageIds.value.clear()
 
-    if (imagesStore.filteredImages.length > 0) {
+    if (imagesStore.visibleFilteredImages.length > 0) {
       await nextTick()
       await rebuildLayout()
     }
@@ -1264,7 +1264,7 @@ defineExpose({
     <p>Velocity: {{ velocity.toFixed(2) }} px/s</p>
     <p>Normalized Scroll Y: {{ scrollPosition.toFixed(2) }} px</p>
     <p>Images Visible: {{ visibleImageIds.size }}</p>
-    <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.filteredImages.length }}</p>
+    <p>Images Loaded: {{ loadedImageIds.size }} / {{ imagesStore.visibleFilteredImages.length }}</p>
     <p>Initial Load Progress: {{ Math.ceil(initialLoadProgress * 100) }}%</p>
     <p>Is First Load: {{ isFirstLoad }}</p>
     <p>Can Infinite Scroll: {{ canInfiniteScroll }}</p>

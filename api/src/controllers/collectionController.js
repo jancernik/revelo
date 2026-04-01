@@ -44,7 +44,7 @@ export const deleteCollection = async (req, res) => {
 export const fetchAllCollections = async (req, res) => {
   const { limit, offset } = req.parsedQuery
 
-  const options = {}
+  const options = { includeHidden: !!(req.user?.admin && req.parsedQuery.includeHidden) }
   if (limit) options.limit = limit
   if (offset) options.offset = offset
 
@@ -58,7 +58,9 @@ export const fetchAllCollections = async (req, res) => {
 
 export const fetchCollectionById = async (req, res) => {
   const { id } = req.params
-  const collection = await collectionService.fetchCollectionById(id)
+  const collection = await collectionService.fetchCollectionById(id, {
+    includeHidden: !!(req.user?.admin && req.parsedQuery.includeHidden)
+  })
 
   res.status(200).json({
     data: { collection },

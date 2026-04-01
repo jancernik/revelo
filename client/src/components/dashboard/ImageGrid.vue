@@ -108,7 +108,7 @@ const openImage = (image) => {
       v-for="image in displayedImages"
       :key="image.id"
       class="image-item"
-      :class="{ selected: allowSelect && isSelected(image) }"
+      :class="{ selected: allowSelect && isSelected(image), hidden: image.hidden }"
     >
       <div
         class="image-container"
@@ -125,6 +125,10 @@ const openImage = (image) => {
       <button v-if="allowSelect" class="select-button" @click="emit('select', image, $event)">
         <Icon name="Check" size="12" :stroke-width="4" />
       </button>
+
+      <div v-if="image.hidden" class="hidden-indicator">
+        <Icon name="EyeOff" size="14" :stroke-width="2" />
+      </div>
 
       <button
         v-if="allowRemove && !allowSelect && !fastSelect"
@@ -254,6 +258,30 @@ const openImage = (image) => {
 
   .remove-button {
     right: var(--spacing-3);
+  }
+
+  .image-item.hidden .image-container {
+    filter: saturate(0.6) brightness(0.7) contrast(0.8);
+    opacity: 0.6;
+  }
+
+  .hidden-indicator {
+    @include flex-center;
+    position: absolute;
+    top: var(--spacing-3);
+    right: var(--spacing-3);
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: var(--background);
+    border-radius: 50%;
+    color: var(--muted-foreground);
+    pointer-events: none;
+    border: 1.5px solid var(--border);
+    z-index: 100;
+
+    .icon {
+      @include flex-center;
+    }
   }
 
   .select-button,

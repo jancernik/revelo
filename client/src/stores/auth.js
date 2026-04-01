@@ -1,4 +1,3 @@
-import { useSettingsStore } from "#src/stores/settings"
 import api from "#src/utils/api"
 import { defineStore } from "pinia"
 import { ref } from "vue"
@@ -6,7 +5,6 @@ import { ref } from "vue"
 export const useAuthStore = defineStore("auth", () => {
   const accessToken = ref(localStorage.getItem("accessToken") || null)
   const user = ref(JSON.parse(localStorage.getItem("user")) || null)
-  const settingsStore = useSettingsStore()
 
   function clearUser() {
     user.value = null
@@ -19,7 +17,6 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await api.post("/login", { password, username })
       setUser(response.data.data)
-      settingsStore.refreshSettings()
       return response.data
     } catch (error) {
       console.error("Login failed:", error.response?.data || error)
@@ -35,7 +32,6 @@ export const useAuthStore = defineStore("auth", () => {
       console.error("Logout failed:", error.response?.data || error)
     } finally {
       clearUser()
-      settingsStore.refreshSettings()
     }
   }
 
@@ -73,7 +69,6 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await api.post("/signup", { email, password, username })
       setUser(response.data.data)
-      settingsStore.refreshSettings()
       return response.data
     } catch (error) {
       console.error("Signup failed:", error.response?.data || error)
@@ -85,7 +80,6 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await api.post("/verify-email", { token })
       setUser(response.data.data)
-      settingsStore.refreshSettings()
       return response.data
     } catch (error) {
       console.error("Email verification failed:", error.response?.data || error)

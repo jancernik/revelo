@@ -1,21 +1,30 @@
 import { useToast } from "#src/composables/useToast"
+import { useAuthStore } from "#src/stores/auth.js"
 import { useImagesStore } from "#src/stores/images.js"
 import api from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
 import { defineStore } from "pinia"
-import { ref } from "vue"
+import { ref, watch } from "vue"
 
 export const useCollectionsStore = defineStore("collections", () => {
   const { show: showToast } = useToast()
   const imagesStore = useImagesStore()
+  const authStore = useAuthStore()
 
   const error = ref(null)
   const initialized = ref(false)
   const loading = ref(false)
   const collections = ref([])
 
+  watch(
+    () => authStore.accessToken,
+    () => fetchAll({ force: true })
+  )
+
   async function fetchAll(options = {}) {
+    const isAuthenticated = !!authStore.accessToken
     const { force } = options
+
     if (loading.value && !force) return
     if (initialized.value && !force) return
 
@@ -23,7 +32,8 @@ export const useCollectionsStore = defineStore("collections", () => {
     error.value = null
 
     try {
-      const response = await api.get("/collections")
+      const params = isAuthenticated ? { includeHidden: true } : {}
+      const response = await api.get("/collections", { params })
       collections.value = response.data?.data?.collections || []
       initialized.value = true
       return collections.value
@@ -42,14 +52,27 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function fetch(id, options = {}) {
     const { force } = options
+    const isAuthenticated = !!authStore.accessToken
     try {
       if (!force) {
         const existing = collections.value.find((c) => c.id === id)
         if (existing) return existing
       }
 
-      const response = await api.get(`/collections/${id}`)
-      return response.data?.data?.collection
+      const params = isAuthenticated ? { includeHidden: true } : {}
+      const response = await api.get(`/collections/${id}`, { params })
+      const collection = response.data?.data?.collection
+
+      if (collection) {
+        const index = collections.value.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          collections.value[index] = collection
+        } else {
+          collections.value.push(collection)
+        }
+      }
+
+      return collection
     } catch (error) {
       showToast({
         description: error.response?.data?.message || error.message,
@@ -260,7 +283,9 @@ export const useCollectionsStore = defineStore("collections", () => {
 
   async function getImageIdsInCollection(collectionOrId) {
     const collection =
-      typeof collectionOrId === "object" ? collectionOrId : await fetch(collectionOrId)
+      typeof collectionOrId === "object"
+        ? collectionOrId
+        : await fetch(collectionOrId, { force: true })
     return (
       collection?.images
         ?.sort((a, b) => (a.collectionOrder || 0) - (b.collectionOrder || 0))
@@ -281,7 +306,7 @@ export const useCollectionsStore = defineStore("collections", () => {
   function updateImageLocal(id, image) {
     collections.value.some((collection, collectionIndex) => {
       const imageIndex = collection.images?.findIndex((i) => i.id === id)
-      if (imageIndex !== -1) {
+      if (imageIndex >= 0) {
         collections.value[collectionIndex].images[imageIndex] = {
           ...collections.value[collectionIndex].images[imageIndex],
           ...image
