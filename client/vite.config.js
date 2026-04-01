@@ -1,9 +1,10 @@
-import { config } from "#src/config/environment.js"
 import vue from "@vitejs/plugin-vue"
 import { fileURLToPath, URL } from "node:url"
 import { defineConfig } from "vite"
 // import { VitePWA } from "vite-plugin-pwa"
 import vueDevTools from "vite-plugin-vue-devtools"
+
+import { config } from "./src/config/environment.js"
 
 export default defineConfig({
   css: {

@@ -55,6 +55,6 @@ async function setupDatabase() {
   try {
     await db.execute(sql`SELECT 1`)
   } catch (error) {
-    throw new Error(`Test database connection failed: ${error.message}`)
+    throw new Error(`Test database connection failed: ${error.message}`, { cause: error })
   }
 }

@@ -9,7 +9,7 @@ export default [
     ignores: ["**/dist/", "**/node_modules/", "**/uploads/", "ai/**"]
   },
 
-  pluginJs.configs.recommended,
+  { ...pluginJs.configs.recommended, files: ["**/*.js"] },
   perfectionist.configs["recommended-natural"],
   ...pluginVue.configs["flat/recommended"],
 
