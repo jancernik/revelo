@@ -130,7 +130,13 @@ const isMobileLayout = computed(() => {
 
 const imageHasMetadata = (image) => METADATA_FIELDS.some((k) => image?.[k])
 const hasMetadata = computed(() => METADATA_FIELDS.some((k) => imageData?.value?.[k]))
-const hasCollection = computed(() => collectionData?.value?.images?.length > 0)
+const visibleCollectionImages = computed(
+  () => collectionData.value?.images?.filter((img) => !img.hidden) || []
+)
+const visibleCollectionData = computed(() =>
+  collectionData.value ? { ...collectionData.value, images: visibleCollectionImages.value } : null
+)
+const hasCollection = computed(() => visibleCollectionImages.value.length > 0)
 const hasTitleDescription = computed(
   () => !!(collectionData?.value?.title || collectionData?.value?.description)
 )
@@ -1251,14 +1257,14 @@ const setupRouting = (imageId) => {
 const getSlideDirection = (image) => {
   let direction = null
 
-  if (!hasCollection.value || !collectionData.value?.images || !image) direction
-  const currentIndex = collectionData.value.images.findIndex((i) => i.id === imageData.value?.id)
-  const nextIndex = collectionData.value.images.findIndex((i) => i.id === image.id)
+  if (!hasCollection.value || !visibleCollectionImages.value.length || !image) direction
+  const currentIndex = visibleCollectionImages.value.findIndex((i) => i.id === imageData.value?.id)
+  const nextIndex = visibleCollectionImages.value.findIndex((i) => i.id === image.id)
 
   if (currentIndex === -1 || nextIndex === -1) return direction
 
   if (collectionRef.value?.canInfiniteScroll) {
-    const totalImages = collectionData.value.images.length
+    const totalImages = visibleCollectionImages.value.length
     const forwardDistance = (nextIndex - currentIndex + totalImages) % totalImages
     const backwardDistance = (currentIndex - nextIndex + totalImages) % totalImages
     direction = forwardDistance <= backwardDistance ? 1 : -1
@@ -1269,24 +1275,24 @@ const getSlideDirection = (image) => {
 }
 
 const getNextImage = () => {
-  if (!hasCollection.value || !collectionData.value?.images) return null
-  const currentIndex = collectionData.value.images.findIndex(
+  if (!hasCollection.value || !visibleCollectionImages.value.length) return null
+  const currentIndex = visibleCollectionImages.value.findIndex(
     (img) => img.id === imageData.value?.id
   )
   if (currentIndex === -1) return null
-  const nextIndex = (currentIndex + 1) % collectionData.value.images.length
-  return collectionData.value.images[nextIndex]
+  const nextIndex = (currentIndex + 1) % visibleCollectionImages.value.length
+  return visibleCollectionImages.value[nextIndex]
 }
 
 const getPreviousImage = () => {
-  if (!hasCollection.value || !collectionData.value?.images) return null
-  const currentIndex = collectionData.value.images.findIndex(
+  if (!hasCollection.value || !visibleCollectionImages.value.length) return null
+  const currentIndex = visibleCollectionImages.value.findIndex(
     (img) => img.id === imageData.value?.id
   )
   if (currentIndex === -1) return null
   const prevIndex =
-    (currentIndex - 1 + collectionData.value.images.length) % collectionData.value.images.length
-  return collectionData.value.images[prevIndex]
+    (currentIndex - 1 + visibleCollectionImages.value.length) % visibleCollectionImages.value.length
+  return visibleCollectionImages.value[prevIndex]
 }
 
 const switchToImage = (image, direction) => {
@@ -1629,7 +1635,7 @@ onUnmounted(() => {
     <CollectionImages
       v-if="hasCollection"
       ref="collection-images"
-      :collection="collectionData"
+      :collection="visibleCollectionData"
       :current-image-id="imageData?.id"
       @click="handleCollectionImageClick"
     />

@@ -1,15 +1,22 @@
 import { useToast } from "#src/composables/useToast"
+import { useAuthStore } from "#src/stores/auth.js"
 import api from "#src/utils/api"
 import { defineStore } from "pinia"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 
 export const useSettingsStore = defineStore("settings", () => {
   const { show: showToast } = useToast()
+  const authStore = useAuthStore()
 
   const error = ref(null)
   const initialized = ref(false)
   const loading = ref(false)
   const settingsArray = ref([])
+
+  watch(
+    () => authStore.accessToken,
+    () => fetchSettings(true)
+  )
 
   const settings = computed(() => {
     return settingsArray.value.reduce((map, setting) => {

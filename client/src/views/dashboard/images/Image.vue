@@ -76,9 +76,25 @@ const handleDelete = () => {
   })
 }
 
+const handleToggleHidden = async () => {
+  try {
+    const updated = await imagesStore.toggleHidden(props.id, !image.value.hidden)
+    image.value = { ...image.value, ...updated }
+    setupLayout()
+  } catch {
+    // error handled by store
+  }
+}
+
 const setupLayout = () => {
   setHeader({
     actions: [
+      {
+        icon: image.value?.hidden ? "Eye" : "EyeOff",
+        key: "toggle-hidden",
+        onClick: handleToggleHidden,
+        text: image.value?.hidden ? "Show" : "Hide"
+      },
       {
         icon: "Download",
         key: "download",

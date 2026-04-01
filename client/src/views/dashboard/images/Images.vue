@@ -6,7 +6,7 @@ import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 import { storeToRefs } from "pinia"
-import { onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
@@ -102,6 +102,25 @@ const downloadImagesAction = {
   text: "Download"
 }
 
+const toggleHiddenAction = computed(() => {
+  const allHidden =
+    selectedImagesIds.value.length > 0 &&
+    selectedImagesIds.value.every((id) => images.value.find((img) => img.id === id)?.hidden)
+  return allHidden
+    ? {
+        icon: "Eye",
+        key: "image-show",
+        onClick: () => imagesStore.bulkToggleHidden(selectedImagesIds.value, false),
+        text: "Show"
+      }
+    : {
+        icon: "EyeOff",
+        key: "image-hide",
+        onClick: () => imagesStore.bulkToggleHidden(selectedImagesIds.value, true),
+        text: "Hide"
+      }
+})
+
 const editImageAction = {
   icon: "Pencil",
   key: "image-edit-single",
@@ -126,12 +145,13 @@ const baseImageActions = [
 ]
 
 watch(
-  selectedImagesIds,
-  (ids) => {
+  [selectedImagesIds, toggleHiddenAction],
+  ([ids]) => {
     setSelection({
       actions: [
         ...baseImageActions,
         downloadImagesAction,
+        toggleHiddenAction.value,
         ids.length === 1 ? editImageAction : bulkEditImagesAction,
         cancelSelectionAction
       ],

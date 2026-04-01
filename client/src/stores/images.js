@@ -1,14 +1,16 @@
 import { useToast } from "#src/composables/useToast"
+import { useAuthStore } from "#src/stores/auth.js"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import api from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
 import { debounce } from "#src/utils/helpers"
 import { defineStore } from "pinia"
-import { ref } from "vue"
+import { computed, ref, watch } from "vue"
 
 export const useImagesStore = defineStore("images", () => {
   const { show: showToast } = useToast()
   const collectionsStore = useCollectionsStore()
+  const authStore = useAuthStore()
 
   const error = ref(null)
   const initialized = ref(false)
@@ -18,8 +20,17 @@ export const useImagesStore = defineStore("images", () => {
   const orderBy = ref(null)
   const order = ref("asc")
 
+  const visibleFilteredImages = computed(() => filteredImages.value.filter((img) => !img.hidden))
+
+  watch(
+    () => authStore.accessToken,
+    () => fetchAll({ force: true })
+  )
+
   async function fetchAll(options = {}) {
+    const isAuthenticated = !!authStore.accessToken
     const { force } = options
+
     if (loading.value && !force) return
     if (initialized.value && !force) return
 
@@ -32,6 +43,7 @@ export const useImagesStore = defineStore("images", () => {
         params.orderBy = orderBy.value
         params.order = order.value
       }
+      if (isAuthenticated) params.includeHidden = true
 
       const response = await api.get("/images", { params })
       images.value = response.data?.data?.images || []
@@ -53,13 +65,15 @@ export const useImagesStore = defineStore("images", () => {
 
   async function fetch(id, options = {}) {
     const { force } = options
+    const isAuthenticated = !!authStore.accessToken
     try {
       if (!force) {
         const existing = images.value.find((i) => i.id === id)
         if (existing) return existing
       }
 
-      const response = await api.get(`/images/${id}`)
+      const params = isAuthenticated ? { includeHidden: true } : {}
+      const response = await api.get(`/images/${id}`, { params })
       return response.data?.data?.image
     } catch (error) {
       showToast({
@@ -132,6 +146,7 @@ export const useImagesStore = defineStore("images", () => {
     try {
       await api.delete(`/images/${id}`)
       images.value = images.value.filter((i) => i.id !== id)
+      filteredImages.value = filteredImages.value.filter((i) => i.id !== id)
       collectionsStore.removeImageLocal(id)
     } catch (error) {
       showToast({
@@ -147,6 +162,7 @@ export const useImagesStore = defineStore("images", () => {
     try {
       await api.delete("/images", { data: { ids } })
       images.value = images.value.filter((i) => !ids.includes(i.id))
+      filteredImages.value = filteredImages.value.filter((i) => !ids.includes(i.id))
       ids.forEach((id) => collectionsStore.removeImageLocal(id))
     } catch (error) {
       showToast({
@@ -190,6 +206,14 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
+  async function toggleHidden(id, hidden) {
+    return updateMetadata(id, { hidden })
+  }
+
+  async function bulkToggleHidden(ids, hidden) {
+    return bulkUpdateMetadata(ids, { hidden })
+  }
+
   async function bulkUpdateMetadata(ids, metadata) {
     try {
       const response = await api.put("/images/metadata", { ids, metadata })
@@ -212,6 +236,7 @@ export const useImagesStore = defineStore("images", () => {
   }
 
   const search = debounce(async (query) => {
+    const isAuthenticated = !!authStore.accessToken
     const text = query.toString().toLowerCase().trim()
     if (!text) {
       filteredImages.value = images.value
@@ -220,7 +245,9 @@ export const useImagesStore = defineStore("images", () => {
       error.value = null
 
       try {
-        const response = await api.get("/images/search", { params: { text } })
+        const params = { text }
+        if (isAuthenticated) params.includeHidden = true
+        const response = await api.get("/images/search", { params })
         filteredImages.value = response.data?.data?.images || []
       } catch (error) {
         error.value = error.response?.data?.message || error.message
@@ -262,13 +289,13 @@ export const useImagesStore = defineStore("images", () => {
   return {
     bulkDownload,
     bulkRemove,
+    bulkToggleHidden,
     bulkUpdateMetadata,
     confirmUpload,
     download,
     error,
     fetch,
     fetchAll,
-    filteredImages,
     images,
     initialize,
     initialized,
@@ -279,8 +306,10 @@ export const useImagesStore = defineStore("images", () => {
     remove,
     search,
     setOrder,
+    toggleHidden,
     updateLocal,
     updateMetadata,
-    uploadForReview
+    uploadForReview,
+    visibleFilteredImages
   }
 })
