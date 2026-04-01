@@ -411,7 +411,7 @@ export const searchWithVersions = async (text, options = {}) => {
   console.log(`AI service health: ${isAiHealthy ? "healthy" : "unavailable"}`)
 
   let embeddingResults = []
-  let textResults = []
+  let textResults
 
   if (isAiHealthy) {
     const [embeddingResult, textResult] = await Promise.allSettled([
