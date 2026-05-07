@@ -33,19 +33,19 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@eslint/compat": "^2.0.4",
+    "@eslint/compat": "^2.0.5",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
     "concurrently": "^9.2.1",
     "dotenv": "^17.4.2",
-    "eslint": "^10.2.0",
-    "eslint-plugin-perfectionist": "^5.8.0",
+    "eslint": "^10.3.0",
+    "eslint-plugin-perfectionist": "^5.9.0",
     "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-vue": "^10.8.0",
-    "globals": "^17.4.0",
+    "eslint-plugin-vue": "^10.9.1",
+    "globals": "^17.6.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "prettier": "^3.8.1"
+    "lint-staged": "^17.0.2",
+    "prettier": "^3.8.3"
   },
   "lint-staged": {
     "*.{js,mjs,vue}": [
