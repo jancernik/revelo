@@ -1,8 +1,9 @@
+import bcrypt from "bcryptjs"
+
 import { UserTables } from "#src/database/schema.js"
 import EmailVerificationToken from "#src/models/EmailVerificationToken.js"
 import { generateAccess } from "#src/utils/tokenUtils.js"
 import { getDb } from "#tests/testDatabase.js"
-import bcrypt from "bcryptjs"
 
 const baseUserData = (data = {}) => {
   const timestamp = Date.now()

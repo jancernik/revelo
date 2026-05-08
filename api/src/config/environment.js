@@ -1,6 +1,7 @@
-import { currentEnvFile, currentEnvFilePath, currentEnvType, error } from "#src/config/helpers.js"
 import dotenv from "dotenv"
 import fs from "fs"
+
+import { currentEnvFile, currentEnvFilePath, currentEnvType, error } from "#src/config/helpers.js"
 
 const requiredEnvVars = ["DB_PASSWORD", "JWT_SECRET", "JWT_REFRESH_SECRET", "DB_NAME"]
 

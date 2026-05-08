@@ -1,10 +1,11 @@
+import archiver from "archiver"
+import { eq, inArray } from "drizzle-orm"
+
 import { NotFoundError } from "#src/core/errors.js"
 import { ImagesTable } from "#src/database/schema.js"
 import Collection from "#src/models/Collection.js"
 import Image from "#src/models/Image.js"
 import { appendEntriesToArchive, getImageFileEntry } from "#src/services/imageService.js"
-import archiver from "archiver"
-import { eq, inArray } from "drizzle-orm"
 
 export const createCollection = async (data) => {
   const collectionData = {

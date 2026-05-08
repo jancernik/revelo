@@ -1,3 +1,11 @@
+import archiver from "archiver"
+import { eq, inArray } from "drizzle-orm"
+import exifr from "exifr"
+import fs from "fs/promises"
+import path from "path"
+import sharp from "sharp"
+import { v4 as uuid } from "uuid"
+
 import { config } from "#src/config/environment.js"
 import { AppError, FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
@@ -8,13 +16,6 @@ import {
   generateTextEmbedding
 } from "#src/services/aiService.js"
 import storageManager from "#src/storage/storageManager.js"
-import archiver from "archiver"
-import { eq, inArray } from "drizzle-orm"
-import exifr from "exifr"
-import fs from "fs/promises"
-import path from "path"
-import sharp from "sharp"
-import { v4 as uuid } from "uuid"
 
 const mimeTypes = {
   jpeg: "image/jpeg",

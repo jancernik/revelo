@@ -1,7 +1,8 @@
 <script setup>
-import Icon from "#src/components/common/Icon.vue"
 import { computed } from "vue"
 import { useTemplateRef } from "vue"
+
+import Icon from "#src/components/common/Icon.vue"
 
 const props = defineProps({
   image: {

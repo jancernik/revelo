@@ -1,8 +1,9 @@
+import { and, asc, eq, inArray } from "drizzle-orm"
+
 import { config } from "#src/config/environment.js"
 import { CollectionsTable, ImagesTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
 import storageManager from "#src/storage/storageManager.js"
-import { and, asc, eq, inArray } from "drizzle-orm"
 
 class Collection extends BaseModel {
   static QUERY_API_COLLECTION_COLUMNS = {

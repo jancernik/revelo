@@ -1,7 +1,8 @@
-import { loadEnvironment } from "#src/config/environment.js"
 import { drizzle } from "drizzle-orm/postgres-js"
 import { migrate } from "drizzle-orm/postgres-js/migrator"
 import postgres from "postgres"
+
+import { loadEnvironment } from "#src/config/environment.js"
 
 export async function migrateDb(envType = process.env.NODE_ENV || "development") {
   await loadEnvironment(envType)

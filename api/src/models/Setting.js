@@ -1,11 +1,12 @@
-import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
-import { SettingsTable } from "#src/database/schema.js"
-import BaseModel from "#src/models/BaseModel.js"
-import { createSettingValueSchema } from "#src/validation/settingSchemas.js"
 import { eq } from "drizzle-orm"
 import fs from "fs"
 import yaml from "js-yaml"
 import path from "path"
+
+import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
+import { SettingsTable } from "#src/database/schema.js"
+import BaseModel from "#src/models/BaseModel.js"
+import { createSettingValueSchema } from "#src/validation/settingSchemas.js"
 
 class Setting extends BaseModel {
   constructor() {

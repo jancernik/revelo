@@ -1,3 +1,5 @@
+import { Router } from "express"
+
 import {
   bulkDeleteImages,
   bulkDownloadImages,
@@ -26,7 +28,6 @@ import {
   searchSchemas,
   updateMetadataSchemas
 } from "#src/validation/imageSchemas.js"
-import { Router } from "express"
 
 const router = Router()
 

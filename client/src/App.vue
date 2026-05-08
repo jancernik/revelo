@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted, watch } from "vue"
+
 import Dialog from "#src/components/common/Dialog.vue"
 import FullscreenImage from "#src/components/common/FullscreenImage.vue"
 import Toast from "#src/components/common/Toast.vue"
@@ -7,7 +9,6 @@ import { useFavicon } from "#src/composables/useFavicon"
 // import { usePWAUpdate } from "#src/composables/usePWAUpdate"
 import { useTheme } from "#src/composables/useTheme"
 import Main from "#src/layouts/Main.vue"
-import { onMounted, watch } from "vue"
 
 useFavicon()
 // usePWAUpdate()

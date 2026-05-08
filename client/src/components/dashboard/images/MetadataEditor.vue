@@ -1,7 +1,8 @@
 <script setup>
+import { computed, nextTick, ref, watch } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
-import { computed, nextTick, ref, watch } from "vue"
 
 const props = defineProps({
   initialMetadata: {

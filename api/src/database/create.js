@@ -1,5 +1,6 @@
-import { loadEnvironment } from "#src/config/environment.js"
 import postgres from "postgres"
+
+import { loadEnvironment } from "#src/config/environment.js"
 
 export async function createDatabase(envType = process.env.NODE_ENV || "development") {
   await loadEnvironment(envType)

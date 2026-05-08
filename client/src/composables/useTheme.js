@@ -1,6 +1,7 @@
-import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
+
+import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 
 const theme = ref(localStorage.getItem("theme") || "system")
 const systemPrefersDark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches)

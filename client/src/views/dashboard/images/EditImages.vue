@@ -1,12 +1,13 @@
 <script setup>
+import { storeToRefs } from "pinia"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
-import { storeToRefs } from "pinia"
-import { computed, onMounted, onUnmounted, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
 
 const { show: showToast } = useToast()
 const route = useRoute()

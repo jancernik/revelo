@@ -1,5 +1,6 @@
-import { useWindowSize } from "#src/composables/useWindowSize"
 import { computed, onMounted, onUnmounted, ref } from "vue"
+
+import { useWindowSize } from "#src/composables/useWindowSize"
 
 const MOBILE_BREAKPOINT = 650
 

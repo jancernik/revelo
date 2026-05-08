@@ -1,6 +1,7 @@
-import { loadEnvironment } from "#src/config/environment.js"
 import postgres from "postgres"
 import readline from "readline"
+
+import { loadEnvironment } from "#src/config/environment.js"
 
 const askConfirmation = (question) => {
   return new Promise((resolve) => {

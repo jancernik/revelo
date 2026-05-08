@@ -1,8 +1,9 @@
+import { defineStore } from "pinia"
+import { computed, ref, watch } from "vue"
+
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth.js"
 import api from "#src/utils/api"
-import { defineStore } from "pinia"
-import { computed, ref, watch } from "vue"
 
 export const useSettingsStore = defineStore("settings", () => {
   const { show: showToast } = useToast()

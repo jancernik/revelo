@@ -1,8 +1,9 @@
-import { SettingsTable } from "#src/database/schema.js"
-import { getDb } from "#tests/testDatabase.js"
 import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
+
+import { SettingsTable } from "#src/database/schema.js"
+import { getDb } from "#tests/testDatabase.js"
 
 export async function cleanupTestSettingsFile() {
   const tempSrcDir = path.join(process.cwd(), "temp/src")

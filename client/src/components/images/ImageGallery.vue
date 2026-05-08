@@ -1,4 +1,7 @@
 <script setup>
+import { gsap } from "gsap"
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
+
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
 import Loading from "#src/components/Loading.vue"
@@ -17,8 +20,6 @@ import {
   sortStatesByDistance
 } from "#src/utils/galleryHelpers"
 import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
-import { gsap } from "gsap"
-import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 
 const SPACING_BASE = 20 // Space between images and columns in pixels
 const SPACING_SMALL = 8 // Space between images and columns in pixels for small screens

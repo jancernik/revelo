@@ -1,10 +1,11 @@
 <script setup>
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useSettings } from "#src/composables/useSettings"
 import { useToast } from "#src/composables/useToast"
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
 
 const { show: showToast } = useToast()
 const { settings } = useSettings()

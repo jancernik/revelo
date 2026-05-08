@@ -1,11 +1,12 @@
 <script setup>
+import { gsap } from "gsap"
+import { computed, ref, useTemplateRef } from "vue"
+
 import Icon from "#src/components/common/Icon.vue"
 import { useElementRect } from "#src/composables/useElementRect"
 import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
-import { gsap } from "gsap"
-import { computed, ref, useTemplateRef } from "vue"
 
 const props = defineProps({
   menu: { required: true, type: Object }

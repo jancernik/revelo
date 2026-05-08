@@ -1,6 +1,7 @@
+import fs from "fs"
+
 import { config } from "#src/config/environment.js"
 import { AppError } from "#src/core/errors.js"
-import fs from "fs"
 
 class RequestQueue {
   constructor() {

@@ -1,13 +1,14 @@
 <script setup>
+import { storeToRefs } from "pinia"
+import { onMounted, onUnmounted, ref, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
 import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
-import { storeToRefs } from "pinia"
-import { onMounted, onUnmounted, ref, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const router = useRouter()
 const { reset, setHeader, setSelection } = useDashboardLayout()

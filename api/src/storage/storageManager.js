@@ -1,9 +1,10 @@
+import fs from "fs/promises"
+import path from "path"
+
 import { config } from "#src/config/environment.js"
 import { AppError } from "#src/core/errors.js"
 import LocalStorageAdapter from "#src/storage/LocalStorageAdapter.js"
 import S3StorageAdapter from "#src/storage/S3StorageAdapter.js"
-import fs from "fs/promises"
-import path from "path"
 
 class StorageManager {
   get adapter() {

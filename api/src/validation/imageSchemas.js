@@ -1,5 +1,6 @@
-import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
+
+import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),

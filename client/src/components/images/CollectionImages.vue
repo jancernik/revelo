@@ -1,9 +1,10 @@
 <script setup>
+import { gsap } from "gsap"
+import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
+
 import { useElementSize } from "#src/composables/useElementSize"
 import { getThumbnailPath } from "#src/utils/helpers"
 import { clamp, lerp } from "#src/utils/helpers"
-import { gsap } from "gsap"
-import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
 
 const DRAG_FACTOR = 1.5
 const WHEEL_IMPULSE = 5.0

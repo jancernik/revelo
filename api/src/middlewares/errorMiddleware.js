@@ -1,6 +1,7 @@
+import util from "util"
+
 import { config } from "#src/config/environment.js"
 import { NotFoundError } from "#src/core/errors.js"
-import util from "util"
 
 // eslint-disable-next-line no-unused-vars
 export const errorHandler = (error, req, res, _next) => {

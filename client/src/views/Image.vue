@@ -1,9 +1,10 @@
 <script setup>
+import { onMounted, onUnmounted, ref } from "vue"
+import { useRouter } from "vue-router"
+
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
 import { useImagesStore } from "#src/stores/images"
-import { onMounted, onUnmounted, ref } from "vue"
-import { useRouter } from "vue-router"
 
 const { hide: hideFullscreenImage, show: showFullscreenImage } = useFullscreenImage()
 const { hide: hideMenu } = useMenu()

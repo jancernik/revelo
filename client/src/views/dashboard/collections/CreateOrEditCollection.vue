@@ -1,10 +1,11 @@
 <script setup>
+import { computed, onMounted, onUnmounted, ref } from "vue"
+import { useRouter } from "vue-router"
+
 import Input from "#src/components/common/Input.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
-import { computed, onMounted, onUnmounted, ref } from "vue"
-import { useRouter } from "vue-router"
 
 const props = defineProps({
   id: {

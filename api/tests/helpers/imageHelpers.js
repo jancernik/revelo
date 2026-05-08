@@ -1,8 +1,9 @@
+import fs from "fs/promises"
+import path from "path"
+
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import storageManager from "#src/storage/storageManager.js"
 import { getDb } from "#tests/testDatabase.js"
-import fs from "fs/promises"
-import path from "path"
 
 const baseImageData = (data = {}) => {
   const timestamp = Date.now()

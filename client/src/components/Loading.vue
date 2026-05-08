@@ -1,6 +1,7 @@
 <script setup>
-import Progress from "#src/components/common/Progress.vue"
 import { computed, useTemplateRef, watch } from "vue"
+
+import Progress from "#src/components/common/Progress.vue"
 
 const HIDE_DELAY = 300
 const HIDE_DELAY_MS = `${HIDE_DELAY}ms`

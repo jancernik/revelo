@@ -1,9 +1,10 @@
+import { jest } from "@jest/globals"
+import jwt from "jsonwebtoken"
+
 import { config } from "#src/config/environment.js"
 import { NotFoundError, UnauthorizedError } from "#src/core/errors.js"
 import { auth } from "#src/middlewares/authMiddleware.js"
 import User from "#src/models/User.js"
-import { jest } from "@jest/globals"
-import jwt from "jsonwebtoken"
 
 describe("Auth Middleware", () => {
   let next, req, res

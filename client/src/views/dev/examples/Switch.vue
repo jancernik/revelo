@@ -1,6 +1,7 @@
 <script setup>
-import RSwitch from "#src/components/common/Switch.vue"
 import { ref } from "vue"
+
+import RSwitch from "#src/components/common/Switch.vue"
 
 const viewMode = ref("grid")
 const theme = ref("light")

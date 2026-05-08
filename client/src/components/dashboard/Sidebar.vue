@@ -1,10 +1,11 @@
 <script setup>
+import { computed, reactive, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+
 import Icon from "#src/components/common/Icon.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useAuthStore } from "#src/stores/auth"
-import { computed, reactive, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
 
 const LG_BREAKPOINT = 992
 

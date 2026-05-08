@@ -1,4 +1,8 @@
 <script setup>
+import { storeToRefs } from "pinia"
+import { onMounted, onUnmounted, ref, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -6,9 +10,6 @@ import { useDialog } from "#src/composables/useDialog"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { useImagesStore } from "#src/stores/images"
-import { storeToRefs } from "pinia"
-import { onMounted, onUnmounted, ref, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const commitHash = import.meta.env.VITE_COMMIT_HASH || "dev"
 const router = useRouter()

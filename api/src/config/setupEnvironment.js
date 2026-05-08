@@ -1,3 +1,5 @@
+import fs from "fs"
+
 import {
   createInterface,
   currentEnvFile,
@@ -8,7 +10,6 @@ import {
   question,
   success
 } from "#src/config/helpers.js"
-import fs from "fs"
 
 const envConfig = {
   development: {

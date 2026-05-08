@@ -1,3 +1,5 @@
+import { createRouter, createWebHistory } from "vue-router"
+
 import CollectionsLayout from "#src/layouts/Collections.vue"
 import DashboardLayout from "#src/layouts/Dashboard.vue"
 import ImagesLayout from "#src/layouts/Images.vue"
@@ -22,7 +24,6 @@ import NotFound from "#src/views/NotFound.vue"
 import Signup from "#src/views/Signup.vue"
 import VerificationPending from "#src/views/VerificationPending.vue"
 import VerifyEmail from "#src/views/VerifyEmail.vue"
-import { createRouter, createWebHistory } from "vue-router"
 
 const routes = [
   { component: Home, name: "home", path: "/" },

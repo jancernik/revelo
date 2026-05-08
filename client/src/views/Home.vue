@@ -1,8 +1,9 @@
 <script setup>
-import ImageGallery from "#src/components/images/ImageGallery.vue"
-import { useTheme } from "#src/composables/useTheme"
 import { onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
+
+import ImageGallery from "#src/components/images/ImageGallery.vue"
+import { useTheme } from "#src/composables/useTheme"
 
 const { registerImageGallery } = useTheme()
 const imageGallery = ref()

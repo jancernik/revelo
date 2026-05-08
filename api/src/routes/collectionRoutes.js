@@ -1,3 +1,5 @@
+import { Router } from "express"
+
 import {
   bulkDeleteCollections,
   bulkDownloadCollections,
@@ -22,7 +24,6 @@ import {
   setCollectionImagesSchemas,
   updateCollectionSchemas
 } from "#src/validation/collectionSchemas.js"
-import { Router } from "express"
 
 const router = Router()
 

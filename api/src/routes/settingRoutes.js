@@ -1,3 +1,5 @@
+import { Router } from "express"
+
 import {
   getSetting,
   getSettings,
@@ -12,7 +14,6 @@ import {
   resetSettingSchemas,
   updateSettingsSchemas
 } from "#src/validation/settingSchemas.js"
-import { Router } from "express"
 
 const router = Router()
 

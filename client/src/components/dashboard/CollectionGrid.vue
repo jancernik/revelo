@@ -1,8 +1,9 @@
 <script setup>
-import Icon from "#src/components/common/Icon.vue"
-import { getThumbnailPath } from "#src/utils/helpers"
 import { computed } from "vue"
 import { useRouter } from "vue-router"
+
+import Icon from "#src/components/common/Icon.vue"
+import { getThumbnailPath } from "#src/utils/helpers"
 
 const props = defineProps({
   allowSelect: {

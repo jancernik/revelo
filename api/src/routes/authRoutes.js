@@ -1,3 +1,5 @@
+import { Router } from "express"
+
 import {
   login,
   logout,
@@ -13,7 +15,6 @@ import {
   signupSchemas,
   verifyEmailSchemas
 } from "#src/validation/authSchemas.js"
-import { Router } from "express"
 
 const router = Router()
 

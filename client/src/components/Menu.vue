@@ -1,4 +1,8 @@
 <script setup>
+import gsap from "gsap"
+import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+
 import AboutDialog from "#src/components/AboutDialog.vue"
 import Icon from "#src/components/common/Icon.vue"
 import ImageSearcher from "#src/components/ImageSearcher.vue"
@@ -7,9 +11,6 @@ import { useMenu } from "#src/composables/useMenu"
 import { useSettings } from "#src/composables/useSettings"
 import { useAuthStore } from "#src/stores/auth"
 import { useImagesStore } from "#src/stores/images"
-import gsap from "gsap"
-import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
 const router = useRouter()

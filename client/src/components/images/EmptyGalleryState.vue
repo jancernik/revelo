@@ -1,7 +1,8 @@
 <script setup>
-import Icon from "#src/components/common/Icon.vue"
 import { gsap } from "gsap"
 import { onMounted } from "vue"
+
+import Icon from "#src/components/common/Icon.vue"
 
 const positionIcons = () => {
   const icons = document.querySelectorAll(".floating-icon")

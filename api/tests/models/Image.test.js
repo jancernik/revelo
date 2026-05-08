@@ -1,3 +1,6 @@
+import { eq } from "drizzle-orm"
+import fs from "fs/promises"
+
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
 import storageManager from "#src/storage/storageManager.js"
@@ -10,8 +13,6 @@ import {
   createTempFile,
   getMetadataTestData
 } from "#tests/helpers/imageHelpers.js"
-import { eq } from "drizzle-orm"
-import fs from "fs/promises"
 
 describe("Image Model", () => {
   beforeEach(async () => {

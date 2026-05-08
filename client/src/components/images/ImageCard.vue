@@ -1,6 +1,7 @@
 <script setup>
-import { getImageVersion } from "#src/utils/helpers"
 import { ref } from "vue"
+
+import { getImageVersion } from "#src/utils/helpers"
 
 const props = defineProps({
   hasDragged: {

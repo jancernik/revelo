@@ -1,6 +1,7 @@
 <script setup>
-import Progress from "#src/components/common/Progress.vue"
 import { onMounted, onUnmounted, ref } from "vue"
+
+import Progress from "#src/components/common/Progress.vue"
 
 const animatedProgress = ref(0)
 

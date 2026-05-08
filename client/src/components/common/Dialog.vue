@@ -1,8 +1,9 @@
 <script setup>
+import { watch } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useDialog } from "#src/composables/useDialog"
-import { watch } from "vue"
 
 const { dialogState, hide } = useDialog()
 

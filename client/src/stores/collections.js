@@ -1,10 +1,11 @@
+import { defineStore } from "pinia"
+import { ref, watch } from "vue"
+
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth.js"
 import { useImagesStore } from "#src/stores/images.js"
 import api from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
-import { defineStore } from "pinia"
-import { ref, watch } from "vue"
 
 export const useCollectionsStore = defineStore("collections", () => {
   const { show: showToast } = useToast()

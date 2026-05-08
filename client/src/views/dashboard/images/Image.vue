@@ -1,12 +1,13 @@
 <script setup>
+import { computed, onMounted, onUnmounted, ref } from "vue"
+import { useRouter } from "vue-router"
+
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 import { getImageVersion } from "#src/utils/helpers"
-import { computed, onMounted, onUnmounted, ref } from "vue"
-import { useRouter } from "vue-router"
 
 const props = defineProps({
   id: {

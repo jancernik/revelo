@@ -1,7 +1,8 @@
 <script setup>
-import Sidebar from "#src/views/dev/Sidebar.vue"
 import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
+
+import Sidebar from "#src/views/dev/Sidebar.vue"
 
 const route = useRoute()
 const router = useRouter()

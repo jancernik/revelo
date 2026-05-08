@@ -1,8 +1,9 @@
+import jwt from "jsonwebtoken"
+import request from "supertest"
+
 import { config } from "#src/config/environment.js"
 import { createAdminUser, createUser, createVerificationToken } from "#tests/helpers/authHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
-import jwt from "jsonwebtoken"
-import request from "supertest"
 
 const api = createTestServer()
 

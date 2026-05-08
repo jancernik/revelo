@@ -1,4 +1,6 @@
 <script setup>
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
+
 import InputSetting from "#src/components/dashboard/settings/InputSetting.vue"
 import SwitchSetting from "#src/components/dashboard/settings/SwitchSetting.vue"
 import TextPairsSetting from "#src/components/dashboard/settings/TextPairsSetting.vue"
@@ -6,7 +8,6 @@ import ToggleSetting from "#src/components/dashboard/settings/ToggleSetting.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useSettings } from "#src/composables/useSettings"
 import api from "#src/utils/api"
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 
 const { reset, setFooter, setHeader } = useDashboardLayout()
 const settings = ref([])

@@ -1,13 +1,14 @@
 <script setup>
+import { storeToRefs } from "pinia"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
 import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
-import { storeToRefs } from "pinia"
-import { computed, onMounted, onUnmounted, ref, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const router = useRouter()
 const { reset, setHeader, setSelection } = useDashboardLayout()

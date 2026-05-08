@@ -1,3 +1,5 @@
+import request from "supertest"
+
 import { createAccessToken, createAdminUser } from "#tests/helpers/authHelpers.js"
 import {
   createCollection,
@@ -6,7 +8,6 @@ import {
 } from "#tests/helpers/collectionHelpers.js"
 import { createImageWithVersions } from "#tests/helpers/imageHelpers.js"
 import { createTestServer } from "#tests/testServer.js"
-import request from "supertest"
 
 const api = createTestServer()
 

@@ -1,4 +1,9 @@
 <script setup>
+import { gsap } from "gsap"
+import { Flip } from "gsap/Flip"
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
@@ -12,10 +17,6 @@ import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
 import { getImageVersion } from "#src/utils/helpers"
-import { gsap } from "gsap"
-import { Flip } from "gsap/Flip"
-import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const FLIP_EASE = "power2.inOut" // Easing function for FLIP animation transitions
 const REGULAR_DURATION = 0.4 // Duration for fallback fade/scale animation when no thumbnail available

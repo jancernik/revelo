@@ -1,5 +1,6 @@
-import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 import { z } from "zod"
+
+import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
 
 const collectionDataSchema = z.object({
   description: z.string().optional().nullable(),

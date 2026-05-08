@@ -1,9 +1,10 @@
 <script setup>
+import { computed, nextTick, onUnmounted, useTemplateRef, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import Icon from "#src/components/common/Icon.vue"
 import { useSortableGrid } from "#src/composables/useSortableGrid"
 import { getThumbnailPath } from "#src/utils/helpers"
-import { computed, nextTick, onUnmounted, useTemplateRef, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const props = defineProps({
   allowClick: {

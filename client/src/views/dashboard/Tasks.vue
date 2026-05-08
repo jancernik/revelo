@@ -1,9 +1,10 @@
 <script setup>
+import { onMounted, onUnmounted } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import api from "#src/utils/api"
-import { onMounted, onUnmounted } from "vue"
 
 const { resetHeader, setHeader } = useDashboardLayout()
 const { show: showToast } = useToast()

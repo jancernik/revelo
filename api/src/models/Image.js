@@ -1,11 +1,12 @@
-import { config } from "#src/config/environment.js"
-import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
-import BaseModel from "#src/models/BaseModel.js"
-import storageManager from "#src/storage/storageManager.js"
 import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
+
+import { config } from "#src/config/environment.js"
+import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
+import BaseModel from "#src/models/BaseModel.js"
+import storageManager from "#src/storage/storageManager.js"
 
 class Image extends BaseModel {
   static FLUENT_API_IMAGE_COLUMNS = {

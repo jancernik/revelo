@@ -1,5 +1,6 @@
-import { clamp } from "#src/utils/helpers"
 import { ref } from "vue"
+
+import { clamp } from "#src/utils/helpers"
 
 const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
 const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap

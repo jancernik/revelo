@@ -1,8 +1,9 @@
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
+
 import { config } from "#src/config/environment.js"
 import { FilteredLogger } from "#src/database/logger.js"
 import * as schema from "#src/database/schema.js"
-import { drizzle } from "drizzle-orm/postgres-js"
-import postgres from "postgres"
 
 const suppressed = ['set "embedding"', '"images"."embedding"', "to_tsvector"]
 

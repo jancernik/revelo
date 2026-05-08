@@ -1,6 +1,7 @@
 <script setup>
-import Toggle from "#src/components/common/Toggle.vue"
 import { ref } from "vue"
+
+import Toggle from "#src/components/common/Toggle.vue"
 
 const basicToggle = ref(true)
 const labeledToggle = ref(true)

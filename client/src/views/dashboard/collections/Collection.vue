@@ -1,12 +1,13 @@
 <script setup>
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
 import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
-import { computed, onMounted, onUnmounted, ref, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const props = defineProps({
   id: {

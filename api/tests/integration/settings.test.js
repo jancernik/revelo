@@ -1,3 +1,5 @@
+import request from "supertest"
+
 import Setting from "#src/models/Setting.js"
 import {
   createAccessToken,
@@ -7,7 +9,6 @@ import {
 import { cleanupTestSettingsFile, createTestSettingsFile } from "#tests/helpers/settingHelpers.js"
 import { TEST_SETTINGS } from "#tests/testFixtures.js"
 import { createTestServer } from "#tests/testServer.js"
-import request from "supertest"
 
 const api = createTestServer()
 

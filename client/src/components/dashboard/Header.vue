@@ -1,9 +1,10 @@
 <script setup>
+import { computed } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDevice } from "#src/composables/useDevice"
-import { computed } from "vue"
 
 const { isMobile } = useDevice()
 const { header, selection, toggleMobileMenu } = useDashboardLayout()

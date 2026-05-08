@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm"
+
 import {
   ForbiddenError,
   NotFoundError,
@@ -10,7 +12,6 @@ import Setting from "#src/models/Setting.js"
 import User, { userSerializer } from "#src/models/User.js"
 import { sendVerificationEmail, sendWelcomeEmail } from "#src/services/emailService.js"
 import { generateAccess, generateRefresh, verifyRefresh } from "#src/utils/tokenUtils.js"
-import { eq } from "drizzle-orm"
 
 export const signup = async ({ email, password, username }) => {
   const enableSignups = await Setting.get("enableSignups")

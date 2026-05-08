@@ -1,4 +1,7 @@
 <script setup>
+import { computed, nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue"
+import { useRouter } from "vue-router"
+
 import Icon from "#src/components/common/Icon.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import ImageUploader from "#src/components/dashboard/images/ImageUploader.vue"
@@ -6,8 +9,6 @@ import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
-import { computed, nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue"
-import { useRouter } from "vue-router"
 
 const router = useRouter()
 const { reset, resetFooter, setFooter, setHeader } = useDashboardLayout()

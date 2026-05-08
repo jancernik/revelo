@@ -1,7 +1,8 @@
 <script setup>
+import { computed } from "vue"
+
 import Button from "#src/components/common/Button.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
-import { computed } from "vue"
 
 const { footer } = useDashboardLayout()
 const showFooter = computed(() => footer.actions.length > 0)

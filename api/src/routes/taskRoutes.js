@@ -1,3 +1,5 @@
+import { Router } from "express"
+
 import {
   backfillCaptions,
   backfillEmbeddings,
@@ -7,7 +9,6 @@ import {
 import { auth } from "#src/middlewares/authMiddleware.js"
 import { validate } from "#src/middlewares/validationMiddleware.js"
 import { backfillCaptionsSchemas, backfillEmbeddingsSchemas } from "#src/validation/taskSchemas.js"
-import { Router } from "express"
 
 const router = Router()
 

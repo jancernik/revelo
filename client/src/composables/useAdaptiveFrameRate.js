@@ -1,6 +1,7 @@
+import { gsap } from "gsap"
+
 import { useDevice } from "#src/composables/useDevice"
 import { useSettings } from "#src/composables/useSettings"
-import { gsap } from "gsap"
 
 const TARGET_FPS = 75
 
