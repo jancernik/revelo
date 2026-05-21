@@ -1,18 +1,17 @@
 FROM node:24-alpine AS base
 
 # Install pnpm
-RUN npm install -g pnpm@10.13.1
+RUN npm install -g pnpm@11.2.2
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/client
 
-# Copy workspace configuration
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
-COPY client/package.json ./client/
+# Copy client files
+COPY client/package.json ./package.json
+COPY client/ ./
 
 # Install dependencies
-FROM base AS deps
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build stage
 FROM base AS builder
@@ -20,20 +19,9 @@ FROM base AS builder
 # Accept build arg for commit hash
 ARG GIT_COMMIT_HASH
 
-# Copy dependencies and workspace files
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/client/node_modules ./client/node_modules
-
-# Copy environment and config files
-COPY .env* ./
-COPY api/src/config/ ./api/src/config/
-COPY client/ ./client/
-
-# Set working directory to client for build
-WORKDIR /app/client
-
-# Install dependencies for this specific package
-RUN pnpm install
+# Copy environment and config files needed at build time
+COPY .env* ../
+COPY api/src/config/ ../api/src/config/
 
 # Build the application with commit hash
 ENV VITE_COMMIT_HASH=${GIT_COMMIT_HASH}
@@ -52,8 +40,8 @@ COPY client/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Change ownership of static files and cache directories
 RUN chown -R nginx-user:nginx-user /usr/share/nginx/html && \
-    mkdir -p /var/cache/nginx && chown -R nginx-user:nginx-user /var/cache/nginx && \
-    mkdir -p /var/log/nginx && chown -R nginx-user:nginx-user /var/log/nginx
+  mkdir -p /var/cache/nginx && chown -R nginx-user:nginx-user /var/cache/nginx && \
+  mkdir -p /var/log/nginx && chown -R nginx-user:nginx-user /var/log/nginx
 
 # Expose port
 EXPOSE 80

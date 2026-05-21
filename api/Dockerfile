@@ -1,7 +1,7 @@
 FROM node:24-alpine AS base
 
 # Install pnpm
-RUN npm install -g pnpm@10.13.1
+RUN npm install -g pnpm@11.2.2
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs

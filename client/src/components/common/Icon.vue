@@ -28,7 +28,7 @@ const loadedIcon = ref(null)
 
 const loadIcon = async () => {
   try {
-    const icon = defineAsyncComponent(async () => (await import("lucide-vue-next"))[props.name])
+    const icon = defineAsyncComponent(async () => (await import("@lucide/vue"))[props.name])
     loadedIcon.value = markRaw(icon)
   } catch (error) {
     console.error(`Failed to load icon: ${props.name}`, error)
