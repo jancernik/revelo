@@ -18,15 +18,15 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vitest/eslint-plugin": "1.6.19",
+    "@vitest/eslint-plugin": "1.6.20",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/test-utils": "^2.4.11",
     "dotenv": "^17.4.2",
     "jsdom": "^29.1.1",
-    "sass": "^1.99.0",
+    "sass": "^1.101.0",
     "vite": "^8.0.16",
     "vite-plugin-pwa": "^1.3.0",
-    "vite-plugin-vue-devtools": "^8.1.2",
+    "vite-plugin-vue-devtools": "^8.1.3",
     "vitest": "^4.1.8",
     "vue-eslint-parser": "^10.4.1",
     "workbox-window": "^7.4.1"
