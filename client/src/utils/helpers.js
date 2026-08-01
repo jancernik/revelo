@@ -18,6 +18,13 @@ export const lerp = (startValue, endValue, interpolationFactor) => {
   return startValue * (1 - interpolationFactor) + endValue * interpolationFactor
 }
 
+export const smoothingFactor = (perFrameFactor, deltaTime, referenceFps = 60) => {
+  if (perFrameFactor >= 1) return 1
+  if (perFrameFactor <= 0) return 0
+  const rate = -Math.log(1 - perFrameFactor) * referenceFps
+  return 1 - Math.exp(-rate * deltaTime)
+}
+
 export const createArray = (length, fillValueOrCallback) => {
   if (typeof fillValueOrCallback === "function") {
     return Array.from({ length }, (_, index) => fillValueOrCallback(index))

@@ -15,6 +15,7 @@ import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useCollectionsStore } from "#src/stores/collections.js"
+import { SPACING_BASE, SPACING_SMALL, transitionDuration } from "#src/utils/galleryConstants"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
 import { getImageVersion } from "#src/utils/helpers"
 
@@ -24,8 +25,6 @@ const REGULAR_EASE = "power3.inOut" // Easing function for fallback animations
 const REGULAR_SCALE = 0.85 // Initial scale factor for fallback show/hide animations
 const SLIDE_EASE = "power2.inOut" // Easing function for metadata/collection slide animations
 const SLIDE_DURATION = 0.4 // Duration for metadata/collection slide animations
-const SPACING_BASE = 20 // Spacing offset in pixels for slide animations
-const SPACING_SMALL = 8 // Spacing offset in pixels for narrow screens
 const SPACING_BREAKPOINT = 700 // Screen width threshold for switching to small spacing
 const SLIDE_IMAGE_BUFFER = 5 // Extra pixels to position slide image beyond viewport edge
 const CONTROLS_SHOW_DELAY = 100 // Delay in ms before showing floating controls after animation starts
@@ -107,7 +106,7 @@ const { height: windowHeight, width: windowWidth } = useWindowSize()
 const { height: collectionHeight } = useElementSize(collectionElement)
 const { height: titleDescriptionHeight } = useElementSize(titleDescriptionElement)
 
-const flipDuration = computed(() => (isMobile.value ? 0.35 : 0.5))
+const flipDuration = computed(() => transitionDuration(isMobile.value))
 
 const spacing = computed(() =>
   windowWidth.value < SPACING_BREAKPOINT ? SPACING_SMALL : SPACING_BASE

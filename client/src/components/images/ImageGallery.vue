@@ -9,25 +9,23 @@ import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
 import { useDevice } from "#src/composables/useDevice"
 import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
+import { useGalleryLayout } from "#src/composables/useGalleryLayout"
 import { useMenu } from "#src/composables/useMenu"
-import { useWindowSize } from "#src/composables/useWindowSize"
-import { useImagesStore } from "#src/stores/images"
+import { transitionDuration, VIRTUAL_BUFFER, ZOOM_DURATION } from "#src/utils/galleryConstants"
 import {
   calculateAnimationProgress,
   elementCenter,
-  groupImages,
   interpolateFadeValue,
   sortStatesByDistance
 } from "#src/utils/galleryHelpers"
-import { clamp, clearArray, createArray, easeInOutSine, lerp } from "#src/utils/helpers"
-
-const SPACING_BASE = 20 // Space between images and columns in pixels
-const SPACING_SMALL = 8 // Space between images and columns in pixels for small screens
-const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performance optimization
-const MAX_COLUMN_WIDTH = 300 // Maximum width of individual columns in pixels
-const MIN_COLUMNS = 2 // Minimum number of columns to display
-const MAX_COLUMNS = 5 // Maximum number of columns to display
-const MAX_WIDTH = 1600 // Maximum width of the gallery area in pixels
+import {
+  clamp,
+  clearArray,
+  createArray,
+  easeInOutSine,
+  lerp,
+  smoothingFactor
+} from "#src/utils/helpers"
 
 const DRAG_FACTOR = 1 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
@@ -46,14 +44,14 @@ const MIN_SCROLL_LERP = 0.05 // Lerp factor at outermost columns (slowest respon
 const TOUCH_SCROLL_LERP = 0.6 // Uniform lerp factor for touch devices
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
 const TOUCH_VELOCITY_LERP_FACTOR = 0.9 // Higher velocity lerp for more responsive touch
+const SMOOTHING_REFERENCE_FPS = 120 // Refresh rate the lerp factors were tuned against
 const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
-
-const ZOOM_DURATION = 0.2 // Duration for images to fade out when zooming to detail view
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
 let lastFrameTimestamp = 0
+let elapsedSinceLastUpdate = 0
 let lastDragTimestamp = 0
 let zoomAnimationEndTimestamp = 0
 let zoomAnimationStartTimestamp = 0
@@ -106,7 +104,18 @@ const props = defineProps({
 })
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
-const { height: windowHeight, width: windowWidth } = useWindowSize()
+const {
+  columnCount,
+  columnWidth,
+  currentSpacing,
+  firstColumnMargin,
+  imageGroups,
+  imagesStore,
+  noImages,
+  updateImageGroups,
+  windowHeight,
+  windowWidth
+} = useGalleryLayout(() => props.columns)
 const {
   cancelPendingHide: cancelPendingHideMenu,
   hide: hideMenu,
@@ -118,12 +127,10 @@ const {
 const { dialogState } = useDialog()
 const { isMobile, isTouchPrimary } = useDevice()
 const frameRateAdapter = useAdaptiveFrameRate()
-const imagesStore = useImagesStore()
 const imageGallery = useTemplateRef("image-gallery")
 
-const zoomTotalDuration = computed(() => (isMobile.value ? 0.35 : 0.5))
+const zoomTotalDuration = computed(() => transitionDuration(isMobile.value))
 
-const imageGroups = ref([])
 const loadedImageIds = ref(new Set())
 const loadedTinyImageIds = ref(new Set())
 const visibleImageIds = ref(new Set())
@@ -142,44 +149,6 @@ const columnsHeights = ref([])
 
 let userInactivityTimer = null
 const USER_INACTIVITY_TIMEOUT = 3000
-const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
-const noImages = computed(() => imagesStore.visibleFilteredImages.length === 0)
-
-const columnCount = computed(() => {
-  if (props.columns && props.columns >= MIN_COLUMNS && props.columns <= MAX_COLUMNS) {
-    return props.columns
-  }
-  const base = Math.ceil((maxWindowWidth.value - SPACING_BASE) / (MAX_COLUMN_WIDTH + SPACING_BASE))
-  const clamped = clamp(base, MIN_COLUMNS, MAX_COLUMNS)
-  if (clamped % 2 === 0 && clamped !== 2) return clamped < MAX_COLUMNS ? clamped + 1 : clamped - 1
-  return clamped
-})
-
-const currentSpacing = computed(() => (columnCount.value === 2 ? SPACING_SMALL : SPACING_BASE))
-
-const availableWidth = computed(() => {
-  return props.columns ? windowWidth.value : maxWindowWidth.value
-})
-
-const columnWidth = computed(() => {
-  const totalSpacing = currentSpacing.value * 2 + currentSpacing.value * (columnCount.value - 1)
-  return (availableWidth.value - totalSpacing) / columnCount.value
-})
-
-const galleryWidth = computed(() => {
-  return (
-    currentSpacing.value * 2 +
-    columnCount.value * columnWidth.value +
-    currentSpacing.value * (columnCount.value - 1)
-  )
-})
-
-const centerOffset = computed(() => {
-  return Math.max(0, (windowWidth.value - galleryWidth.value) / 2)
-})
-
-const firstColumnMargin = computed(() => centerOffset.value + currentSpacing.value)
-
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
 })
@@ -355,19 +324,6 @@ const selectImageVertically = (direction = 1) => {
 const clearImageSelection = () => {
   selectedImage.value = null
   updateImagePositions()
-}
-
-const updateImageGroups = () => {
-  const groups = groupImages(imagesStore.visibleFilteredImages, columnCount.value, {
-    preserveOrder: imagesStore.orderBy !== null
-  })
-
-  // Only shuffle within columns if orderBy is null (random mode)
-  if (imagesStore.orderBy === null) {
-    imageGroups.value = groups.map((group) => gsap.utils.shuffle(group))
-  } else {
-    imageGroups.value = groups
-  }
 }
 
 const calculateImageCardsData = () => {
@@ -575,14 +531,18 @@ const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, 
   return interpolateFadeValue(fromValue, toValue, progress, easeInOutSine)
 }
 
-const updateScrollTargets = () => {
+const updateScrollTargets = (deltaTime = 1 / SMOOTHING_REFERENCE_FPS) => {
   for (let columnIndex = 0; columnIndex < scrollTargets.length; columnIndex++) {
     const lerpFactor = isTouchPrimary.value
       ? TOUCH_SCROLL_LERP
       : (columnLerpFactors[columnIndex] ?? MIN_SCROLL_LERP)
     const shouldReverse = props.alternatingScroll && columnIndex % 2 === 1
     const targetPosition = shouldReverse ? -scrollPosition : scrollPosition
-    scrollTargets[columnIndex] = lerp(scrollTargets[columnIndex], targetPosition, lerpFactor)
+    scrollTargets[columnIndex] = lerp(
+      scrollTargets[columnIndex],
+      targetPosition,
+      smoothingFactor(lerpFactor, deltaTime, SMOOTHING_REFERENCE_FPS)
+    )
   }
 }
 
@@ -605,10 +565,10 @@ const calculateWrappedPosition = (card) => {
 }
 
 const updateImagePositions = (options = {}) => {
-  const { forcePosition = false } = options
+  const { deltaTime, forcePosition = false } = options
   if (isBuildingLayout.value) return
 
-  updateScrollTargets()
+  updateScrollTargets(deltaTime)
 
   const viewTop = -VIRTUAL_BUFFER
   const viewBottom = windowHeight.value + VIRTUAL_BUFFER
@@ -739,6 +699,7 @@ const updateVelocity = (deltaTime) => {
 const startRenderLoop = () => {
   if (renderLoopId) return
   lastFrameTimestamp = performance.now()
+  elapsedSinceLastUpdate = 0
   lastResizeFactor = resizeFactor.value
   renderLoopId = requestAnimationFrame(renderFrame)
 }
@@ -790,6 +751,7 @@ const renderFrame = (timestamp) => {
 
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
   updateVelocity(deltaTime)
+  elapsedSinceLastUpdate = Math.min(MAX_DELTA_TIME, elapsedSinceLastUpdate + deltaTime)
 
   if (frameRateAdapter.shouldSkipFrame(timestamp)) {
     lastFrameTimestamp = timestamp
@@ -797,7 +759,8 @@ const renderFrame = (timestamp) => {
   }
 
   lastFrameTimestamp = timestamp
-  updateImagePositions()
+  updateImagePositions({ deltaTime: elapsedSinceLastUpdate })
+  elapsedSinceLastUpdate = 0
   updateZoomTransitionState(timestamp)
 
   if (isRenderLoopIdle()) stopRenderLoop()

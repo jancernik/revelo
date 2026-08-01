@@ -12,6 +12,10 @@ const props = defineProps({
     required: true,
     type: Object
   },
+  nativeLayout: {
+    default: false,
+    type: Boolean
+  },
   shouldLoad: {
     default: false,
     type: Boolean
@@ -34,6 +38,11 @@ const handleClick = (event) => {
   emit("click", event, props.image, `img-${props.image.id}`)
 }
 
+const handleTouchEnd = (event) => {
+  if (props.nativeLayout) return
+  handleClick(event)
+}
+
 const handleTinyLoad = () => {
   tinyLoaded.value = true
   emit("tinyLoad", props.image.id)
@@ -49,10 +58,10 @@ const handleThumbnailLoad = () => {
   <div
     class="image-card"
     :data-flip-id="`img-${image.id}`"
-    :class="{ 'not-loaded': !shouldLoad || errorLoading }"
+    :class="{ 'not-loaded': !shouldLoad || errorLoading, 'native-layout': nativeLayout }"
     tabindex="-1"
     @click="handleClick"
-    @touchend="handleClick"
+    @touchend="handleTouchEnd"
   >
     <img
       v-show="shouldLoad"
@@ -95,6 +104,11 @@ const handleThumbnailLoad = () => {
   overflow: hidden;
   @include light-dark-property(background-color, rgba(#171717, 0.05), rgba(#e5e5e5, 0.05));
   transition: outline-offset 0.1s ease-in-out;
+
+  &.native-layout {
+    position: relative;
+    flex-shrink: 0;
+  }
 
   &:focus-visible {
     outline: 3px solid var(--primary);

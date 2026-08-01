@@ -69,3 +69,10 @@ capFrameRate:
   type: toggle
   default: true
   public: true
+
+nativeScroll:
+  description: Use native scrolling on touch devices for smoother high refresh rate motion
+  category: Interface
+  type: toggle
+  default: true
+  public: true
