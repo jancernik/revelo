@@ -2,9 +2,11 @@
 import { useTemplateRef } from "vue"
 
 import Icon from "#src/components/common/Icon.vue"
+import { useTapActivation } from "#src/composables/useTapActivation"
 import { useTheme } from "#src/composables/useTheme"
 
 const { isWaitingForGallery, setTheme, themeClass } = useTheme()
+const tapActivation = useTapActivation()
 const button = useTemplateRef("button")
 
 const toggleTheme = async () => {
@@ -17,6 +19,15 @@ const toggleTheme = async () => {
   await setTheme(newTheme, { origin: { x, y } })
   button.value?.blur()
 }
+
+const handleClick = () => {
+  if (tapActivation.shouldSkipClick()) return
+  toggleTheme()
+}
+
+const handlePointerUp = (event) => {
+  tapActivation.activateOnTap(event, toggleTheme)
+}
 </script>
 
 <template>
@@ -25,7 +36,9 @@ const toggleTheme = async () => {
       ref="button"
       class="theme-toggler-button"
       :class="{ loading: isWaitingForGallery }"
-      @click="toggleTheme"
+      @click="handleClick"
+      @pointerdown="tapActivation.noteTapStart"
+      @pointerup="handlePointerUp"
     >
       <Icon v-if="isWaitingForGallery" name="Loader2" class="loading-icon" :size="18" />
       <Icon name="Zap" class="dark-icon" :size="18" />

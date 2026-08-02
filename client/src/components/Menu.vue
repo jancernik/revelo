@@ -9,6 +9,7 @@ import ImageSearcher from "#src/components/ImageSearcher.vue"
 import ThemeToggler from "#src/components/ThemeToggler.vue"
 import { useMenu } from "#src/composables/useMenu"
 import { useSettings } from "#src/composables/useSettings"
+import { useTapActivation } from "#src/composables/useTapActivation"
 import { useAuthStore } from "#src/stores/auth"
 import { useImagesStore } from "#src/stores/images"
 
@@ -19,6 +20,7 @@ const imagesStore = useImagesStore()
 const { settings } = useSettings()
 const { flushPendingHide, hide, isVisible, pendingCallback, pendingHide, shouldAnimate } =
   useMenu("menu")
+const tapActivation = useTapActivation()
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
 
@@ -117,7 +119,7 @@ const visibleMenuItems = computed(() => {
   return result
 })
 
-const handleItemClick = (item) => {
+const activateItem = (item) => {
   if (item.hasIndicator) {
     animateIndicator(item.id)
   }
@@ -127,6 +129,15 @@ const handleItemClick = (item) => {
   } else if (item.path) {
     router.push(item.path)
   }
+}
+
+const handleItemClick = (item) => {
+  if (tapActivation.shouldSkipClick()) return
+  activateItem(item)
+}
+
+const handleItemPointerUp = (event, item) => {
+  tapActivation.activateOnTap(event, () => activateItem(item))
 }
 
 const animateIndicator = (itemId) => {
@@ -317,6 +328,8 @@ watch(
               :class="item.className"
               :tabindex="canFocus ? 0 : -1"
               @click="handleItemClick(item)"
+              @pointerdown="tapActivation.noteTapStart"
+              @pointerup="handleItemPointerUp($event, item)"
             >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>
@@ -341,6 +354,8 @@ watch(
               :class="item.className"
               :tabindex="canFocus ? 0 : -1"
               @click="handleItemClick(item)"
+              @pointerdown="tapActivation.noteTapStart"
+              @pointerup="handleItemPointerUp($event, item)"
             >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>
@@ -365,6 +380,8 @@ watch(
               :class="item.className"
               :tabindex="canFocus ? 0 : -1"
               @click="handleItemClick(item)"
+              @pointerdown="tapActivation.noteTapStart"
+              @pointerup="handleItemPointerUp($event, item)"
             >
               <Icon v-if="item.icon" :name="item.icon" :size="18" />
               <span v-if="item.label" class="text">{{ item.label }}</span>

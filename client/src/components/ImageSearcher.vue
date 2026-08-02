@@ -5,6 +5,7 @@ import { computed, ref, useTemplateRef } from "vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useElementRect } from "#src/composables/useElementRect"
 import { useMenu } from "#src/composables/useMenu"
+import { useTapActivation } from "#src/composables/useTapActivation"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 
@@ -14,6 +15,7 @@ const props = defineProps({
 
 const imagesStore = useImagesStore()
 const { cancelPendingHide, flushSearchCollapseCallback } = useMenu()
+const tapActivation = useTapActivation()
 const isSearchExpanded = ref(false)
 const searchValue = ref("")
 
@@ -115,6 +117,24 @@ const collapseSearch = () => {
   flushSearchCollapseCallback()
 }
 
+const handleExpandClick = () => {
+  if (tapActivation.shouldSkipClick()) return
+  expandSearch()
+}
+
+const handleExpandPointerUp = (event) => {
+  tapActivation.activateOnTap(event, expandSearch)
+}
+
+const handleCollapseClick = () => {
+  if (tapActivation.shouldSkipClick()) return
+  collapseSearch()
+}
+
+const handleCollapsePointerUp = (event) => {
+  tapActivation.activateOnTap(event, collapseSearch)
+}
+
 const handleInput = (event) => {
   searchValue.value = event.target.value
   imagesStore.search(event.target.value)
@@ -136,7 +156,13 @@ const handleFocusOut = (event) => {
 
 <template>
   <div ref="search-container" class="image-searcher" @focusout="handleFocusOut">
-    <button ref="search-button" class="search-button" @click="expandSearch">
+    <button
+      ref="search-button"
+      class="search-button"
+      @click="handleExpandClick"
+      @pointerdown="tapActivation.noteTapStart"
+      @pointerup="handleExpandPointerUp"
+    >
       <Icon name="Search" :size="18" class="search-icon" />
     </button>
 
@@ -158,7 +184,9 @@ const handleFocusOut = (event) => {
         ref="clear-button"
         class="clear-button"
         :tabindex="isSearchExpanded ? 0 : -1"
-        @click="collapseSearch"
+        @click="handleCollapseClick"
+        @pointerdown="tapActivation.noteTapStart"
+        @pointerup="handleCollapsePointerUp"
       >
         <Icon name="X" class="clear-icon" :size="18" />
       </button>

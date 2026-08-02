@@ -2,9 +2,11 @@
 import Icon from "#src/components/common/Icon.vue"
 import { useDialog } from "#src/composables/useDialog"
 import { useSettings } from "#src/composables/useSettings"
+import { useTapActivation } from "#src/composables/useTapActivation"
 
 const { settings } = useSettings()
 const { show } = useDialog()
+const tapActivation = useTapActivation()
 
 const showDialog = () => {
   show({
@@ -13,11 +15,25 @@ const showDialog = () => {
     useX: true
   })
 }
+
+const handleClick = () => {
+  if (tapActivation.shouldSkipClick()) return
+  showDialog()
+}
+
+const handlePointerUp = (event) => {
+  tapActivation.activateOnTap(event, showDialog)
+}
 </script>
 
 <template>
   <div class="about-dialog">
-    <button class="about-dialog-button" @click="showDialog">
+    <button
+      class="about-dialog-button"
+      @click="handleClick"
+      @pointerdown="tapActivation.noteTapStart"
+      @pointerup="handlePointerUp"
+    >
       <Icon name="CircleQuestionMark" :size="18" />
     </button>
   </div>

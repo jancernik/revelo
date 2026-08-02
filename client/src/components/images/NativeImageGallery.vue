@@ -336,7 +336,7 @@ defineExpose({
   isAutoScrollActive: () => false,
   isScrollPaused: () => isScrollLocked.value,
   onSettle: (callback) => {
-    if (isScrolling.value) settleCallbacks.push(callback)
+    if (isScrolling.value && !isScrollLocked.value) settleCallbacks.push(callback)
     else callback()
   },
   pauseScrolling: lockScroll,
