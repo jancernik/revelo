@@ -11,7 +11,13 @@ import { useDialog } from "#src/composables/useDialog"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useGalleryLayout } from "#src/composables/useGalleryLayout"
 import { useMenu } from "#src/composables/useMenu"
-import { transitionDuration, VIRTUAL_BUFFER, ZOOM_DURATION } from "#src/utils/galleryConstants"
+import {
+  MAX_DELTA_TIME,
+  transitionDuration,
+  USER_INACTIVITY_TIMEOUT,
+  VIRTUAL_BUFFER,
+  ZOOM_DURATION
+} from "#src/utils/galleryConstants"
 import {
   calculateAnimationProgress,
   elementCenter,
@@ -45,7 +51,6 @@ const TOUCH_SCROLL_LERP = 0.6 // Uniform lerp factor for touch devices
 const VELOCITY_LERP_FACTOR = 0.35 // Velocity smoothing factor for drag interactions
 const TOUCH_VELOCITY_LERP_FACTOR = 0.9 // Higher velocity lerp for more responsive touch
 const SMOOTHING_REFERENCE_FPS = 120 // Refresh rate the lerp factors were tuned against
-const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 const MIN_DELTA_TIME = 0.001 // Minimum delta time to prevent division by zero
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
@@ -55,6 +60,8 @@ let elapsedSinceLastUpdate = 0
 let lastDragTimestamp = 0
 let zoomAnimationEndTimestamp = 0
 let zoomAnimationStartTimestamp = 0
+let zoomReleaseTimer = null
+let zoomFlipImageId = null // Card whose element fullscreen owns; per-frame writes skip it until the fade ends
 let scrollPosition = 0
 let dragStartPosition = 0
 
@@ -148,7 +155,6 @@ const autoScrollVelocity = ref(0)
 const columnsHeights = ref([])
 
 let userInactivityTimer = null
-const USER_INACTIVITY_TIMEOUT = 3000
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
 })
@@ -450,9 +456,23 @@ const calculateZoomAnimationTiming = (imageCardData) => {
   }
 }
 
+const releaseZoomTarget = () => {
+  clearTimeout(zoomReleaseTimer)
+  zoomReleaseTimer = null
+  zoomTargetImageId = null
+  resumeScrolling()
+}
+
+const scheduleZoomRelease = (flipDuration) => {
+  clearTimeout(zoomReleaseTimer)
+  const settledFor = Math.max(zoomTotalDuration.value + ZOOM_DURATION, flipDuration ?? 0)
+  zoomReleaseTimer = setTimeout(releaseZoomTarget, settledFor * 1000)
+}
+
 const startZoomTransition = (imageId, referenceElement) => {
   hideMenu(true)
   zoomTargetImageId = imageId
+  zoomFlipImageId = imageId
 
   zoomReferencePoint = referenceElement
     ? elementCenter(referenceElement)
@@ -475,7 +495,7 @@ const startZoomTransition = (imageId, referenceElement) => {
 
 const startZoomReturn = (options = {}) => {
   props.menuVisible && setTimeout(() => showMenu(true), 200)
-  const { duration, showAllImages = false, withTarget = false } = options
+  const { duration, flipDuration, showAllImages = false, withTarget = false } = options
   const effectiveDuration = duration ?? zoomTotalDuration.value
 
   const visibleNonTargetStates = imageCardData.filter(
@@ -499,6 +519,7 @@ const startZoomReturn = (options = {}) => {
   isZoomTransitionActive = true
   isZoomingOut = false
   startRenderLoop()
+  scheduleZoomRelease(flipDuration)
 }
 
 const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, hiddenValue) => {
@@ -611,7 +632,7 @@ const updateImagePositions = (options = {}) => {
       if (forcePosition) {
         card.setY(wrappedPosition)
       } else if (
-        ((!isZoomTransitionActive || card.imageId !== zoomTargetImageId) &&
+        ((!isZoomTransitionActive || card.imageId !== zoomFlipImageId) &&
           !(fullscreenImageData.value && card.imageId === fullscreenImageData.value.id)) ||
         forceZoomTargetVisibility
       ) {
@@ -721,8 +742,9 @@ const updateZoomTransitionState = (timestamp) => {
     if (isZoomingOut) {
       pauseScrolling()
     } else {
-      resumeScrolling()
+      if (isScrollPaused.value && !zoomReleaseTimer) resumeScrolling()
       if (props.continuousScroll) startAutoScroll()
+      zoomFlipImageId = null
       zoomTargetImageId = null
       forceZoomTargetVisibility = false
       selectedImage.value?.element?.focus()
@@ -775,13 +797,14 @@ const resumeScrolling = () => {
 }
 
 const pauseScrolling = () => {
+  clearTimeout(zoomReleaseTimer)
   isDragging.value = false
   hasDragged.value = false
   isScrollPaused.value = true
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
 
-const handleFullscreenReturn = (withTarget, isDifferentImage) => {
+const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
   forceZoomTargetVisibility = !!isDifferentImage
   if (zoomTargetImageId) {
     updateImagePositions()
@@ -793,7 +816,7 @@ const handleFullscreenReturn = (withTarget, isDifferentImage) => {
         }
       }
     }
-    startZoomReturn({ showAllImages: isDifferentImage, withTarget })
+    startZoomReturn({ flipDuration, showAllImages: isDifferentImage, withTarget })
   }
 }
 
@@ -1155,6 +1178,7 @@ onUnmounted(() => {
   if (userInactivityTimer) {
     clearTimeout(userInactivityTimer)
   }
+  clearTimeout(zoomReleaseTimer)
 })
 
 defineExpose({

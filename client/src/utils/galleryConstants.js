@@ -10,6 +10,9 @@ export const VIRTUAL_BUFFER = 400 // Buffer area outside viewport for performanc
 
 export const ZOOM_DURATION = 0.2 // Duration for a single image to fade when zooming to detail view
 
+export const USER_INACTIVITY_TIMEOUT = 3000 // Milliseconds without input before the menu hides and auto scroll resumes
+export const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
+
 // Must match the fullscreen FLIP duration.
 export const TRANSITION_DURATION_MOBILE = 0.35
 export const TRANSITION_DURATION_DESKTOP = 0.5

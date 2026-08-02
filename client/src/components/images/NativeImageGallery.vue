@@ -57,6 +57,7 @@ let cardObserver = null
 let imageCardData = []
 let lockedScrollTop = 0
 let scrollIdleTimer = null
+let zoomReleaseTimer = null
 let settleCallbacks = []
 let zoomReferencePoint = null
 let zoomTargetImageId = null
@@ -82,6 +83,7 @@ const cardElements = (cards) => cards.map((card) => card.element)
 
 const lockScroll = () => {
   if (isScrollLocked.value || !scroller.value) return
+  clearTimeout(zoomReleaseTimer)
   lockedScrollTop = scroller.value.scrollTop
   isScrollLocked.value = true
   scroller.value.style.overflowY = "hidden"
@@ -205,8 +207,21 @@ const startZoomTransition = (imageId, referenceElement) => {
   runZoomTween(sortStatesByDistance(cards, zoomReferencePoint, true))
 }
 
+const releaseZoomTarget = () => {
+  clearTimeout(zoomReleaseTimer)
+  zoomReleaseTimer = null
+  zoomTargetImageId = null
+  unlockScroll()
+}
+
+const scheduleZoomRelease = (flipDuration) => {
+  clearTimeout(zoomReleaseTimer)
+  const settledFor = Math.max(zoomTotalDuration.value + ZOOM_DURATION, flipDuration ?? 0)
+  zoomReleaseTimer = setTimeout(releaseZoomTarget, settledFor * 1000)
+}
+
 const startZoomReturn = (options = {}) => {
-  const { duration, showAllImages = false, withTarget = false } = options
+  const { duration, flipDuration, showAllImages = false, withTarget = false } = options
   props.menuVisible && setTimeout(() => showMenu(true), 200)
 
   const cards = imageCardData.filter(
@@ -219,14 +234,8 @@ const startZoomReturn = (options = {}) => {
   const sorted = sortStatesByDistance(cards, referencePoint, false)
   zoomReferencePoint = null
 
-  runZoomTween(sorted, {
-    duration,
-    onComplete: () => {
-      zoomTargetImageId = null
-      unlockScroll()
-    },
-    reveal: true
-  })
+  runZoomTween(sorted, { duration, reveal: true })
+  scheduleZoomRelease(flipDuration)
 }
 
 const isCardOnScreen = (imageId) => {
@@ -237,7 +246,7 @@ const isCardOnScreen = (imageId) => {
   return rect.bottom >= -VIRTUAL_BUFFER && rect.top <= window.innerHeight + VIRTUAL_BUFFER
 }
 
-const handleFullscreenReturn = (withTarget, isDifferentImage) => {
+const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
   if (!zoomTargetImageId) {
     unlockScroll()
     return
@@ -247,7 +256,7 @@ const handleFullscreenReturn = (withTarget, isDifferentImage) => {
     gsap.set(cardElements(visibleCards()), { opacity: 0, scale: ZOOM_HIDDEN_SCALE })
   }
 
-  startZoomReturn({ showAllImages: !!isDifferentImage, withTarget })
+  startZoomReturn({ flipDuration, showAllImages: !!isDifferentImage, withTarget })
 }
 
 const handleImageClick = (event, image, flipId) => {
@@ -319,6 +328,7 @@ onUnmounted(() => {
   zoomTween?.kill()
   flushSettleCallbacks()
   clearTimeout(scrollIdleTimer)
+  clearTimeout(zoomReleaseTimer)
 })
 
 defineExpose({

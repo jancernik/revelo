@@ -564,7 +564,7 @@ const hideWithFlipAnimation = () => {
     ease: FLIP_EASE
   })
 
-  callOnReturn(true)
+  callOnReturn(true, flipDuration.value)
 }
 
 const showWithRegularAnimation = () => {
@@ -681,10 +681,12 @@ const reverseShowAnimation = async () => {
     showHideTimeline.value.timeScale(1)
   }
 
+  const reverseDuration = Math.max(MIN_REVERSE_DURATION, naturalReverseDuration)
+
   isReturningToGallery.value = true
   isShowingImage.value = false
 
-  callOnReturn(true, 0.2)
+  callOnReturn(true, reverseDuration)
 
   hideFloatingControls()
   showHideTimeline.value.reverse()

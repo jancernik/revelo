@@ -60,10 +60,10 @@ export function useFullscreenImage() {
     }
   }
 
-  const callOnReturn = (withTarget) => {
+  const callOnReturn = (withTarget, duration) => {
     if (onReturn.value && !onReturnCalled.value) {
       onReturnCalled.value = true
-      onReturn.value(withTarget, isDifferentImage.value)
+      onReturn.value(withTarget, isDifferentImage.value, duration)
     }
   }
 
