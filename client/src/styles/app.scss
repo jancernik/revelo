@@ -50,6 +50,19 @@ a:has(> .button) {
   --transition: none !important;
 }
 
+// Firefox does not clip backdrop-filtered descendants with an ancestor mask
+@-moz-document url-prefix() {
+  .theme-transition-clone,
+  .theme-transition-clone * {
+    backdrop-filter: none !important;
+  }
+
+  .no-transition .menu {
+    backdrop-filter: none !important;
+    transition: backdrop-filter 0.3s ease !important;
+  }
+}
+
 .debug-info {
   position: fixed;
   bottom: 0;

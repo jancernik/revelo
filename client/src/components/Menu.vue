@@ -408,6 +408,10 @@ watch(
   z-index: z(menu);
   transition: none;
 
+  @-moz-document url-prefix() {
+    transition: backdrop-filter 0.3s ease;
+  }
+
   .inner {
     width: 100%;
     // pointer-events: none;
