@@ -2,13 +2,13 @@
 // controls activate on pointer release instead of waiting for the click.
 const TAP_SLOP_PX = 10
 const TAP_MAX_HOLD_MS = 500
-const CLICK_SUPPRESS_MS = 350
 
 export function useTapActivation() {
   let tapStart = null
-  let lastTapActivationAt = -CLICK_SUPPRESS_MS
+  let clickSuppressionPending = false
 
   const noteTapStart = (event) => {
+    clickSuppressionPending = false
     if (event.pointerType === "mouse") return
 
     tapStart = {
@@ -30,11 +30,15 @@ export function useTapActivation() {
     if (moved > TAP_SLOP_PX) return
     if (performance.now() - start.startedAt > TAP_MAX_HOLD_MS) return
 
-    lastTapActivationAt = performance.now()
+    clickSuppressionPending = true
     activate()
   }
 
-  const shouldSkipClick = () => performance.now() - lastTapActivationAt < CLICK_SUPPRESS_MS
+  const shouldSkipClick = () => {
+    if (!clickSuppressionPending) return false
+    clickSuppressionPending = false
+    return true
+  }
 
   return { activateOnTap, noteTapStart, shouldSkipClick }
 }

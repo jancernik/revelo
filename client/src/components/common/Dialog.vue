@@ -7,10 +7,24 @@ import { useDialog } from "#src/composables/useDialog"
 
 const { dialogState, hide } = useDialog()
 
+let openingClickPending = false
+
 const handleHide = () => {
   if (dialogState.dismissible) {
     hide()
   }
+}
+
+const handleOverlayPointerDown = () => {
+  openingClickPending = false
+}
+
+const handleOverlayClick = () => {
+  if (openingClickPending) {
+    openingClickPending = false
+    return
+  }
+  handleHide()
 }
 
 const handleAction = (action) => {
@@ -29,8 +43,10 @@ const handleKeyDown = (event) => {
 
 watch(dialogState, ({ isOpen }) => {
   if (isOpen) {
+    openingClickPending = true
     window.addEventListener("keydown", handleKeyDown)
   } else {
+    openingClickPending = false
     window.removeEventListener("keydown", handleKeyDown)
   }
 })
@@ -38,7 +54,12 @@ watch(dialogState, ({ isOpen }) => {
 
 <template>
   <Transition name="dialog">
-    <div v-if="dialogState.isOpen" class="dialog-overlay" @click="handleHide">
+    <div
+      v-if="dialogState.isOpen"
+      class="dialog-overlay"
+      @click="handleOverlayClick"
+      @pointerdown="handleOverlayPointerDown"
+    >
       <div class="dialog" @click.stop>
         <div v-if="dialogState.title || dialogState.description" class="dialog-body">
           <h5 v-if="dialogState.title">
