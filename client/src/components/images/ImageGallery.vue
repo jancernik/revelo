@@ -1262,6 +1262,7 @@ defineExpose({
 
 <style lang="scss">
 .image-gallery {
+  position: relative;
   display: flex;
   flex-direction: row;
   margin: 0;
