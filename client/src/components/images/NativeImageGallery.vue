@@ -179,7 +179,10 @@ const runZoomTween = (cards, options = {}) => {
     const rest = imageCardData.filter(
       ({ element, imageId }) => !staggered.has(element) && imageId !== zoomTargetImageId
     )
-    if (rest.length) gsap.set(cardElements(rest), { opacity: 1, scale: 1 })
+    if (rest.length) {
+      gsap.set(cardElements(rest), { opacity: 1, scale: 1, visibility: "visible" })
+    }
+    gsap.set(cardElements(cards), { visibility: "visible" })
   }
 
   if (!cards.length) {
