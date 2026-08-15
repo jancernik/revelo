@@ -49,7 +49,7 @@ export function useDragNavigation({
 
     if (!isTouchEvent) {
       event.preventDefault()
-    } else if (!isImage) {
+    } else if (!isImage && event.cancelable) {
       event.preventDefault()
     }
 
@@ -86,7 +86,7 @@ export function useDragNavigation({
       hasDragMovement.value = true
     }
 
-    if (hasDragMovement.value) event.preventDefault()
+    if (hasDragMovement.value && event.cancelable) event.preventDefault()
     if (!hasDragMovement.value) return
     if (isSwitchingImage.value) return
 
@@ -155,7 +155,7 @@ export function useDragNavigation({
   const handleDragEnd = (event) => {
     if (!isDragging.value) return
 
-    if (hasDragMovement.value) event.preventDefault()
+    if (hasDragMovement.value && event.cancelable) event.preventDefault()
 
     if (isSwitchingImage.value) {
       resetDragState()
