@@ -123,12 +123,10 @@ const router = createRouter({
     import.meta.env.PROD === true ? routes.filter((route) => route.production !== false) : routes
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore()
   if (to.meta.requiresAuth && !authStore.accessToken) {
-    next("/login")
-  } else {
-    next()
+    return "/login"
   }
 })
 
