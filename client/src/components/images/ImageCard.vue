@@ -52,6 +52,15 @@ const handleThumbnailLoad = () => {
   thumbnailLoaded.value = true
   emit("load", props.image.id)
 }
+
+const handleThumbnailError = () => {
+  errorLoading.value = true
+  emit("load", props.image.id)
+}
+
+const handleTinyError = () => {
+  emit("tinyLoad", props.image.id)
+}
 </script>
 
 <template>
@@ -74,7 +83,7 @@ const handleThumbnailLoad = () => {
       :alt="image.captions?.en"
       :data-id="image.id"
       @load="handleThumbnailLoad"
-      @error="errorLoading = true"
+      @error="handleThumbnailError"
     />
 
     <img
@@ -85,6 +94,7 @@ const handleThumbnailLoad = () => {
       :width="thumbnail.width"
       :alt="image.captions?.en"
       @load="handleTinyLoad"
+      @error="handleTinyError"
     />
   </div>
 </template>
