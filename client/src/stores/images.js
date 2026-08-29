@@ -51,14 +51,14 @@ export const useImagesStore = defineStore("images", () => {
       filteredImages.value = images.value
       initialized.value = true
       return images.value
-    } catch (error) {
-      error.value = error.response?.data?.message || error.message
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message
       showToast({
         description: error.value,
         title: "Error Fetching Images",
         type: "error"
       })
-      throw error
+      throw err
     } finally {
       loading.value = false
     }
@@ -250,14 +250,14 @@ export const useImagesStore = defineStore("images", () => {
         if (isAuthenticated) params.includeHidden = true
         const response = await api.get("/images/search", { params })
         filteredImages.value = response.data?.data?.images || []
-      } catch (error) {
-        error.value = error.response?.data?.message || error.message
+      } catch (err) {
+        error.value = err.response?.data?.message || err.message
         showToast({
           description: error.value,
           title: "Error Fetching Images",
           type: "error"
         })
-        throw error
+        throw err
       } finally {
         loading.value = false
       }

@@ -38,14 +38,14 @@ export const useCollectionsStore = defineStore("collections", () => {
       collections.value = response.data?.data?.collections || []
       initialized.value = true
       return collections.value
-    } catch (error) {
-      error.value = error.response?.data?.message || error.message
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message
       showToast({
         description: error.value,
         title: "Error Fetching Collections",
         type: "error"
       })
-      throw error
+      throw err
     } finally {
       loading.value = false
     }
