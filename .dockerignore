@@ -1,0 +1,5 @@
+**/node_modules
+api/uploads
+api/test-uploads
+api/temp
+client/dist

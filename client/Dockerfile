@@ -3,15 +3,15 @@ FROM node:24-alpine AS base
 # Install pnpm
 RUN npm install -g pnpm@11.2.2
 
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY api/package.json ./api/package.json
+COPY client/ ./client/
+RUN pnpm install --frozen-lockfile --filter client
+
 # Set working directory
 WORKDIR /app/client
-
-# Copy client files
-COPY client/package.json ./package.json
-COPY client/ ./
-
-# Install dependencies
-RUN pnpm install
 
 # Build stage
 FROM base AS builder
@@ -25,7 +25,7 @@ COPY api/src/config/ ../api/src/config/
 
 # Build the application with commit hash
 ENV VITE_COMMIT_HASH=${GIT_COMMIT_HASH}
-RUN pnpm build
+RUN pnpm -C /app --filter client build
 
 FROM nginx:alpine AS runner
 
