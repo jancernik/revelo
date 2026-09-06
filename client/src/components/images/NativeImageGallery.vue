@@ -106,6 +106,7 @@ const flushSettleCallbacks = () => {
 }
 
 const handleScroll = () => {
+  if (isScrollLocked.value && scroller.value) lockedScrollTop = scroller.value.scrollTop
   isScrolling.value = true
   clearTimeout(scrollIdleTimer)
   scrollIdleTimer = setTimeout(() => {
@@ -339,7 +340,7 @@ defineExpose({
   isAutoScrollActive: () => false,
   isScrollPaused: () => isScrollLocked.value,
   onSettle: (callback) => {
-    if (isScrolling.value && !isScrollLocked.value) settleCallbacks.push(callback)
+    if (isScrolling.value) settleCallbacks.push(callback)
     else callback()
   },
   pauseScrolling: lockScroll,
