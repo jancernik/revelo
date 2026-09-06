@@ -260,6 +260,11 @@ const startZoomReturn = (options = {}) => {
   zoomReferencePoint = null
 
   runZoomTween(sorted, { duration, reveal: true })
+
+  if (!withTarget && !showAllImages) {
+    const target = imageCardData.find((card) => card.imageId === zoomTargetImageId)
+    if (target) gsap.set(target.element, { visibility: "visible" })
+  }
   scheduleZoomRelease(flipDuration)
 }
 
