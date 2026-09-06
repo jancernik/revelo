@@ -14,9 +14,8 @@ from PIL import Image
 import uvicorn
 
 from transformers import (
-    AutoConfig,
     AutoProcessor,
-    AutoModelForCausalLM,
+    Florence2ForConditionalGeneration,
     MarianMTModel,
     MarianTokenizer,
 )
@@ -27,10 +26,11 @@ logger = logging.getLogger(__name__)
 
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 image_model_name = 'clip-ViT-B-32'
 text_model_name = 'sentence-transformers/clip-ViT-B-32-multilingual-v1'
-florence_model_name = 'microsoft/Florence-2-base'
+florence_model_name = 'florence-community/Florence-2-base'
 mt_model_name = 'Helsinki-NLP/opus-mt-en-es'
 
 device = None
@@ -77,13 +77,8 @@ async def lifespan(app: FastAPI):
 
     model_start = time.time()
     florence_dtype = torch.float16 if device == "cuda" else torch.float32
-    florence_config = AutoConfig.from_pretrained( florence_model_name, trust_remote_code=True, )
-
-    setattr(florence_config, "attn_implementation", "eager")
-    setattr(florence_config, "_attn_implementation_internal", "eager")
-
-    florence_model = AutoModelForCausalLM.from_pretrained( florence_model_name, config=florence_config, dtype=florence_dtype, trust_remote_code=True).to(device)
-    florence_processor = AutoProcessor.from_pretrained( florence_model_name, trust_remote_code=True)
+    florence_model = Florence2ForConditionalGeneration.from_pretrained(florence_model_name, dtype=florence_dtype).to(device)
+    florence_processor = AutoProcessor.from_pretrained(florence_model_name)
     logger.info(f"Loading models [3/4] {florence_model_name}... ({time.time() - model_start:.2f}s)")
 
     model_start = time.time()
@@ -157,29 +152,14 @@ async def generate_image_captions(image: UploadFile = File(...)):
         if "pixel_values" in inputs:
             inputs["pixel_values"] = inputs["pixel_values"].to(dtype=_model_dtype(florence_model))
 
-        tokenizer = florence_processor.tokenizer
-        bos_id = getattr(tokenizer, "bos_token_id", None)
-        eos_id = getattr(tokenizer, "eos_token_id", None)
-        pad_id = getattr(tokenizer, "pad_token_id", None)
-
-        params = {
-            "input_ids": inputs["input_ids"],
-            "pixel_values": inputs["pixel_values"],
-            "num_beams": 1,
-            "do_sample": False,
-            "use_cache": False,
-            "max_new_tokens": 220,
-        }
-
-        if bos_id is not None:
-            params["bos_token_id"] = bos_id
-        if eos_id is not None:
-            params["eos_token_id"] = eos_id
-        if pad_id is not None:
-            params["pad_token_id"] = pad_id
-
         with torch.no_grad():
-            generated_ids = florence_model.generate(**params)
+            generated_ids = florence_model.generate(
+                input_ids=inputs["input_ids"],
+                pixel_values=inputs["pixel_values"],
+                num_beams=1,
+                do_sample=False,
+                max_new_tokens=220,
+            )
 
         raw = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
         english = re.sub(r"<[^>]+>", "", raw).strip() or raw
