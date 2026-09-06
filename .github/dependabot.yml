@@ -11,6 +11,16 @@ updates:
         dependency-type: "production"
       development-dependencies:
         dependency-type: "development"
+  - package-ecosystem: "pip"
+    directory: "/ai"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 2
+    groups:
+      ai-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
