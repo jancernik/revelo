@@ -161,12 +161,33 @@ const observeCards = () => {
   for (const card of imageCardData) cardObserver.observe(card.element)
 }
 
+const centerCardInScroller = (card) => {
+  if (!scroller.value) return
+  const cardRect = card.element.getBoundingClientRect()
+  const scrollerRect = scroller.value.getBoundingClientRect()
+  scroller.value.scrollTop +=
+    cardRect.top - scrollerRect.top - (scrollerRect.height - cardRect.height) / 2
+  lockedScrollTop = scroller.value.scrollTop
+  zoomReferencePoint = elementCenter(card.element)
+}
+
+const restoreZoomedLayout = () => {
+  const target = imageCardData.find((card) => card.imageId === zoomTargetImageId)
+  const others = imageCardData.filter((card) => card !== target)
+  gsap.set(cardElements(others), { opacity: 0, scale: ZOOM_HIDDEN_SCALE })
+  if (!target) return
+  gsap.set(target.element, { visibility: "hidden" })
+  centerCardInScroller(target)
+}
+
 const rebuildLayout = async () => {
   await nextTick()
   await nextTick()
   buildCardRegistry()
   if (isFirstLoad.value) {
     gsap.set(cardElements(imageCardData), { opacity: 0, scale: ZOOM_HIDDEN_SCALE })
+  } else if (zoomTargetImageId && fullscreenImageData.value) {
+    restoreZoomedLayout()
   }
   observeCards()
 }

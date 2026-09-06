@@ -84,8 +84,6 @@ const fullscreenImageElement = computed(() => fullscreenElement.value?.querySele
 const fallbackImageElement = computed(() => fullscreenElement.value?.querySelector(".fallback"))
 const leftSlideImageElement = useTemplateRef("left-slide-image")
 const rightSlideImageElement = useTemplateRef("right-slide-image")
-const thumbnailElement = computed(() => document.querySelector(`[data-flip-id="${flipId.value}"]`))
-const thumbnailImageElement = computed(() => thumbnailElement.value?.querySelector("img"))
 const imageMetadataRef = useTemplateRef("image-metadata")
 const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
 const metadataOverlay = useTemplateRef("metadata-overlay")
@@ -162,15 +160,19 @@ const {
   windowWidth
 })
 
+const getThumbnailElement = () =>
+  flipId.value ? document.querySelector(`[data-flip-id="${flipId.value}"]`) : null
+
 const hasThumbnailAvailable = () => {
   if (!flipId.value) return false
-  if (!thumbnailElement.value) return false
+  if (!getThumbnailElement()) return false
   return !!isThumbnailVisible.value?.()
 }
 
 const getThumbnailBorderRadius = () => {
-  if (!thumbnailElement.value) return 0
-  const styles = window.getComputedStyle(thumbnailElement.value)
+  const thumbnail = getThumbnailElement()
+  if (!thumbnail) return 0
+  const styles = window.getComputedStyle(thumbnail)
   return parseFloat(styles.borderRadius) || 0
 }
 
@@ -181,9 +183,10 @@ const getTargetBorderRadius = () => {
 }
 
 const getScaleRatio = () => {
-  if (!thumbnailElement.value || !fullscreenElement.value) return 1
+  const thumbnail = getThumbnailElement()
+  if (!thumbnail || !fullscreenElement.value) return 1
 
-  const thumbnailRect = thumbnailElement.value.getBoundingClientRect()
+  const thumbnailRect = thumbnail.getBoundingClientRect()
   const imageRect = fullscreenElement.value.getBoundingClientRect()
 
   const thumbnailSize = Math.min(thumbnailRect.width, thumbnailRect.height)
@@ -423,8 +426,9 @@ const onShowReverseComplete = () => {
   originalFlipId.value = null
   showHideTimeline.value = null
 
-  if (thumbnailElement.value) {
-    thumbnailElement.value.style.visibility = "visible"
+  const thumbnail = getThumbnailElement()
+  if (thumbnail) {
+    thumbnail.style.visibility = "visible"
   }
 
   hideFullscreenElements()
@@ -443,7 +447,7 @@ const onShowReverseComplete = () => {
 }
 
 const showWithFlipAnimation = () => {
-  if (!thumbnailElement.value) {
+  if (!getThumbnailElement()) {
     showWithRegularAnimation()
     return
   }
@@ -451,7 +455,8 @@ const showWithFlipAnimation = () => {
   let performCalled = false
 
   const perform = () => {
-    if (performCalled || !thumbnailElement.value) return
+    const thumbnail = getThumbnailElement()
+    if (performCalled || !thumbnail) return
     performCalled = true
 
     const borderRadius = getThumbnailBorderRadius()
@@ -463,9 +468,9 @@ const showWithFlipAnimation = () => {
     fullscreenImageElement.value.style.borderRadius = `${scaledBorderRadius}px`
     fullscreenElement.value.style.borderRadius = `${scaledBorderRadius}px`
 
-    const state = Flip.getState([thumbnailElement.value, fullscreenElement.value])
+    const state = Flip.getState([thumbnail, fullscreenElement.value])
 
-    thumbnailElement.value.style.visibility = "hidden"
+    thumbnail.style.visibility = "hidden"
 
     setStyles(fullscreenElement.value, { opacity: 1 })
     setStyles(fallbackImageElement.value, { opacity: 1, visibility: "visible" })
@@ -534,7 +539,8 @@ const showWithFlipAnimation = () => {
 }
 
 const hideWithFlipAnimation = () => {
-  if (!thumbnailElement.value) {
+  const thumbnail = getThumbnailElement()
+  if (!thumbnail) {
     hideWithRegularAnimation()
     return
   }
@@ -545,10 +551,10 @@ const hideWithFlipAnimation = () => {
   const scaleRatio = getScaleRatio()
   const scaledBorderRadius = borderRadius * scaleRatio
 
-  const state = Flip.getState([thumbnailElement.value, fullscreenElement.value])
+  const state = Flip.getState([thumbnail, fullscreenElement.value])
 
   fullscreenElement.value.style.display = "none"
-  thumbnailElement.value.style.visibility = "visible"
+  thumbnail.style.visibility = "visible"
 
   Flip.from(state, {
     duration: flipDuration.value,
@@ -558,7 +564,7 @@ const hideWithFlipAnimation = () => {
     scale: true
   })
 
-  gsap.from([thumbnailElement.value, thumbnailImageElement.value], {
+  gsap.from([thumbnail, thumbnail.querySelector("img")], {
     borderRadius: `${scaledBorderRadius}px`,
     duration: flipDuration.value,
     ease: FLIP_EASE
