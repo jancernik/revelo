@@ -229,6 +229,12 @@ const startZoomTransition = (imageId, referenceElement) => {
   zoomReferencePoint = referenceElement ? elementCenter(referenceElement) : viewportCenter()
 
   const cards = visibleCards().filter((card) => card.imageId !== imageId)
+
+  const offscreen = imageCardData.filter((card) => !card.visible && card.imageId !== imageId)
+  if (offscreen.length) {
+    gsap.set(cardElements(offscreen), { opacity: 0, scale: ZOOM_HIDDEN_SCALE })
+  }
+
   runZoomTween(sortStatesByDistance(cards, zoomReferencePoint, true))
 }
 
