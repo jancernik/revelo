@@ -1262,6 +1262,12 @@ const setupRouting = (imageId) => {
   setPopstateCallback(createPopstateCallback)
 }
 
+const replaceRoutedImage = (imageId) => {
+  const path = `/images/${imageId}`
+  if (updateRoute.value) history.replaceState(history.state, "", path)
+  else router.replace(path)
+}
+
 const getSlideDirection = (image) => {
   let direction = null
 
@@ -1426,7 +1432,8 @@ const cancelPendingRegularImageFadeIn = () => {
 
 const onImageUpdate = async (image) => {
   if (image) {
-    if (updateRoute.value && !isSwitchingImage.value) setupRouting(image.id)
+    if (isSwitchingImage.value) replaceRoutedImage(image.id)
+    else if (updateRoute.value) setupRouting(image.id)
     if (image.collectionId) {
       collectionData.value = await collectionsStore.fetch(image.collectionId)
     } else {
