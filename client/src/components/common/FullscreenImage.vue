@@ -434,10 +434,10 @@ const onShowReverseComplete = () => {
   hideFullscreenElements()
 
   if (hasThumbnailAvailable()) {
-    history.pushState({}, "", `/${queryParams.value}`)
+    pushPath(`/${queryParams.value}`)
   } else {
     if (updateRoute.value) {
-      history.pushState({}, "", `/${queryParams.value}`)
+      pushPath(`/${queryParams.value}`)
     } else {
       router.push(`/${queryParams.value}`)
     }
@@ -749,12 +749,12 @@ const hideImage = async () => {
 
   if (hasThumbnailAvailable()) {
     hideWithFlipAnimation()
-    history.pushState({}, "", `/${queryParams.value}`)
+    pushPath(`/${queryParams.value}`)
   } else {
     callOnReturn(false)
     hideWithRegularAnimation()
     if (updateRoute.value) {
-      history.pushState({}, "", `/${queryParams.value}`)
+      pushPath(`/${queryParams.value}`)
     } else {
       router.push(`/${queryParams.value}`)
     }
@@ -1257,14 +1257,36 @@ const createPopstateCallback = () => {
   hideImage()
 }
 
+const pushPath = (path) => {
+  const state = history.state || {}
+  const position = typeof state.position === "number" ? state.position : 0
+  history.pushState(
+    {
+      ...state,
+      back: state.current ?? null,
+      current: path,
+      forward: null,
+      position: position + 1,
+      replaced: false,
+      scroll: null
+    },
+    "",
+    path
+  )
+}
+
+const replacePath = (path) => {
+  history.replaceState({ ...history.state, current: path, replaced: true }, "", path)
+}
+
 const setupRouting = (imageId) => {
-  history.pushState({}, "", `/images/${imageId}`)
+  pushPath(`/images/${imageId}`)
   setPopstateCallback(createPopstateCallback)
 }
 
 const replaceRoutedImage = (imageId) => {
   const path = `/images/${imageId}`
-  if (updateRoute.value) history.replaceState(history.state, "", path)
+  if (updateRoute.value) replacePath(path)
   else router.replace(path)
 }
 
