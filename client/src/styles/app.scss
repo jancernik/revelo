@@ -44,38 +44,3 @@ a:has(> .button) {
   @include flex-center;
   text-decoration: none;
 }
-
-.no-transition * {
-  transition: none !important;
-  --transition: none !important;
-}
-
-// Firefox does not clip backdrop-filtered descendants with an ancestor mask
-@-moz-document url-prefix() {
-  .theme-transition-clone,
-  .theme-transition-clone * {
-    backdrop-filter: none !important;
-  }
-
-  .no-transition .menu {
-    backdrop-filter: none !important;
-    transition: backdrop-filter 0.3s ease !important;
-  }
-}
-
-.debug-info {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 10px;
-  font-size: 12px;
-  width: 380px;
-  z-index: 5000;
-  P {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-}

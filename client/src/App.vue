@@ -2,30 +2,22 @@
 import { onMounted, watch } from "vue"
 
 import Dialog from "#src/components/common/Dialog.vue"
-import FullscreenImage from "#src/components/common/FullscreenImage.vue"
 import Toast from "#src/components/common/Toast.vue"
-import Menu from "#src/components/Menu.vue"
 import { useFavicon } from "#src/composables/useFavicon"
-// import { usePWAUpdate } from "#src/composables/usePWAUpdate"
 import { useTheme } from "#src/composables/useTheme"
 import Main from "#src/layouts/Main.vue"
 
 useFavicon()
-// usePWAUpdate()
 
-const { isAnimating, themeClass } = useTheme()
+const { themeClass } = useTheme()
 
 const applyThemeToDocument = (theme) => {
-  if (!isAnimating.value) {
-    document.documentElement.classList.remove("light", "dark")
-    if (theme) {
-      document.documentElement.classList.add(theme)
-    }
-  }
+  document.documentElement.classList.remove("light", "dark")
+  if (theme) document.documentElement.classList.add(theme)
 }
 
 onMounted(() => applyThemeToDocument(themeClass.value))
-watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
+watch(themeClass, applyThemeToDocument)
 </script>
 
 <template>
@@ -33,10 +25,8 @@ watch(themeClass, (newTheme) => applyThemeToDocument(newTheme))
     <div class="app-content">
       <Main />
     </div>
-    <Menu />
     <Toast />
     <Dialog />
-    <FullscreenImage />
   </div>
 </template>
 

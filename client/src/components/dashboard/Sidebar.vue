@@ -49,12 +49,6 @@ const sidebar = reactive({
   ],
   top: [
     {
-      icon: "Home",
-      key: "gallery",
-      label: "Gallery",
-      path: "/"
-    },
-    {
       icon: "LayoutDashboard",
       key: "dashboard",
       label: "Dashboard",

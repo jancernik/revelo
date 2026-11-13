@@ -3,6 +3,7 @@ import perfectionist from "eslint-plugin-perfectionist"
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import pluginVue from "eslint-plugin-vue"
 import globals from "globals"
+import tseslint from "typescript-eslint"
 
 export default [
   {
@@ -10,6 +11,10 @@ export default [
   },
 
   { ...pluginJs.configs.recommended, files: ["**/*.js"] },
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["client/**/*.{ts,vue}"]
+  })),
   perfectionist.configs["recommended-natural"],
   ...pluginVue.configs["flat/recommended"],
 
@@ -33,10 +38,11 @@ export default [
   },
 
   {
-    files: ["client/**/*.{js,vue}"],
+    files: ["client/**/*.{js,ts,vue}"],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
+      parserOptions: { parser: tseslint.parser },
       sourceType: "module"
     },
     rules: {

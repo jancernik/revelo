@@ -17,8 +17,7 @@ import DashboardIndex from "#src/views/dashboard/Index.vue"
 import DashboardSettings from "#src/views/dashboard/Settings.vue"
 import DashboardTasks from "#src/views/dashboard/Tasks.vue"
 import DevIndex from "#src/views/dev/Index.vue"
-import Home from "#src/views/Home.vue"
-import ImageDisplay from "#src/views/Image.vue"
+import PagerDemo from "#src/views/dev/pager/Demo.vue"
 import Login from "#src/views/Login.vue"
 import NotFound from "#src/views/NotFound.vue"
 import Signup from "#src/views/Signup.vue"
@@ -26,7 +25,7 @@ import VerificationPending from "#src/views/VerificationPending.vue"
 import VerifyEmail from "#src/views/VerifyEmail.vue"
 
 const routes = [
-  { component: Home, name: "home", path: "/" },
+  { path: "/", redirect: "/dashboard" },
   { component: Login, name: "login", path: "/login" },
   { component: Signup, name: "signup", path: "/signup" },
   { component: VerificationPending, name: "verification-pending", path: "/verification-pending" },
@@ -112,8 +111,8 @@ const routes = [
     path: "/dashboard"
   },
 
-  { component: ImageDisplay, name: "public-image-view", path: "/images/:id", props: true },
   { component: DevIndex, name: "dev", path: "/dev", production: false },
+  { component: PagerDemo, name: "dev-pager", path: "/dev/pager", production: false },
   { component: NotFound, path: "/:catchAll(.*)" }
 ]
 
