@@ -13,13 +13,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 import uvicorn
 
-from transformers import (
-    AutoProcessor,
-    Florence2ForConditionalGeneration,
-    MarianMTModel,
-    MarianTokenizer,
-)
-from sentence_transformers import SentenceTransformer
+from models import load_models
 
 logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -27,11 +21,6 @@ logger = logging.getLogger(__name__)
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.WARNING)
-
-image_model_name = 'clip-ViT-B-32'
-text_model_name = 'sentence-transformers/clip-ViT-B-32-multilingual-v1'
-florence_model_name = 'florence-community/Florence-2-base'
-mt_model_name = 'Helsinki-NLP/opus-mt-en-es'
 
 device = None
 
@@ -67,24 +56,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting AI service on {device.upper()}")
     logger.info(f"Loading models...")
 
-    model_start = time.time()
-    image_model = SentenceTransformer(image_model_name, device=device)
-    logger.info(f"Loading models [1/4] {image_model_name}... ({time.time() - model_start:.2f}s)")
-
-    model_start = time.time()
-    text_model = SentenceTransformer(text_model_name, device=device)
-    logger.info(f"Loading models [2/4] {text_model_name}... ({time.time() - model_start:.2f}s)")
-
-    model_start = time.time()
-    florence_dtype = torch.float16 if device == "cuda" else torch.float32
-    florence_model = Florence2ForConditionalGeneration.from_pretrained(florence_model_name, dtype=florence_dtype).to(device)
-    florence_processor = AutoProcessor.from_pretrained(florence_model_name)
-    logger.info(f"Loading models [3/4] {florence_model_name}... ({time.time() - model_start:.2f}s)")
-
-    model_start = time.time()
-    mt_tokenizer = MarianTokenizer.from_pretrained(mt_model_name)
-    mt_model = MarianMTModel.from_pretrained(mt_model_name).to(device)
-    logger.info(f"Loading models [4/4] {mt_model_name}... ({time.time() - model_start:.2f}s)")
+    image_model, text_model, florence_model, florence_processor, mt_tokenizer, mt_model = load_models(device)
 
     logger.info(f"Ready - All models loaded in {time.time() - load_start_time:.2f}s")
     try:
