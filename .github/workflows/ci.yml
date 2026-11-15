@@ -16,10 +16,6 @@ permissions:
   contents: read
   packages: write
 
-concurrency:
-  group: build-push-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   lint:
     name: Lint
@@ -39,6 +35,9 @@ jobs:
       - lint
       - format
       - test
+    concurrency:
+      group: build-push-${{ github.ref }}
+      cancel-in-progress: true
     uses: ./.github/workflows/build.yml
     with:
       no-cache: ${{ inputs.no-cache || false }}

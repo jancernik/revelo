@@ -61,12 +61,27 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    # A running deploy always finishes. Of the waiting ones, only the newest is kept.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.git_commit_hash || github.sha }}
+
+      - name: Check that the commit is current
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ inputs.git_commit_hash || github.sha }}
+        run: |
+          head=$(git ls-remote origin "$GITHUB_REF" | cut -f1)
+          if [ "$head" != "$TAG" ]; then
+            echo "::error::${GITHUB_REF} moved to ${head:-unknown}, not deploying ${TAG}. Run the Deploy workflow by hand to deploy an older commit."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
