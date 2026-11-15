@@ -152,16 +152,15 @@ jobs:
 
             while [ $attempt -le $max_attempts ]; do
               if [ $# -eq 0 ]; then
-                ssh -q -o LogLevel=ERROR -T revelo bash -s < "$tmp"
-                rc=$?
+                ssh -q -o LogLevel=ERROR -T revelo bash -s < "$tmp" && rc=0 || rc=$?
               else
-                ssh -q -o LogLevel=ERROR -T revelo "$@"
-                rc=$?
+                ssh -q -o LogLevel=ERROR -T revelo "$@" && rc=0 || rc=$?
               fi
 
-              if [ $rc -eq 0 ]; then
+              # ssh exits 255 only for connection errors. Other codes come from the remote command.
+              if [ $rc -ne 255 ]; then
                 [ -n "$tmp" ] && rm -f "$tmp"
-                return 0
+                return $rc
               fi
 
               if [ $attempt -lt $max_attempts ]; then
@@ -208,6 +207,7 @@ jobs:
 
       - name: Prepare deployment files
         run: |
+          umask 077
           mkdir -p deployment
           cp stack.yml deployment/
           cp -r nginx deployment/
@@ -238,7 +238,7 @@ jobs:
           retry_ssh "mkdir -p ~/revelo"
 
           for attempt in 1 2 3; do
-            if rsync -az --delete -e "ssh" deployment/ revelo:~/revelo/; then
+            if rsync -az --delete --exclude /logs/ -e "ssh" deployment/ revelo:~/revelo/; then
               rm -rf deployment
               break
             else
@@ -544,10 +544,10 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -f ~/.ssh/deploy_key ~/.ssh/config ~/retry_ssh.sh || true
-          rm -rf deployment || true
-
           if [ -f ~/retry_ssh.sh ]; then
             source ~/retry_ssh.sh
-            retry_ssh "rm -f ~/revelo/.env" || true
+            retry_ssh "rm -f ~/revelo/.env" < /dev/null || true
           fi
+
+          rm -f ~/.ssh/deploy_key ~/.ssh/config ~/retry_ssh.sh || true
+          rm -rf deployment || true
