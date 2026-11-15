@@ -300,9 +300,13 @@ jobs:
           ENDSSH
 
       - name: Verify deployment
+        env:
+          TAG: ${{ inputs.git_commit_hash || github.sha }}
         run: |
           source ~/retry_ssh.sh
-          retry_ssh << 'ENDSSH'
+          {
+            echo "EXPECTED_TAG='${TAG}'"
+            cat << 'ENDSSH'
           set -Eeuo pipefail
           RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; RESET="\033[0m"
 
@@ -310,68 +314,78 @@ jobs:
             docker service ls --format '{{.Name}}' | grep -qx "$1"
           }
 
-          latest_slot_fail() {
-            docker service ps "$1" --no-trunc --format '{{.Name}}|{{.CurrentState}}|{{.Error}}' \
-              | awk -F'|' '{
-                  n=$1;
-                  slot=n;
-                  sub(/.*\./,"",slot);
-                  if (!seen[slot]++) print slot "|" $2 "|" $3;
-                }' \
-              | awk -F'|' '{
-                  split($2,a," "); st=a[1];
-                  if (st=="Rejected" || st=="Failed") {
-                    print st "|" $3;
-                    exit
-                  }
-                }'
+          spec_image() {
+            docker service inspect "$1" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null || true
+          }
+
+          update_state() {
+            docker service inspect "$1" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || true
+          }
+
+          recent_tasks() {
+            docker service ps "$1" --no-trunc \
+              --format '    {{.Name}}  desired={{.DesiredState}}  {{.CurrentState}}  {{.Error}}' 2>/dev/null | head -6 || true
           }
 
           migrate_svc="revelo_migrate"
-          if svc_exists "$migrate_svc"; then
-            echo -e "Waiting for migration job"
-            max_wait=600
-            interval=5
-            elapsed=0
-            last_state=""
-            while [ $elapsed -lt $max_wait ]; do
-              raw_state=$(docker service ps "$migrate_svc" --no-trunc --format "{{.CurrentState}}" | head -1 || true)
-              state="${raw_state%% *}"
-              [ -z "$state" ] && state="pending"
-              if [ "$state" != "$last_state" ]; then
-                last_state="$state"
-              fi
-              if [ "$state" = "Complete" ]; then
-                echo -e "${GREEN}Migration completed${RESET}"
-                break
-              fi
-              if [ "$state" = "Failed" ] || [ "$state" = "Rejected" ]; then
-                echo -e "${RED}Migration failed${RESET}"
-                exit 1
-              fi
-              sleep $interval
-              elapsed=$((elapsed + interval))
-            done
-            if [ $elapsed -ge $max_wait ]; then
-              echo -e "${RED}Migration timed out${RESET}"
-              exit 1
-            fi
-          else
+          if ! svc_exists "$migrate_svc"; then
             echo -e "${RED}Migration job not found${RESET}"
             exit 1
           fi
 
+          if [[ "$(spec_image "$migrate_svc")" != *":${EXPECTED_TAG}"* ]]; then
+            echo -e "${RED}Migration job is not on ${EXPECTED_TAG}, another deploy replaced this one${RESET}"
+            exit 1
+          fi
+
+          # Every deploy starts a new run of the job. Tasks of earlier runs stay in the history.
+          echo -e "Waiting for migration job"
+          iteration=$(docker service inspect "$migrate_svc" --format '{{.JobStatus.JobIteration.Index}}')
+          max_restarts=$(docker service inspect "$migrate_svc" --format '{{with .Spec.TaskTemplate.RestartPolicy}}{{.MaxAttempts}}{{end}}' 2>/dev/null || true)
+          max_wait=600
+          interval=5
+          elapsed=0
+          while true; do
+            states=$(docker service ps "$migrate_svc" -q 2>/dev/null \
+              | xargs -r docker inspect --format '{{.JobIteration.Index}} {{.Status.State}}' 2>/dev/null \
+              | awk -v run="$iteration" '$1 == run { print $2 }' || true)
+
+            if grep -qx "complete" <<< "$states"; then
+              echo -e "${GREEN}Migration completed${RESET}"
+              break
+            fi
+
+            failed=$(grep -cxE "failed|rejected" <<< "$states" || true)
+            if [ "${max_restarts:-0}" -gt 0 ] && [ "$failed" -gt "$max_restarts" ]; then
+              echo -e "${RED}Migration failed after ${failed} attempts${RESET}"
+              recent_tasks "$migrate_svc"
+              exit 1
+            fi
+
+            if [ $elapsed -ge $max_wait ]; then
+              echo -e "${RED}Migration timed out${RESET}"
+              recent_tasks "$migrate_svc"
+              exit 1
+            fi
+
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          done
+
           echo -e "${BLUE}Checking services health${RESET}"
           services=(revelo_postgres revelo_nginx revelo_client revelo_api revelo_ai)
+          # Services whose image tag is the deployed commit. A rollback reverts their image.
+          tagged=" revelo_client revelo_api revelo_ai "
           max_wait=480
           interval=5
           elapsed=0
           prev_line=""
 
-          while [ $elapsed -lt $max_wait ]; do
+          while true; do
             all_ready=true
             any_bad=false
             line=""
+            not_ready=()
 
             for name in "${services[@]}"; do
               if ! svc_exists "$name"; then
@@ -380,25 +394,34 @@ jobs:
                 continue
               fi
 
-              expected_replicas=$(docker service inspect "$name" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "1")
+              state="$(update_state "$name")"
 
-              hc_enabled=$(docker service inspect "$name" --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "none")
-
-              fail="$(latest_slot_fail "$name" || true)"
-              if [ -n "$fail" ]; then
-                fail_state="${fail%%|*}"
-                fail_err="${fail#*|}"
-                [ -z "$fail_err" ] && fail_err="(no error message)"
-                line+=$(printf "%s: %s  " "$name" "${RED}failed${RESET}")
-                echo -e "\n${RED}${name}${RESET} latest task is ${RED}${fail_state}${RESET}: ${fail_err}\n" >&2
+              if [[ "$tagged" == *" $name "* ]] && [[ "$(spec_image "$name")" != *":${EXPECTED_TAG}"* ]]; then
+                line+=$(printf "%s: %s  " "$name" "${RED}rolled back${RESET}")
+                echo -e "\n${RED}${name}${RESET} is not on ${EXPECTED_TAG} (update state: ${state:-none})" >&2
+                recent_tasks "$name" >&2
                 any_bad=true
                 continue
               fi
+
+              case "$state" in
+                paused|rollback_paused)
+                  line+=$(printf "%s: %s  " "$name" "${RED}update ${state}${RESET}")
+                  echo -e "\n${RED}${name}${RESET} update is ${state}" >&2
+                  recent_tasks "$name" >&2
+                  any_bad=true
+                  continue
+                  ;;
+              esac
+
+              expected_replicas=$(docker service inspect "$name" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "1")
+              hc_enabled=$(docker service inspect "$name" --format '{{if .Spec.TaskTemplate.ContainerSpec.Healthcheck}}enabled{{else}}none{{end}}' 2>/dev/null || echo "none")
 
               healthy_count=0
               starting_count=0
               unhealthy_count=0
 
+              # Replaced and abandoned tasks move to desired state Shutdown, so history is skipped here.
               if [ "$hc_enabled" = "enabled" ]; then
                 while IFS= read -r task_id; do
                   if [ -n "$task_id" ]; then
@@ -419,14 +442,21 @@ jobs:
                 healthy_count=$(docker service ps "$name" --filter "desired-state=running" --format "{{.ID}}" 2>/dev/null | wc -l)
               fi
 
-              if [ "$unhealthy_count" -gt 0 ]; then
+              # During a start-first update, old healthy tasks can already match the replica count.
+              if [ "$state" = "updating" ] || [ "$state" = "rollback_started" ]; then
+                line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${YELLOW}updating${RESET}")
+                all_ready=false
+                not_ready+=("$name")
+              elif [ "$unhealthy_count" -gt 0 ]; then
                 line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${RED}unhealthy${RESET}")
-                any_bad=true
-              elif [ "$healthy_count" -eq "$expected_replicas" ]; then
+                all_ready=false
+                not_ready+=("$name")
+              elif [ "$healthy_count" -ge "$expected_replicas" ] && [ "$starting_count" -eq 0 ]; then
                 line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${GREEN}healthy${RESET}")
               else
                 line+=$(printf "%s: %s/%s %s  " "$name" "$healthy_count" "$expected_replicas" "${YELLOW}starting${RESET}")
                 all_ready=false
+                not_ready+=("$name")
               fi
             done
 
@@ -445,13 +475,20 @@ jobs:
               exit 0
             fi
 
+            if [ $elapsed -ge $max_wait ]; then
+              echo -e "${RED}Timeout after ${max_wait}s${RESET}"
+              for name in "${not_ready[@]}"; do
+                echo -e "  ${name}:"
+                recent_tasks "$name"
+              done
+              exit 1
+            fi
+
             sleep $interval
             elapsed=$((elapsed + interval))
           done
-
-          echo -e "${RED}Timeout after ${max_wait}s${RESET}"
-          exit 1
           ENDSSH
+          } | retry_ssh
 
       - name: Post-deployment cleanup
         if: success()
