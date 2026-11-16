@@ -8,6 +8,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   serial,
   timestamp,
   unique,
@@ -76,6 +77,8 @@ export const ImagesTable = pgTable(
     iso: integer("iso"),
     lens: varchar("lens", { length: 255 }),
     originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+    searchEmbedding: vector("search_embedding", { dimensions: 768 }),
+    searchEmbeddingModel: varchar("search_embedding_model", { length: 100 }),
     shutterSpeed: varchar("shutter_speed", { length: 50 }),
     updatedAt: timestamp("updated_at").notNull().defaultNow()
   },
@@ -128,6 +131,27 @@ export const ImageVersionsTable = pgTable(
   (table) => [unique("unique_image_version").on(table.imageId, table.type)]
 )
 
+export const DescriptionSources = pgEnum("description_sources", [
+  "generated",
+  "translated",
+  "edited"
+])
+
+export const ImageDescriptionsTable = pgTable(
+  "image_descriptions",
+  {
+    imageId: uuid("image_id")
+      .references(() => ImagesTable.id, { onDelete: "cascade" })
+      .notNull(),
+    language: varchar("language", { length: 10 }).notNull(),
+    model: varchar("model", { length: 100 }),
+    source: DescriptionSources("source").notNull(),
+    text: varchar("text", { length: 500 }).notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow()
+  },
+  (table) => [primaryKey({ columns: [table.imageId, table.language] })]
+)
+
 export const SettingsTable = pgTable("settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   id: serial("id").primaryKey().notNull(),
@@ -145,7 +169,15 @@ export const ImagesTableRelations = relations(ImagesTable, ({ many, one }) => ({
     fields: [ImagesTable.collectionId],
     references: [CollectionsTable.id]
   }),
+  descriptions: many(ImageDescriptionsTable),
   versions: many(ImageVersionsTable)
+}))
+
+export const ImageDescriptionsTableRelations = relations(ImageDescriptionsTable, ({ one }) => ({
+  image: one(ImagesTable, {
+    fields: [ImageDescriptionsTable.imageId],
+    references: [ImagesTable.id]
+  })
 }))
 
 export const ImageVersionsTableRelations = relations(ImageVersionsTable, ({ one }) => ({
