@@ -171,7 +171,7 @@ def test_a_missing_server_binary_is_reported_and_search_keeps_working(client, fa
     response = client.post("/describe/image", files=upload(square("red")))
 
     assert response.status_code == 500
-    assert response.json()["status"] == "error"
+    assert response.json() == {"status": "error", "message": "Internal error"}
     assert client.post("/embed/text", data={"text": "dog"}).status_code == 200
 
 

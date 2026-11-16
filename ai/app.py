@@ -71,6 +71,10 @@ def _error(status_code: int, message: str) -> JSONResponse:
     return JSONResponse(status_code=status_code, content={"status": "error", "message": message})
 
 
+def _internal_error() -> JSONResponse:
+    return _error(500, "Internal error")
+
+
 def _description_error(error: Exception, context: str) -> JSONResponse:
     if isinstance(error, describe.NotEnoughMemory):
         logger.warning(str(error))
@@ -79,7 +83,7 @@ def _description_error(error: Exception, context: str) -> JSONResponse:
         logger.warning(f"{context}: {error}")
         return _error(422, str(error))
     logger.exception(context, exc_info=error)
-    return _error(500, str(error))
+    return _internal_error()
 
 
 def _open_image(upload: UploadFile) -> Image.Image | None:
@@ -110,7 +114,7 @@ def embed_image(image: UploadFile = File(...)):
         embedding = search.embed_image(pil_image)
     except Exception as e:
         logger.exception("Error generating image embedding")
-        return _error(500, str(e))
+        return _internal_error()
     return _success({"embedding": embedding, "model": config.search_model}, start_time)
 
 
@@ -124,7 +128,7 @@ def embed_text(text: str = Form(...)):
         embedding = search.embed_text(text)
     except Exception as e:
         logger.exception("Error generating text embedding")
-        return _error(500, str(e))
+        return _internal_error()
     return _success({"embedding": embedding, "model": config.search_model}, start_time)
 
 
