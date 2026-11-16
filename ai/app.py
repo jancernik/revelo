@@ -78,10 +78,10 @@ def _internal_error() -> JSONResponse:
 def _description_error(error: Exception, context: str) -> JSONResponse:
     if isinstance(error, describe.NotEnoughMemory):
         logger.warning(str(error))
-        return _error(503, str(error))
+        return _error(503, "Not enough free memory for the description model")
     if isinstance(error, describe.UnusableOutput):
         logger.warning(f"{context}: {error}")
-        return _error(422, str(error))
+        return _error(422, "The model returned no usable text")
     logger.exception(context, exc_info=error)
     return _internal_error()
 
@@ -154,8 +154,8 @@ def translate(text: str = Form(...), target: str = Form(...)):
         return _error(400, "The text is empty")
     try:
         describe.language_name(target)
-    except describe.UnknownLanguage as e:
-        return _error(400, str(e))
+    except describe.UnknownLanguage:
+        return _error(400, "Unsupported target language")
     try:
         with description_model.use() as server:
             translated = describe.translate(server, text, target)
