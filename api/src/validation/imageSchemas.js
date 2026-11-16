@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
+import { definedSchema, limit, offset, queryBoolean } from "#src/validation/baseSchemas.js"
 
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
@@ -38,7 +38,7 @@ export const updateMetadataSchemas = {
 
 export const fetchAllSchemas = {
   query: z.object({
-    includeHidden: z.coerce.boolean().optional(),
+    includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
     offset: offset.optional(),
     order: z.enum(["asc", "desc"]).optional(),
@@ -51,7 +51,7 @@ export const fetchByIdSchemas = {
     id: definedSchema
   }),
   query: z.object({
-    includeHidden: z.coerce.boolean().optional()
+    includeHidden: queryBoolean.optional()
   })
 }
 
@@ -88,7 +88,7 @@ export const bulkDownloadImagesSchemas = {
 
 export const searchSchemas = {
   query: z.object({
-    includeHidden: z.coerce.boolean().optional(),
+    includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
     offset: offset.optional(),
     text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")

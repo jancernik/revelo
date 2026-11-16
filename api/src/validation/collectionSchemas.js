@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
+import { definedSchema, limit, offset, queryBoolean } from "#src/validation/baseSchemas.js"
 
 const collectionDataSchema = z.object({
   description: z.string().optional().nullable(),
@@ -20,7 +20,7 @@ export const updateCollectionSchemas = {
 
 export const fetchAllCollectionsSchemas = {
   query: z.object({
-    includeHidden: z.coerce.boolean().optional(),
+    includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
     offset: offset.optional()
   })
@@ -31,7 +31,7 @@ export const fetchCollectionByIdSchemas = {
     id: definedSchema
   }),
   query: z.object({
-    includeHidden: z.coerce.boolean().optional()
+    includeHidden: queryBoolean.optional()
   })
 }
 

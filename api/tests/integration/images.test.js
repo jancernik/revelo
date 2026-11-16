@@ -19,6 +19,52 @@ describe("Image Endpoints", () => {
     adminUserToken = createAccessToken(adminUser)
   })
 
+  describe("GET /images includeHidden", () => {
+    beforeEach(async () => {
+      await Promise.all([createImageWithVersions(), createImageWithVersions({ hidden: true })])
+    })
+
+    it("should include hidden images for an admin when true", async () => {
+      const response = await request(api)
+        .get("/images?includeHidden=true")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(200)
+
+      expect(response.body.data.images.length).toBe(2)
+    })
+
+    it("should exclude hidden images for an admin when false", async () => {
+      const response = await request(api)
+        .get("/images?includeHidden=false")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(200)
+
+      expect(response.body.data.images.length).toBe(1)
+    })
+
+    it("should exclude hidden images for an admin when omitted", async () => {
+      const response = await request(api)
+        .get("/images")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(200)
+
+      expect(response.body.data.images.length).toBe(1)
+    })
+
+    it("should exclude hidden images for anonymous requests", async () => {
+      const response = await request(api).get("/images?includeHidden=true").expect(200)
+
+      expect(response.body.data.images.length).toBe(1)
+    })
+
+    it("should reject a value that is not a boolean", async () => {
+      await request(api)
+        .get("/images?includeHidden=maybe")
+        .set("Authorization", `Bearer ${adminUserToken}`)
+        .expect(400)
+    })
+  })
+
   describe("GET /images", () => {
     it("should get images successfully", async () => {
       await Promise.all([
