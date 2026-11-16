@@ -17,6 +17,7 @@ api/uploads/*
 api/test-uploads/*
 api/temp/*
 
-
-ai/__pycache__/*
 ai/.venv/*
+ai/.llama
+ai/.pytest_cache
+__pycache__
