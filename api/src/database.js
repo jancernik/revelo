@@ -5,7 +5,7 @@ import { config } from "#src/config/environment.js"
 import { FilteredLogger } from "#src/database/logger.js"
 import * as schema from "#src/database/schema.js"
 
-const suppressed = ['set "embedding"', '"images"."embedding"', "to_tsvector"]
+const suppressed = ['"search_embedding"']
 
 const dbUser = config.DB_USER
 const dbHost = config.DB_HOST
@@ -38,4 +38,27 @@ export async function checkDbHealth() {
 
 export async function closeDb() {
   await client.end()
+}
+
+export async function withAdvisoryLock(name, task, { wait = false } = {}) {
+  const lockClient = postgres(dbUrl, {
+    connect_timeout: 10,
+    connection: { application_name: "revelo-lock" },
+    idle_timeout: 0,
+    max: 1,
+    max_lifetime: 0
+  })
+
+  try {
+    if (wait) {
+      await lockClient`SELECT pg_advisory_lock(hashtext(${name}))`
+    } else {
+      const [row] = await lockClient`SELECT pg_try_advisory_lock(hashtext(${name})) AS acquired`
+      if (!row.acquired) return { acquired: false }
+    }
+
+    return { acquired: true, value: await task() }
+  } finally {
+    await lockClient.end()
+  }
 }

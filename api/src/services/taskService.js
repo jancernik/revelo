@@ -1,10 +1,8 @@
-import { isNull } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 
-import { AppError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
-import * as imageService from "#src/services/imageService.js"
+import { indexDescriptions, indexSearchEmbeddings } from "#src/services/indexService.js"
 import storageManager from "#src/storage/storageManager.js"
 
 export const cleanupStagedImages = async () => {
@@ -107,56 +105,9 @@ export const cleanupOrphanedImages = async () => {
 }
 
 export const backfillEmbeddings = async (force = false) => {
-  try {
-    const options = force ? {} : { where: isNull(Image.table.embedding) }
-    const images = await Image.findAllWithVersionsRaw(options)
-
-    if (images.length === 0) {
-      return { errors: 0, scanned: 0, successful: 0 }
-    }
-
-    let successful = 0
-    let errors = 0
-
-    for (let i = 0; i < images.length; i++) {
-      try {
-        await imageService.generateEmbedding(images[i])
-        successful++
-      } catch (error) {
-        console.log(error)
-        errors++
-      }
-    }
-    return { errors, scanned: images.length, successful }
-  } catch (error) {
-    throw new AppError("Embedding backfill failed", { data: { error }, isOperational: false })
-  }
+  return await indexSearchEmbeddings({ force })
 }
 
-export const backfillCaptions = async (force = false) => {
-  try {
-    const options = force ? {} : { where: isNull(Image.table.captions) }
-    const images = await Image.findAllWithVersionsRaw(options)
-
-    if (images.length === 0) {
-      return { errors: 0, scanned: 0, successful: 0 }
-    }
-
-    let successful = 0
-    let errors = 0
-
-    for (let i = 0; i < images.length; i++) {
-      try {
-        await imageService.generateCaption(images[i])
-        successful++
-      } catch (error) {
-        console.log(error)
-        errors++
-      }
-    }
-
-    return { errors, scanned: images.length, successful }
-  } catch (error) {
-    throw new AppError("Caption backfill failed", { data: { error }, isOperational: false })
-  }
+export const backfillDescriptions = async (force = false) => {
+  return await indexDescriptions({ force })
 }

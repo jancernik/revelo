@@ -1,6 +1,7 @@
 import { z } from "zod"
 
-import { definedSchema, limit, offset } from "#src/validation/baseSchemas.js"
+import { descriptionConfig, descriptionLanguages } from "#src/config/descriptions.js"
+import { definedSchema, limit, offset, queryBoolean } from "#src/validation/baseSchemas.js"
 
 const metadataSchema = z.object({
   aperture: z.string().max(50).optional().nullable(),
@@ -38,7 +39,7 @@ export const updateMetadataSchemas = {
 
 export const fetchAllSchemas = {
   query: z.object({
-    includeHidden: z.coerce.boolean().optional(),
+    includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
     offset: offset.optional(),
     order: z.enum(["asc", "desc"]).optional(),
@@ -51,7 +52,40 @@ export const fetchByIdSchemas = {
     id: definedSchema
   }),
   query: z.object({
-    includeHidden: z.coerce.boolean().optional()
+    includeHidden: queryBoolean.optional()
+  })
+}
+
+const descriptionLanguage = z.enum(descriptionLanguages)
+
+export const fetchDescriptionsSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const editDescriptionSchemas = {
+  body: z.object({
+    text: z
+      .string()
+      .trim()
+      .min(1, "Description text is required")
+      .max(descriptionConfig.maxLength, "Description text too long")
+  }),
+  params: z.object({
+    id: definedSchema,
+    language: descriptionLanguage
+  })
+}
+
+export const regenerateDescriptionsSchemas = {
+  body: z
+    .object({
+      languages: z.array(descriptionLanguage).min(1).optional()
+    })
+    .optional(),
+  params: z.object({
+    id: definedSchema
   })
 }
 
@@ -88,9 +122,8 @@ export const bulkDownloadImagesSchemas = {
 
 export const searchSchemas = {
   query: z.object({
-    includeHidden: z.coerce.boolean().optional(),
+    includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
-    offset: offset.optional(),
     text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")
   })
 }

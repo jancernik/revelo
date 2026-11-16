@@ -133,8 +133,8 @@ onUnmounted(resetHeader)
       <div class="image-wrapper">
         <img
           :src="regularImageVersion.path"
-          :alt="image.captions?.en"
-          :title="image.captions?.en"
+          :alt="image.descriptions?.en"
+          :title="image.descriptions?.en"
         />
       </div>
       <div v-if="hasMetadata" class="metadata-wrapper">

@@ -1,6 +1,8 @@
 import { z } from "zod"
 
-const forceSchema = z.coerce.boolean().optional()
+import { queryBoolean } from "#src/validation/baseSchemas.js"
+
+const forceSchema = queryBoolean.optional()
 
 export const backfillEmbeddingsSchemas = {
   query: z.object({
@@ -8,7 +10,7 @@ export const backfillEmbeddingsSchemas = {
   })
 }
 
-export const backfillCaptionsSchemas = {
+export const backfillDescriptionsSchemas = {
   query: z.object({
     force: forceSchema
   })

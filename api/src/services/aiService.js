@@ -1,253 +1,138 @@
-import fs from "fs"
-
 import { config } from "#src/config/environment.js"
+import { searchConfig } from "#src/config/search.js"
 import { AppError } from "#src/core/errors.js"
 
-class RequestQueue {
-  constructor() {
-    this.queue = []
-    this.processing = false
+const timeouts = {
+  describe: 300000,
+  embedImage: 30000,
+  embedText: 5000,
+  health: 5000,
+  translate: 120000
+}
+
+const cooldownPeriod = 30000
+const failureThreshold = 5
+
+const newState = () => ({ consecutiveFailures: 0, unavailableUntil: 0 })
+
+const unavailable = (message, statusCode = 503) =>
+  new AppError(message, { data: { aiUnavailable: true }, isOperational: true, statusCode })
+
+export const isUnavailableError = (error) => error?.data?.aiUnavailable === true
+
+const recordFailure = (state) => {
+  state.consecutiveFailures++
+
+  if (state.consecutiveFailures >= failureThreshold) {
+    state.unavailableUntil = Date.now() + cooldownPeriod
+    state.consecutiveFailures = 0
   }
+}
 
-  async add(task, priority = false) {
-    return new Promise((resolve, reject) => {
-      const item = { reject, resolve, task }
-      if (priority) {
-        this.queue.unshift(item)
-      } else {
-        this.queue.push(item)
-      }
-      this.processNext()
-    })
-  }
+export const createAiService = () => {
+  const serviceStates = { describe: newState(), search: newState() }
 
-  async processNext() {
-    if (this.processing || this.queue.length === 0) return
+  const request = async (path, { body, group = "search", timeout }) => {
+    const state = serviceStates[group]
 
-    this.processing = true
-    const { reject, resolve, task } = this.queue.shift()
+    if (state.unavailableUntil > Date.now()) {
+      throw unavailable("AI service temporarily unavailable")
+    }
+
+    let response
+    let json
 
     try {
-      const result = await task()
-      resolve(result)
+      response = await fetch(`${config.AI_BASE_URL}${path}`, {
+        body,
+        method: body ? "POST" : "GET",
+        signal: AbortSignal.timeout(timeout)
+      })
+
+      json = await response.json().catch((error) => {
+        if (error.name === "SyntaxError") return null
+        throw error
+      })
     } catch (error) {
-      reject(error)
-    } finally {
-      this.processing = false
-      setTimeout(() => this.processNext(), 100)
+      recordFailure(state)
+
+      if (error.name === "TimeoutError" || error.name === "AbortError") {
+        throw unavailable("AI service request timed out", 504)
+      }
+      throw unavailable("AI service connection failed")
     }
-  }
-}
 
-const requestQueue = new RequestQueue()
-
-const serviceState = {
-  consecutiveFailures: 0,
-  cooldownPeriod: 30000,
-  failureThreshold: 5,
-  healthCheckTTL: 10000,
-  isHealthy: true,
-  lastHealthCheck: 0,
-  unavailableUntil: 0
-}
-
-export const checkAiServiceHealth = async () => {
-  const now = Date.now()
-
-  if (now - serviceState.lastHealthCheck < serviceState.healthCheckTTL) {
-    return serviceState.isHealthy
-  }
-
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    const response = await fetch(`${config.AI_BASE_URL}/health`, {
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-
-    if (response.ok) {
-      const data = await response.json()
-      serviceState.isHealthy = data.status === "healthy" && data.models_loaded === true
-    } else {
-      serviceState.isHealthy = false
+    if (response.status >= 500) {
+      recordFailure(state)
+      throw unavailable("AI service request failed")
     }
-  } catch {
-    serviceState.isHealthy = false
-  }
 
-  serviceState.lastHealthCheck = now
-  return serviceState.isHealthy
-}
+    Object.assign(state, newState())
 
-const isServiceAvailable = () => {
-  const now = Date.now()
-
-  if (serviceState.unavailableUntil > now) {
-    return false
-  }
-
-  if (serviceState.unavailableUntil > 0 && serviceState.unavailableUntil <= now) {
-    serviceState.consecutiveFailures = 0
-    serviceState.unavailableUntil = 0
-  }
-
-  return true
-}
-
-const recordFailure = () => {
-  serviceState.consecutiveFailures++
-
-  if (serviceState.consecutiveFailures >= serviceState.failureThreshold) {
-    serviceState.unavailableUntil = Date.now() + serviceState.cooldownPeriod
-    serviceState.isHealthy = false
-  }
-}
-
-const recordSuccess = () => {
-  serviceState.consecutiveFailures = 0
-  serviceState.unavailableUntil = 0
-}
-
-const makeRequest = async (url, options = {}) => {
-  if (!isServiceAvailable()) {
-    throw new AppError("AI service temporarily unavailable", {
-      isOperational: true,
-      statusCode: 503
-    })
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: AbortSignal.timeout(30000)
-    })
-
-    const json = await response.json()
-
-    if (json.status !== "success") {
-      throw new AppError("AI service request failed", {
+    if (!response.ok || (body && json?.status !== "success")) {
+      throw new AppError("AI service rejected the request", {
         data: { response: json },
         isOperational: false
       })
     }
 
-    recordSuccess()
-    return json.data
-  } catch (error) {
-    recordFailure()
-
-    if (error.name === "TimeoutError" || error.name === "AbortError") {
-      throw new AppError("AI service request timed out", {
-        isOperational: true,
-        statusCode: 504
-      })
-    }
-
-    if (error.code === "ECONNREFUSED" || error.name === "FetchError") {
-      throw new AppError("AI service connection failed", {
-        isOperational: true,
-        statusCode: 503
-      })
-    }
-
-    throw error
+    return body ? json.data : json
   }
-}
 
-const retryRequest = async (fn, maxRetries = 2) => {
-  let lastError
+  const imageForm = (data) => {
+    const form = new FormData()
+    form.append("image", new Blob([data]), "image")
+    return form
+  }
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  const embedImage = async (data) => {
+    const result = await request("/embed/image", {
+      body: imageForm(data),
+      timeout: timeouts.embedImage
+    })
+    return { embedding: result.embedding, model: result.model }
+  }
+
+  const embedText = async (text) => {
+    const form = new FormData()
+    form.append("text", text)
+
+    const result = await request("/embed/text", { body: form, timeout: timeouts.embedText })
+    return { embedding: result.embedding, model: result.model }
+  }
+
+  const describeImage = async (data) => {
+    const result = await request("/describe/image", {
+      body: imageForm(data),
+      group: "describe",
+      timeout: timeouts.describe
+    })
+    return { model: result.model, text: result.text }
+  }
+
+  const translate = async (text, target) => {
+    const form = new FormData()
+    form.append("text", text)
+    form.append("target", target)
+
+    const result = await request("/translate", {
+      body: form,
+      group: "describe",
+      timeout: timeouts.translate
+    })
+    return { model: result.model, text: result.text }
+  }
+
+  const isSearchReady = async () => {
     try {
-      return await fn()
-    } catch (error) {
-      lastError = error
-
-      if (!error.isOperational || error.statusCode === 503) {
-        throw error
-      }
-
-      if (attempt < maxRetries - 1) {
-        const delay = Math.min(1000 * Math.pow(2, attempt), 5000)
-        await new Promise((resolve) => setTimeout(resolve, delay))
-      }
+      const health = await request("/health", { timeout: timeouts.health })
+      return health.search?.ready === true && health.search.model === searchConfig.model
+    } catch {
+      return false
     }
   }
 
-  throw lastError
+  return { describeImage, embedImage, embedText, isSearchReady, translate }
 }
 
-const requestImageCaption = async (imagePath) => {
-  if (config.ENV === "test") {
-    return { en: "Test caption EN", es: "Test caption ES" }
-  }
-
-  return await retryRequest(async () => {
-    const fileBuffer = fs.readFileSync(imagePath)
-    const blob = new Blob([fileBuffer])
-    const formData = new FormData()
-    formData.append("image", blob, "image.jpg")
-
-    const result = await makeRequest(`${config.AI_BASE_URL}/caption/image`, {
-      body: formData,
-      method: "POST"
-    })
-
-    return result.captions
-  })
-}
-
-const requestImageEmbedding = async (imagePath) => {
-  if (config.ENV === "test") {
-    return new Array(512).fill(0.19)
-  }
-
-  return await retryRequest(async () => {
-    const fileBuffer = fs.readFileSync(imagePath)
-    const blob = new Blob([fileBuffer])
-    const formData = new FormData()
-    formData.append("image", blob, "image.jpg")
-
-    const result = await makeRequest(`${config.AI_BASE_URL}/embedding/image`, {
-      body: formData,
-      method: "POST"
-    })
-
-    return result.embedding
-  })
-}
-
-const requestTextEmbedding = async (text) => {
-  if (config.ENV === "test") {
-    return new Array(512).fill(0.21)
-  }
-
-  return await retryRequest(async () => {
-    const formData = new FormData()
-    formData.append("text", text)
-
-    const result = await makeRequest(`${config.AI_BASE_URL}/embedding/text`, {
-      body: formData,
-      method: "POST"
-    })
-
-    return result.embedding
-  })
-}
-
-export const generateImageCaption = async (imagePath, options = {}) => {
-  const { highPriority = false } = options
-  return requestQueue.add(() => requestImageCaption(imagePath), highPriority)
-}
-
-export const generateImageEmbedding = async (imagePath, options = {}) => {
-  const { highPriority = false } = options
-  return requestQueue.add(() => requestImageEmbedding(imagePath), highPriority)
-}
-
-export const generateTextEmbedding = async (text, options = {}) => {
-  const { highPriority = false } = options
-  return requestQueue.add(() => requestTextEmbedding(text), highPriority)
-}
+export const aiService = createAiService()

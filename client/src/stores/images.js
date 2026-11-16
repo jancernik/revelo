@@ -143,6 +143,49 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
+  function setDescriptionsLocal(id, list) {
+    const descriptions = Object.fromEntries(
+      list.filter((item) => item.text !== null).map((item) => [item.language, item.text])
+    )
+    updateLocal(id, { descriptions })
+    collectionsStore.updateImageLocal(id, { descriptions })
+  }
+
+  async function descriptionRequest(id, errorTitle, send) {
+    try {
+      const response = await send()
+      const list = response.data?.data?.descriptions || []
+      setDescriptionsLocal(id, list)
+
+      return list
+    } catch (error) {
+      showToast({
+        description: error.response?.data?.message || error.message,
+        title: errorTitle,
+        type: "error"
+      })
+      throw error
+    }
+  }
+
+  async function fetchDescriptions(id) {
+    return descriptionRequest(id, "Error Loading Descriptions", () =>
+      api.get(`/images/${id}/descriptions`)
+    )
+  }
+
+  async function updateDescription(id, language, text) {
+    return descriptionRequest(id, "Error Saving Description", () =>
+      api.put(`/images/${id}/descriptions/${language}`, { text })
+    )
+  }
+
+  async function regenerateDescriptions(id, languages) {
+    return descriptionRequest(id, "Error Regenerating Description", () =>
+      api.post(`/images/${id}/descriptions/regenerate`, languages ? { languages } : {})
+    )
+  }
+
   async function remove(id) {
     try {
       await api.delete(`/images/${id}`)
@@ -297,6 +340,7 @@ export const useImagesStore = defineStore("images", () => {
     error,
     fetch,
     fetchAll,
+    fetchDescriptions,
     images,
     initialize,
     initialized,
@@ -304,10 +348,12 @@ export const useImagesStore = defineStore("images", () => {
     order,
     orderBy,
     refreshImages,
+    regenerateDescriptions,
     remove,
     search,
     setOrder,
     toggleHidden,
+    updateDescription,
     updateLocal,
     updateMetadata,
     uploadForReview,

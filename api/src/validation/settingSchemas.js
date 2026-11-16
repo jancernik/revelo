@@ -1,8 +1,8 @@
 import { z } from "zod"
 
-import { definedSchema } from "#src/validation/baseSchemas.js"
+import { definedSchema, queryBoolean } from "#src/validation/baseSchemas.js"
 
-const completeSchema = z.coerce.boolean().optional()
+const completeSchema = queryBoolean.optional()
 const settingNameSchema = z.string().min(1, "Setting name is required")
 
 export const getSettingsSchemas = {

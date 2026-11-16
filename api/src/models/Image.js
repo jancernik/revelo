@@ -1,4 +1,4 @@
-import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm"
+import { and, cosineDistance, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import sharp from "sharp"
@@ -6,26 +6,12 @@ import sharp from "sharp"
 import { config } from "#src/config/environment.js"
 import { ImagesTable, ImageVersionsTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
+import { QUERY_API_DESCRIPTION_COLUMNS, withDescriptionMap } from "#src/models/descriptions.js"
 import storageManager from "#src/storage/storageManager.js"
 
-class Image extends BaseModel {
-  static FLUENT_API_IMAGE_COLUMNS = {
-    aperture: ImagesTable.aperture,
-    camera: ImagesTable.camera,
-    captions: ImagesTable.captions,
-    collectionId: ImagesTable.collectionId,
-    collectionOrder: ImagesTable.collectionOrder,
-    comment: ImagesTable.comment,
-    date: ImagesTable.date,
-    focalLength: ImagesTable.focalLength,
-    focalLengthEquivalent: ImagesTable.focalLengthEquivalent,
-    hidden: ImagesTable.hidden,
-    id: ImagesTable.id,
-    iso: ImagesTable.iso,
-    lens: ImagesTable.lens,
-    shutterSpeed: ImagesTable.shutterSpeed
-  }
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
+class Image extends BaseModel {
   static QUERY_API_IMAGE_COLUMNS = {
     aperture: true,
     camera: true,
@@ -107,6 +93,7 @@ class Image extends BaseModel {
       orderBy: orderBy || undefined,
       where: where || undefined,
       with: {
+        descriptions: { columns: QUERY_API_DESCRIPTION_COLUMNS },
         versions: {
           columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
         }
@@ -142,12 +129,22 @@ class Image extends BaseModel {
     return await this.db.query.ImagesTable.findMany(queryOptions)
   }
 
+  async findByIdsWithVersions(ids) {
+    if (ids.length === 0) return []
+
+    const images = await this.findAllWithVersions({ where: inArray(this.table.id, ids) })
+    const byId = new Map(images.map((image) => [image.id, image]))
+
+    return ids.map((id) => byId.get(id)).filter(Boolean)
+  }
+
   async findByIdWithVersions(id) {
     try {
       const result = await this.db.query.ImagesTable.findFirst({
         columns: { ...this.constructor.QUERY_API_IMAGE_COLUMNS },
         where: eq(this.table.id, id),
         with: {
+          descriptions: { columns: QUERY_API_DESCRIPTION_COLUMNS },
           versions: {
             columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
           }
@@ -180,85 +177,63 @@ class Image extends BaseModel {
     }
   }
 
-  async searchByEmbedding(embedding, options = {}) {
-    const limit = this.#toSafeInt(options.limit, 200)
-    const efSearch = this.#toSafeInt(options.efSearch, 200)
-    const minSimilarity = Number.isFinite(options.minSimilarity) ? options.minSimilarity : 0.25
+  async findIdsByMetadata(text, options = {}) {
     const { includeHidden = false } = options
+    const pattern = `(?<![[:alnum:]])${escapeRegex(text)}(?![[:alnum:]])`
+    const matches = or(
+      sql`${this.table.camera} ~* ${pattern}`,
+      sql`${this.table.lens} ~* ${pattern}`,
+      sql`${this.table.comment} ~* ${pattern}`
+    )
 
-    const similarity = sql`1 - (${cosineDistance(this.table.embedding, embedding)})`
-    const similarityFilter = gt(similarity, minSimilarity)
-    const whereClause = includeHidden
-      ? similarityFilter
-      : and(similarityFilter, eq(this.table.hidden, false))
+    const results = await this.db
+      .select({ id: this.table.id })
+      .from(this.table)
+      .where(includeHidden ? matches : and(matches, eq(this.table.hidden, false)))
+      .orderBy(desc(this.table.createdAt))
 
-    return await this.db.transaction(async (tx) => {
-      if (efSearch) {
-        await tx.execute(sql.raw(`SET LOCAL hnsw.ef_search = ${efSearch}`))
-      }
+    return results.map((row) => row.id)
+  }
 
-      const results = await tx
-        .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, similarity })
-        .from(this.table)
-        .where(whereClause)
-        .orderBy((t) => desc(t.similarity))
-        .limit(limit)
+  async findPendingSearchEmbedding(model, options = {}) {
+    const { force = false } = options
 
-      return await this.#addImageVersions(results)
+    return await this.findAllWithVersionsRaw({
+      where: force ? undefined : this.#searchEmbeddingPending(model)
     })
   }
 
-  async searchByText(text, options = {}) {
-    const { includeHidden = false, limit = 50 } = options
-    const en = sql`coalesce((${this.table.captions} ->> 'en'), '')`
-    const es = sql`coalesce((${this.table.captions} ->> 'es'), '')`
-
-    const searchVector = sql`(
-      setweight(to_tsvector('english', ${en}), 'A') ||
-      setweight(to_tsvector('spanish', ${es}), 'A') ||
-      setweight(to_tsvector('english', coalesce(${this.table.comment}, '')), 'B') ||
-      setweight(to_tsvector('spanish', coalesce(${this.table.comment}, '')), 'B') ||
-      setweight(to_tsvector('english', coalesce(${this.table.camera}, '')), 'C') ||
-      setweight(to_tsvector('spanish', coalesce(${this.table.camera}, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(${this.table.lens}, '')), 'C') ||
-      setweight(to_tsvector('spanish', coalesce(${this.table.lens}, '')), 'C')
-    )`
-
-    const qEn = sql`plainto_tsquery('english', ${text})`
-    const qEs = sql`plainto_tsquery('spanish', ${text})`
-    const textMatch = sql`${searchVector} @@ ${qEn} OR ${searchVector} @@ ${qEs}`
-    const whereClause = includeHidden ? textMatch : and(textMatch, eq(this.table.hidden, false))
-    const rank = sql`ts_rank(${searchVector}, ${qEn}) + ts_rank(${searchVector}, ${qEs})`
-
+  async hasPendingSearchEmbedding(model) {
     const results = await this.db
-      .select({ ...this.constructor.FLUENT_API_IMAGE_COLUMNS, score: rank.as("score") })
+      .select({ id: this.table.id })
       .from(this.table)
-      .where(whereClause)
-      .orderBy(desc(rank))
-      .limit(limit)
+      .where(this.#searchEmbeddingPending(model))
+      .limit(1)
 
-    return await this.#addImageVersions(results)
+    return results.length > 0
+  }
+
+  async scoreBySimilarity(embedding, options = {}) {
+    const { includeHidden = false, model } = options
+    const similarity = sql`1 - (${cosineDistance(this.table.searchEmbedding, embedding)})`
+    const embedded = eq(this.table.searchEmbeddingModel, model)
+
+    return await this.db
+      .select({ id: this.table.id, similarity: similarity.mapWith(Number) })
+      .from(this.table)
+      .where(includeHidden ? embedded : and(embedded, eq(this.table.hidden, false)))
+      .orderBy(desc(similarity))
+  }
+
+  async setSearchEmbedding(id, embedding, model) {
+    await this.db
+      .update(this.table)
+      .set({ searchEmbedding: embedding, searchEmbeddingModel: model })
+      .where(eq(this.table.id, id))
   }
 
   transformImageWithUrls(image) {
     return this.#transformImageWithUrls(image)
-  }
-
-  async #addImageVersions(images = []) {
-    if (images.length === 0) return []
-
-    const ids = images.map((r) => r.id)
-
-    const versions = await this.db.query.ImageVersionsTable.findMany({
-      columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS, imageId: true },
-      where: sql`${ImageVersionsTable.imageId} IN (${sql.join(ids, sql`, `)})`
-    })
-
-    const transformed = images.map((i) =>
-      this.#transformImageWithUrls({ ...i, versions: versions.filter((v) => v.imageId === i.id) })
-    )
-
-    return transformed.filter((img) => this.#hasAccessibleVersions(img))
   }
 
   async #createImageVersions(tx, file, imageId, imageDir) {
@@ -375,13 +350,12 @@ class Image extends BaseModel {
     return true
   }
 
-  #shouldExcludeS3Images() {
-    return !config.BUCKET_PUBLIC_URL
+  #searchEmbeddingPending(model) {
+    return or(isNull(this.table.searchEmbeddingModel), ne(this.table.searchEmbeddingModel, model))
   }
 
-  #toSafeInt(x, fallback) {
-    const n = Math.floor(Number(x))
-    return Number.isFinite(n) && n > 0 ? n : fallback
+  #shouldExcludeS3Images() {
+    return !config.BUCKET_PUBLIC_URL
   }
 
   #transformImageWithUrls(image) {
@@ -389,7 +363,7 @@ class Image extends BaseModel {
 
     const filteredImage = this.#filterAccessibleVersions(image)
 
-    const transformedImage = { ...filteredImage }
+    const transformedImage = withDescriptionMap(filteredImage)
 
     if (transformedImage.versions && Array.isArray(transformedImage.versions)) {
       transformedImage.versions = transformedImage.versions.map((version) => ({

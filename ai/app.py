@@ -1,73 +1,56 @@
+import asyncio
 import io
+import logging
 import os
 import time
-import re
-import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Dict, List
 
 import torch
-from fastapi import FastAPI, File, UploadFile, Form
+import uvicorn
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from PIL import Image
-import uvicorn
+from PIL import Image, UnidentifiedImageError
 
-from models import load_models
+import config
+import describe
+import search
 
-logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
-device = None
-
-image_model = None
-text_model = None
-
-florence_model = None
-florence_processor = None
-
-mt_model = None
-mt_tokenizer = None
-
 ai_port = int(os.getenv("AI_PORT", "8000"))
+device = "cuda" if torch.cuda.is_available() else "cpu"
+description_model = describe.lazy()
 
-TEXT_PROMPT_TEMPLATES: List[str] = [
-    "a photo of {q}",
-    "a high-quality photo of {q}",
-    "a detailed photograph of {q}",
-    "a realistic photo of {q}, natural light",
-]
+
+async def _release_idle_models() -> None:
+    while True:
+        await asyncio.sleep(60)
+        await asyncio.to_thread(description_model.release_if_idle)
+
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    global device
-    global image_model, text_model
-    global florence_model, florence_processor
-    global mt_model, mt_tokenizer
-
-    load_start_time = time.time()
-
-    torch.set_grad_enabled(False)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     logger.info(f"Starting AI service on {device.upper()}")
-    logger.info(f"Loading models...")
-
-    image_model, text_model, florence_model, florence_processor, mt_tokenizer, mt_model = load_models(device)
-
-    logger.info(f"Ready - All models loaded in {time.time() - load_start_time:.2f}s")
+    search.load(device)
+    logger.info("Ready")
+    release_task = asyncio.create_task(_release_idle_models())
     try:
         yield
     finally:
+        release_task.cancel()
+        description_model.close()
         logger.info("Shutting down...")
 
 
 app = FastAPI(
     title="Image Search AI API",
-    description="API for generating image/text embeddings and captions",
+    description="API for generating image/text embeddings and image descriptions",
     lifespan=lifespan,
 )
 
@@ -79,138 +62,106 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def _average_unit_norm_rows(t: torch.Tensor) -> torch.Tensor:
-    t = t / t.norm(dim=-1, keepdim=True).clamp_min(1e-12)
-    m = t.mean(dim=0, keepdim=True)
-    return m / m.norm(dim=-1, keepdim=True).clamp_min(1e-12)
 
-def _to_device(batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-    return {k: v.to(device) for k, v in batch.items()}
+def _success(data: dict, start_time: float) -> JSONResponse:
+    return JSONResponse({"status": "success", "data": {**data, "time": int((time.time() - start_time) * 1000)}})
 
-def _model_dtype(m: torch.nn.Module) -> torch.dtype:
+
+def _error(status_code: int, message: str) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"status": "error", "message": message})
+
+
+def _internal_error() -> JSONResponse:
+    return _error(500, "Internal error")
+
+
+def _description_error(error: Exception, context: str) -> JSONResponse:
+    if isinstance(error, describe.NotEnoughMemory):
+        logger.warning(str(error))
+        return _error(503, "Not enough free memory for the description model")
+    if isinstance(error, describe.UnusableOutput):
+        logger.warning(f"{context}: {error}")
+        return _error(422, "The model returned no usable text")
+    logger.exception(context, exc_info=error)
+    return _internal_error()
+
+
+def _open_image(upload: UploadFile) -> Image.Image | None:
     try:
-        return next(m.parameters()).dtype
-    except StopIteration:
-        return torch.float16 if torch.cuda.is_available() else torch.float32
+        return Image.open(io.BytesIO(upload.file.read())).convert("RGB")
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        return None
 
-def _translate_en_to_es(text: str) -> str:
-    tokenizer = mt_tokenizer(text, return_tensors="pt", padding=True).to(device)
-    with torch.no_grad():
-        out = mt_model.generate(**tokenizer, max_new_tokens=256)
-    return mt_tokenizer.batch_decode(out, skip_special_tokens=True)[0].strip()
 
 @app.get("/health")
-async def health_check():
+def health_check():
     return {
         "status": "healthy",
         "timestamp": time.time(),
         "device": device,
-        "models_loaded": bool(image_model and text_model and florence_model and mt_model),
+        "search": {"model": config.search_model, "ready": search.ready()},
+        "describe": {"model": config.describe_model, "loaded": description_model.loaded},
     }
 
-@app.post("/caption/image")
-async def generate_image_captions(image: UploadFile = File(...)):
+
+@app.post("/embed/image")
+def embed_image(image: UploadFile = File(...)):
+    start_time = time.time()
+    pil_image = _open_image(image)
+    if pil_image is None:
+        return _error(400, "The file is not a readable image")
     try:
-        start_time = time.time()
-        contents = await image.read()
-        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
-
-        logger.info(f"[Captions] Processing image: size={pil_image.size}")
-
-        task = "<MORE_DETAILED_CAPTION>"
-        inputs = florence_processor(text=task, images=pil_image, return_tensors="pt")
-        inputs = _to_device(inputs)
-
-        if "pixel_values" in inputs:
-            inputs["pixel_values"] = inputs["pixel_values"].to(dtype=_model_dtype(florence_model))
-
-        with torch.no_grad():
-            generated_ids = florence_model.generate(
-                input_ids=inputs["input_ids"],
-                pixel_values=inputs["pixel_values"],
-                num_beams=1,
-                do_sample=False,
-                max_new_tokens=220,
-            )
-
-        raw = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-        english = re.sub(r"<[^>]+>", "", raw).strip() or raw
-        spanish = _translate_en_to_es(english)
-
-        logger.info(f"[Captions] English: \"{english[:100]}...[{len(english)}]\"")
-        logger.info(f"[Captions] Spanish: \"{spanish[:100]}...[{len(spanish)}]\"")
-
-        processing_time = int((time.time() - start_time) * 1000)
-        logger.info(f"[Captions] Generated image captions in {processing_time} ms")
-        return JSONResponse({
-            "status": "success",
-            "data": {
-                "captions": {"en": english, "es": spanish},
-                "time": processing_time,
-            },
-        })
+        embedding = search.embed_image(pil_image)
     except Exception as e:
-        logger.error(f"Error generating captions: {str(e)}")
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+        logger.exception("Error generating image embedding")
+        return _internal_error()
+    return _success({"embedding": embedding, "model": config.search_model}, start_time)
 
 
-@app.post("/embedding/image")
-async def generate_image_embedding(image: UploadFile = File(...)):
+@app.post("/embed/text")
+def embed_text(text: str = Form(...)):
+    start_time = time.time()
+    text = text.strip()
+    if not text:
+        return _error(400, "The text is empty")
     try:
-        start_time = time.time()
-        contents = await image.read()
-        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
-
-        logger.info(f"[Embedding] Processing image: size={pil_image.size}, mode={pil_image.mode}")
-
-        embedding = image_model.encode(pil_image, convert_to_numpy=True).tolist()
-        processing_time = int((time.time() - start_time) * 1000)
-
-        logger.info(f"[Embedding] Generated image embedding in {processing_time}ms")
-
-        return JSONResponse({
-            "status": "success",
-            "data": {
-                "embedding": embedding,
-                "dimensions": len(embedding),
-                "time": processing_time,
-            },
-        })
+        embedding = search.embed_text(text)
     except Exception as e:
-        logger.error(f"Error generating image embedding: {str(e)}")
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+        logger.exception("Error generating text embedding")
+        return _internal_error()
+    return _success({"embedding": embedding, "model": config.search_model}, start_time)
 
-@app.post("/embedding/text")
-async def generate_text_embedding(text: str = Form(...), ensembling: bool = Form(True)):
+
+@app.post("/describe/image")
+def describe_image(image: UploadFile = File(...)):
+    start_time = time.time()
+    pil_image = _open_image(image)
+    if pil_image is None:
+        return _error(400, "The file is not a readable image")
     try:
-        start_time = time.time()
-
-        logger.info(f"[Embedding] Text query: \"{text}\" (ensembling={'on' if ensembling else 'off'})")
-
-        if ensembling:
-            prompts = [tpl.format(q=text) for tpl in TEXT_PROMPT_TEMPLATES]
-            logger.info(f"[Embedding] Created {len(prompts)} prompt variations")
-            embeddings = text_model.encode(prompts, convert_to_numpy=True)
-            embedding = _average_unit_norm_rows(torch.from_numpy(embeddings)).squeeze(0).numpy().tolist()
-        else:
-            embedding = text_model.encode(text, convert_to_numpy=True).tolist()
-
-        processing_time = int((time.time() - start_time) * 1000)
-
-        logger.info(f"[Embedding] Generated text embedding in {processing_time}ms")
-
-        return JSONResponse({
-            "status": "success",
-            "data": {
-                "embedding": embedding,
-                "dimensions": len(embedding),
-                "time": processing_time,
-                "ensembled": ensembling,
-            },
-        })
+        with description_model.use() as server:
+            text = describe.describe_image(server, pil_image)
     except Exception as e:
-        logger.error(f"Error generating text embedding: {str(e)}")
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+        return _description_error(e, "Error describing image")
+    return _success({"text": text, "language": config.describe_language, "model": config.describe_model}, start_time)
+
+
+@app.post("/translate")
+def translate(text: str = Form(...), target: str = Form(...)):
+    start_time = time.time()
+    text = text.strip()
+    if not text:
+        return _error(400, "The text is empty")
+    try:
+        describe.language_name(target)
+    except describe.UnknownLanguage:
+        return _error(400, "Unsupported target language")
+    try:
+        with description_model.use() as server:
+            translated = describe.translate(server, text, target)
+    except Exception as e:
+        return _description_error(e, "Error translating text")
+    return _success({"text": translated, "language": target, "model": config.describe_model}, start_time)
 
 
 if __name__ == "__main__":

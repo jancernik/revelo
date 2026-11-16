@@ -1,0 +1,7 @@
+.venv
+.llama
+__pycache__
+.pytest_cache
+eval
+tests
+*.md

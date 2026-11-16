@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 
+import DescriptionEditor from "#src/components/dashboard/images/DescriptionEditor.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
@@ -142,8 +143,8 @@ onUnmounted(reset)
       <div class="image-preview">
         <img
           :src="regularImageVersion.path"
-          :alt="image.captions?.en"
-          :title="image.captions?.en"
+          :alt="image.descriptions?.en"
+          :title="image.descriptions?.en"
         />
       </div>
       <div class="edit-form">
@@ -155,6 +156,7 @@ onUnmounted(reset)
           :show-reset-button="false"
           @update="handleMetadataUpdate"
         />
+        <DescriptionEditor :image-id="props.id" />
       </div>
     </div>
   </div>
@@ -205,6 +207,10 @@ onUnmounted(reset)
     }
 
     .edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-5);
+
       @include breakpoint("md") {
         flex: 0 0 320px;
       }

@@ -8,7 +8,16 @@ ENV PYTHONUNBUFFERED=1 \
   HF_HOME=/models
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl libgomp1 && rm -rf /var/lib/apt/lists/*
+
+# Install the llama.cpp server
+ARG LLAMA_BUILD=b12407
+ARG LLAMA_SHA256=f88eb522e3cf2eede34b2f4fdc3b08ed462ec234f2f13e3e15be659a003218d4
+RUN curl -fsSL -o /tmp/llama.tar.gz https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_BUILD}/llama-${LLAMA_BUILD}-bin-ubuntu-x64.tar.gz \
+  && echo "${LLAMA_SHA256}  /tmp/llama.tar.gz" | sha256sum -c \
+  && mkdir /opt/llama && tar -xzf /tmp/llama.tar.gz -C /opt/llama --strip-components=1 \
+  && rm /tmp/llama.tar.gz
+ENV LLAMA_SERVER_PATH=/opt/llama/llama-server
 
 # Create non-root user
 RUN groupadd --gid 1001 appuser && useradd --uid 1001 --gid appuser --shell /bin/bash --create-home appuser
@@ -21,9 +30,9 @@ RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/wh
 
 # Download the models into the image
 RUN mkdir -p /models && chown appuser:appuser /models
-COPY models.py .
+COPY config.py lazy.py search.py describe.py download.py ./
 USER appuser
-RUN python models.py
+RUN python download.py
 ENV HF_HUB_OFFLINE=1
 USER root
 

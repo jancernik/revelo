@@ -3,6 +3,7 @@ import { and, asc, eq, inArray } from "drizzle-orm"
 import { config } from "#src/config/environment.js"
 import { CollectionsTable, ImagesTable } from "#src/database/schema.js"
 import BaseModel from "#src/models/BaseModel.js"
+import { QUERY_API_DESCRIPTION_COLUMNS, withDescriptionMap } from "#src/models/descriptions.js"
 import storageManager from "#src/storage/storageManager.js"
 
 class Collection extends BaseModel {
@@ -57,6 +58,7 @@ class Collection extends BaseModel {
           orderBy: asc(ImagesTable.collectionOrder),
           where: imageWhere || undefined,
           with: {
+            descriptions: { columns: QUERY_API_DESCRIPTION_COLUMNS },
             versions: {
               columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
             }
@@ -89,6 +91,7 @@ class Collection extends BaseModel {
             orderBy: asc(ImagesTable.collectionOrder),
             where: imageWhere || undefined,
             with: {
+              descriptions: { columns: QUERY_API_DESCRIPTION_COLUMNS },
               versions: {
                 columns: { ...this.constructor.QUERY_API_VERSION_COLUMNS }
               }
@@ -183,7 +186,7 @@ class Collection extends BaseModel {
     if (collection.images && Array.isArray(collection.images)) {
       collection.images = collection.images
         .map((image) => {
-          const filteredImage = this.#filterAccessibleVersions(image)
+          const filteredImage = withDescriptionMap(this.#filterAccessibleVersions(image))
 
           if (filteredImage.versions && Array.isArray(filteredImage.versions)) {
             filteredImage.versions = filteredImage.versions.map((version) => ({

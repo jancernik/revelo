@@ -7,8 +7,11 @@ import {
   confirmUpload,
   deleteImage,
   downloadImage,
+  editDescription,
   fetchAll,
   fetchById,
+  fetchDescriptions,
+  regenerateDescriptions,
   search,
   updateMetadata,
   uploadForReview
@@ -23,8 +26,11 @@ import {
   confirmUploadSchemas,
   deleteImageSchemas,
   downloadImageSchemas,
+  editDescriptionSchemas,
   fetchAllSchemas,
   fetchByIdSchemas,
+  fetchDescriptionsSchemas,
+  regenerateDescriptionsSchemas,
   searchSchemas,
   updateMetadataSchemas
 } from "#src/validation/imageSchemas.js"
@@ -51,6 +57,24 @@ router.put(
 router.get("/images/:id", auth.optional(), validate(fetchByIdSchemas), fetchById)
 router.get("/images/:id/download", auth.required(), validate(downloadImageSchemas), downloadImage)
 router.put("/images/:id/metadata", auth.required(), validate(updateMetadataSchemas), updateMetadata)
+router.get(
+  "/images/:id/descriptions",
+  auth.required(),
+  validate(fetchDescriptionsSchemas),
+  fetchDescriptions
+)
+router.post(
+  "/images/:id/descriptions/regenerate",
+  auth.required(),
+  validate(regenerateDescriptionsSchemas),
+  regenerateDescriptions
+)
+router.put(
+  "/images/:id/descriptions/:language",
+  auth.required(),
+  validate(editDescriptionSchemas),
+  editDescription
+)
 router.delete("/images/:id", auth.required(), validate(deleteImageSchemas), deleteImage)
 
 export default router
