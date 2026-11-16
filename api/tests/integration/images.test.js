@@ -692,7 +692,7 @@ describe("Image Endpoints", () => {
 
       expect(response.headers["content-type"]).toContain("application/zip")
       expect(response.headers["content-disposition"]).toMatch(/\.zip"$/)
-      expect(response.body[0]).toBe(0x50) // ZIP magic bytes: PK
+      expect(response.body[0]).toBe(0x50) // ZIP archives start with PK.
       expect(response.body[1]).toBe(0x4b)
     })
 

@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 
@@ -205,4 +206,9 @@ export function getMetadataTestData() {
       }
     }
   }
+}
+
+export async function getStoredImage(id) {
+  const rows = await getDb().select().from(ImagesTable).where(eq(ImagesTable.id, id))
+  return rows[0]
 }

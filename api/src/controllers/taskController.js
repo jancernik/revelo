@@ -28,9 +28,9 @@ export const backfillEmbeddings = async (req, res) => {
   })
 }
 
-export const backfillCaptions = async (req, res) => {
+export const backfillDescriptions = async (req, res) => {
   const { force } = req.parsedQuery
-  const result = await taskService.backfillCaptions(force)
+  const result = await taskService.backfillDescriptions(force)
 
   res.status(200).json({
     data: { result },

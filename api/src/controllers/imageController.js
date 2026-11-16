@@ -4,6 +4,7 @@ import { ImagesTable } from "#src/database/schema.js"
 import Image from "#src/models/Image.js"
 import Setting from "#src/models/Setting.js"
 import * as imageService from "#src/services/imageService.js"
+import * as searchService from "#src/services/searchService.js"
 
 export const uploadForReview = async (req, res) => {
   const files = req.files
@@ -159,16 +160,15 @@ export const bulkDownloadImages = async (req, res) => {
 }
 
 export const search = async (req, res) => {
-  const { limit, offset, text } = req.parsedQuery
+  const { limit, text } = req.parsedQuery
 
   const options = { includeHidden: !!(req.user?.admin && req.parsedQuery.includeHidden) }
   if (limit) options.limit = limit
-  if (offset) options.offset = offset
 
-  const images = await imageService.searchWithVersions(text, options)
+  const { images, semantic } = await searchService.search(text, options)
 
   res.status(200).json({
-    data: { images, metadata: options },
+    data: { images, metadata: { ...options, semantic } },
     status: "success"
   })
 }

@@ -10,7 +10,7 @@ export const backfillEmbeddingsSchemas = {
   })
 }
 
-export const backfillCaptionsSchemas = {
+export const backfillDescriptionsSchemas = {
   query: z.object({
     force: forceSchema
   })

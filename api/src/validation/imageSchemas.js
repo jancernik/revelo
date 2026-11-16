@@ -90,7 +90,6 @@ export const searchSchemas = {
   query: z.object({
     includeHidden: queryBoolean.optional(),
     limit: limit.optional(),
-    offset: offset.optional(),
     text: z.string().trim().min(1, "Search text is required").max(500, "Search text too long")
   })
 }

@@ -1,14 +1,17 @@
 import { Router } from "express"
 
 import {
-  backfillCaptions,
+  backfillDescriptions,
   backfillEmbeddings,
   cleanupOrphanedImages,
   cleanupStagedImages
 } from "#src/controllers/taskController.js"
 import { auth } from "#src/middlewares/authMiddleware.js"
 import { validate } from "#src/middlewares/validationMiddleware.js"
-import { backfillCaptionsSchemas, backfillEmbeddingsSchemas } from "#src/validation/taskSchemas.js"
+import {
+  backfillDescriptionsSchemas,
+  backfillEmbeddingsSchemas
+} from "#src/validation/taskSchemas.js"
 
 const router = Router()
 
@@ -23,8 +26,8 @@ router.post(
 router.post(
   "/tasks/backfill/captions",
   auth.required(),
-  validate(backfillCaptionsSchemas),
-  backfillCaptions
+  validate(backfillDescriptionsSchemas),
+  backfillDescriptions
 )
 
 export default router
