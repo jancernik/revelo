@@ -72,22 +72,22 @@ const handleBackfillEmbeddings = async () => {
   }
 }
 
-const handleBackfillCaptions = async () => {
+const handleBackfillDescriptions = async () => {
   try {
     showToast({ dismissible: false, title: "Backfill Initiated", type: "info" })
     const response = await api.post("/tasks/backfill/captions")
     const data = response.data?.data?.result || {}
     showToast({
       description: `Successful: ${data.successful}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
-      title: "Caption Backfill Successful",
+      title: "Description Backfill Successful",
       type: "success"
     })
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || "Failed to backfill embeddings."
+      error.response?.data?.message || error.message || "Failed to backfill descriptions."
     showToast({
       description: errorMessage,
-      title: "Failed to backfill embeddings",
+      title: "Failed to backfill descriptions",
       type: "error"
     })
   }
@@ -108,7 +108,7 @@ onUnmounted(resetHeader)
       <Button @click="handleCleanupStaged"> Cleanup Staged Images </Button>
       <Button @click="handleCleanupOrphaned"> Cleanup Orphaned Images </Button>
       <Button @click="handleBackfillEmbeddings"> Backfill Embeddings </Button>
-      <Button @click="handleBackfillCaptions"> Backfill Captions </Button>
+      <Button @click="handleBackfillDescriptions"> Backfill Descriptions </Button>
     </div>
   </div>
 </template>
