@@ -105,6 +105,34 @@ export const updateMetadata = async (req, res) => {
   })
 }
 
+export const fetchDescriptions = async (req, res) => {
+  const descriptions = await imageService.fetchDescriptions(req.params.id)
+
+  res.status(200).json({
+    data: { descriptions },
+    status: "success"
+  })
+}
+
+export const editDescription = async (req, res) => {
+  const { id, language } = req.params
+  const descriptions = await imageService.editDescription(id, language, req.body.text)
+
+  res.status(200).json({
+    data: { descriptions },
+    status: "success"
+  })
+}
+
+export const regenerateDescriptions = async (req, res) => {
+  const descriptions = await imageService.regenerateDescriptions(req.params.id, req.body?.languages)
+
+  res.status(200).json({
+    data: { descriptions },
+    status: "success"
+  })
+}
+
 export const deleteImage = async (req, res) => {
   const { id } = req.params
   await imageService.deleteImage(id)

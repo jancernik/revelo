@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { descriptionConfig, descriptionLanguages } from "#src/config/descriptions.js"
 import { definedSchema, limit, offset, queryBoolean } from "#src/validation/baseSchemas.js"
 
 const metadataSchema = z.object({
@@ -52,6 +53,39 @@ export const fetchByIdSchemas = {
   }),
   query: z.object({
     includeHidden: queryBoolean.optional()
+  })
+}
+
+const descriptionLanguage = z.enum(descriptionLanguages)
+
+export const fetchDescriptionsSchemas = {
+  params: z.object({
+    id: definedSchema
+  })
+}
+
+export const editDescriptionSchemas = {
+  body: z.object({
+    text: z
+      .string()
+      .trim()
+      .min(1, "Description text is required")
+      .max(descriptionConfig.maxLength, "Description text too long")
+  }),
+  params: z.object({
+    id: definedSchema,
+    language: descriptionLanguage
+  })
+}
+
+export const regenerateDescriptionsSchemas = {
+  body: z
+    .object({
+      languages: z.array(descriptionLanguage).min(1).optional()
+    })
+    .optional(),
+  params: z.object({
+    id: definedSchema
   })
 }
 

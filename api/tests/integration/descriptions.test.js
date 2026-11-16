@@ -4,7 +4,12 @@ import request from "supertest"
 import { descriptionConfig } from "#src/config/descriptions.js"
 import Image from "#src/models/Image.js"
 import * as descriptionService from "#src/services/descriptionService.js"
-import { indexDescriptions, indexSearchEmbeddings } from "#src/services/indexService.js"
+import { idle, indexDescriptions, indexSearchEmbeddings } from "#src/services/indexService.js"
+import {
+  createAccessToken,
+  createAdminUser,
+  createRegularUser
+} from "#tests/helpers/authHelpers.js"
 import { createCollection } from "#tests/helpers/collectionHelpers.js"
 import { createDescription, descriptionsOf } from "#tests/helpers/descriptionHelpers.js"
 import { DESCRIBE_MODEL, startFakeAiServer, unitVector } from "#tests/helpers/fakeAiServer.js"
@@ -280,6 +285,200 @@ describe("Descriptions", () => {
 
       expect(written).toBe(false)
       expect((await descriptionsOf(image.id)).es).toBeUndefined()
+    })
+  })
+
+  describe("editing", () => {
+    let token
+
+    beforeEach(async () => {
+      token = createAccessToken(await createAdminUser())
+    })
+
+    const authed = (method, path) =>
+      request(api)[method](path).set("Authorization", `Bearer ${token}`)
+    const summary = (response) =>
+      response.body.data.descriptions.map(({ language, source, text }) => [language, source, text])
+
+    it("GET lists every configured language, with null for a missing one", async () => {
+      const image = await createImageWithVersions()
+      await createDescription(image.id, "en", { text: "A dog." })
+      await createDescription(image.id, "es", { source: "translated", text: "Un perro." })
+      await createDescription(image.id, "fr", { source: "translated", text: "Un chien." })
+      const bare = await createImageWithVersions()
+
+      const described = await authed("get", `/images/${image.id}/descriptions`).expect(200)
+      const pending = await authed("get", `/images/${bare.id}/descriptions`).expect(200)
+
+      expect(summary(described)).toEqual([
+        ["en", "generated", "A dog."],
+        ["es", "translated", "Un perro."]
+      ])
+      expect(summary(pending)).toEqual([
+        ["en", null, null],
+        ["es", null, null]
+      ])
+    })
+
+    it("PUT in the source language stores the text and translates it again", async () => {
+      const image = await createImageWithFile()
+      await createDescription(image.id, "en", { text: "A dog." })
+      await createDescription(image.id, "es", { source: "translated", text: "Un perro." })
+
+      const response = await authed("put", `/images/${image.id}/descriptions/en`)
+        .send({ text: "  A black dog on a beach.  " })
+        .expect(200)
+      await idle()
+
+      expect(summary(response)).toEqual([
+        ["en", "edited", "A black dog on a beach."],
+        ["es", null, null]
+      ])
+      expect(await descriptionsOf(image.id)).toMatchObject({
+        en: { model: null, source: "edited", text: "A black dog on a beach." },
+        es: { source: "translated", text: "es: A black dog on a beach." }
+      })
+      expect(ai.requestsTo("/describe/image")).toHaveLength(0)
+    })
+
+    it("PUT in the source language keeps an edited translation", async () => {
+      const image = await createImageWithFile()
+      await createDescription(image.id, "en", { text: "A dog." })
+      await createDescription(image.id, "es", { ...edited, text: "Escrito a mano" })
+
+      await authed("put", `/images/${image.id}/descriptions/en`)
+        .send({ text: "A cat." })
+        .expect(200)
+      await idle()
+
+      expect((await descriptionsOf(image.id)).es).toMatchObject({
+        source: "edited",
+        text: "Escrito a mano"
+      })
+      expect(ai.requestsTo("/translate")).toHaveLength(0)
+    })
+
+    it("PUT in a target language leaves the source alone", async () => {
+      const image = await createImageWithFile()
+      await createDescription(image.id, "en", { text: "A dog." })
+
+      await authed("put", `/images/${image.id}/descriptions/es`)
+        .send({ text: "Un perro negro." })
+        .expect(200)
+      await idle()
+
+      expect(await descriptionsOf(image.id)).toMatchObject({
+        en: { source: "generated", text: "A dog." },
+        es: { model: null, source: "edited", text: "Un perro negro." }
+      })
+      expect(ai.requestsTo("/translate")).toHaveLength(0)
+    })
+
+    it("an edit is shown on the image", async () => {
+      const image = await createImageWithVersions()
+
+      await authed("put", `/images/${image.id}/descriptions/es`).send({ text: "Un perro." })
+      const single = await request(api).get(`/images/${image.id}`).expect(200)
+
+      expect(single.body.data.image.descriptions.es).toBe("Un perro.")
+    })
+
+    it.each([
+      ["a blank text", "en", { text: "   " }],
+      ["a missing text", "en", {}],
+      ["a text over the limit", "en", { text: "a".repeat(descriptionConfig.maxLength + 1) }],
+      ["a language that is not configured", "fr", { text: "Un chien." }]
+    ])("PUT rejects %s", async (_, language, body) => {
+      const image = await createImageWithVersions()
+
+      await authed("put", `/images/${image.id}/descriptions/${language}`).send(body).expect(400)
+
+      expect(await descriptionsOf(image.id)).toEqual({})
+    })
+
+    it("regenerate discards an edit and describes the image again", async () => {
+      const image = await createImageWithFile()
+      await createDescription(image.id, "en", { ...edited, text: "Written by hand" })
+      await createDescription(image.id, "es", { ...edited, text: "Escrito a mano" })
+
+      const response = await authed("post", `/images/${image.id}/descriptions/regenerate`).expect(
+        200
+      )
+      await idle()
+
+      expect(summary(response)).toEqual([
+        ["en", null, null],
+        ["es", null, null]
+      ])
+      expect(await descriptionsOf(image.id)).toMatchObject({
+        en: { source: "generated", text: "Description 1" },
+        es: { source: "translated", text: "es: Description 1" }
+      })
+    })
+
+    it("regenerate of one language keeps the others", async () => {
+      const image = await createImageWithFile()
+      await createDescription(image.id, "en", { ...edited, text: "Written by hand" })
+      await createDescription(image.id, "es", { ...edited, text: "Escrito a mano" })
+
+      await authed("post", `/images/${image.id}/descriptions/regenerate`)
+        .send({ languages: ["es"] })
+        .expect(200)
+      await idle()
+
+      expect(await descriptionsOf(image.id)).toMatchObject({
+        en: { source: "edited", text: "Written by hand" },
+        es: { source: "translated", text: "es: Written by hand" }
+      })
+      expect(ai.requestsTo("/describe/image")).toHaveLength(0)
+    })
+
+    it("regenerate rejects a language that is not configured", async () => {
+      const image = await createImageWithVersions()
+      await createDescription(image.id, "en", { ...edited, text: "Written by hand" })
+
+      await authed("post", `/images/${image.id}/descriptions/regenerate`)
+        .send({ languages: ["fr"] })
+        .expect(400)
+
+      expect((await descriptionsOf(image.id)).en.text).toBe("Written by hand")
+    })
+
+    it("only affects the image it is called for", async () => {
+      const image = await createImageWithVersions()
+      const other = await createImageWithVersions()
+      await createDescription(other.id, "en", { text: "A dog." })
+      await createDescription(other.id, "es", { source: "translated", text: "Un perro." })
+      ai.describeMode = "failing"
+
+      await authed("put", `/images/${image.id}/descriptions/en`).send({ text: "A cat." })
+      await authed("post", `/images/${image.id}/descriptions/regenerate`)
+      await idle()
+
+      expect(await descriptionsOf(other.id)).toMatchObject({
+        en: { text: "A dog." },
+        es: { text: "Un perro." }
+      })
+    })
+
+    it.each([
+      ["get", "/descriptions"],
+      ["put", "/descriptions/en"],
+      ["post", "/descriptions/regenerate"]
+    ])("%s %s needs an admin and an existing image", async (method, path) => {
+      const image = await createImageWithVersions()
+      await createDescription(image.id, "en", { text: "A dog." })
+      const userToken = createAccessToken(await createRegularUser())
+      const send = (id, bearer) => {
+        const call = request(api)[method](`/images/${id}${path}`).send({ text: "A cat." })
+        return bearer ? call.set("Authorization", `Bearer ${bearer}`) : call
+      }
+
+      await send(image.id).expect(401)
+      await send(image.id, userToken).expect(401)
+      await send("00000000-0000-4000-8000-000000000000", token).expect(404)
+
+      expect((await descriptionsOf(image.id)).en.text).toBe("A dog.")
     })
   })
 

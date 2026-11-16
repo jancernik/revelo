@@ -9,6 +9,7 @@ import { v4 as uuid } from "uuid"
 import { config } from "#src/config/environment.js"
 import { FileProcessingError, NotFoundError } from "#src/core/errors.js"
 import Image from "#src/models/Image.js"
+import * as descriptionService from "#src/services/descriptionService.js"
 import { requestPass } from "#src/services/indexService.js"
 import storageManager from "#src/storage/storageManager.js"
 
@@ -155,6 +156,31 @@ export const updateImageMetadata = async (id, metadata) => {
   }
 
   return await Image.findByIdWithVersions(id)
+}
+
+const requireImage = async (id) => {
+  if (!(await Image.findById(id))) throw new NotFoundError("Image not found")
+}
+
+export const fetchDescriptions = async (id) => {
+  await requireImage(id)
+  return await descriptionService.findByImage(id)
+}
+
+export const editDescription = async (id, language, text) => {
+  await requireImage(id)
+  await descriptionService.saveEdited(id, language, text)
+  requestPass()
+
+  return await descriptionService.findByImage(id)
+}
+
+export const regenerateDescriptions = async (id, languages) => {
+  await requireImage(id)
+  await descriptionService.discard(id, languages)
+  requestPass()
+
+  return await descriptionService.findByImage(id)
 }
 
 export const deleteImage = async (id) => {
