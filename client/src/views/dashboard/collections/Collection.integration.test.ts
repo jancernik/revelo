@@ -98,8 +98,9 @@ describe("collection views with real stores", () => {
     const reordered = [...initial.images].reverse()
     wrapper.getComponent(ImageGrid).vm.$emit("reorder", reordered)
     await nextTick()
+    const renumbered = reordered.map((image, collectionOrder) => ({ ...image, collectionOrder }))
     vi.mocked(api.put).mockResolvedValueOnce(
-      success({ collection: { ...initial, images: reordered } })
+      success({ collection: { ...initial, images: renumbered } })
     )
     await headerAction("save-order").onClick()
     await flushPromises()
@@ -186,7 +187,7 @@ describe("collection views with real stores", () => {
     expect(
       collections.collections[0]?.images?.find((image) => image.id === "available")
     ).toMatchObject({
-      collectionId: null,
+      collectionId: "c",
       collectionOrder: 2
     })
     expect(images.images.find((image) => image.id === "available")).toMatchObject({

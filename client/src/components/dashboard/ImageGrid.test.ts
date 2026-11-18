@@ -31,6 +31,25 @@ beforeEach(() => vi.clearAllMocks())
 afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 
 describe("ImageGrid", () => {
+  it("hides optional removal, reorder, short grid, actions, names and sizes by default", async () => {
+    const images = Array.from({ length: 7 }, (_, i) => ({
+      ...gridImage(String(i)),
+      name: `${i}.jpg`,
+      size: 1048576
+    }))
+    const wrapper = render({ allowSelect: false, images })
+    await flushPromises()
+    expect(wrapper.findAll(".image-item")).toHaveLength(7)
+    expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(false)
+    expect(wrapper.classes()).not.toContain("is-reordering")
+    expect(controls.init).not.toHaveBeenCalled()
+    expect(wrapper.find(".remove-button").exists()).toBe(false)
+    expect(wrapper.find(".image-actions").exists()).toBe(false)
+    expect(wrapper.find(".image-info").exists()).toBe(false)
+    expect(wrapper.find(".file-name").exists()).toBe(false)
+    expect(wrapper.find(".file-size").exists()).toBe(false)
+  })
+
   it("renders five images and the view-all link only in short mode", async () => {
     const images = Array.from({ length: 7 }, (_, i) => gridImage(String(i)))
     const wrapper = render({ images, shortGrid: true })

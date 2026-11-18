@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from "vue"
+import { onUnmounted, watch } from "vue"
 
 import type { DialogAction } from "#src/composables/useDialog"
 
@@ -52,6 +52,8 @@ watch(dialogState, ({ isOpen }) => {
     window.removeEventListener("keydown", handleKeyDown)
   }
 })
+
+onUnmounted(() => window.removeEventListener("keydown", handleKeyDown))
 </script>
 
 <template>

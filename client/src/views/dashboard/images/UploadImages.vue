@@ -35,7 +35,9 @@ const hasImages = computed(() => imageUploader.value?.hasSelectedImages)
 const hasExceededFileLimit = computed(() => imageUploader.value?.hasExceededFileLimit)
 const canAddMoreFiles = computed(() => imageUploader.value?.canAddMoreFiles)
 const uploadedImagesCount = computed(() => sessionIds.value?.length)
-const currentMetadata = computed(() => metadataArray.value[selectedImageIndex.value] || {})
+const currentExtractedMetadata = computed(
+  () => extractedMetadata.value[selectedImageIndex.value] || {}
+)
 const currentPreviewUrl = computed(() => previewUrls.value[selectedImageIndex.value] || "")
 const currentFilename = computed(() => previewFilenames.value[selectedImageIndex.value] || "")
 
@@ -88,6 +90,11 @@ const handleConfirm = async () => {
     }
 
     step.value = 3
+    sessionIds.value = []
+    extractedMetadata.value = []
+    previewUrls.value = []
+    previewFilenames.value = []
+    metadataArray.value = []
   } catch (error) {
     showToast({
       description: errorMessage(error),
@@ -97,11 +104,6 @@ const handleConfirm = async () => {
   } finally {
     isLoading.value = false
     processingStep.value = ""
-    sessionIds.value = []
-    extractedMetadata.value = []
-    previewUrls.value = []
-    previewFilenames.value = []
-    metadataArray.value = []
   }
 }
 
@@ -110,6 +112,7 @@ const handleRemoveImage = (index: number) => {
   extractedMetadata.value.splice(index, 1)
   previewUrls.value.splice(index, 1)
   previewFilenames.value.splice(index, 1)
+  metadataArray.value.splice(index, 1)
   selectedImageIndex.value = Math.min(selectedImageIndex.value, sessionIds.value.length - 1)
 
   if (sessionIds.value.length === 0) {
@@ -291,15 +294,19 @@ onUnmounted(reset)
           </div>
         </div>
 
-        <MetadataEditor
-          v-if="currentPreviewUrl"
-          :initial-metadata="currentMetadata"
-          :preview-url="currentPreviewUrl"
-          :preview-filename="currentFilename"
-          :show-reset-button="true"
-          :show-header="true"
-          @update="handleMetadataUpdate"
-        />
+        <!-- One editor per image keeps its drafts and its extracted Reset baseline. -->
+        <KeepAlive>
+          <MetadataEditor
+            v-if="currentPreviewUrl"
+            :key="sessionIds[selectedImageIndex]"
+            :initial-metadata="currentExtractedMetadata"
+            :preview-url="currentPreviewUrl"
+            :preview-filename="currentFilename"
+            :show-reset-button="true"
+            :show-header="true"
+            @update="handleMetadataUpdate"
+          />
+        </KeepAlive>
       </div>
     </div>
 
