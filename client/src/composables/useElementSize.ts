@@ -1,9 +1,14 @@
+import type { ComponentPublicInstance, MaybeRefOrGetter } from "vue"
+
 import { onMounted, onUnmounted, ref, toValue, watch } from "vue"
 
-export function useElementSize(target) {
-  function unrefElement(elRef) {
+type ElementTarget = MaybeRefOrGetter<ComponentPublicInstance | Element | null | undefined>
+
+export function useElementSize(target: ElementTarget) {
+  function unrefElement(elRef: ElementTarget) {
     const plain = toValue(elRef)
-    return plain?.$el ?? plain
+    const element: unknown = plain && "$el" in plain ? (plain.$el ?? plain) : plain
+    return element instanceof HTMLElement ? element : null
   }
 
   const width = ref(0)
@@ -21,7 +26,7 @@ export function useElementSize(target) {
     height.value = element.offsetHeight
   }
 
-  let resizeObserver = null
+  let resizeObserver: null | ResizeObserver = null
 
   onMounted(() => {
     update()

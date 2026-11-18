@@ -1,5 +1,9 @@
+import type { MaybeRefOrGetter } from "vue"
+
 import { gsap } from "gsap"
 import { computed, ref, toValue } from "vue"
+
+import type { Image } from "#src/types/models"
 
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
@@ -14,11 +18,11 @@ import {
 import { groupImages } from "#src/utils/galleryHelpers"
 import { clamp } from "#src/utils/helpers"
 
-export function useGalleryLayout(forcedColumns) {
+export function useGalleryLayout(forcedColumns?: MaybeRefOrGetter<null | number | undefined>) {
   const imagesStore = useImagesStore()
   const { height: windowHeight, width: windowWidth } = useWindowSize()
 
-  const imageGroups = ref([])
+  const imageGroups = ref<Image[][]>([])
 
   const maxWindowWidth = computed(() => Math.min(windowWidth.value, MAX_WIDTH))
   const noImages = computed(() => imagesStore.visibleFilteredImages.length === 0)

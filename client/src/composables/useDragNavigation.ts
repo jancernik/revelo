@@ -1,9 +1,29 @@
+import type { Ref } from "vue"
+
 import { ref } from "vue"
+
+import type { Image } from "#src/types/models"
 
 import { clamp } from "#src/utils/helpers"
 
 const MAX_DRAG_PROGRESS = 0.99 // Maximum progress (0-1) that can be reached while dragging to prevent auto-commit
 const DRAG_MOVEMENT_THRESHOLD = 10 // Minimum pixel movement to consider it a drag vs a tap
+
+export interface DragNavigationOptions {
+  createSlideTimeline: (targetImage: Image, direction: -1 | 1) => gsap.core.Timeline | null
+  getNextImage: () => Image | null
+  getPreviousImage: () => Image | null
+  hasCollection: Readonly<Ref<boolean>>
+  isAnimating: Readonly<Ref<boolean>>
+  isMobileLayout: Readonly<Ref<boolean>>
+  metadataVisible: Readonly<Ref<boolean>>
+  windowWidth: Readonly<Ref<number>>
+}
+
+type DragInputEvent = MouseEvent | TouchEvent
+
+const getClientX = (event: DragInputEvent) =>
+  "clientX" in event ? event.clientX : event.touches[0]?.clientX
 
 export function useDragNavigation({
   createSlideTimeline,
@@ -14,15 +34,15 @@ export function useDragNavigation({
   isMobileLayout,
   metadataVisible,
   windowWidth
-}) {
+}: DragNavigationOptions) {
   const isDragging = ref(false)
   const hasDragMovement = ref(false)
   const slideProgress = ref(0)
   const dragStartPosition = ref(0)
-  const rightTransitionTimeline = ref(null)
-  const leftTransitionTimeline = ref(null)
+  const rightTransitionTimeline = ref<gsap.core.Timeline | null>(null)
+  const leftTransitionTimeline = ref<gsap.core.Timeline | null>(null)
   const initialProgress = ref(0)
-  const activeTimelineOnInterrupt = ref(null)
+  const activeTimelineOnInterrupt = ref<"left" | "right" | null>(null)
   const isSwitchingImage = ref(false)
 
   const resetDragState = () => {
@@ -33,10 +53,11 @@ export function useDragNavigation({
     activeTimelineOnInterrupt.value = null
   }
 
-  const handleDragStart = (event) => {
+  const handleDragStart = (event: DragInputEvent) => {
     if (metadataVisible.value && isMobileLayout.value) return
 
     const target = event.target
+    if (!(target instanceof Element)) return
     const isImage = target.classList?.contains("image")
     const isInteractiveElement =
       target.closest("button") ||
@@ -55,7 +76,7 @@ export function useDragNavigation({
 
     if (isAnimating.value || !hasCollection.value) return
     isDragging.value = true
-    dragStartPosition.value = event.clientX ?? event.touches?.[0]?.clientX ?? 0
+    dragStartPosition.value = getClientX(event) ?? 0
 
     if (leftTransitionTimeline.value || rightTransitionTimeline.value) {
       leftTransitionTimeline.value?.paused(true)
@@ -74,10 +95,10 @@ export function useDragNavigation({
     }
   }
 
-  const handleDragMove = async (event) => {
+  const handleDragMove = async (event: DragInputEvent) => {
     if (!isDragging.value) return
 
-    const currentX = event.clientX ?? event.touches?.[0]?.clientX
+    const currentX = getClientX(event)
     if (currentX === undefined) return
 
     const deltaX = dragStartPosition.value - currentX
@@ -152,7 +173,7 @@ export function useDragNavigation({
     }
   }
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: DragInputEvent) => {
     if (!isDragging.value) return
 
     if (hasDragMovement.value && event.cancelable) event.preventDefault()

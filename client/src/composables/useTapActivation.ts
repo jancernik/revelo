@@ -3,11 +3,18 @@
 const TAP_SLOP_PX = 10
 const TAP_MAX_HOLD_MS = 500
 
+interface TapStart {
+  clientX: number
+  clientY: number
+  pointerId: number
+  startedAt: number
+}
+
 export function useTapActivation() {
-  let tapStart = null
+  let tapStart: null | TapStart = null
   let clickSuppressionPending = false
 
-  const noteTapStart = (event) => {
+  const noteTapStart = (event: PointerEvent) => {
     clickSuppressionPending = false
     if (event.pointerType === "mouse") return
 
@@ -19,7 +26,7 @@ export function useTapActivation() {
     }
   }
 
-  const activateOnTap = (event, activate) => {
+  const activateOnTap = (event: PointerEvent, activate: () => void) => {
     if (event.pointerType === "mouse") return
 
     const start = tapStart
