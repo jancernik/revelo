@@ -1,6 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
+
+import type { Image } from "#src/types/models"
 
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
@@ -10,15 +12,13 @@ const { hide: hideFullscreenImage, show: showFullscreenImage } = useFullscreenIm
 const { hide: hideMenu } = useMenu()
 const imagesStore = useImagesStore()
 const router = useRouter()
-const image = ref(null)
+const image = ref<Image | null>(null)
 
-const props = defineProps({
-  id: { required: true, type: String }
-})
+const props = defineProps<{ id: string }>()
 
 const fetchImage = async () => {
   try {
-    image.value = await imagesStore.fetch(props.id)
+    image.value = (await imagesStore.fetch(props.id)) ?? null
   } catch {
     router.push("/")
   }

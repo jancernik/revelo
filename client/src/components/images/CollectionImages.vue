@@ -1,6 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue"
+
+import type { CachedCollection } from "#src/stores/collections"
+import type { Image } from "#src/types/models"
 
 import { useElementSize } from "#src/composables/useElementSize"
 import { getThumbnailPath } from "#src/utils/helpers"
@@ -31,27 +34,26 @@ let scrollTarget = 0
 let renderLoopId = 0
 let initializationId = 0
 
-const props = defineProps({
-  collection: {
-    required: true,
-    type: Object
-  },
-  currentImageId: {
-    default: null,
-    type: String
-  }
-})
+const props = withDefaults(
+  defineProps<{
+    collection: CachedCollection | null
+    currentImageId?: null | string
+  }>(),
+  { currentImageId: null }
+)
 
-const emit = defineEmits(["click"])
+const emit = defineEmits<{
+  click: [event: MouseEvent | TouchEvent, image: Image]
+}>()
 
-const collectionImages = useTemplateRef("collection-images")
-const collectionContainer = useTemplateRef("collection-container")
+const collectionImages = useTemplateRef<HTMLDivElement>("collection-images")
+const collectionContainer = useTemplateRef<HTMLDivElement>("collection-container")
 const { width: containerWidth } = useElementSize(collectionContainer)
 
 const isDragging = ref(false)
 const hasDragged = ref(false)
 const velocity = ref(0)
-const imageElements = ref([])
+const imageElements = ref<HTMLElement[]>([])
 const isInitializing = ref(false)
 
 const images = computed(() => props.collection?.images || [])
@@ -81,7 +83,7 @@ const maxScrollDistance = computed(() => {
   return Math.max(0, contentWidth.value - containerWidth.value)
 })
 
-const calculatePosition = (index) => {
+const calculatePosition = (index: number) => {
   const basePosition = index * TOTAL_ITEM_WIDTH + scrollTarget + centerOffset.value
 
   if (canInfiniteScroll.value) {
@@ -94,7 +96,7 @@ const calculatePosition = (index) => {
   return basePosition
 }
 
-const getBoundedScrollPosition = (targetPosition) => {
+const getBoundedScrollPosition = (targetPosition: number) => {
   if (canInfiniteScroll.value) return targetPosition
   return clamp(targetPosition, -maxScrollDistance.value, 0)
 }
@@ -132,7 +134,7 @@ const updateImagePositions = () => {
   }
 }
 
-const updateVelocity = (deltaTime) => {
+const updateVelocity = (deltaTime: number) => {
   if (!isDragging.value) {
     const newScrollPosition = scrollPosition + velocity.value * deltaTime
     scrollPosition = getBoundedScrollPosition(newScrollPosition)
@@ -164,7 +166,7 @@ const isRenderLoopIdle = () => {
   return scrollTargetSettled && velocitySettled
 }
 
-const renderFrame = (timestamp) => {
+const renderFrame: FrameRequestCallback = (timestamp) => {
   renderLoopId = requestAnimationFrame(renderFrame)
 
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
@@ -187,7 +189,9 @@ const initializeElements = async () => {
     await nextTick()
     if (currentId !== initializationId) return
 
-    const newElements = Array.from(collectionContainer.value?.children || [])
+    const newElements = Array.from(
+      collectionContainer.value?.querySelectorAll<HTMLElement>(":scope > *") || []
+    )
 
     const elementsChanged =
       newElements.length !== imageElements.value.length ||
@@ -216,7 +220,13 @@ const initializeElements = async () => {
   }
 }
 
-const handleWheel = (event) => {
+interface StripWheelEvent extends WheelEvent {
+  wheelDelta?: number
+  wheelDeltaX?: number
+  wheelDeltaY?: number
+}
+
+const handleWheel = (event: StripWheelEvent) => {
   event.preventDefault()
 
   let deltaX = 0
@@ -245,23 +255,26 @@ const handleWheel = (event) => {
   startRenderLoop()
 }
 
-const handleDragStart = (event) => {
+const getClientX = (event: MouseEvent | TouchEvent) =>
+  "touches" in event ? event.touches[0]?.clientX : event.clientX
+
+const handleDragStart = (event: MouseEvent | TouchEvent) => {
   event.preventDefault()
   event.stopPropagation()
 
   isDragging.value = true
   hasDragged.value = false
-  dragStartPosition = event.clientX || event.touches?.[0]?.clientX || 0
+  dragStartPosition = getClientX(event) || 0
   lastDragTimestamp = performance.now()
   velocity.value = 0
 }
 
-const handleDragMove = (event) => {
+const handleDragMove = (event: MouseEvent | TouchEvent) => {
   event.preventDefault()
   event.stopPropagation()
 
   if (!isDragging.value) return
-  const currentX = event.clientX || event.touches?.[0]?.clientX || dragStartPosition
+  const currentX = getClientX(event) || dragStartPosition
   const deltaX = (currentX - dragStartPosition) * DRAG_FACTOR
 
   if (Math.abs(deltaX) > 2) hasDragged.value = true
@@ -283,7 +296,7 @@ const handleDragMove = (event) => {
   startRenderLoop()
 }
 
-const handleDragEnd = (event) => {
+const handleDragEnd = (event: MouseEvent | TouchEvent) => {
   event.preventDefault()
   event.stopPropagation()
 
@@ -291,7 +304,7 @@ const handleDragEnd = (event) => {
   setTimeout(() => (hasDragged.value = false), 50)
 }
 
-const scrollTo = (id, animated = true) => {
+const scrollTo = (id: string, animated = true) => {
   if (!id || !containerWidth.value) return
 
   const targetIndex = images.value.findIndex((image) => image.id === id)
@@ -305,12 +318,12 @@ const scrollTo = (id, animated = true) => {
     const wrapWidth = imageCount.value * TOTAL_ITEM_WIDTH
     const currentPos = scrollPosition
 
-    const normalizePosition = (pos) => ((pos % wrapWidth) + wrapWidth) % wrapWidth
+    const normalizePosition = (pos: number) => ((pos % wrapWidth) + wrapWidth) % wrapWidth
 
     const currentNormalized = normalizePosition(currentPos)
     const targetNormalized = normalizePosition(targetScrollPosition)
 
-    let backwardDistance, forwardDistance
+    let backwardDistance: number, forwardDistance: number
 
     if (targetNormalized >= currentNormalized) {
       forwardDistance = targetNormalized - currentNormalized
@@ -339,7 +352,7 @@ const scrollTo = (id, animated = true) => {
   startRenderLoop()
 }
 
-const handleClick = (event, image) => {
+const handleClick = (event: MouseEvent | TouchEvent, image: Image) => {
   event.stopPropagation()
   if (hasDragged.value) {
     event.preventDefault()
@@ -368,7 +381,11 @@ watch(canInfiniteScroll, () => {
   }
 })
 
-defineExpose({ canInfiniteScroll, collectionImages, scrollTo })
+defineExpose<{
+  canInfiniteScroll: typeof canInfiniteScroll
+  collectionImages: typeof collectionImages
+  scrollTo: typeof scrollTo
+}>({ canInfiniteScroll, collectionImages, scrollTo })
 </script>
 
 <template>

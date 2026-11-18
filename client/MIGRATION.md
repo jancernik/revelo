@@ -48,8 +48,8 @@ Record the completion date and commit for each stage.
 - [x] Stage L2: Theme transition and small public components. Completed 2026-11-17. Commit:
       `1765762`.
 - [x] Stage L3: Menu and search. Completed 2026-11-17. Commit: `0f422f6`.
-- [x] Stage L4: Galleries and the home view. Completed 2026-11-17. Commit:
-- [ ] Stage L5: Fullscreen viewer and the public image view.
+- [x] Stage L4: Galleries and the home view. Completed 2026-11-17. Commit: `750592b`.
+- [x] Stage L5: Fullscreen viewer and the public image view. Completed 2026-11-18. Commit:
 - [ ] Stage L6: Hardening and final audit of the public frontend.
 
 ## Deferred follow-ups
@@ -1167,6 +1167,26 @@ collection, keyboard handling, drag and swipe decisions through `useDragNavigati
 updates and preserved router history state, metadata panel on desktop and mobile, the
 collection strip selection and scrolling, loading and error states for the image request.
 Add an integration test for gallery to fullscreen to back.
+
+#### Notes for Stage L6
+
+- All SFC scripts use TypeScript and no JS/JSX files remain under `client/src`.
+  `untypedComponents` is empty but still declared; `allowJs` remains enabled for L6.
+- L5 added 47 tests in four files plus `test/fullscreenFixtures.ts`. All passed against
+  JavaScript and passed unchanged after typing. The full suite has 104 files and 991 tests.
+- Templates, styles and script comments are unchanged. Browser scripts, 46 screenshot
+  pairs, comparison sheets and numeric records are under
+  `client/node_modules/.cache/revelo-migration/legacy/L5/`. Settled viewer rectangles,
+  routing state, menu state and strip positions match. Gallery order and Flip frame timing
+  vary between runs.
+- `views/Image.vue` normalizes an absent fetched image to `null`. Failed fetches still call
+  `show(null)` and register a popstate listener. Changing the `id` prop does not refetch.
+- Viewer quirks remain: Escape is prevented while closed; close during opening misses the
+  reversal path; unmount leaves animations, image state and the controls timer active.
+  Popstate close clears browser forward history.
+- Strip quirks remain: stopped touch-end propagation can leave dragging set; item
+  replacement does not reinitialize while its boolean guard stays true; unmount leaves an
+  active render frame and drag timer.
 
 ### Stage L6: Hardening and final audit
 
