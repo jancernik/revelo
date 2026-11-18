@@ -1,32 +1,60 @@
 import { reactive, readonly } from "vue"
 
-const footer = reactive({
+import type { ButtonColor, IconName } from "#src/components/common/types"
+
+export interface FooterState {
+  actions: LayoutAction[]
+}
+
+export interface HeaderState extends FooterState {
+  subtitle: null | string
+  title: null | string
+}
+
+export interface LayoutAction {
+  color?: ButtonColor
+  disabled?: boolean
+  icon?: IconName
+  key?: string
+  onClick: () => void
+  text: string
+}
+
+export interface MobileMenuState {
+  isOpen: boolean
+}
+
+export interface SelectionState extends FooterState {
+  items: number
+}
+
+const footer = reactive<FooterState>({
   actions: []
 })
 
-const header = reactive({
+const header = reactive<HeaderState>({
   actions: [],
   subtitle: null,
   title: null
 })
 
-const selection = reactive({
+const selection = reactive<SelectionState>({
   actions: [],
   items: 0
 })
 
-const mobileMenu = reactive({ isOpen: false })
+const mobileMenu = reactive<MobileMenuState>({ isOpen: false })
 
 export function useDashboardLayout() {
-  const setHeader = (config) => {
+  const setHeader = (config: Partial<HeaderState>) => {
     Object.assign(header, config)
   }
 
-  const setFooter = (config) => {
+  const setFooter = (config: Partial<FooterState>) => {
     Object.assign(footer, config)
   }
 
-  const setSelection = (config) => {
+  const setSelection = (config: Partial<SelectionState>) => {
     Object.assign(selection, config)
   }
 

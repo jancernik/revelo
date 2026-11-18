@@ -8,8 +8,8 @@ there. Agents never commit, push or open pull requests; the user commits after e
 Record the completion date for each stage. The user fills in the commit after committing.
 
 - [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
-- [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: pending (user).
-- [ ] Stage 2: Leaf composables.
+- [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `993b4f8`.
+- [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: pending (user).
 - [ ] Stage 3: API client and auth store.
 - [ ] Stage 4: Data stores and useSettings.
 - [ ] Group audit A: Data layer, after Stage 4.
@@ -655,8 +655,9 @@ Preserve these during migration. They are candidates for separate fixes afterwar
 8. `images.fetch(id)` returns the cached object without refreshing; `collections.fetch(id)`
    refreshes and replaces the cache entry.
 9. `images.search` is a debounced function that returns `undefined`; callers cannot await it.
-10. `useRangeSelect` pushes into `selectedIds.value` in place for single toggles and
-    reassigns for ranges; views rely on `deep: true` watchers to catch both.
+10. `useRangeSelect` pushes into `selectedIds.value` in place for additions, including
+    ranges, and reassigns for single or range deselections. Views rely on `deep: true`
+    watchers to catch both.
 11. `useDashboardLayout.setHeader({ title })` keeps the previous actions (partial merge).
     Views depend on this when they call `setHeader` without `actions`.
 12. Header actions in `Collections.vue` and `Images.vue` have no `key`; the `v-for :key`

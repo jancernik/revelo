@@ -10,7 +10,7 @@ export function useWindowSize() {
     height.value = window.innerHeight
   }
 
-  let cleanup = null
+  let cleanup: (() => void) | null = null
 
   onMounted(() => {
     update()
