@@ -1,13 +1,25 @@
 import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
+import type { GalleryHandle } from "#src/components/images/types"
+
 import { useAdaptiveFrameRate } from "#src/composables/useAdaptiveFrameRate"
+
+export interface ThemeOrigin {
+  x: number
+  y: number
+}
+
+export interface ThemeTransitionOptions {
+  animate?: boolean
+  origin?: ThemeOrigin
+}
 
 const theme = ref(localStorage.getItem("theme") || "system")
 const systemPrefersDark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches)
 const isAnimating = ref(false)
 const isWaitingForGallery = ref(false)
-let imageGallery = null
+let imageGallery: GalleryHandle | null | undefined = null
 
 export function useTheme() {
   const frameRateAdapter = useAdaptiveFrameRate()
@@ -20,7 +32,7 @@ export function useTheme() {
     return systemPrefersDark.value ? "dark" : "light"
   })
 
-  const registerImageGallery = (ref) => {
+  const registerImageGallery = (ref: GalleryHandle | null | undefined) => {
     imageGallery = ref
   }
 
@@ -28,16 +40,17 @@ export function useTheme() {
     if (!imageGallery) return
 
     isWaitingForGallery.value = true
+    const gallery = imageGallery
 
-    return new Promise((resolve) => {
-      imageGallery.onSettle(() => {
+    return new Promise<void>((resolve) => {
+      gallery.onSettle(() => {
         isWaitingForGallery.value = false
         resolve()
       })
     })
   }
 
-  const setTheme = async (newTheme, opts) => {
+  const setTheme = async (newTheme: string, opts?: ThemeTransitionOptions) => {
     if (isAnimating.value) return
 
     const options = {
@@ -71,13 +84,13 @@ export function useTheme() {
       localStorage.setItem("theme", newTheme)
     } else {
       document.documentElement.classList.add("no-transition")
-      document.querySelector("body").style.pointerEvents = "none"
+      document.body.style.pointerEvents = "none"
       await nextTick()
       theme.value = newTheme
       localStorage.setItem("theme", newTheme)
       setTimeout(() => {
         document.documentElement.classList.remove("no-transition")
-        document.querySelector("body").style.pointerEvents = "all"
+        document.body.style.pointerEvents = "all"
       }, 20)
     }
 
@@ -91,11 +104,11 @@ export function useTheme() {
     }
   }
 
-  const linearDistance = (x1, y1, x2, y2) => {
+  const linearDistance = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
   }
 
-  const calculateMaskSize = (origin) => {
+  const calculateMaskSize = (origin: ThemeOrigin) => {
     const width = window.innerWidth
     const height = window.innerHeight
 
@@ -109,8 +122,9 @@ export function useTheme() {
     return Math.max(...distances)
   }
 
-  const createCleanClone = (element) => {
+  const createCleanClone = (element: HTMLElement) => {
     const clone = element.cloneNode(false)
+    if (!(clone instanceof HTMLElement)) throw new TypeError("Expected an HTML element clone")
 
     const vueAttributes = [
       "data-v-",
@@ -132,7 +146,7 @@ export function useTheme() {
       })
     }
 
-    const processChildren = (original, cloned) => {
+    const processChildren = (original: Element, cloned: Element) => {
       for (let i = 0; i < original.children.length; i++) {
         const originalChild = original.children[i]
 
@@ -147,6 +161,7 @@ export function useTheme() {
         }
 
         const childClone = originalChild.cloneNode(false)
+        if (!(childClone instanceof Element)) throw new TypeError("Expected an element clone")
 
         if (childClone.attributes) {
           Array.from(childClone.attributes).forEach((attr) => {
@@ -177,11 +192,11 @@ export function useTheme() {
     return clone
   }
 
-  const animateThemeTransition = async (newThemeClass, origin) => {
+  const animateThemeTransition = async (newThemeClass: string, origin: ThemeOrigin) => {
     isAnimating.value = true
-    let clonedBody = null
-    let tween = null
-    let resizeHandler = null
+    let clonedBody: HTMLElement | null = null
+    let tween: gsap.core.Tween | null = null
+    let resizeHandler: (() => void) | null = null
 
     const cleanup = () => {
       if (resizeHandler) {
@@ -200,7 +215,7 @@ export function useTheme() {
         document.body.removeChild(clonedBody)
       }
 
-      const body = document.querySelector("body")
+      const body = document.body
       setTimeout(() => {
         document.documentElement.classList.remove("no-transition")
         body.style.pointerEvents = "all"
@@ -208,7 +223,7 @@ export function useTheme() {
     }
 
     try {
-      const body = document.querySelector("body")
+      const body = document.body
       document.documentElement.classList.add("no-transition")
       body.style.pointerEvents = "none"
 
@@ -216,6 +231,7 @@ export function useTheme() {
       const scrollOffsets = Array.from(scrollableElements).map((el) => el.scrollTop)
 
       clonedBody = createCleanClone(body)
+      const transitionClone = clonedBody
       clonedBody.className = "theme-transition-clone"
 
       const finalRadius = calculateMaskSize(origin)
@@ -251,7 +267,7 @@ export function useTheme() {
 
       const animationState = { radius: 0 }
 
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         resizeHandler = () => {
           if (tween) {
             tween.kill()
@@ -272,8 +288,8 @@ export function useTheme() {
             const maskValue = `radial-gradient(circle at ${origin.x}px ${origin.y}px, black ${
               animationState.radius
             }px, black ${animationState.radius}px, transparent ${animationState.radius + 1}px)`
-            clonedBody.style.mask = maskValue
-            clonedBody.style.WebkitMask = maskValue
+            transitionClone.style.mask = maskValue
+            Object.assign(transitionClone.style, { WebkitMask: maskValue })
           },
           radius: finalRadius
         })
@@ -292,7 +308,7 @@ export function useTheme() {
       }
 
       document.documentElement.classList.remove("no-transition")
-      document.querySelector("body").style.pointerEvents = "all"
+      document.body.style.pointerEvents = "all"
       document.documentElement.classList.remove("light", "dark")
       document.documentElement.classList.add(newThemeClass)
     } finally {
@@ -301,7 +317,7 @@ export function useTheme() {
   }
 
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-  const handleSystemChange = (event) => {
+  const handleSystemChange = (event: MediaQueryListEvent) => {
     systemPrefersDark.value = event.matches
   }
 
