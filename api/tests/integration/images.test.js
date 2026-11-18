@@ -694,6 +694,11 @@ describe("Image Endpoints", () => {
       expect(response.headers["content-disposition"]).toMatch(/\.zip"$/)
       expect(response.body[0]).toBe(0x50) // ZIP archives start with PK.
       expect(response.body[1]).toBe(0x4b)
+      const directoryEnd = response.body.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]))
+      expect(directoryEnd).toBeGreaterThanOrEqual(0)
+      expect(response.body.readUInt16LE(directoryEnd + 10)).toBe(2)
+      expect(response.body.includes(Buffer.from(image1.originalFilename))).toBe(true)
+      expect(response.body.includes(Buffer.from(image2.originalFilename))).toBe(true)
     })
 
     it("should return a ZIP archive for a single image", async () => {
