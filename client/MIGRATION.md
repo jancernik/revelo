@@ -41,16 +41,16 @@ Record the completion date and commit for each stage.
       `client/node_modules/.cache/revelo-migration/final-audit-source.md` verified shared
       types against backend sources with no drift; browser lanes covered the dev playground
       and every migrated view on the owned runtime. That audit covered the client without
-      the public gallery. On this branch the completion checks (no JS under `client/src`,
-      `allowJs: false`) apply again after Stage L6.
+      the public gallery. The completion checks now pass on this branch, including no JS
+      under `client/src` and `allowJs: false` for the client.
 - [x] Audit fixes: the deferred follow-ups below. Commit: `7ce0e87`.
 - [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17. Commit: `ebbc421`.
 - [x] Stage L2: Theme transition and small public components. Completed 2026-11-17. Commit:
       `1765762`.
 - [x] Stage L3: Menu and search. Completed 2026-11-17. Commit: `0f422f6`.
 - [x] Stage L4: Galleries and the home view. Completed 2026-11-17. Commit: `750592b`.
-- [x] Stage L5: Fullscreen viewer and the public image view. Completed 2026-11-18. Commit:
-- [ ] Stage L6: Hardening and final audit of the public frontend.
+- [x] Stage L5: Fullscreen viewer and the public image view. Completed 2026-11-18. Commit: `f3d5fa2`.
+- [x] Stage L6: Hardening and final audit of the public frontend. Completed 2026-11-18. Commit:
 
 ## Deferred follow-ups
 
@@ -1194,6 +1194,31 @@ Set `allowJs` to `false`, delete `untypedComponents` from `eslint.config.js` and
 the client block to `client/**/*.{ts,vue}`, run the completion checks in section 7, run a
 full browser pass over every public and dashboard screen at both viewports, and record the
 results here. The orchestrator runs the independent audit.
+
+#### Results
+
+- Client `allowJs` is false. ESLint has no `untypedComponents` override and its client
+  parser block covers TS/Vue only. API/root JavaScript blocks and lint-staged are unchanged.
+  No stale client JavaScript module references remain.
+- The Node config keeps `allowJs: true`; disabling it produces TS7016 for the API helper
+  imported by `config/environment.ts`. No runtime source edits or typing fixes were needed.
+- Completion commands: JS/CJS/MJS find and SFC language grep print nothing; allowJs grep
+  prints `3: "allowJs": false,`. All 22 broad typing-grep hits are legitimate matchers,
+  import aliases or prose. Expanded checks also found only allowed const assertions,
+  prose, SCSS syntax and the existing dialog HTML lint directive. Full outputs and every
+  hit classification are in `legacy/L6/completion-report.md` under the evidence directory.
+- Baseline: 104 files, 991 tests. Final: 106 files, 1005 tests. Two fixture-helper suites
+  add seven tests each. All 28 changed modules with runtime behavior have colocated tests;
+  the type-only gallery interface and comment-only PWA file are exempt. CI runs client
+  tests and typecheck. Prettier, ESLint, typecheck, tests and build pass.
+- Main comparison: `b6f31475`, both gallery implementations at 1280x800 and 390x844 touch.
+  All 126 screenshot pairs were viewed; 105 are pixel-identical. Routing/history, active
+  images, search results and settled viewer rectangles match. Input-cadence, animation and
+  raster-cache differences were checked with replays. All console logs are clean and API
+  requests are GET-only. Main has no public collections route. Both clients and the API
+  were stopped and the comparison worktree was removed.
+- Scripts, screenshots, logs, comparison JSON and the detailed report are in
+  `client/node_modules/.cache/revelo-migration/legacy/L6/`.
 
 ### Stage prompt (legacy stages)
 
