@@ -1,18 +1,25 @@
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
 
+import type { ApiSuccess } from "#src/types/api"
+import type { KnownSettings } from "#src/types/models"
+
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth"
-import api from "#src/utils/api"
+import api, { errorMessage } from "#src/utils/api"
+
+type KnownSetting = {
+  [Name in keyof KnownSettings]: { name: Name; value: KnownSettings[Name] }
+}[keyof KnownSettings]
 
 export const useSettingsStore = defineStore("settings", () => {
   const { show: showToast } = useToast()
   const authStore = useAuthStore()
 
-  const error = ref(null)
+  const error = ref<null | string>(null)
   const initialized = ref(false)
   const loading = ref(false)
-  const settingsArray = ref([])
+  const settingsArray = ref<KnownSetting[]>([])
 
   watch(
     () => authStore.accessToken,
@@ -20,10 +27,16 @@ export const useSettingsStore = defineStore("settings", () => {
   )
 
   const settings = computed(() => {
-    return settingsArray.value.reduce((map, setting) => {
-      map[setting.name] = setting.value
-      return map
-    }, {})
+    return settingsArray.value.reduce<Partial<KnownSettings>>(
+      <Name extends keyof KnownSettings>(
+        map: Partial<KnownSettings>,
+        setting: { name: Name; value: KnownSettings[Name] }
+      ) => {
+        map[setting.name] = setting.value
+        return map
+      },
+      {}
+    )
   })
 
   async function fetchSettings(force = false) {
@@ -34,11 +47,11 @@ export const useSettingsStore = defineStore("settings", () => {
     error.value = null
 
     try {
-      const response = await api.get("/settings")
+      const response = await api.get<ApiSuccess<{ settings: KnownSetting[] }>>("/settings")
       settingsArray.value = response.data?.data?.settings || []
       initialized.value = true
     } catch (err) {
-      error.value = err.response?.data?.message || err.message
+      error.value = errorMessage(err)
       showToast({
         description: error.value,
         title: "Error Fetching Settings",

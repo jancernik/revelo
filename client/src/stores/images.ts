@@ -1,25 +1,71 @@
+import type { AxiosResponse } from "axios"
+
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
 
+import type { ApiSuccess } from "#src/types/api"
+import type {
+  Image,
+  ImageDescription,
+  ImageDescriptions,
+  ImageMetadataForm,
+  UploadedImage,
+  UploadReview
+} from "#src/types/models"
+
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth"
-import { useCollectionsStore } from "#src/stores/collections.js"
-import api from "#src/utils/api"
+import { useCollectionsStore } from "#src/stores/collections"
+import api, { errorMessage } from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
 import { debounce } from "#src/utils/helpers"
+
+export interface ImageFetchOptions {
+  force?: boolean
+}
+
+export type ImageMetadataUpdate = Partial<{
+  [Key in keyof ImageMetadataForm]: ImageMetadataForm[Key] | null
+}> & { hidden?: boolean }
+
+export interface ImageOrderOptions {
+  order?: "asc" | "desc"
+  orderBy?: "date" | "id" | null
+}
+
+export interface UploadConfirmation {
+  metadata?: ImageMetadataUpdate
+  sessionId: string
+}
+
+type DescriptionsResponse = ApiSuccess<{ descriptions: ImageDescription[] }>
+
+interface ImageQuery {
+  includeHidden?: boolean
+  order?: "asc" | "desc"
+  orderBy?: "date" | "id"
+  text?: string
+}
+
+function downloadFilename(disposition: unknown, fallback: string) {
+  if (disposition !== null && disposition !== undefined && typeof disposition !== "string") {
+    throw new Error("Invalid Content-Disposition header")
+  }
+  return getFilenameFromDisposition(disposition) || fallback
+}
 
 export const useImagesStore = defineStore("images", () => {
   const { show: showToast } = useToast()
   const collectionsStore = useCollectionsStore()
   const authStore = useAuthStore()
 
-  const error = ref(null)
+  const error = ref<null | string>(null)
   const initialized = ref(false)
   const loading = ref(false)
-  const images = ref([])
-  const filteredImages = ref([])
-  const orderBy = ref(null)
-  const order = ref("asc")
+  const images = ref<Image[]>([])
+  const filteredImages = ref<Image[]>([])
+  const orderBy = ref<ImageOrderOptions["orderBy"]>(null)
+  const order = ref<ImageOrderOptions["order"]>("asc")
 
   const visibleFilteredImages = computed(() => filteredImages.value.filter((img) => !img.hidden))
 
@@ -28,7 +74,7 @@ export const useImagesStore = defineStore("images", () => {
     () => fetchAll({ force: true })
   )
 
-  async function fetchAll(options = {}) {
+  async function fetchAll(options: ImageFetchOptions = {}) {
     const isAuthenticated = !!authStore.accessToken
     const { force } = options
 
@@ -39,20 +85,20 @@ export const useImagesStore = defineStore("images", () => {
     error.value = null
 
     try {
-      const params = {}
+      const params: ImageQuery = {}
       if (orderBy.value) {
         params.orderBy = orderBy.value
         params.order = order.value
       }
       if (isAuthenticated) params.includeHidden = true
 
-      const response = await api.get("/images", { params })
+      const response = await api.get<ApiSuccess<{ images: Image[] }>>("/images", { params })
       images.value = response.data?.data?.images || []
       filteredImages.value = images.value
       initialized.value = true
       return images.value
     } catch (err) {
-      error.value = err.response?.data?.message || err.message
+      error.value = errorMessage(err)
       showToast({
         description: error.value,
         title: "Error Fetching Images",
@@ -64,7 +110,7 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function fetch(id, options = {}) {
+  async function fetch(id: string, options: ImageFetchOptions = {}) {
     const { force } = options
     const isAuthenticated = !!authStore.accessToken
     try {
@@ -74,11 +120,11 @@ export const useImagesStore = defineStore("images", () => {
       }
 
       const params = isAuthenticated ? { includeHidden: true } : {}
-      const response = await api.get(`/images/${id}`, { params })
+      const response = await api.get<ApiSuccess<{ image: Image }>>(`/images/${id}`, { params })
       return response.data?.data?.image
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Fetching Image",
         type: "error"
       })
@@ -86,19 +132,23 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function uploadForReview(images) {
+  async function uploadForReview(images: File[]) {
     try {
       const formData = new FormData()
       images.forEach((image) => formData.append("images", image))
 
-      const response = await api.post("/upload/review", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      })
+      const response = await api.post<ApiSuccess<{ images: UploadReview[] }>>(
+        "/upload/review",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" }
+        }
+      )
 
       return response.data?.data?.images || []
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Uploading Images",
         type: "error"
       })
@@ -106,9 +156,11 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function confirmUpload(imageData) {
+  async function confirmUpload(imageData: UploadConfirmation[]) {
     try {
-      const response = await api.post("/upload/confirm", { images: imageData })
+      const response = await api.post<ApiSuccess<{ images: UploadedImage[] }>>("/upload/confirm", {
+        images: imageData
+      })
       const newImages = response.data?.data?.images || []
 
       images.value.push(...newImages)
@@ -116,7 +168,7 @@ export const useImagesStore = defineStore("images", () => {
       return newImages
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Confirming Images",
         type: "error"
       })
@@ -124,9 +176,12 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function updateMetadata(id, metadata) {
+  async function updateMetadata(id: string, metadata: ImageMetadataUpdate) {
     try {
-      const response = await api.put(`/images/${id}/metadata`, metadata)
+      const response = await api.put<ApiSuccess<{ image: Image }>>(
+        `/images/${id}/metadata`,
+        metadata
+      )
       const image = response.data?.data?.image
 
       updateLocal(id, image)
@@ -135,7 +190,7 @@ export const useImagesStore = defineStore("images", () => {
       return image
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Updating Metadata",
         type: "error"
       })
@@ -143,15 +198,20 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  function setDescriptionsLocal(id, list) {
-    const descriptions = Object.fromEntries(
-      list.filter((item) => item.text !== null).map((item) => [item.language, item.text])
-    )
+  function setDescriptionsLocal(id: string, list: ImageDescription[]) {
+    const descriptions: ImageDescriptions = {}
+    for (const item of list) {
+      if (item.text !== null) descriptions[item.language] = item.text
+    }
     updateLocal(id, { descriptions })
     collectionsStore.updateImageLocal(id, { descriptions })
   }
 
-  async function descriptionRequest(id, errorTitle, send) {
+  async function descriptionRequest(
+    id: string,
+    errorTitle: string,
+    send: () => Promise<AxiosResponse<DescriptionsResponse>>
+  ) {
     try {
       const response = await send()
       const list = response.data?.data?.descriptions || []
@@ -160,7 +220,7 @@ export const useImagesStore = defineStore("images", () => {
       return list
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: errorTitle,
         type: "error"
       })
@@ -168,25 +228,29 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function fetchDescriptions(id) {
+  async function fetchDescriptions(id: string) {
     return descriptionRequest(id, "Error Loading Descriptions", () =>
-      api.get(`/images/${id}/descriptions`)
+      api.get<DescriptionsResponse>(`/images/${id}/descriptions`)
     )
   }
 
-  async function updateDescription(id, language, text) {
+  async function updateDescription(id: string, language: string, text: string) {
     return descriptionRequest(id, "Error Saving Description", () =>
-      api.put(`/images/${id}/descriptions/${language}`, { text })
+      api.put<DescriptionsResponse>(`/images/${id}/descriptions/${language}`, { text })
     )
   }
 
-  async function regenerateDescriptions(id, languages) {
+  /** Discards the given languages, or all of them, so the server writes them again. */
+  async function regenerateDescriptions(id: string, languages?: string[]) {
     return descriptionRequest(id, "Error Regenerating Description", () =>
-      api.post(`/images/${id}/descriptions/regenerate`, languages ? { languages } : {})
+      api.post<DescriptionsResponse>(
+        `/images/${id}/descriptions/regenerate`,
+        languages ? { languages } : {}
+      )
     )
   }
 
-  async function remove(id) {
+  async function remove(id: string) {
     try {
       await api.delete(`/images/${id}`)
       images.value = images.value.filter((i) => i.id !== id)
@@ -194,7 +258,7 @@ export const useImagesStore = defineStore("images", () => {
       collectionsStore.removeImageLocal(id)
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Deleting Image",
         type: "error"
       })
@@ -202,7 +266,7 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function bulkRemove(ids) {
+  async function bulkRemove(ids: string[]) {
     try {
       await api.delete("/images", { data: { ids } })
       images.value = images.value.filter((i) => !ids.includes(i.id))
@@ -210,7 +274,7 @@ export const useImagesStore = defineStore("images", () => {
       ids.forEach((id) => collectionsStore.removeImageLocal(id))
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Deleting Images",
         type: "error"
       })
@@ -218,15 +282,14 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function download(id) {
+  async function download(id: string) {
     try {
-      const response = await api.get(`/images/${id}/download`, { responseType: "blob" })
-      const filename =
-        getFilenameFromDisposition(response.headers["content-disposition"]) || "image.jpg"
+      const response = await api.get<Blob>(`/images/${id}/download`, { responseType: "blob" })
+      const filename = downloadFilename(response.headers["content-disposition"], "image.jpg")
       triggerDownload(response.data, filename)
     } catch (error) {
       showToast({
-        description: error.message || "Failed to download image.",
+        description: (error instanceof Error && error.message) || "Failed to download image.",
         title: "Download Failed",
         type: "error"
       })
@@ -234,15 +297,14 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function bulkDownload(ids) {
+  async function bulkDownload(ids: string[]) {
     try {
-      const response = await api.post("/images/download", { ids }, { responseType: "blob" })
-      const filename =
-        getFilenameFromDisposition(response.headers["content-disposition"]) || "images.zip"
+      const response = await api.post<Blob>("/images/download", { ids }, { responseType: "blob" })
+      const filename = downloadFilename(response.headers["content-disposition"], "images.zip")
       triggerDownload(response.data, filename)
     } catch (error) {
       showToast({
-        description: error.message || "Failed to download images.",
+        description: (error instanceof Error && error.message) || "Failed to download images.",
         title: "Download Failed",
         type: "error"
       })
@@ -250,17 +312,20 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  async function toggleHidden(id, hidden) {
+  async function toggleHidden(id: string, hidden: boolean) {
     return updateMetadata(id, { hidden })
   }
 
-  async function bulkToggleHidden(ids, hidden) {
+  async function bulkToggleHidden(ids: string[], hidden: boolean) {
     return bulkUpdateMetadata(ids, { hidden })
   }
 
-  async function bulkUpdateMetadata(ids, metadata) {
+  async function bulkUpdateMetadata(ids: string[], metadata: ImageMetadataUpdate) {
     try {
-      const response = await api.put("/images/metadata", { ids, metadata })
+      const response = await api.put<ApiSuccess<{ images: Image[] }>>("/images/metadata", {
+        ids,
+        metadata
+      })
       const updatedImages = response.data?.data?.images || []
 
       updatedImages.forEach((image) => {
@@ -271,7 +336,7 @@ export const useImagesStore = defineStore("images", () => {
       return updatedImages
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Updating Metadata",
         type: "error"
       })
@@ -279,7 +344,7 @@ export const useImagesStore = defineStore("images", () => {
     }
   }
 
-  const search = debounce(async (query) => {
+  const search = debounce(async (query: string) => {
     const isAuthenticated = !!authStore.accessToken
     const text = query.toString().toLowerCase().trim()
     if (!text) {
@@ -289,12 +354,14 @@ export const useImagesStore = defineStore("images", () => {
       error.value = null
 
       try {
-        const params = { text }
+        const params: ImageQuery = { text }
         if (isAuthenticated) params.includeHidden = true
-        const response = await api.get("/images/search", { params })
+        const response = await api.get<ApiSuccess<{ images: Image[] }>>("/images/search", {
+          params
+        })
         filteredImages.value = response.data?.data?.images || []
       } catch (err) {
-        error.value = err.response?.data?.message || err.message
+        error.value = errorMessage(err)
         showToast({
           description: error.value,
           title: "Error Fetching Images",
@@ -317,12 +384,12 @@ export const useImagesStore = defineStore("images", () => {
     return fetchAll({ force: true })
   }
 
-  function updateLocal(id, image) {
+  function updateLocal(id: string, image?: Partial<Image>) {
     const index = images.value.findIndex((i) => i.id === id)
     if (index !== -1) images.value[index] = { ...images.value[index], ...image }
   }
 
-  function setOrder(options = {}) {
+  function setOrder(options: ImageOrderOptions = {}) {
     const { order: newOrder, orderBy: newOrderBy } = options
     orderBy.value = newOrderBy
     order.value = newOrder
