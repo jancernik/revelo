@@ -1,30 +1,27 @@
-<script setup>
+<script setup lang="ts">
+import type { Component } from "vue"
+
 import { defineAsyncComponent, markRaw, onMounted, ref, watch } from "vue"
 
-const props = defineProps({
-  color: {
-    default: "currentColor",
-    type: String
-  },
-  defaultClass: {
-    default: "icon",
-    type: String
-  },
-  name: {
-    required: true,
-    type: String
-  },
-  size: {
-    default: 24,
-    type: [String, Number]
-  },
-  strokeWidth: {
-    default: 2,
-    type: Number
-  }
-})
+import type { IconName } from "#src/components/common/types"
 
-const loadedIcon = ref(null)
+const props = withDefaults(
+  defineProps<{
+    color?: string
+    defaultClass?: string
+    name: IconName
+    size?: number | string
+    strokeWidth?: number
+  }>(),
+  {
+    color: "currentColor",
+    defaultClass: "icon",
+    size: 24,
+    strokeWidth: 2
+  }
+)
+
+const loadedIcon = ref<Component | null>(null)
 
 const loadIcon = async () => {
   try {

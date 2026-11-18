@@ -1,11 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { computed, reactive, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+
+import type { IconName } from "#src/components/common/types"
 
 import Icon from "#src/components/common/Icon.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useAuthStore } from "#src/stores/auth"
+
+interface SidebarItem {
+  action?: () => void
+  className?: string
+  icon: IconName
+  key: string
+  label: string
+  path?: string
+}
 
 const LG_BREAKPOINT = 992
 
@@ -21,7 +32,7 @@ watch(isMobile, (mobile) => {
   if (!mobile) closeMobileMenu()
 })
 
-const sidebar = reactive({
+const sidebar = reactive<{ bottom: SidebarItem[]; top: SidebarItem[] }>({
   bottom: [
     {
       icon: "CheckSquare",
@@ -75,7 +86,7 @@ const sidebar = reactive({
   ]
 })
 
-const handleItemClick = (item) => {
+const handleItemClick = (item: SidebarItem) => {
   resetSelection()
   if (item.action) {
     item.action()
@@ -84,7 +95,7 @@ const handleItemClick = (item) => {
   }
 }
 
-const isActive = (path) => {
+const isActive = (path?: string) => {
   if (!path) return false
   if (path === "/" || path === "/dashboard") {
     return route?.path === path

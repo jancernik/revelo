@@ -1,3 +1,5 @@
+import type { RouteRecordRaw } from "vue-router"
+
 import { createRouter, createWebHistory } from "vue-router"
 
 import CollectionsLayout from "#src/layouts/Collections.vue"
@@ -25,7 +27,14 @@ import Signup from "#src/views/Signup.vue"
 import VerificationPending from "#src/views/VerificationPending.vue"
 import VerifyEmail from "#src/views/VerifyEmail.vue"
 
-const routes = [
+declare module "vue-router" {
+  interface RouteMeta {
+    production?: boolean
+    requiresAuth?: boolean
+  }
+}
+
+const routes: RouteRecordRaw[] = [
   { component: Home, name: "home", path: "/" },
   { component: Login, name: "login", path: "/login" },
   { component: Signup, name: "signup", path: "/signup" },
@@ -113,14 +122,16 @@ const routes = [
   },
 
   { component: ImageDisplay, name: "public-image-view", path: "/images/:id", props: true },
-  { component: DevIndex, name: "dev", path: "/dev", production: false },
+  { component: DevIndex, meta: { production: false }, name: "dev", path: "/dev" },
   { component: NotFound, path: "/:catchAll(.*)" }
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes:
-    import.meta.env.PROD === true ? routes.filter((route) => route.production !== false) : routes
+    import.meta.env.PROD === true
+      ? routes.filter((route) => route.meta?.production !== false)
+      : routes
 })
 
 router.beforeEach((to) => {

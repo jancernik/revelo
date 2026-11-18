@@ -3,17 +3,28 @@ import { Draggable } from "gsap/Draggable"
 
 gsap.registerPlugin(Draggable)
 
-export function useSortableGrid() {
-  let containerElement = null
-  let sortableItems = []
-  let draggables = []
+interface SortableItem<T> {
+  col: number
+  el: HTMLElement
+  image: T
+  index: number
+  isDragging: boolean
+  row: number
+  x: number
+  y: number
+}
+
+export function useSortableGrid<T>() {
+  let containerElement: HTMLElement | null = null
+  let sortableItems: SortableItem<T>[] = []
+  let draggables: Draggable[] = []
   let colCount = 0
   let cellWidth = 0
   let cellHeight = 0
   let gapX = 0
   let gapY = 0
   let zIndex = 200
-  let resizeObserver = null
+  let resizeObserver: null | ResizeObserver = null
 
   const measureGrid = () => {
     if (!containerElement || sortableItems.length === 0) return
@@ -28,7 +39,7 @@ export function useSortableGrid() {
     cellHeight = cellWidth
   }
 
-  const getPos = (index) => ({
+  const getPos = (index: number) => ({
     x: (index % colCount) * (cellWidth + gapX),
     y: Math.floor(index / colCount) * (cellHeight + gapY)
   })
@@ -52,7 +63,7 @@ export function useSortableGrid() {
     })
   }
 
-  const changePosition = (from, to) => {
+  const changePosition = (from: number, to: number) => {
     const fromRow = sortableItems[from].row
     const toRow = sortableItems[to].row
     const rowToUpdate = fromRow === toRow ? fromRow : -1
@@ -81,9 +92,9 @@ export function useSortableGrid() {
     })
   }
 
-  const init = (container, images, onReorder) => {
+  const init = (container: HTMLElement, images: T[], onReorder: (images: T[]) => void) => {
     containerElement = container
-    const itemEls = Array.from(container.querySelectorAll(".image-item"))
+    const itemEls = Array.from(container.querySelectorAll<HTMLElement>(".image-item"))
 
     sortableItems = itemEls.map((el, index) => ({
       col: 0,
@@ -108,7 +119,7 @@ export function useSortableGrid() {
       return Draggable.create(item.el, {
         activeCursor: "grabbing",
         cursor: "grab",
-        onDrag() {
+        onDrag(this: Draggable) {
           for (let i = 0; i < sortableItems.length; i++) {
             const target = sortableItems[i]
             if (target === item || target.isDragging) continue
