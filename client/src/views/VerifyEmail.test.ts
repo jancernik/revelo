@@ -6,11 +6,17 @@ import VerifyEmail from "#src/views/VerifyEmail.vue"
 
 vi.mock("#src/stores/auth", () => ({ useAuthStore: () => auth }))
 
-const auth = vi.hoisted(() => ({
-  accessToken: null as null | string,
-  user: null as unknown,
-  verifyEmail: vi.fn()
-}))
+const auth = vi.hoisted(
+  (): {
+    accessToken: null | string
+    user: unknown
+    verifyEmail: ReturnType<typeof vi.fn>
+  } => ({
+    accessToken: null,
+    user: null,
+    verifyEmail: vi.fn()
+  })
+)
 
 enableAutoUnmount(afterEach)
 

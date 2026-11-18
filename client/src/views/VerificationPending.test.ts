@@ -7,11 +7,17 @@ import VerificationPending from "#src/views/VerificationPending.vue"
 vi.mock("#src/stores/auth", () => ({ useAuthStore: () => auth }))
 vi.mock("#src/composables/useToast", () => ({ useToast: () => ({ show: toast }) }))
 
-const auth = vi.hoisted(() => ({
-  accessToken: null as null | string,
-  resendVerificationEmail: vi.fn(),
-  user: null as unknown
-}))
+const auth = vi.hoisted(
+  (): {
+    accessToken: null | string
+    resendVerificationEmail: ReturnType<typeof vi.fn>
+    user: unknown
+  } => ({
+    accessToken: null,
+    resendVerificationEmail: vi.fn(),
+    user: null
+  })
+)
 const toast = vi.hoisted(() => vi.fn())
 
 enableAutoUnmount(afterEach)

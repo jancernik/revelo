@@ -207,6 +207,26 @@ describe("image changes", () => {
     expect(sync).toHaveBeenCalledExactlyOnceWith(original.id, updated)
   })
 
+  it("forwards malformed bulk targets without updating local images after rejection", async () => {
+    const originals = [image({ id: "a" }), image({ id: "b" })]
+    const expected = structuredClone(originals)
+    const store = await seed(originals)
+    const collections = await seedCollection(originals)
+    const sync = vi.spyOn(collections, "updateImageLocal")
+    const error = new Error("Invalid ids")
+    vi.mocked(api.put).mockRejectedValue(error)
+    await expect(store.bulkUpdateMetadata(["a", "b", null], { camera: "Nikon" })).rejects.toBe(
+      error
+    )
+    expect(api.put).toHaveBeenCalledExactlyOnceWith("/images/metadata", {
+      ids: ["a", "b", null],
+      metadata: { camera: "Nikon" }
+    })
+    expect(store.images).toEqual(expected)
+    expect(collections.collections).toEqual([collection("c", expected)])
+    expect(sync).not.toHaveBeenCalled()
+  })
+
   it("bulk-updates metadata and synchronizes each collection image", async () => {
     const originals = [image({ id: "a" }), image({ id: "b" })]
     const updated = originals.map((value) => ({ ...value, hidden: true }))

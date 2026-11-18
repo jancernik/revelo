@@ -1,19 +1,30 @@
 import { mount } from "@vue/test-utils"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { createSSRApp, defineComponent } from "vue"
+import { createSSRApp } from "vue"
 import { renderToString } from "vue/server-renderer"
 
 import { useDevice } from "#src/composables/useDevice"
+import { composableProbe } from "#src/test/composableProbe"
+
+interface DeviceSnapshot {
+  isMobile: boolean
+  isTouchPrimary: boolean
+}
+
+const values: DeviceSnapshot[] = []
+const Probe = composableProbe(useDevice, (state) => {
+  values.push({ isMobile: state.isMobile.value, isTouchPrimary: state.isTouchPrimary.value })
+})
 
 const hosts = new Set<{ unmount: () => void }>()
 let media = Object.assign(new EventTarget(), { matches: false })
 const host = () => {
-  const wrapper = mount(defineComponent({ render: () => null, setup: useDevice }))
+  const wrapper = mount(Probe)
   hosts.add(wrapper)
   return wrapper
 }
-
 beforeEach(() => {
+  values.length = 0
   vi.stubGlobal("innerHeight", 768)
   vi.stubGlobal("innerWidth", 650)
   media = Object.assign(new EventTarget(), { matches: false })
@@ -22,7 +33,6 @@ beforeEach(() => {
     vi.fn(() => media)
   )
 })
-
 afterEach(() => {
   for (const wrapper of hosts) wrapper.unmount()
   hosts.clear()
@@ -42,7 +52,6 @@ describe("useDevice", () => {
     window.dispatchEvent(new Event("resize"))
     expect(wrapper.vm.isMobile).toBe(false)
   })
-
   it("reads the initial coarse-pointer preference", () => {
     media.matches = true
     const match = vi.mocked(window.matchMedia)
@@ -50,7 +59,6 @@ describe("useDevice", () => {
     expect(wrapper.vm.isTouchPrimary).toBe(true)
     expect(match).toHaveBeenCalledWith("(pointer: coarse)")
   })
-
   it("follows coarse-pointer changes independently of window width", () => {
     const wrapper = host()
     media.matches = true
@@ -61,7 +69,6 @@ describe("useDevice", () => {
     media.dispatchEvent(Object.assign(new Event("change"), { matches: false }))
     expect(wrapper.vm.isTouchPrimary).toBe(false)
   })
-
   it("unsubscribes from pointer and resize changes on unmount", () => {
     const remove = vi.spyOn(media, "removeEventListener")
     const wrapper = host()
@@ -76,21 +83,9 @@ describe("useDevice", () => {
     expect(state.isTouchPrimary).toBe(false)
     expect(state.isMobile).toBe(false)
   })
-
   it("falls back to mobile without touch during server rendering", async () => {
     vi.stubGlobal("window", undefined)
-    const values: { isMobile: boolean; isTouchPrimary: boolean }[] = []
-    await renderToString(
-      createSSRApp(
-        defineComponent({
-          setup() {
-            const { isMobile, isTouchPrimary } = useDevice()
-            values.push({ isMobile: isMobile.value, isTouchPrimary: isTouchPrimary.value })
-            return () => null
-          }
-        })
-      )
-    )
+    await renderToString(createSSRApp(Probe))
     expect(values).toEqual([{ isMobile: true, isTouchPrimary: false }])
   })
 })

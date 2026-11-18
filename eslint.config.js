@@ -60,7 +60,7 @@ export default [
   },
 
   {
-    files: ["client/vite.config.js", "client/vitest.config.js", "client/src/config/environment.js"],
+    files: ["client/vite.config.ts", "client/vitest.config.ts", "client/src/config/environment.ts"],
     languageOptions: {
       globals: {
         ...globals.browser,

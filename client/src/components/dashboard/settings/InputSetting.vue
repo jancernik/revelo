@@ -14,7 +14,9 @@ const props = withDefaults(
     currentValue: number | string
     isResetting?: boolean
     originalValue: number | string
-    setting: Extract<CompleteSetting, { type: "decimal" | "integer" | "text" }>
+    setting:
+      | Extract<CompleteSetting, { type: "decimal" | "integer" | "text" }>
+      | (Omit<Extract<CompleteSetting, { type: "text" }>, "type"> & { type: "string" })
   }>(),
   { isResetting: false }
 )
