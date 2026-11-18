@@ -21,7 +21,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string]
+  "update:modelValue": [value: number | string | undefined]
 }>()
 const switchElement = useTemplateRef<HTMLDivElement>("switch")
 

@@ -7,6 +7,6 @@ export type IconName = Exclude<
 
 export interface SwitchOption {
   icon?: IconName
-  label?: string
-  value: string
+  label?: number | string
+  value: number | string | undefined
 }
