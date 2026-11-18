@@ -16,7 +16,7 @@ const props = withDefaults(
   defineProps<{
     initialMetadata: InitialMetadata
     previewFilename?: string
-    previewUrl: string
+    previewUrl: string | undefined
     showHeader?: boolean
     showPreview?: boolean
     showResetButton?: boolean

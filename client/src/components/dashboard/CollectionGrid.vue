@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { useRouter } from "vue-router"
 
-import type { Collection } from "#src/types/models"
+import type { CachedCollection } from "#src/stores/collections"
 
 import Icon from "#src/components/common/Icon.vue"
 import { getThumbnailPath } from "#src/utils/helpers"
@@ -10,7 +10,7 @@ import { getThumbnailPath } from "#src/utils/helpers"
 const props = withDefaults(
   defineProps<{
     allowSelect?: boolean
-    collections: Collection[]
+    collections: CachedCollection[]
     fastSelect?: boolean
     selectedCollectionsIds?: string[]
     shortGrid?: boolean
@@ -27,26 +27,27 @@ const props = withDefaults(
 
 const router = useRouter()
 const emit = defineEmits<{
-  delete: [collection: Collection]
-  edit: [collection: Collection]
-  select: [collection: Collection, event: MouseEvent]
+  delete: [collection: CachedCollection]
+  edit: [collection: CachedCollection]
+  select: [collection: CachedCollection, event: MouseEvent]
 }>()
 
 const displayedCollections = computed(() => {
   return props.shortGrid ? props.collections.slice(0, 3) : props.collections
 })
 
-const previewImagesPaths = (collection: Collection) => {
-  return collection.images.slice(0, 4).map((image) => getThumbnailPath(image))
+const previewImagesPaths = (collection: CachedCollection) => {
+  return (collection.images ?? []).slice(0, 4).map((image) => getThumbnailPath(image))
 }
 
-const isSelected = (collection: Collection) => props.selectedCollectionsIds?.includes(collection.id)
+const isSelected = (collection: CachedCollection) =>
+  props.selectedCollectionsIds?.includes(collection.id)
 const isSelecting = computed(() => {
   return (props.allowSelect && props.selectedCollectionsIds?.length > 0) || props.fastSelect
 })
-const onlyOneImage = (collection: Collection) => collection.images.length === 1
+const onlyOneImage = (collection: CachedCollection) => collection.images?.length === 1
 
-const openCollection = (collection: Collection) => {
+const openCollection = (collection: CachedCollection) => {
   router.push(`/dashboard/collections/${collection.id}`)
 }
 </script>
@@ -76,7 +77,7 @@ const openCollection = (collection: Collection) => {
             {{ collection.title ? collection.title : "Untitled" }}
           </p>
           <p v-if="onlyOneImage(collection)" class="image-count">1 image</p>
-          <p v-else class="image-count">{{ collection.images.length }} images</p>
+          <p v-else class="image-count">{{ collection.images?.length ?? 0 }} images</p>
         </div>
       </div>
       <button v-if="allowSelect" class="select-button" @click="emit('select', collection, $event)">
