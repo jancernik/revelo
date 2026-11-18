@@ -46,7 +46,8 @@ Record the completion date and commit for each stage.
 - [x] Audit fixes: the deferred follow-ups below. Commit: `7ce0e87`.
 - [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17. Commit: `ebbc421`.
 - [x] Stage L2: Theme transition and small public components. Completed 2026-11-17. Commit:
-- [ ] Stage L3: Menu and search.
+      `1765762`.
+- [x] Stage L3: Menu and search. Completed 2026-11-17. Commit:
 - [ ] Stage L4: Galleries and the home view.
 - [ ] Stage L5: Fullscreen viewer and the public image view.
 - [ ] Stage L6: Hardening and final audit of the public frontend.
@@ -1114,6 +1115,17 @@ anonymous and signed-in users and for the settings that control them (`showAbout
 `showLoginLink`), the theme toggler and About dialog integration, search input debounce,
 empty query, results, loading and error states, and how the search drives
 `imagesStore.search` and the gallery's filtered images.
+
+Notes from the stage:
+
+- `ImageSearcher.menu` is an `HTMLElement`; Menu's reactive configuration unwraps the
+  template ref. ImageSearcher has no custom emits or exposed API. It calls the store's
+  search directly; the 300 ms debounce remains in the store.
+- Search collapse flushes the gallery callback synchronously and clears the input after
+  its animation completes. The existing focus-out lookup of `menu.value` is preserved;
+  moving focus inside the menu can still flush the search-collapse callback.
+- Sort remains hardcoded hidden. Only test and browser fixtures reveal it to exercise the
+  date and shuffle actions.
 
 ### Stage L4: Galleries and the home view
 
