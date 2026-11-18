@@ -9,8 +9,8 @@ Record the completion date for each stage. The user fills in the commit after co
 
 - [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
 - [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `993b4f8`.
-- [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: pending (user).
-- [ ] Stage 3: API client and auth store.
+- [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: `36f5c9b`.
+- [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: pending (user).
 - [ ] Stage 4: Data stores and useSettings.
 - [ ] Group audit A: Data layer, after Stage 4.
 - [ ] Stage 5: Common components.
@@ -25,6 +25,13 @@ Record the completion date for each stage. The user fills in the commit after co
 - [ ] Stage 12: Dashboard index, settings and tasks views.
 - [ ] Stage 13: Dev playground and hardening.
 - [ ] Final audit: After Stage 13.
+
+## Deferred follow-ups
+
+- [ ] Resolve the six Vue test-host lint warnings in
+      `client/src/composables/useDevice.test.ts` and
+      `client/src/composables/useWindowSize.test.ts` (component property order and multiple
+      host components). Preserve their assertions.
 
 ## 1. Baseline
 
@@ -377,8 +384,9 @@ Tests first:
 
 - api: request interceptor adds `Authorization` from the store; near-expiry token triggers
   one refresh even for concurrent requests (promise dedupe) and uses the new token; refresh
-  route is never decorated; malformed token clears the user; 401 retries once then logs out
-  on second failure; auth routes are excluded from the 401 retry; network errors and
+  route skips expiry checks but still receives Authorization; unreadable token clears the
+  user; 401 retries once and rejects the second failure without logout; the four listed
+  auth routes are excluded from the 401 retry; network errors and
   502/503/504 retry up to 5 times with 1s, 2s, 4s, 8s, 16s backoff (fake timers); a
   `/refresh` failure logs out. Drive everything through a custom adapter.
 - auth store: initial state from `localStorage` (including the `JSON.parse(null)` case),
@@ -387,7 +395,8 @@ Tests first:
   `resendVerificationEmail` call the right endpoints and rethrow, `setUser`/`clearUser`.
   Migration: type the axios instance against `ApiSuccess`/`ApiFailure`; decision 7 for the
   retry flags; `config.url?.includes(...)`. The circular import stays; it is resolved at call
-  time inside interceptors.
+  time inside interceptors. Persisted user state remains `unknown` because stored JSON is
+  not validated. Consumers must narrow it without normalizing the stored state.
   Completion: both files `.ts`; tests unchanged and green.
 
 ### Stage 4: Data stores and useSettings
@@ -683,6 +692,17 @@ Preserve these during migration. They are candidates for separate fixes afterwar
     the background and their failures surface as toasts.
 22. `api.js` reads `config.url.includes(...)`; `url` can be `undefined` in axios types.
     `config.url?.includes` is equivalent for every real call.
+23. Refresh requests bypass token expiry checks but still receive Authorization when an
+    access token exists.
+24. A second 401 after a successful refresh is rejected without logout. Refresh failure
+    does trigger logout.
+25. Signup returns only a user, but the auth store still calls `setUser`. Its access token
+    becomes `undefined`, and localStorage stores the string `"undefined"`. Stored user JSON
+    is not validated; arbitrary truthy parsed values are retained, and invalid JSON throws.
+26. Only `/login`, `/signup`, `/verify-email` and `/verification-pending` are excluded from
+    the 401 retry. `/logout` and `/resend-verification` are not excluded.
+27. Readable token payloads without `exp` are retained without refresh; numeric-string
+    expiry values are coerced to numbers.
 
 ## 10. Prompt templates
 
