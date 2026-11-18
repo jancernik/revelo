@@ -1,6 +1,9 @@
-<script setup>
+<script setup lang="ts">
+import { isAxiosError } from "axios"
 import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
+
+import type { AuthPayload } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
@@ -11,12 +14,19 @@ const authStore = useAuthStore()
 const router = useRouter()
 const { settings } = useSettings()
 
+// The persisted auth user is unvalidated; the store keeps it unknown, so views
+// narrow the fields they read without casts.
+const isAccount = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
+
+type LoginFailureBody = Partial<AuthPayload> & { requiresVerification?: boolean }
+
 const username = ref("")
 const password = ref("")
 const loginError = ref("")
 const isLoading = ref(false)
 const showLoginForm = ref(false)
-const showSignupButton = ref(false)
+const showSignupButton = ref<boolean | undefined>(false)
 
 const handleLogin = async () => {
   loginError.value = ""
@@ -24,14 +34,15 @@ const handleLogin = async () => {
 
   try {
     await authStore.login({ password: password.value, username: username.value })
-    if (authStore.user?.admin) {
+    if (isAccount(authStore.user) && authStore.user.admin) {
       router.push("/dashboard")
     } else {
       router.push("/")
     }
   } catch (error) {
-    if (error.response?.data?.requiresVerification) {
-      authStore.setUser(error.response.data)
+    const failure = isAxiosError<LoginFailureBody>(error) ? error.response?.data : undefined
+    if (failure?.requiresVerification) {
+      authStore.setUser(failure)
       router.push("/verification-pending")
     } else {
       loginError.value = "Invalid username or password."
@@ -53,10 +64,11 @@ const checkIfSignupsAreEnabled = async () => {
 }
 
 const redirectIfAuthenticated = () => {
-  if (!authStore.user?.emailVerified) {
+  const user = isAccount(authStore.user) ? authStore.user : null
+  if (!user?.emailVerified) {
     return
   }
-  if (authStore.user?.admin) {
+  if (user?.admin) {
     router.push("/dashboard")
   } else {
     router.push("/")

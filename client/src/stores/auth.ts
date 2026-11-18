@@ -71,7 +71,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function resendVerificationEmail(email: string) {
+  async function resendVerificationEmail(email: null | string | undefined) {
     try {
       const response = await api.post<ApiSuccess<null>>("/resend-verification", { email })
       return response.data
@@ -109,7 +109,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function verifyEmail(token: string) {
+  async function verifyEmail(token: (null | string)[] | null | string) {
     try {
       const response = await api.post<ApiSuccess<AuthPayload>>("/verify-email", { token })
       setUser(response.data.data)
