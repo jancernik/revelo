@@ -1,8 +1,8 @@
-export function getFilenameFromDisposition(disposition) {
+export function getFilenameFromDisposition(disposition?: null | string) {
   return disposition?.match(/filename="([^"]+)"/)?.[1] ?? null
 }
 
-export function triggerDownload(blob, filename) {
+export function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
