@@ -19,6 +19,8 @@
     "format:client": "prettier --write client/",
     "test": "pnpm api test",
     "test:api": "pnpm api test",
+    "test:client": "pnpm client test",
+    "typecheck:client": "pnpm client typecheck",
     "db:generate": "pnpm api db:generate",
     "db:migrate": "pnpm api db:migrate",
     "db:create": "pnpm api db:create",
