@@ -1,28 +1,48 @@
 import { defineStore } from "pinia"
 import { ref, watch } from "vue"
 
+import type { ApiSuccess } from "#src/types/api"
+import type { Collection, Image } from "#src/types/models"
+
 import { useToast } from "#src/composables/useToast"
 import { useAuthStore } from "#src/stores/auth"
-import { useImagesStore } from "#src/stores/images.js"
-import api from "#src/utils/api"
+import { useImagesStore } from "#src/stores/images"
+import api, { errorMessage } from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
+
+export type CachedCollection = CollectionRow & { images?: Image[] }
+
+export interface CollectionFetchOptions {
+  force?: boolean
+}
+
+export type CollectionInput = Partial<Pick<Collection, "description" | "title">>
+
+type CollectionRow = Omit<Collection, "images">
+
+function downloadFilename(disposition: unknown, fallback: string) {
+  if (disposition !== null && disposition !== undefined && typeof disposition !== "string") {
+    throw new Error("Invalid Content-Disposition header")
+  }
+  return getFilenameFromDisposition(disposition) || fallback
+}
 
 export const useCollectionsStore = defineStore("collections", () => {
   const { show: showToast } = useToast()
   const imagesStore = useImagesStore()
   const authStore = useAuthStore()
 
-  const error = ref(null)
+  const error = ref<null | string>(null)
   const initialized = ref(false)
   const loading = ref(false)
-  const collections = ref([])
+  const collections = ref<CachedCollection[]>([])
 
   watch(
     () => authStore.accessToken,
     () => fetchAll({ force: true })
   )
 
-  async function fetchAll(options = {}) {
+  async function fetchAll(options: CollectionFetchOptions = {}) {
     const isAuthenticated = !!authStore.accessToken
     const { force } = options
 
@@ -34,12 +54,14 @@ export const useCollectionsStore = defineStore("collections", () => {
 
     try {
       const params = isAuthenticated ? { includeHidden: true } : {}
-      const response = await api.get("/collections", { params })
+      const response = await api.get<ApiSuccess<{ collections: Collection[] }>>("/collections", {
+        params
+      })
       collections.value = response.data?.data?.collections || []
       initialized.value = true
       return collections.value
     } catch (err) {
-      error.value = err.response?.data?.message || err.message
+      error.value = errorMessage(err)
       showToast({
         description: error.value,
         title: "Error Fetching Collections",
@@ -51,7 +73,18 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function fetch(id, options = {}) {
+  function fetch(
+    id: string,
+    options: CollectionFetchOptions & { force: true }
+  ): Promise<Collection | undefined>
+  function fetch(
+    id: string,
+    options?: CollectionFetchOptions
+  ): Promise<CachedCollection | undefined>
+  async function fetch(
+    id: string,
+    options: CollectionFetchOptions = {}
+  ): Promise<CachedCollection | undefined> {
     const { force } = options
     const isAuthenticated = !!authStore.accessToken
     try {
@@ -61,7 +94,9 @@ export const useCollectionsStore = defineStore("collections", () => {
       }
 
       const params = isAuthenticated ? { includeHidden: true } : {}
-      const response = await api.get(`/collections/${id}`, { params })
+      const response = await api.get<ApiSuccess<{ collection: Collection }>>(`/collections/${id}`, {
+        params
+      })
       const collection = response.data?.data?.collection
 
       if (collection) {
@@ -76,7 +111,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Fetching Collection",
         type: "error"
       })
@@ -84,10 +119,13 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function create(data = {}) {
+  async function create(data: CollectionInput = {}): Promise<CollectionRow | undefined> {
     const { description, title } = data
     try {
-      const response = await api.post("/collections", { description, title })
+      const response = await api.post<ApiSuccess<{ collection: CollectionRow }>>("/collections", {
+        description,
+        title
+      })
       const collection = response.data?.data?.collection
 
       if (collection) collections.value.push(collection)
@@ -95,7 +133,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Creating Collection",
         type: "error"
       })
@@ -103,10 +141,16 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function update(id, data = {}) {
+  async function update(
+    id: string,
+    data: CollectionInput = {}
+  ): Promise<CollectionRow | undefined> {
     const { description, title } = data
     try {
-      const response = await api.put(`/collections/${id}`, { description, title })
+      const response = await api.put<ApiSuccess<{ collection: CollectionRow }>>(
+        `/collections/${id}`,
+        { description, title }
+      )
       const collection = response.data?.data?.collection
 
       const index = collections.value.findIndex((c) => c.id === id)
@@ -115,7 +159,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Updating Collection",
         type: "error"
       })
@@ -123,13 +167,13 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function remove(id) {
+  async function remove(id: string) {
     try {
       await api.delete(`/collections/${id}`)
       collections.value = collections.value.filter((c) => c.id !== id)
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Deleting Collection",
         type: "error"
       })
@@ -137,13 +181,13 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function bulkRemove(ids) {
+  async function bulkRemove(ids: string[]) {
     try {
       await api.delete("/collections", { data: { ids } })
       collections.value = collections.value.filter((c) => !ids.includes(c.id))
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Deleting Collections",
         type: "error"
       })
@@ -151,12 +195,15 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function addImages(id, imageIds) {
+  async function addImages(id: string, imageIds: string[]) {
     try {
       const existingImageIds = await getImageIdsInCollection(id)
       const newImageIds = [...new Set([...existingImageIds, ...imageIds])]
 
-      const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
+      const response = await api.put<ApiSuccess<{ collection: Collection | null }>>(
+        `/collections/${id}/images`,
+        { imageIds: newImageIds }
+      )
       const collection = response.data?.data?.collection
 
       const index = collections.value.findIndex((c) => c.id === id)
@@ -172,7 +219,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Adding Images",
         type: "error"
       })
@@ -180,12 +227,15 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function removeImages(id, imageIds) {
+  async function removeImages(id: string, imageIds: string[]) {
     try {
       const existingImageIds = await getImageIdsInCollection(id)
       const newImageIds = existingImageIds.filter((imgId) => !imageIds.includes(imgId))
 
-      const response = await api.put(`/collections/${id}/images`, { imageIds: newImageIds })
+      const response = await api.put<ApiSuccess<{ collection: Collection | null }>>(
+        `/collections/${id}/images`,
+        { imageIds: newImageIds }
+      )
       const collection = response.data?.data?.collection
 
       const index = collections.value.findIndex((c) => c.id === id)
@@ -198,7 +248,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Removing Images",
         type: "error"
       })
@@ -206,7 +256,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function setImages(id, imageIds) {
+  async function setImages(id: string, imageIds: string[]) {
     try {
       const collectionIndex = collections.value.findIndex((c) => c.id === id)
       const existingImages = collections.value[collectionIndex]?.images || []
@@ -214,11 +264,14 @@ export const useCollectionsStore = defineStore("collections", () => {
         .map((img) => img.id)
         .filter((imageId) => !imageIds.includes(imageId))
 
-      const response = await api.put(`/collections/${id}/images`, { imageIds })
+      const response = await api.put<ApiSuccess<{ collection: Collection | null }>>(
+        `/collections/${id}/images`,
+        { imageIds }
+      )
       const collection = response.data?.data?.collection
 
       if (collectionIndex !== -1) {
-        const findImage = (imageId) =>
+        const findImage = (imageId: string) =>
           existingImages.find((img) => img.id === imageId) ||
           imagesStore.images.find((img) => img.id === imageId)
 
@@ -227,7 +280,7 @@ export const useCollectionsStore = defineStore("collections", () => {
           ...collection,
           images: imageIds
             .map(findImage)
-            .filter(Boolean)
+            .filter((image): image is Image => Boolean(image))
             .map((img, order) => ({ ...img, collectionOrder: order }))
         }
       }
@@ -242,7 +295,7 @@ export const useCollectionsStore = defineStore("collections", () => {
       return collection
     } catch (error) {
       showToast({
-        description: error.response?.data?.message || error.message,
+        description: errorMessage(error),
         title: "Error Setting Images",
         type: "error"
       })
@@ -250,15 +303,14 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function download(id) {
+  async function download(id: string) {
     try {
-      const response = await api.get(`/collections/${id}/download`, { responseType: "blob" })
-      const filename =
-        getFilenameFromDisposition(response.headers["content-disposition"]) || "collection.zip"
+      const response = await api.get<Blob>(`/collections/${id}/download`, { responseType: "blob" })
+      const filename = downloadFilename(response.headers["content-disposition"], "collection.zip")
       triggerDownload(response.data, filename)
     } catch (error) {
       showToast({
-        description: error.message || "Failed to download collection.",
+        description: (error instanceof Error && error.message) || "Failed to download collection.",
         title: "Download Failed",
         type: "error"
       })
@@ -266,15 +318,18 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function bulkDownload(ids) {
+  async function bulkDownload(ids: string[]) {
     try {
-      const response = await api.post("/collections/download", { ids }, { responseType: "blob" })
-      const filename =
-        getFilenameFromDisposition(response.headers["content-disposition"]) || "collections.zip"
+      const response = await api.post<Blob>(
+        "/collections/download",
+        { ids },
+        { responseType: "blob" }
+      )
+      const filename = downloadFilename(response.headers["content-disposition"], "collections.zip")
       triggerDownload(response.data, filename)
     } catch (error) {
       showToast({
-        description: error.message || "Failed to download collections.",
+        description: (error instanceof Error && error.message) || "Failed to download collections.",
         title: "Download Failed",
         type: "error"
       })
@@ -282,7 +337,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     }
   }
 
-  async function getImageIdsInCollection(collectionOrId) {
+  async function getImageIdsInCollection(collectionOrId: CachedCollection | null | string) {
     const collection =
       typeof collectionOrId === "object"
         ? collectionOrId
@@ -304,12 +359,13 @@ export const useCollectionsStore = defineStore("collections", () => {
     return fetchAll({ force: true })
   }
 
-  function updateImageLocal(id, image) {
-    collections.value.some((collection, collectionIndex) => {
-      const imageIndex = collection.images?.findIndex((i) => i.id === id)
-      if (imageIndex >= 0) {
-        collections.value[collectionIndex].images[imageIndex] = {
-          ...collections.value[collectionIndex].images[imageIndex],
+  function updateImageLocal(id: string, image?: Partial<Image>) {
+    collections.value.some((collection) => {
+      const collectionImages = collection.images
+      const imageIndex = collectionImages?.findIndex((i) => i.id === id)
+      if (collectionImages && imageIndex !== undefined && imageIndex >= 0) {
+        collectionImages[imageIndex] = {
+          ...collectionImages[imageIndex],
           ...image
         }
         return true
@@ -318,7 +374,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     })
   }
 
-  function removeImageLocal(id) {
+  function removeImageLocal(id: string) {
     collections.value.forEach((collection, index) => {
       if (collection.images) {
         collections.value[index].images = collection.images.filter((i) => i.id !== id)
