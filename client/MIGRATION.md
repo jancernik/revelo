@@ -4,13 +4,14 @@ Worktree: `/home/jan/revelo-frontend-rebuild` (branch `frontend-rebuild`). All w
 there. Agents never commit, push or open pull requests; the user creates commits.
 
 During the autonomous run, advance after each validated and independently accepted stage.
-Preserve stage boundaries as snapshots and patches in `/tmp/revelo-overnight.wNjKUb`.
-Manual checks use the isolated frontend at `http://127.0.0.1:5191`, backed by the real API
-at port 5301 and a disposable PostgreSQL database. Existing services on 3000 and 5190 stay
-untouched. Runtime details and private test credentials are in `/tmp/revelo-audit-a.qqZzmB`.
+Evidence is stored in the Git-ignored `client/node_modules/.cache/revelo-migration/`.
+The PC reboot cleared the earlier temporary snapshots and isolated runtime. `RECOVERY.md`
+in that directory documents recovered agent records, original Git sources and evidence
+limits. Earlier live checks used frontend port 5191, API port 5301 and a disposable
+PostgreSQL database. That stack is now offline; existing services were not operated.
 
-Current checkpoint: Stages 5–7 and the audit A test follow-up are ready for the user's
-combined commit. Pause before Stage 8a.
+Stages 5–7 and the audit A test follow-up were committed together as `a867751`.
+Current checkpoint: Stage 8a is accepted and ready for the user's commit before Stage 8b.
 
 ## Stage tracker
 
@@ -22,13 +23,13 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: `24b1d8f`.
 - [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: `b0e0425`.
 - [x] Group audit A: Data layer, after Stage 4. Completed 2026-11-14. Accepted, no migration
-      regressions or blocking type drift. Report: `/tmp/revelo-group-a-audit.md`. The auditor
+      regressions or blocking type drift. Report: `client/node_modules/.cache/revelo-migration/group-a-audit.md`. The auditor
       performed DOM login and independently assessed the remaining supervisor-run real-browser
-      evidence at `/tmp/revelo-audit-a.qqZzmB/LIVE-EVIDENCE.md`.
-- [x] Stage 5: Common components. Completed 2026-11-14. Commit: pending (user).
-- [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: pending (user).
-- [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: pending (user).
-- [ ] Stage 8a: Image form components.
+      evidence at `client/node_modules/.cache/revelo-migration/group-a-live-evidence.md`.
+- [x] Stage 5: Common components. Completed 2026-11-14. Commit: `a867751`.
+- [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: `a867751`.
+- [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `a867751`.
+- [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: pending (user).
 - [ ] Stage 8b: Settings components.
 - [ ] Group audit B: All components, after Stage 8b.
 - [ ] Stage 9: Auth and utility views.
@@ -55,6 +56,10 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [ ] Dialog listener cleanup on unmount (Stage 5 baseline): remove the window key listener
       when an open dialog unmounts. The new regression test preserves the existing leak;
       change it only with a separate behavior fix.
+- [ ] Upload editor Reset baseline (Stage 8a, P2 baseline): UploadImages immediately echoes
+      emitted metadata into `initialMetadata`, replacing the editor's original snapshot.
+      Preserve the originally extracted metadata and add a parent-integration regression
+      test in a separate behavior fix, not during the view's TypeScript migration.
 
 Audit A's test-contract follow-up A1 corrects the collection-removal response fixture and
 adds a realistic add/remove sequence. It asserts the existing divergence between hydrated
@@ -489,7 +494,7 @@ Completed: all eight scripts are typed, with 52 colocated tests passing unchange
 JavaScript-first snapshot. Progress retains cast-free runtime props to preserve its range
 validator and nullable public value type. All eight real `/dev` examples render and key
 controls work without captured runtime errors. Independent review accepted with no findings:
-`/tmp/revelo-overnight.wNjKUb/stage5-review.md`. The reviewer independently replayed all 52
+`client/node_modules/.cache/revelo-migration/stage5-review.md`. The reviewer independently replayed all 52
 tests on original JavaScript and passed all five validations: 40 files, 429 tests, zero lint
 errors and six deferred warnings. Stage snapshot and patch receipts are in the session directory.
 
@@ -517,7 +522,7 @@ Completed: the three shell components, all four layouts, App and router are type
 Vue Test Utils correction from `get(...).exists()` to `find(...).exists()`; assertion
 strength is unchanged. Real dashboard navigation, selection, footer cancellation, theme
 updates, login/logout and protected redirects pass. Independent review accepted with no
-findings: `/tmp/revelo-overnight.wNjKUb/stage6-review.md`. All five checks pass: 49 files,
+findings: `client/node_modules/.cache/revelo-migration/stage6-review.md`. All five checks pass: 49 files,
 473 tests, zero lint errors and six deferred warnings.
 
 ### Stage 7: Grids and drag reorder
@@ -545,7 +550,7 @@ unchanged after migration. Seven minimal ImageGrid binding guards preserve both 
 image and upload-preview values; DOM structure and styles are unchanged. Actual Chromium
 pointer dragging, DOM Save Order and a fresh API read confirm persisted order 0/1/2.
 Collection thumbnails and upload previews also pass. Independent review accepted without
-findings: `/tmp/revelo-overnight.wNjKUb/stage7-review.md`. All five checks pass: 52 files,
+findings: `client/node_modules/.cache/revelo-migration/stage7-review.md`. All five checks pass: 52 files,
 496 tests, zero lint errors and six deferred warnings.
 
 ### Stage 8a: Image form components
@@ -566,6 +571,17 @@ Tests first:
   once at setup.
   Migration: `ImageMetadataForm`, typed exposes, `UploadPreview`.
   Completion: typed; tests green; manual upload flow step 1 and 2 at 5190.
+
+Completed: all three components are typed, with 33 unchanged JavaScript-first tests.
+The editor's local state honestly retains nullable non-ISO values and string ISO;
+shared `ImageMetadataForm` remains unchanged. Templates and styles are unchanged.
+Pre-reboot real upload/review/confirm, metadata display and parent-driven reset checks
+passed. The reboot removed raw temporary CDP files; retained observation summaries and
+matching test hashes were recovered without inventing old snapshots or timestamps.
+A fresh post-reboot review accepted the migration with no required fixes, independently
+passing all five checks (55 files, 529 tests, zero lint errors and six deferred warnings)
+and all 33 current tests over committed original JavaScript. Report:
+`client/node_modules/.cache/revelo-migration/stage8a-recovery-review.md`.
 
 ### Stage 8b: Settings components
 

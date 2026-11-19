@@ -1,18 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue"
 import { useTemplateRef } from "vue"
 
+import type { Image } from "#src/types/models"
+
 import Icon from "#src/components/common/Icon.vue"
 
-const props = defineProps({
-  image: {
-    required: true,
-    type: Object
-  }
-})
+const props = defineProps<{ image: Image }>()
 
-const imageMetadata = useTemplateRef("image-metadata")
-defineExpose({ imageMetadata })
+const imageMetadata = useTemplateRef<HTMLDivElement>("image-metadata")
+defineExpose<{ imageMetadata: typeof imageMetadata }>({ imageMetadata })
 
 const showCameraGroup = computed(() => {
   return props.image.camera || props.image.lens
@@ -31,18 +28,18 @@ const showOtherGroup = computed(() => {
   return props.image.date
 })
 
-const formatAperture = (aperture) => `f/${aperture}`
+const formatAperture = (aperture: string) => `f/${aperture}`
 
-const formatFocalLength = (focalLength) => `${focalLength}mm`
+const formatFocalLength = (focalLength: string) => `${focalLength}mm`
 
-const formatShutterSpeed = (shutter) => {
+const formatShutterSpeed = (shutter: string) => {
   const shutterNum = Number(shutter)
   if (shutterNum >= 1) return `${shutterNum}s`
   const denominator = Math.round(1 / shutterNum)
   return `1/${denominator}`
 }
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: null | string) => {
   if (!dateString) return ""
   dateString = dateString.split("T")[0].replace("-", "/")
   return new Date(dateString).toLocaleDateString("en-US", {
