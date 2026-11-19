@@ -11,7 +11,9 @@ limits. Earlier live checks used frontend port 5191, API port 5301 and a disposa
 PostgreSQL database. That stack is now offline; existing services were not operated.
 
 Stages 5–7 and the audit A test follow-up were committed together as `a867751`.
-Current checkpoint: Stage 8a is accepted and ready for the user's commit before Stage 8b.
+Stage 8a was committed as `d50cb19`.
+Current checkpoint: Stage 8b is accepted and ready for the user's commit.
+Group audit B is the next gate before Stage 9; restore a fresh isolated stack for its live checks.
 
 ## Stage tracker
 
@@ -29,8 +31,8 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 5: Common components. Completed 2026-11-14. Commit: `a867751`.
 - [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: `a867751`.
 - [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `a867751`.
-- [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: pending (user).
-- [ ] Stage 8b: Settings components.
+- [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: `d50cb19`.
+- [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: pending (user).
 - [ ] Group audit B: All components, after Stage 8b.
 - [ ] Stage 9: Auth and utility views.
 - [ ] Stage 10: Image views.
@@ -597,7 +599,19 @@ index bookkeeping, empty state.
 Migration: each component typed to its `CompleteSetting` variant and value type.
 Completion: typed; tests green.
 
-Group audit B after Stage 8b.
+Completed: all four components are typed with 44 JavaScript-first tests. Common Switch
+option values/emits now honestly allow string, number and undefined, with numeric labels;
+its compiled runtime, defaults and native string-versus-keyboard value behavior are unchanged.
+The common test listener has a type-only annotation correction. Five insertion-order fixtures
+use explicitly ordered entries after a separately approved representation-only exception;
+assertions, values, property order and identities were independently verified unchanged.
+Three new tests and the shared fixture retain their original hashes. Templates and styles
+are unchanged. Independent review accepted with no findings, passing all five checks
+(59 files, 573 tests, zero lint errors and six deferred warnings) and the original-source
+replay (five files, 56 tests). Report:
+`client/node_modules/.cache/revelo-migration/stage8b-review.md`.
+
+Group audit B remains pending; this stage's acceptance does not complete that audit.
 
 ### Stage 9: Auth and utility views
 

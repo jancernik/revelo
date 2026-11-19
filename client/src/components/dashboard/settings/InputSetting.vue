@@ -1,5 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue"
+
+import type { CompleteSetting } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
@@ -7,26 +9,21 @@ import { useDialog } from "#src/composables/useDialog"
 
 const { show } = useDialog()
 
-const props = defineProps({
-  currentValue: {
-    required: true,
-    type: [String, Number]
-  },
-  isResetting: {
-    default: false,
-    type: Boolean
-  },
-  originalValue: {
-    required: true,
-    type: [String, Number]
-  },
-  setting: {
-    required: true,
-    type: Object
-  }
-})
+const props = withDefaults(
+  defineProps<{
+    currentValue: number | string
+    isResetting?: boolean
+    originalValue: number | string
+    setting: Extract<CompleteSetting, { type: "decimal" | "integer" | "text" }>
+  }>(),
+  { isResetting: false }
+)
 
-const emit = defineEmits(["update", "reset", "reset-default"])
+const emit = defineEmits<{
+  (event: "update", value: number | string): void
+  (event: "reset"): void
+  (event: "reset-default"): void
+}>()
 
 const hasChanged = computed(() => {
   return props.currentValue !== props.originalValue
@@ -61,7 +58,7 @@ const inputStep = computed(() => {
   return props.setting.type === "decimal" ? "0.01" : "1"
 })
 
-const parseValue = (value) => {
+const parseValue = (value: string) => {
   if (value === "" || value === null || value === undefined) return value
 
   if (props.setting.type === "integer") {
@@ -75,7 +72,7 @@ const parseValue = (value) => {
   return value
 }
 
-const handleUpdate = (newValue) => {
+const handleUpdate = (newValue: string) => {
   const parsedValue = props.setting.type !== "text" ? parseValue(newValue) : newValue
   emit("update", parsedValue)
 }
