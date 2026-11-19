@@ -1,14 +1,50 @@
 import { reactive } from "vue"
 
-const toastState = reactive({
+import type { ButtonColor, IconName } from "#src/components/common/types"
+
+export interface Toast {
+  action: null | ToastAction
+  description: string
+  dismissible: boolean
+  duration: number
+  id: number
+  showIcon: boolean
+  title: string
+  type: ToastType
+}
+
+export interface ToastAction {
+  callback?: () => void
+  color?: ButtonColor
+  icon?: IconName
+  name: string
+}
+
+export interface ToastOptions {
+  action?: null | ToastAction
+  description?: string
+  dismissible?: boolean
+  duration?: number
+  showIcon?: boolean
+  title?: string
+  type?: ToastType
+}
+
+export interface ToastState {
+  toasts: Toast[]
+}
+
+export type ToastType = "error" | "info" | "success" | "warning"
+
+const toastState = reactive<ToastState>({
   toasts: []
 })
 
 let toastId = 0
 
 export function useToast() {
-  const show = (options = {}) => {
-    const toast = {
+  const show = (options: ToastOptions = {}) => {
+    const toast: Toast = {
       action: options.action || null,
       description: options.description || "",
       dismissible: options.dismissible !== false,
@@ -30,7 +66,7 @@ export function useToast() {
     return toast.id
   }
 
-  const remove = (id) => {
+  const remove = (id: number) => {
     const index = toastState.toasts.findIndex((toast) => toast.id === id)
     if (index > -1) {
       toastState.toasts.splice(index, 1)
