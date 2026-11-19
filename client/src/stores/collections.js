@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import { ref, watch } from "vue"
 
 import { useToast } from "#src/composables/useToast"
-import { useAuthStore } from "#src/stores/auth.js"
+import { useAuthStore } from "#src/stores/auth"
 import { useImagesStore } from "#src/stores/images.js"
 import api from "#src/utils/api"
 import { getFilenameFromDisposition, triggerDownload } from "#src/utils/download"
