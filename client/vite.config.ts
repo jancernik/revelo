@@ -4,7 +4,7 @@ import { defineConfig } from "vite"
 // import { VitePWA } from "vite-plugin-pwa"
 import vueDevTools from "vite-plugin-vue-devtools"
 
-import { config } from "./src/config/environment.js"
+import { config } from "./src/config/environment.ts"
 
 export default defineConfig({
   css: {
@@ -54,7 +54,7 @@ export default defineConfig({
   server: {
     allowedHosts: ["dev.revelo.app"],
     host: true,
-    port: parseInt(config.CLIENT_PORT) || 5173,
+    port: parseInt(String(config.CLIENT_PORT)) || 5173,
     proxy: {
       "/api": {
         changeOrigin: true,

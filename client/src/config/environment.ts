@@ -10,7 +10,13 @@ if (fs.existsSync(envFilePath)) {
   dotenv.config({ path: envFilePath, quiet: true })
 }
 
-export const config = {
+interface EnvironmentConfig {
+  API_BASE_URL: string
+  API_PORT: number | string
+  CLIENT_PORT: number | string
+}
+
+export const config: EnvironmentConfig = {
   API_BASE_URL:
     envType === "production" ? "/api" : `http://localhost:${process.env.API_PORT || 3000}`,
   API_PORT: process.env.API_PORT || 3000,
