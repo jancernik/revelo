@@ -1,4 +1,6 @@
-<script setup>
+<script setup lang="ts">
+import type { PropType } from "vue"
+
 import { computed } from "vue"
 
 const props = defineProps({
@@ -8,8 +10,10 @@ const props = defineProps({
   },
   value: {
     default: null,
-    type: [Number, String],
-    validator: (value) => value === null || (parseFloat(value) >= 0 && parseFloat(value) <= 100)
+    // Keep null in the public type alongside runtime range validation.
+    type: ((): PropType<null | number | string> => [Number, String])(),
+    validator: (value: null | number | string) =>
+      value === null || (parseFloat(String(value)) >= 0 && parseFloat(String(value)) <= 100)
   }
 })
 
@@ -19,7 +23,7 @@ const isIndeterminate = computed(() => {
 
 const roundedValue = computed(() => {
   if (isIndeterminate.value) return 0
-  return Math.round(parseFloat(props.value))
+  return Math.round(parseFloat(String(props.value)))
 })
 
 const progressStyle = computed(() => {

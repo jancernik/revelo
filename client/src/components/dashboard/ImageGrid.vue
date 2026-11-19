@@ -1,67 +1,54 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onUnmounted, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { GridImage } from "#src/components/dashboard/types"
 
 import Icon from "#src/components/common/Icon.vue"
 import { useSortableGrid } from "#src/composables/useSortableGrid"
 import { getThumbnailPath } from "#src/utils/helpers"
 
-const props = defineProps({
-  allowClick: {
-    default: true,
-    type: Boolean
-  },
-  allowRemove: {
-    default: false,
-    type: Boolean
-  },
-  allowReorder: {
-    default: false,
-    type: Boolean
-  },
-  allowSelect: {
-    default: true,
-    type: Boolean
-  },
-  fastSelect: {
-    default: false,
-    type: Boolean
-  },
-  images: {
-    required: true,
-    type: Array
-  },
-  selectedImagesIds: {
-    default: () => [],
-    type: Array
-  },
-  shortGrid: {
-    default: false,
-    type: Boolean
-  },
-  showActions: {
-    default: false,
-    type: Boolean
-  },
-  showFileNames: {
-    default: false,
-    type: Boolean
-  },
-  showFileSizes: {
-    default: false,
-    type: Boolean
-  },
-  srcAttribute: {
-    default: null,
-    type: String
+const props = withDefaults(
+  defineProps<{
+    allowClick?: boolean
+    allowRemove?: boolean
+    allowReorder?: boolean
+    allowSelect?: boolean
+    fastSelect?: boolean
+    images: GridImage[]
+    selectedImagesIds?: string[]
+    shortGrid?: boolean
+    showActions?: boolean
+    showFileNames?: boolean
+    showFileSizes?: boolean
+    srcAttribute?: "path" | null
+  }>(),
+  {
+    allowClick: true,
+    allowRemove: false,
+    allowReorder: false,
+    allowSelect: true,
+    fastSelect: false,
+    selectedImagesIds: () => [],
+    shortGrid: false,
+    showActions: false,
+    showFileNames: false,
+    showFileSizes: false,
+    srcAttribute: null
   }
-})
+)
 
 const router = useRouter()
-const emit = defineEmits(["select", "edit", "delete", "remove", "reorder"])
+const emit = defineEmits<{
+  delete: [image: GridImage]
+  edit: [image: GridImage]
+  remove: [image: GridImage, event: MouseEvent]
+  reorder: [images: GridImage[]]
+  select: [image: GridImage, event: MouseEvent]
+}>()
 
-const imageGrid = useTemplateRef("image-grid")
-const sortableGrid = useSortableGrid()
+const imageGrid = useTemplateRef<HTMLDivElement>("image-grid")
+const sortableGrid = useSortableGrid<GridImage>()
 
 const initReorder = async () => {
   await nextTick()
@@ -89,12 +76,12 @@ const displayedImages = computed(() => {
   return props.shortGrid ? props.images.slice(0, 5) : props.images
 })
 
-const isSelected = (image) => props.selectedImagesIds?.includes(image.id)
+const isSelected = (image: GridImage) => props.selectedImagesIds?.includes(image.id)
 const isSelecting = computed(() => {
   return (props.allowSelect && props.selectedImagesIds?.length > 0) || props.fastSelect
 })
 
-const openImage = (image) => {
+const openImage = (image: GridImage) => {
   router.push(`/dashboard/images/${image.id}`)
 }
 </script>
@@ -109,7 +96,10 @@ const openImage = (image) => {
       v-for="image in displayedImages"
       :key="image.id"
       class="image-item"
-      :class="{ selected: allowSelect && isSelected(image), hidden: image.hidden }"
+      :class="{
+        selected: allowSelect && isSelected(image),
+        hidden: 'hidden' in image ? image.hidden : undefined
+      }"
     >
       <div
         class="image-container"
@@ -117,8 +107,14 @@ const openImage = (image) => {
         @click="allowClick && (isSelecting ? emit('select', image, $event) : openImage(image))"
       >
         <img
-          :src="srcAttribute ? image[srcAttribute] : getThumbnailPath(image)"
-          :alt="image.descriptions?.en"
+          :src="
+            srcAttribute
+              ? 'path' in image
+                ? image[srcAttribute]
+                : undefined
+              : getThumbnailPath('versions' in image ? image : {})
+          "
+          :alt="'descriptions' in image ? image.descriptions?.en : undefined"
           loading="lazy"
         />
       </div>
@@ -127,7 +123,7 @@ const openImage = (image) => {
         <Icon name="Check" size="12" :stroke-width="4" />
       </button>
 
-      <div v-if="image.hidden" class="hidden-indicator">
+      <div v-if="'hidden' in image ? image.hidden : undefined" class="hidden-indicator">
         <Icon name="EyeOff" size="14" :stroke-width="2" />
       </div>
 
@@ -143,9 +139,14 @@ const openImage = (image) => {
         <button class="action-button" @click="emit('delete', image)"><Icon name="Trash" /></button>
       </div>
       <div v-if="showFileNames || showFileSizes" class="image-info">
-        <div v-if="showFileNames" class="file-name">{{ image.name || image.originalFilename }}</div>
-        <div v-if="showFileSizes && image.size" class="file-size">
-          {{ (image.size / (1024 * 1024)).toFixed(2) }} MB
+        <div v-if="showFileNames" class="file-name">
+          {{
+            ("name" in image ? image.name : undefined) ||
+            ("originalFilename" in image ? image.originalFilename : undefined)
+          }}
+        </div>
+        <div v-if="showFileSizes && ('size' in image ? image.size : undefined)" class="file-size">
+          {{ (("size" in image ? image.size : 0) / (1024 * 1024)).toFixed(2) }} MB
         </div>
       </div>
     </div>
