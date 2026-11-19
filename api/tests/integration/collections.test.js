@@ -442,6 +442,9 @@ describe("Collection Endpoints", () => {
       expect(response.headers["content-disposition"]).toContain("My Collection.zip")
       expect(response.body[0]).toBe(0x50)
       expect(response.body[1]).toBe(0x4b)
+      const directoryEnd = response.body.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]))
+      expect(directoryEnd).toBeGreaterThanOrEqual(0)
+      expect(response.body.readUInt16LE(directoryEnd + 10)).toBe(2)
     })
 
     it("should return a ZIP archive for a collection without images", async () => {
@@ -504,6 +507,11 @@ describe("Collection Endpoints", () => {
       expect(response.headers["content-disposition"]).toMatch(/\.zip"$/)
       expect(response.body[0]).toBe(0x50)
       expect(response.body[1]).toBe(0x4b)
+      const directoryEnd = response.body.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]))
+      expect(directoryEnd).toBeGreaterThanOrEqual(0)
+      expect(response.body.readUInt16LE(directoryEnd + 10)).toBe(4)
+      expect(response.body.includes(Buffer.from("Collection A/"))).toBe(true)
+      expect(response.body.includes(Buffer.from("Collection B/"))).toBe(true)
     })
 
     it("should return a ZIP archive for a single collection", async () => {

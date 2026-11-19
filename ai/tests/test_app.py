@@ -1,7 +1,13 @@
 import asyncio
+import logging
 import time
 
 import app as service
+
+
+def test_http_client_request_logs_are_quiet():
+    for name in ("httpx", "httpx2"):
+        assert logging.getLogger(name).getEffectiveLevel() == logging.WARNING
 
 
 class SlowRelease:

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import fs from "fs"
-import yaml from "js-yaml"
+import { load } from "js-yaml"
 import path from "path"
 
 import { AppError, NotFoundError, ValidationError } from "#src/core/errors.js"
@@ -151,7 +151,7 @@ class Setting extends BaseModel {
     try {
       const settingsPath = path.resolve(process.cwd(), "src/config/settings.yml")
       const fileContents = fs.readFileSync(settingsPath, "utf8")
-      return yaml.load(fileContents)
+      return load(fileContents)
     } catch (error) {
       if (error.code === "ENOENT") {
         throw new AppError("Settings file not found", { isOperational: false })

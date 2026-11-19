@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpx2").setLevel(logging.WARNING)
 
 ai_port = int(os.getenv("AI_PORT", "8000"))
 device = "cuda" if torch.cuda.is_available() else "cpu"

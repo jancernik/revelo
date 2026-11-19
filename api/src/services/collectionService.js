@@ -1,4 +1,4 @@
-import archiver from "archiver"
+import { ZipArchive } from "archiver"
 import { eq, inArray } from "drizzle-orm"
 
 import { NotFoundError } from "#src/core/errors.js"
@@ -108,7 +108,7 @@ export const downloadCollection = async (id) => {
   const orderMap = new Map(collection.images.map((img) => [img.id, img.collectionOrder ?? 0]))
   images.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0))
 
-  const archive = archiver("zip", { zlib: { level: 6 } })
+  const archive = new ZipArchive({ zlib: { level: 6 } })
   appendEntriesToArchive(archive, await Promise.all(images.map(getImageFileEntry)))
 
   return { archive, filename: `${collection.title || "collection"}` }
@@ -118,7 +118,7 @@ export const downloadCollections = async (ids) => {
   const collections = await Collection.findAllWithImages({
     where: inArray(Collection.table.id, ids)
   })
-  const archive = archiver("zip", { zlib: { level: 6 } })
+  const archive = new ZipArchive({ zlib: { level: 6 } })
   const usedFolders = new Set()
 
   for (const collection of collections) {

@@ -1,4 +1,4 @@
-import archiver from "archiver"
+import { ZipArchive } from "archiver"
 import { eq, inArray } from "drizzle-orm"
 import exifr from "exifr"
 import fs from "fs/promises"
@@ -329,7 +329,7 @@ export const downloadImages = async (ids) => {
     columns: { originalFilename: true },
     where: inArray(Image.table.id, ids)
   })
-  const archive = archiver("zip", { zlib: { level: 6 } })
+  const archive = new ZipArchive({ zlib: { level: 6 } })
 
   appendEntriesToArchive(archive, await Promise.all(images.map(getImageFileEntry)))
 

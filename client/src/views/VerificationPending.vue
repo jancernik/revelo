@@ -71,8 +71,7 @@ onMounted(redirectIfNotAuthenticated)
       <h3>Check Your Email</h3>
       <p>
         Please verify your email address by clicking the link we sent to
-        <strong>{{ userEmail }}</strong
-        >.
+        <strong>{{ userEmail }}</strong>.
       </p>
       <Button @click="handleRequestVerificationEmail">Resend Verification Email</Button>
     </div>
