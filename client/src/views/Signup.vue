@@ -1,21 +1,30 @@
-<script setup>
+<script setup lang="ts">
+import { isAxiosError } from "axios"
 import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
+
+import type { ApiFailure } from "#src/types/api"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
 import { useSettings } from "#src/composables/useSettings"
 import { useAuthStore } from "#src/stores/auth"
+import { errorMessage } from "#src/utils/api"
 
 const authStore = useAuthStore()
 const router = useRouter()
 const email = ref("")
 const username = ref("")
 const password = ref("")
-const signupErrors = ref([])
+const signupErrors = ref<string[]>([])
 const isLoading = ref(false)
 const showSignupForm = ref(false)
 const { settings } = useSettings()
+
+// The persisted auth user is unvalidated; the store keeps it unknown, so views
+// narrow the fields they read without casts.
+const isAccount = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
 
 const handleSignup = async () => {
   signupErrors.value = []
@@ -42,14 +51,19 @@ const handleSignup = async () => {
       signupErrors.value.push("Signup failed. Please try again.")
     }
   } catch (error) {
-    if (error.response.data?.data?.validation?.length) {
-      const validation = error.response.data.data.validation
-      const validationErrors = validation.map((v) => v.message)
-      signupErrors.value = validationErrors
+    if (isAxiosError<ApiFailure>(error)) {
+      const data = error.response?.data
+      if (data?.data?.validation?.length) {
+        const validation = data.data.validation
+        const validationErrors = validation.map((v) => v.message)
+        signupErrors.value = validationErrors
+        return
+      }
+      const message = data?.message || "Signup failed. Please try again."
+      signupErrors.value = [message]
       return
     }
-    const errorMessage = error.response?.data?.message || "Signup failed. Please try again."
-    signupErrors.value = [errorMessage]
+    signupErrors.value = [errorMessage(error)]
   } finally {
     isLoading.value = false
   }
@@ -69,10 +83,11 @@ const checkIfSignupsAreEnabled = async () => {
 }
 
 const redirectIfAuthenticated = () => {
-  if (!authStore.user?.emailVerified) {
+  const user = isAccount(authStore.user) ? authStore.user : null
+  if (!user?.emailVerified) {
     return
   }
-  if (authStore.user?.admin) {
+  if (user?.admin) {
     router.push("/dashboard")
   } else {
     router.push("/")

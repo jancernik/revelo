@@ -1,5 +1,5 @@
-<script setup>
-import { onMounted } from "vue"
+<script setup lang="ts">
+import { computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 
 import Button from "#src/components/common/Button.vue"
@@ -11,9 +11,22 @@ const { show: showToast } = useToast()
 const authStore = useAuthStore()
 const router = useRouter()
 
+// The persisted auth user is unvalidated; the store keeps it unknown. The single
+// template interpolation below is the supervisor-approved exception: rendering is
+// identical for every runtime value (primitives yield undefined, missing or null
+// emails render empty either way).
+const userEmail = computed(() => {
+  const user = authStore.user
+  if (typeof user === "object" && user !== null && "email" in user) {
+    return user.email
+  }
+  return undefined
+})
+
 const handleRequestVerificationEmail = async () => {
+  const email = userEmail.value
   try {
-    await authStore.resendVerificationEmail(authStore.user?.email)
+    await authStore.resendVerificationEmail(typeof email === "string" ? email : undefined)
     showToast({
       description: "Email sent. Please check your inbox.",
       title: "Verification Email Sent",
@@ -29,14 +42,18 @@ const handleRequestVerificationEmail = async () => {
   }
 }
 
+const isAccount = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
+
 const redirectIfNotAuthenticated = () => {
   if (!authStore.user) {
     router.push("/signup")
   } else {
-    if (authStore.user.emailVerified === false) {
+    const user = isAccount(authStore.user) ? authStore.user : null
+    if (user?.emailVerified === false) {
       return
     }
-    if (authStore.user?.admin) {
+    if (user?.admin) {
       router.push("/dashboard")
     } else {
       router.push("/")
@@ -54,7 +71,7 @@ onMounted(redirectIfNotAuthenticated)
       <h3>Check Your Email</h3>
       <p>
         Please verify your email address by clicking the link we sent to
-        <strong>{{ authStore.user?.email }}</strong>.
+        <strong>{{ userEmail }}</strong>.
       </p>
       <Button @click="handleRequestVerificationEmail">Resend Verification Email</Button>
     </div>
