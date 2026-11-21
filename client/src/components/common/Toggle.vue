@@ -1,23 +1,25 @@
-<script setup>
-defineProps({
-  disabled: {
-    default: false,
-    type: Boolean
-  },
-  label: {
-    default: "",
-    type: String
-  },
-  modelValue: {
-    default: false,
-    type: Boolean
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    disabled?: boolean
+    label?: string
+    modelValue?: boolean
+  }>(),
+  {
+    disabled: false,
+    label: "",
+    modelValue: false
   }
-})
+)
 
-const emit = defineEmits(["update:modelValue"])
+const emit = defineEmits<{
+  "update:modelValue": [value: boolean]
+}>()
 
-const handleToggle = (event) => {
-  emit("update:modelValue", event.target.checked)
+const handleToggle = (event: Event) => {
+  if (event.target instanceof HTMLInputElement) {
+    emit("update:modelValue", event.target.checked)
+  }
 }
 </script>
 

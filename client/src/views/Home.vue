@@ -1,6 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
+
+import type { GalleryHandle } from "#src/components/images/types"
 
 import ImageGallery from "#src/components/images/ImageGallery.vue"
 import NativeImageGallery from "#src/components/images/NativeImageGallery.vue"
@@ -11,7 +13,7 @@ import { useTheme } from "#src/composables/useTheme"
 const { registerImageGallery } = useTheme()
 const { isTouchPrimary } = useDevice()
 const { settings } = useSettings()
-const imageGallery = ref()
+const imageGallery = ref<GalleryHandle | null>()
 const route = useRoute()
 
 const columns = computed(() => (route.query.columns ? Number(route.query.columns) : null))

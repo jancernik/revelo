@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Button from "#src/components/common/Button.vue"
 import { useToast } from "#src/composables/useToast"
 

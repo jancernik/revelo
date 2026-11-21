@@ -19,6 +19,8 @@
     "format:client": "prettier --write client/",
     "test": "pnpm api test",
     "test:api": "pnpm api test",
+    "test:client": "pnpm client test",
+    "typecheck:client": "pnpm client typecheck",
     "db:generate": "pnpm api db:generate",
     "db:migrate": "pnpm api db:migrate",
     "db:create": "pnpm api db:create",
@@ -45,10 +47,12 @@
     "globals": "^17.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.1",
-    "prettier": "^3.10.1"
+    "prettier": "^3.10.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2"
   },
   "lint-staged": {
-    "*.{js,mjs,vue}": [
+    "*.{js,mjs,ts,vue}": [
       "eslint --fix",
       "prettier --write"
     ],

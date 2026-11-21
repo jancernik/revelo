@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue"
 
 import Progress from "#src/components/common/Progress.vue"
 
 const animatedProgress = ref(0)
 
-let animationInterval = null
+let animationInterval: null | ReturnType<typeof setInterval> = null
 
 const startAnimation = () => {
   animationInterval = setInterval(

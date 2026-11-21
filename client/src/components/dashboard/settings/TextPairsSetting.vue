@@ -1,5 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue"
+
+import type { CompleteSetting, TextPairs } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
@@ -7,26 +9,21 @@ import { useDialog } from "#src/composables/useDialog"
 
 const { show } = useDialog()
 
-const props = defineProps({
-  currentValue: {
-    required: true,
-    type: Array
-  },
-  isResetting: {
-    default: false,
-    type: Boolean
-  },
-  originalValue: {
-    required: true,
-    type: Array
-  },
-  setting: {
-    required: true,
-    type: Object
-  }
-})
+const props = withDefaults(
+  defineProps<{
+    currentValue: TextPairs
+    isResetting?: boolean
+    originalValue: TextPairs
+    setting: Extract<CompleteSetting, { type: "textpairs" }>
+  }>(),
+  { isResetting: false }
+)
 
-const emit = defineEmits(["update", "reset", "reset-default"])
+const emit = defineEmits<{
+  (event: "update", value: TextPairs): void
+  (event: "reset"): void
+  (event: "reset-default"): void
+}>()
 
 const editingIndex = ref(-1)
 
@@ -48,12 +45,12 @@ const pairs = computed(() => {
 })
 
 const addPair = () => {
-  const newPairs = [...props.currentValue, ["", ""]]
+  const newPairs: TextPairs = [...props.currentValue, ["", ""]]
   emit("update", newPairs)
   editingIndex.value = newPairs.length - 1
 }
 
-const removePair = (index) => {
+const removePair = (index: number) => {
   const newPairs = props.currentValue.filter((_, i) => i !== index)
   emit("update", newPairs)
   if (editingIndex.value >= newPairs.length) {
@@ -61,9 +58,11 @@ const removePair = (index) => {
   }
 }
 
-const updatePair = (index, field, newValue) => {
+const updatePair = (index: number, field: "key" | "value", newValue: string) => {
   const newPairs = [...props.currentValue]
-  const currentPair = Array.isArray(newPairs[index]) ? [...newPairs[index]] : ["", ""]
+  const currentPair: [string, string] = Array.isArray(newPairs[index])
+    ? [...newPairs[index]]
+    : ["", ""]
   if (field === "key") {
     currentPair[0] = newValue
   } else if (field === "value") {
@@ -73,7 +72,7 @@ const updatePair = (index, field, newValue) => {
   emit("update", newPairs)
 }
 
-const startEditing = (index) => {
+const startEditing = (index: number) => {
   editingIndex.value = index
 }
 

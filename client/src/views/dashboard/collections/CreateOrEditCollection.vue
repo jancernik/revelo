@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
@@ -7,12 +7,7 @@ import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 
-const props = defineProps({
-  id: {
-    default: null,
-    type: String
-  }
-})
+const props = withDefaults(defineProps<{ id?: null | string }>(), { id: null })
 
 const { show: showToast } = useToast()
 const router = useRouter()
@@ -32,8 +27,8 @@ const loadCollection = async () => {
   try {
     loading.value = true
     const collection = await collectionsStore.fetch(props.id)
-    title.value = collection.title || ""
-    description.value = collection.description || ""
+    title.value = collection?.title || ""
+    description.value = collection?.description || ""
   } finally {
     loading.value = false
   }
@@ -42,12 +37,13 @@ const loadCollection = async () => {
 const saveCollection = async () => {
   try {
     saving.value = true
-    if (isEditing.value) {
-      await collectionsStore.update(props.id, {
+    const { id } = props
+    if (isEditing.value && id) {
+      await collectionsStore.update(id, {
         description: description.value,
         title: title.value
       })
-      router.push(`/dashboard/collections/${props.id}`)
+      router.push(`/dashboard/collections/${id}`)
       showToast({
         description: `Collection updated successfully.`,
         title: "Collection Updated",
@@ -58,12 +54,14 @@ const saveCollection = async () => {
         description: description.value,
         title: title.value
       })
-      router.push(`/dashboard/collections/${collection.id}`)
-      showToast({
-        description: `Collection created successfully.`,
-        title: "Collection Created",
-        type: "success"
-      })
+      if (collection) {
+        router.push(`/dashboard/collections/${collection.id}`)
+        showToast({
+          description: `Collection created successfully.`,
+          title: "Collection Created",
+          type: "success"
+        })
+      }
     }
   } finally {
     saving.value = false

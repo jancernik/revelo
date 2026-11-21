@@ -1,3 +1,5 @@
+<script setup lang="ts"></script>
+
 <template>
   <main id="main">
     <div class="main-inner inner scrollable">

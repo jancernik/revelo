@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useTemplateRef } from "vue"
 
 import Icon from "#src/components/common/Icon.vue"
@@ -7,10 +7,11 @@ import { useTheme } from "#src/composables/useTheme"
 
 const { isWaitingForGallery, setTheme, themeClass } = useTheme()
 const tapActivation = useTapActivation()
-const button = useTemplateRef("button")
+const button = useTemplateRef<HTMLButtonElement>("button")
 
 const toggleTheme = async () => {
   if (isWaitingForGallery.value) return
+  if (!button.value) return
 
   const rect = button.value.getBoundingClientRect()
   const x = rect.left + rect.width / 2
@@ -25,7 +26,7 @@ const handleClick = () => {
   toggleTheme()
 }
 
-const handlePointerUp = (event) => {
+const handlePointerUp = (event: PointerEvent) => {
   tapActivation.activateOnTap(event, toggleTheme)
 }
 </script>

@@ -1,6 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { ImageMetadataUpdate } from "#src/stores/images"
+import type { UploadedImage, UploadReview } from "#src/types/models"
 
 import Icon from "#src/components/common/Icon.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
@@ -9,33 +12,36 @@ import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
+import { errorMessage } from "#src/utils/api"
 
 const router = useRouter()
 const { reset, resetFooter, setFooter, setHeader } = useDashboardLayout()
 const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
-const imageUploader = useTemplateRef("image-uploader")
+const imageUploader = useTemplateRef<InstanceType<typeof ImageUploader>>("image-uploader")
 
 const step = ref(1)
-const sessionIds = ref([])
-const extractedMetadata = ref([])
-const previewUrls = ref([])
-const previewFilenames = ref([])
-const uploadedImages = ref([])
+const sessionIds = ref<string[]>([])
+const extractedMetadata = ref<UploadReview["metadata"][]>([])
+const previewUrls = ref<string[]>([])
+const previewFilenames = ref<string[]>([])
+const uploadedImages = ref<UploadedImage[]>([])
 const isLoading = ref(false)
 const processingStep = ref("")
 const selectedImageIndex = ref(0)
-const metadataArray = ref([])
+const metadataArray = ref<ImageMetadataUpdate[]>([])
 
 const hasImages = computed(() => imageUploader.value?.hasSelectedImages)
 const hasExceededFileLimit = computed(() => imageUploader.value?.hasExceededFileLimit)
 const canAddMoreFiles = computed(() => imageUploader.value?.canAddMoreFiles)
 const uploadedImagesCount = computed(() => sessionIds.value?.length)
-const currentMetadata = computed(() => metadataArray.value[selectedImageIndex.value] || {})
+const currentExtractedMetadata = computed(
+  () => extractedMetadata.value[selectedImageIndex.value] || {}
+)
 const currentPreviewUrl = computed(() => previewUrls.value[selectedImageIndex.value] || "")
 const currentFilename = computed(() => previewFilenames.value[selectedImageIndex.value] || "")
 
-const handleUploadForReview = async (data) => {
+const handleUploadForReview = async (data: { images: File[]; previewUrls: string[] }) => {
   try {
     isLoading.value = true
     processingStep.value = "extracting"
@@ -59,7 +65,7 @@ const handleUploadForReview = async (data) => {
     step.value = 2
   } catch (error) {
     showToast({
-      description: error,
+      description: errorMessage(error),
       title: "Error Uploading Images",
       type: "error"
     })
@@ -84,28 +90,29 @@ const handleConfirm = async () => {
     }
 
     step.value = 3
+    sessionIds.value = []
+    extractedMetadata.value = []
+    previewUrls.value = []
+    previewFilenames.value = []
+    metadataArray.value = []
   } catch (error) {
     showToast({
-      description: error,
+      description: errorMessage(error),
       title: "Error Confirming Upload",
       type: "error"
     })
   } finally {
     isLoading.value = false
     processingStep.value = ""
-    sessionIds.value = []
-    extractedMetadata.value = []
-    previewUrls.value = []
-    previewFilenames.value = []
-    metadataArray.value = []
   }
 }
 
-const handleRemoveImage = (index) => {
+const handleRemoveImage = (index: number) => {
   sessionIds.value.splice(index, 1)
   extractedMetadata.value.splice(index, 1)
   previewUrls.value.splice(index, 1)
   previewFilenames.value.splice(index, 1)
+  metadataArray.value.splice(index, 1)
   selectedImageIndex.value = Math.min(selectedImageIndex.value, sessionIds.value.length - 1)
 
   if (sessionIds.value.length === 0) {
@@ -126,11 +133,11 @@ const handleCancel = () => {
   processingStep.value = ""
 }
 
-const handleSelectImage = (index) => {
+const handleSelectImage = (index: number) => {
   selectedImageIndex.value = index
 }
 
-const handleMetadataUpdate = (newMetadata) => {
+const handleMetadataUpdate = (newMetadata: ImageMetadataUpdate) => {
   metadataArray.value[selectedImageIndex.value] = newMetadata
 }
 
@@ -287,15 +294,19 @@ onUnmounted(reset)
           </div>
         </div>
 
-        <MetadataEditor
-          v-if="currentPreviewUrl"
-          :initial-metadata="currentMetadata"
-          :preview-url="currentPreviewUrl"
-          :preview-filename="currentFilename"
-          :show-reset-button="true"
-          :show-header="true"
-          @update="handleMetadataUpdate"
-        />
+        <!-- One editor per image keeps its drafts and its extracted Reset baseline. -->
+        <KeepAlive>
+          <MetadataEditor
+            v-if="currentPreviewUrl"
+            :key="sessionIds[selectedImageIndex]"
+            :initial-metadata="currentExtractedMetadata"
+            :preview-url="currentPreviewUrl"
+            :preview-filename="currentFilename"
+            :show-reset-button="true"
+            :show-header="true"
+            @update="handleMetadataUpdate"
+          />
+        </KeepAlive>
       </div>
     </div>
 

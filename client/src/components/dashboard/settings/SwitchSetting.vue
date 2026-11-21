@@ -1,5 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue"
+
+import type { IconName } from "#src/components/common/types"
+import type { CompleteSetting, SettingValue } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Switch from "#src/components/common/Switch.vue"
@@ -7,26 +10,39 @@ import { useDialog } from "#src/composables/useDialog"
 
 const { show } = useDialog()
 
-const props = defineProps({
-  currentValue: {
-    required: true,
-    type: [String, Object]
-  },
-  isResetting: {
-    default: false,
-    type: Boolean
-  },
-  originalValue: {
-    required: true,
-    type: [String, Object]
-  },
-  setting: {
-    required: true,
-    type: Object
-  }
-})
+type ObjectOption = { [key: string]: SettingValue } & {
+  icon?: IconName
+  id?: number | string
+  key?: number | string
+  label?: number | string
+  name?: number | string
+  value?: number | string
+}
+type SwitchDefinition = Omit<
+  Extract<CompleteSetting, { type: "switch" }>,
+  "default" | "options" | "value"
+> & {
+  default: SwitchValue
+  options?: SwitchValue[]
+  value: SwitchValue
+}
+type SwitchValue = ObjectOption | string
 
-const emit = defineEmits(["update", "reset", "reset-default"])
+const props = withDefaults(
+  defineProps<{
+    currentValue: SwitchValue
+    isResetting?: boolean
+    originalValue: SwitchValue
+    setting: SwitchDefinition
+  }>(),
+  { isResetting: false }
+)
+
+const emit = defineEmits<{
+  (event: "update", value: number | SwitchValue | undefined): void
+  (event: "reset"): void
+  (event: "reset-default"): void
+}>()
 
 const hasChanged = computed(() => {
   const current =
@@ -78,7 +94,7 @@ const currentSwitchValue = computed(() => {
   return props.currentValue
 })
 
-const handleUpdate = (newValue) => {
+const handleUpdate = (newValue: number | string | undefined) => {
   const originalOption = props.setting.options?.find((opt) => {
     const optValue = typeof opt === "object" ? opt.value || opt.id || opt.key : opt
     return optValue === newValue

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, watch } from "vue"
 
 import Dialog from "#src/components/common/Dialog.vue"
@@ -15,7 +15,7 @@ useFavicon()
 
 const { isAnimating, themeClass } = useTheme()
 
-const applyThemeToDocument = (theme) => {
+const applyThemeToDocument = (theme: string) => {
   if (!isAnimating.value) {
     document.documentElement.classList.remove("light", "dark")
     if (theme) {

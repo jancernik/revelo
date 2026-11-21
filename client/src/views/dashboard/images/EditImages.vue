@@ -1,13 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+
+import type { ImageMetadataForm } from "#src/types/models"
 
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
+import { errorMessage } from "#src/utils/api"
 
 const { show: showToast } = useToast()
 const route = useRoute()
@@ -16,7 +19,7 @@ const { reset, setFooter, setHeader } = useDashboardLayout()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
-const imageIds = computed(() => {
+const imageIds = computed<(null | string)[]>(() => {
   const ids = route.query.ids
   if (!ids) return []
   return Array.isArray(ids) ? ids : ids.split(",").filter(Boolean)
@@ -32,7 +35,7 @@ onMounted(() => {
 
 const selectedImages = computed(() => images.value.filter((img) => imageIds.value.includes(img.id)))
 
-const EMPTY_METADATA = {
+const EMPTY_METADATA: ImageMetadataForm = {
   aperture: "",
   camera: "",
   comment: "",
@@ -45,18 +48,23 @@ const EMPTY_METADATA = {
 }
 
 const saving = ref(false)
-const metadata = ref({})
+// the bulk editor only ever holds string editor values; ISO stays a string here
+const metadata = ref<{ [Key in keyof ImageMetadataForm]?: null | string }>({})
 
 const hasChanges = computed(() => Object.values(metadata.value).some((v) => v !== ""))
 
-const handleMetadataUpdate = (newMetadata) => {
+const handleMetadataUpdate = (newMetadata: {
+  [Key in keyof ImageMetadataForm]?: null | string
+}) => {
   metadata.value = newMetadata
 }
 
+const isFormKey = (key: string): key is keyof ImageMetadataForm => key in metadata.value
+
 const handleSave = async () => {
-  const payload = {}
+  const payload: Partial<ImageMetadataForm> = {}
   for (const [key, value] of Object.entries(metadata.value)) {
-    if (value !== "" && value !== null) payload[key] = value
+    if (value !== "" && value !== null && isFormKey(key)) payload[key] = value
   }
 
   if (Object.keys(payload).length === 0) return
@@ -73,7 +81,7 @@ const handleSave = async () => {
     })
   } catch (error) {
     showToast({
-      description: error.message || "Failed to update image metadata.",
+      description: errorMessage(error),
       title: "Update Failed",
       type: "error"
     })
