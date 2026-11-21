@@ -322,7 +322,7 @@ export const useImagesStore = defineStore("images", () => {
     return bulkUpdateMetadata(ids, { hidden })
   }
 
-  async function bulkUpdateMetadata(ids: string[], metadata: ImageMetadataUpdate) {
+  async function bulkUpdateMetadata(ids: (null | string)[], metadata: ImageMetadataUpdate) {
     try {
       const response = await api.put<ApiSuccess<{ images: Image[] }>>("/images/metadata", {
         ids,

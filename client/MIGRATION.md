@@ -8,16 +8,17 @@ Evidence is stored in the Git-ignored `client/node_modules/.cache/revelo-migrati
 The PC reboot cleared the earlier temporary snapshots and isolated runtime. `RECOVERY.md`
 in that directory documents recovered agent records, original Git sources and evidence
 limits. Earlier live checks used frontend port 5191, API port 5301 and a disposable
-PostgreSQL database. That stack is now offline; existing services were not operated.
+PostgreSQL database. Those original processes were not reused. A fresh disposable stack
+on those ports was identity-checked for the independent audit; unrelated services were not operated.
 
 Stages 5–7 and the audit A test follow-up were committed together as `a867751`.
 Stage 8a was committed as `d50cb19`.
 Stage 8b was committed as `237ca76`. Group audit B was accepted 2026-11-14 with no
 findings; report: `client/node_modules/.cache/revelo-migration/group-b-audit.md`.
-Stage 9 was committed as `f954efc`. Stage 10 is accepted and staged for the user's commit.
-Current checkpoint: Stage 11 accepted and staged; commits must follow stage order
-(10 then 11). Stage 12 has not started; the user asked to pause there. Preserve unrelated
-image, navigation and viewer module work.
+Stage 9 was committed as `f954efc`. Stages 10–11 were committed together as `ef4c233`.
+Current checkpoint: independent audit of Stages 0–11 recorded in [AUDIT.md](AUDIT.md);
+Stage 12 accepted. Stage 13 in progress. Preserve unrelated image, navigation and viewer
+module work.
 
 ## Stage tracker
 
@@ -37,24 +38,27 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `a867751`.
 - [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: `d50cb19`.
 - [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: `237ca76`.
-- [ ] Group audit B: All components, after Stage 8b.
-- [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: pending (user).
-- [x] Stage 10: Image views. Completed 2026-11-14. Commit: pending (user).
-- [x] Stage 11: Collection views. Completed 2026-11-14. Commit: pending (user, after Stage 10).
-- [ ] Stage 12: Dashboard index, settings and tasks views.
-- [ ] Stage 13: Dev playground and hardening.
-- [ ] Final audit: After Stage 13.
+- [x] Group audit B: All components, after Stage 8b. Completed 2026-11-14. Parent-completed
+      live checks; reduced review independence is disclosed in `group-b-audit.md`.
+- [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: `f954efc`.
+- [x] Stage 10: Image views. Completed 2026-11-14. Commit: `ef4c233`.
+- [x] Stage 11: Collection views. Completed 2026-11-14. Commit: `ef4c233`.
+- [x] Stage 12: Dashboard index, settings and tasks views. Completed 2026-11-15. Commit:
+      pending (user). Report: `client/node_modules/.cache/revelo-migration/stage12-review.md`.
+- [x] Stage 13: Dev playground and hardening. Completed 2026-11-15. Commit: pending (user).
+      Report: `client/node_modules/.cache/revelo-migration/stage13-review.md`.
+- [x] Final audit: After Stage 13. Completed 2026-11-15. Source-contract lane
+      `client/node_modules/.cache/revelo-migration/final-audit-source.md` verified shared
+      types against backend sources with no drift; browser lanes covered the dev playground
+      and every migrated view on the owned runtime. Completion checks pass: no JS under
+      `client/src`, every SFC typed, `allowJs: false`, no shims/suppressions, CI covers
+      client tests and typecheck. Migration complete; commits pending (user).
 
 ## Deferred follow-ups
 
-- `Images.test.ts` contains fifteen redundant non-const `as Image` casts authored at the
-  test-first boundary (stage 10 review finding 7). Remove them in a later cleanup with a
-  focused rerun and reviewer verification; tests stay byte-identical until then.
-
-- [ ] Resolve the six Vue test-host lint warnings in
-      `client/src/composables/useDevice.test.ts` and
-      `client/src/composables/useWindowSize.test.ts` (component property order and multiple
-      host components). Preserve their assertions.
+- [x] The six Vue test-host lint warnings in `useDevice.test.ts` and
+      `useWindowSize.test.ts` were resolved in Stage 13 through a shared dynamically built
+      probe component; all assertions were preserved.
 - [ ] Collection cache coherence (audit A, B1): synchronize survivor orders and membership
       after mutations and clear image membership after collection deletion. These are
       pre-existing behavior defects, excluded from the TypeScript-only stages.
@@ -66,6 +70,15 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [ ] Dialog listener cleanup on unmount (Stage 5 baseline): remove the window key listener
       when an open dialog unmounts. The new regression test preserves the existing leak;
       change it only with a separate behavior fix.
+- [ ] Upload confirmation retry (independent audit, baseline): failed confirmation clears
+      review sessions and metadata; a second Confirm can show completion without a request.
+      Preserve review data for retry in a separate behavior fix.
+- [ ] Editor dirty-state comparison (independent audit, baseline): editing then reverting a
+      field can leave Save enabled because the child stringifies the parent's numeric ISO.
+      Align draft comparison and payload contracts in a separate behavior fix.
+- [ ] Sortable cleanup timing (independent audit, baseline): a pending GSAP completion can
+      emit an empty order after cleanup clears the item array. Cancel obsolete completions;
+      no persisted data loss was established by this audit.
 - [ ] Upload editor Reset baseline (Stage 8a, P2 baseline): UploadImages immediately echoes
       emitted metadata into `initialMetadata`, replacing the editor's original snapshot.
       Preserve the originally extracted metadata and add a parent-integration regression
@@ -662,7 +675,7 @@ exposed API), typed action arrays, `ImageMetadataForm`.
 Completion: typed; tests green; manual pass over the five routes.
 
 Completed: all five image views typed with 41 JavaScript-first tests. Two supervisor-approved
-type-only adjacent changes: `ImageMetadataUpdate` iso accepts the numeric initial value, and
+adjacent contract changes: `ImageMetadataUpdate` iso accepts the numeric initial value, and
 MetadataEditor `previewUrl` became `string | undefined` (required, no default; generated
 runtime validator `{ type: null, required: true }`, requiredness and dev missing-prop warning
 preserved, production unaffected). UploadImages error toasts now render the axios/error

@@ -23,8 +23,9 @@ vi.mock("#src/composables/useToast", () => ({ useToast: () => ({ show: toast }) 
 vi.mock("#src/composables/useDialog", () => ({ useDialog: () => ({ show: dialog.show }) }))
 vi.mock("#src/composables/useSortableGrid", () => ({ useSortableGrid: () => sortable }))
 vi.mock("#src/stores/collections", () => {
+  const collections: CollectionModel[] = []
   const store = {
-    collections: [] as CollectionModel[],
+    collections,
     download: vi.fn<(id: string) => Promise<void>>(),
     fetch: vi.fn<(id: string) => Promise<CollectionModel>>(),
     remove: vi.fn<(id: string) => Promise<void>>(),

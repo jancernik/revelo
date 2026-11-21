@@ -1,5 +1,10 @@
-<script setup>
+<script setup lang="ts">
+import type { Ref } from "vue"
+
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
+
+import type { ApiSuccess } from "#src/types/api"
+import type { CompleteSetting, SettingValue, TextPairs } from "#src/types/models"
 
 import InputSetting from "#src/components/dashboard/settings/InputSetting.vue"
 import SwitchSetting from "#src/components/dashboard/settings/SwitchSetting.vue"
@@ -10,13 +15,43 @@ import { useSettings } from "#src/composables/useSettings"
 import api from "#src/utils/api"
 
 const { reset, setFooter, setHeader } = useDashboardLayout()
-const settings = ref([])
-const currentValues = reactive({})
-const originalValues = reactive({})
+type DraftValues = Partial<Record<string, SettingValue>>
+type SwitchDefinition = InstanceType<typeof SwitchSetting>["$props"]["setting"]
+
+type ViewSetting =
+  | Exclude<CompleteSetting, { type: "switch" }>
+  | InstanceType<typeof InputSetting>["$props"]["setting"]
+  | SwitchDefinition
+
+const settings: Ref<ViewSetting[]> = ref([])
+const currentValues: DraftValues = reactive({})
+const originalValues: DraftValues = reactive({})
 const loading = ref(true)
 const isSaving = ref(false)
-const isResetting = reactive({})
+const isResetting = reactive<Record<string, boolean>>({})
 const { refresh } = useSettings()
+
+const isBoolean = (value: SettingValue | undefined): value is boolean => typeof value === "boolean"
+const isInputValue = (value: SettingValue | undefined): value is number | string =>
+  typeof value === "number" || typeof value === "string"
+const isTextPairs = (value: SettingValue | undefined): value is TextPairs =>
+  Array.isArray(value) &&
+  value.every(
+    (pair) =>
+      Array.isArray(pair) && pair.length === 2 && pair.every((item) => typeof item === "string")
+  )
+const isSwitchValue = (
+  value: SettingValue | undefined,
+  setting: SwitchDefinition
+): value is SwitchDefinition["value"] =>
+  typeof value === "string" ||
+  (typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    [setting.value, setting.default, ...(setting.options || [])].some(
+      (candidate) =>
+        typeof candidate === "object" && JSON.stringify(candidate) === JSON.stringify(value)
+    ))
 
 const categories = computed(() => {
   return [...new Set(settings.value.map((s) => s.category))].sort()
@@ -40,7 +75,7 @@ const hasChanges = computed(() => {
 })
 
 const changedSettings = computed(() => {
-  const changes = {}
+  const changes: DraftValues = {}
   Object.keys(currentValues).forEach((key) => {
     const current = currentValues[key]
     const original = originalValues[key]
@@ -66,15 +101,20 @@ const changedSettingsCount = computed(() => {
   return Object.keys(changedSettings.value).length
 })
 
-const getSettingsByCategory = (category) => {
-  return settings.value.filter((s) => s.category === category)
+const getSettingsByCategory = (category: string) => {
+  return settings.value
+    .filter((setting) => setting.category === category)
+    .map((setting) => ({
+      setting,
+      values: { current: currentValues[setting.name], original: originalValues[setting.name] }
+    }))
 }
 
-const updateValue = (settingName, newValue) => {
+const updateValue = (settingName: string, newValue: SettingValue | undefined) => {
   currentValues[settingName] = newValue
 }
 
-const resetValue = (settingName) => {
+const resetValue = (settingName: string) => {
   const original = originalValues[settingName]
 
   if (Array.isArray(original)) {
@@ -86,7 +126,7 @@ const resetValue = (settingName) => {
   }
 }
 
-const resetDefault = async (settingName) => {
+const resetDefault = async (settingName: string) => {
   try {
     isResetting[settingName] = true
     await api.delete(`/settings/${settingName}`)
@@ -158,7 +198,8 @@ const cancelAllChanges = () => {
 const fetchSettings = async () => {
   try {
     loading.value = true
-    const response = await api.get("/settings?complete=true")
+    const response =
+      await api.get<ApiSuccess<{ settings: ViewSetting[] }>>("/settings?complete=true")
     settings.value = response.data?.data?.settings || []
 
     settings.value.forEach((setting) => {
@@ -238,12 +279,17 @@ onUnmounted(reset)
         </div>
 
         <div class="category-settings">
-          <template v-for="setting in getSettingsByCategory(category)" :key="setting.name">
+          <template
+            v-for="{ setting, values } in getSettingsByCategory(category)"
+            :key="setting.name"
+          >
             <ToggleSetting
-              v-if="setting.type === 'toggle'"
+              v-if="
+                setting.type === 'toggle' && isBoolean(values.current) && isBoolean(values.original)
+              "
               :setting="setting"
-              :current-value="currentValues[setting.name]"
-              :original-value="originalValues[setting.name]"
+              :current-value="values.current"
+              :original-value="values.original"
               :is-resetting="isResetting[setting.name] || false"
               @update="updateValue(setting.name, $event)"
               @reset="resetValue(setting.name)"
@@ -252,14 +298,16 @@ onUnmounted(reset)
 
             <InputSetting
               v-else-if="
-                setting.type === 'text' ||
-                setting.type === 'string' ||
-                setting.type === 'integer' ||
-                setting.type === 'decimal'
+                (setting.type === 'text' ||
+                  setting.type === 'string' ||
+                  setting.type === 'integer' ||
+                  setting.type === 'decimal') &&
+                isInputValue(values.current) &&
+                isInputValue(values.original)
               "
               :setting="setting"
-              :current-value="currentValues[setting.name]"
-              :original-value="originalValues[setting.name]"
+              :current-value="values.current"
+              :original-value="values.original"
               :is-resetting="isResetting[setting.name] || false"
               @update="updateValue(setting.name, $event)"
               @reset="resetValue(setting.name)"
@@ -267,10 +315,14 @@ onUnmounted(reset)
             />
 
             <SwitchSetting
-              v-else-if="setting.type === 'switch'"
+              v-else-if="
+                setting.type === 'switch' &&
+                isSwitchValue(values.current, setting) &&
+                isSwitchValue(values.original, setting)
+              "
               :setting="setting"
-              :current-value="currentValues[setting.name]"
-              :original-value="originalValues[setting.name]"
+              :current-value="values.current"
+              :original-value="values.original"
               :is-resetting="isResetting[setting.name] || false"
               @update="updateValue(setting.name, $event)"
               @reset="resetValue(setting.name)"
@@ -278,10 +330,14 @@ onUnmounted(reset)
             />
 
             <TextPairsSetting
-              v-else-if="setting.type === 'textpairs'"
+              v-else-if="
+                setting.type === 'textpairs' &&
+                isTextPairs(values.current) &&
+                isTextPairs(values.original)
+              "
               :setting="setting"
-              :current-value="currentValues[setting.name]"
-              :original-value="originalValues[setting.name]"
+              :current-value="values.current"
+              :original-value="values.original"
               :is-resetting="isResetting[setting.name] || false"
               @update="updateValue(setting.name, $event)"
               @reset="resetValue(setting.name)"

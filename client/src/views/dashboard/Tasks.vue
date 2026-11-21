@@ -1,10 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted } from "vue"
+
+import type { ApiSuccess } from "#src/types/api"
+import type { BackfillTaskResult, CleanupTaskResult } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
-import api from "#src/utils/api"
+import api, { errorMessage as getErrorMessage } from "#src/utils/api"
 
 const { resetHeader, setHeader } = useDashboardLayout()
 const { show: showToast } = useToast()
@@ -12,16 +15,17 @@ const { show: showToast } = useToast()
 const handleCleanupStaged = async () => {
   try {
     showToast({ dismissible: false, title: "Cleanup Initiated", type: "info" })
-    const response = await api.post("/tasks/cleanup/images/staged")
-    const data = response.data?.data?.result || {}
+    const response = await api.post<ApiSuccess<{ result: CleanupTaskResult }>>(
+      "/tasks/cleanup/images/staged"
+    )
+    const data: Partial<CleanupTaskResult> = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       title: "Cleanup Staged Successful",
       type: "success"
     })
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || "Failed to clean up temporary images."
+    const errorMessage = getErrorMessage(error) || "Failed to clean up temporary images."
     showToast({
       description: errorMessage,
       title: "Cleanup Failed",
@@ -33,16 +37,17 @@ const handleCleanupStaged = async () => {
 const handleCleanupOrphaned = async () => {
   try {
     showToast({ dismissible: false, title: "Cleanup Initiated", type: "info" })
-    const response = await api.post("/tasks/cleanup/images/orphaned")
-    const data = response.data?.data?.result || {}
+    const response = await api.post<ApiSuccess<{ result: CleanupTaskResult }>>(
+      "/tasks/cleanup/images/orphaned"
+    )
+    const data: Partial<CleanupTaskResult> = response.data?.data?.result || {}
     showToast({
       description: `Deleted: ${data.deleted}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       title: "Cleanup Orphaned Successful",
       type: "success"
     })
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || "Failed to clean up orphaned images."
+    const errorMessage = getErrorMessage(error) || "Failed to clean up orphaned images."
     showToast({
       description: errorMessage,
       title: "Cleanup Failed",
@@ -54,16 +59,17 @@ const handleCleanupOrphaned = async () => {
 const handleBackfillEmbeddings = async () => {
   try {
     showToast({ dismissible: false, title: "Backfill Initiated", type: "info" })
-    const response = await api.post("/tasks/backfill/embeddings")
-    const data = response.data?.data?.result || {}
+    const response = await api.post<ApiSuccess<{ result: BackfillTaskResult }>>(
+      "/tasks/backfill/embeddings"
+    )
+    const data: Partial<BackfillTaskResult> = response.data?.data?.result || {}
     showToast({
       description: `Successful: ${data.successful}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       title: "Embedding Backfill Successful",
       type: "success"
     })
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || "Failed to backfill embeddings."
+    const errorMessage = getErrorMessage(error) || "Failed to backfill embeddings."
     showToast({
       description: errorMessage,
       title: "Failed to backfill embeddings",
@@ -75,16 +81,17 @@ const handleBackfillEmbeddings = async () => {
 const handleBackfillDescriptions = async () => {
   try {
     showToast({ dismissible: false, title: "Backfill Initiated", type: "info" })
-    const response = await api.post("/tasks/backfill/captions")
-    const data = response.data?.data?.result || {}
+    const response = await api.post<ApiSuccess<{ result: BackfillTaskResult }>>(
+      "/tasks/backfill/captions"
+    )
+    const data: Partial<BackfillTaskResult> = response.data?.data?.result || {}
     showToast({
       description: `Successful: ${data.successful}\nErrors: ${data.errors}\nScanned: ${data.scanned}`,
       title: "Description Backfill Successful",
       type: "success"
     })
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || "Failed to backfill descriptions."
+    const errorMessage = getErrorMessage(error) || "Failed to backfill descriptions."
     showToast({
       description: errorMessage,
       title: "Failed to backfill descriptions",

@@ -19,12 +19,10 @@ const { reset, setFooter, setHeader } = useDashboardLayout()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
-const isId = (value: null | string): value is string => value !== null
-
-const imageIds = computed<string[]>(() => {
+const imageIds = computed<(null | string)[]>(() => {
   const ids = route.query.ids
   if (!ids) return []
-  return Array.isArray(ids) ? ids.filter(isId) : ids.split(",").filter(Boolean)
+  return Array.isArray(ids) ? ids : ids.split(",").filter(Boolean)
 })
 
 onMounted(() => {
