@@ -12,8 +12,11 @@ PostgreSQL database. That stack is now offline; existing services were not opera
 
 Stages 5–7 and the audit A test follow-up were committed together as `a867751`.
 Stage 8a was committed as `d50cb19`.
-Current checkpoint: Stage 8b is accepted and ready for the user's commit.
-Group audit B is the next gate before Stage 9; restore a fresh isolated stack for its live checks.
+Stage 8b was committed as `237ca76`. Group audit B was accepted 2026-11-14 with no
+findings; report: `client/node_modules/.cache/revelo-migration/group-b-audit.md`.
+Current checkpoint: Stage 9 accepted and ready for the user's commit. Stages 10–12 follow
+sequentially with tests-first validation and an independent review per stage. Preserve
+unrelated image, navigation and viewer module work.
 
 ## Stage tracker
 
@@ -32,9 +35,9 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: `a867751`.
 - [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `a867751`.
 - [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: `d50cb19`.
-- [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: pending (user).
+- [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: `237ca76`.
 - [ ] Group audit B: All components, after Stage 8b.
-- [ ] Stage 9: Auth and utility views.
+- [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: pending (user).
 - [ ] Stage 10: Image views.
 - [ ] Stage 11: Collection views.
 - [ ] Stage 12: Dashboard index, settings and tasks views.
@@ -624,6 +627,19 @@ countdown and redirect after 3 s, failure state; NotFound buttons.
 Migration: typed refs, `errorMessage` helper, `isAxiosError` narrowing. Keep the dead
 `requiresVerification` branch in Login (quirk 2) typed as an optional field on the failure body.
 Completion: typed; tests green; manual login at 5190.
+
+Completed: all five views typed with 33 JavaScript-first tests. The auth store keeps
+`user` as `unknown` (Stage 4 decision); only two type-only store parameter widenings were
+approved (resend email, verify token). VerificationPending renders a narrowed script
+computed through one supervisor-approved template interpolation with provably identical
+output for every persisted value shape. Signup catches use `isAxiosError` per quirk 13.
+Independent review accepted with no code findings; all five checks passed
+(72 files, 665 tests, zero lint errors, six deferred warnings) and the 33-test replay ran
+over the original sources. Report:
+`client/node_modules/.cache/revelo-migration/stage9-review.md` (includes a parent
+addendum correcting the reviewer's evidence-root search artifact). Live login at 5190
+remains for the user's own environment; the isolated-stack audit covered real login,
+guard and logout flows.
 
 ### Stage 10: Image views
 

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
@@ -9,6 +9,11 @@ import { useAuthStore } from "#src/stores/auth"
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+
+// The persisted auth user is unvalidated; the store keeps it unknown, so views
+// narrow the fields they read without casts.
+const isAccount = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
 
 const isLoading = ref(false)
 const success = ref(false)
@@ -33,7 +38,7 @@ const verifyEmail = async () => {
     }
 
     setTimeout(() => {
-      if (authStore.user?.admin) {
+      if (isAccount(authStore.user) && authStore.user.admin) {
         router.push("/dashboard")
       } else {
         router.push("/")
@@ -48,10 +53,11 @@ const verifyEmail = async () => {
 }
 
 const redirectIfAuthenticated = () => {
-  if (!authStore.user?.emailVerified) {
+  const user = isAccount(authStore.user) ? authStore.user : null
+  if (!user?.emailVerified) {
     return
   }
-  if (authStore.user?.admin) {
+  if (user?.admin) {
     router.push("/dashboard")
   } else {
     router.push("/")
