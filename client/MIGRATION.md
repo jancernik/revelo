@@ -7,8 +7,8 @@ there. Agents never commit, push or open pull requests; the user commits after e
 
 Record the completion date for each stage. The user fills in the commit after committing.
 
-- [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: pending (user).
-- [ ] Stage 1: Tooling, entry point and shared types.
+- [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
+- [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: pending (user).
 - [ ] Stage 2: Leaf composables.
 - [ ] Stage 3: API client and auth store.
 - [ ] Stage 4: Data stores and useSettings.
@@ -328,8 +328,11 @@ Completion: existing 151 pager tests still pass; new scripts work; tracker commi
 Scope: `vite.config.ts`, `vitest.config.ts`, `client/tsconfig.node.json` (Node context for
 the two configs and `environment.ts`, referenced from `tsconfig.json`), `src/config/environment.ts`,
 `src/main.ts` plus the `index.html` script tag, `types/api.ts`, `types/models.ts`,
-`components/common/types.ts`, `utils/helpers.ts`, `utils/download.ts`.
-Apply decisions 1, 2 and 7 from section 5.
+`components/common/types.ts`, `utils/helpers.ts`, `utils/download.ts`. Also update
+`client/package.json` and `pnpm-lock.yaml` for Node typings and checking the Node project
+through the existing typecheck script.
+Apply decisions 1 and 2 from section 5. The API client, auth store and decision 7 remain
+in Stage 3.
 Tests first: `helpers` (`debounce` with fake timers: trailing call, latest args, reset on
 repeat; `getImageVersion` found, missing version, undefined image returns `{}`;
 `getThumbnailPath` fallback `""`), `download` (`getFilenameFromDisposition` quoted, missing,
@@ -339,7 +342,8 @@ object; importing the API's JavaScript helpers is fine (`allowJs`), add a minima
 `declare module` only if inference fails. `main.ts` is unchanged in behaviour (mount after
 settings initialise, other stores initialise unawaited).
 Validation: dev server, build and tests run; `vue-tsc` includes the new files.
-Completion: no `.js` left in `utils/`, `config/`, root of `src/`, or `client/*.config.*`.
+Completion: no `.js` left in `utils/`, `config/`, root of `src/`, or `client/*.config.*`,
+except `utils/api.js`, which remains in Stage 3.
 
 ### Stage 2: Leaf composables
 
