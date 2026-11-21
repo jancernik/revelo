@@ -1,7 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { GridImage } from "#src/components/dashboard/types"
+import type { LayoutAction } from "#src/composables/useDashboardLayout"
 
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -17,9 +20,10 @@ const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
-const selectedImagesIds = ref([])
+const selectedImagesIds = ref<string[]>([])
+// the grid emits Image | UploadPreview; this view only ever shows store images
 const { clearLastSelected, handleSelect: handleSelectImage } = useRangeSelect(
-  images,
+  computed<GridImage[]>(() => images.value),
   selectedImagesIds
 )
 
@@ -27,16 +31,16 @@ const handleUploadImages = () => {
   router.push("/dashboard/images/upload")
 }
 
-const handleEditImage = (imageOrId) => {
+const handleEditImage = (imageOrId: GridImage | string) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
   router.push(`/dashboard/images/${imageId}/edit`)
 }
 
-const handleBulkEditImages = (imageIds) => {
+const handleBulkEditImages = (imageIds: string[]) => {
   router.push({ name: "images-edit", query: { ids: imageIds.join(",") } })
 }
 
-const handleDeleteImage = (imageOrId) => {
+const handleDeleteImage = (imageOrId: GridImage | string) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
   showDialog({
     actions: [
@@ -57,7 +61,7 @@ const handleDeleteImage = (imageOrId) => {
   })
 }
 
-const handleBulkDeleteImages = (imageIds) => {
+const handleBulkDeleteImages = (imageIds: string[]) => {
   showDialog({
     actions: [
       {
@@ -88,7 +92,7 @@ const clearSelection = () => {
   setSelection({ items: 0 })
 }
 
-const cancelSelectionAction = {
+const cancelSelectionAction: LayoutAction = {
   color: "secondary",
   icon: "X",
   key: "selection-cancel",
@@ -96,14 +100,14 @@ const cancelSelectionAction = {
   text: "Cancel"
 }
 
-const downloadImagesAction = {
+const downloadImagesAction: LayoutAction = {
   icon: "Download",
   key: "image-download",
   onClick: () => imagesStore.bulkDownload(selectedImagesIds.value),
   text: "Download"
 }
 
-const toggleHiddenAction = computed(() => {
+const toggleHiddenAction = computed<LayoutAction>(() => {
   const allHidden =
     selectedImagesIds.value.length > 0 &&
     selectedImagesIds.value.every((id) => images.value.find((img) => img.id === id)?.hidden)
@@ -122,21 +126,21 @@ const toggleHiddenAction = computed(() => {
       }
 })
 
-const editImageAction = {
+const editImageAction: LayoutAction = {
   icon: "Pencil",
   key: "image-edit-single",
   onClick: () => handleEditImage(selectedImagesIds.value[0]),
   text: "Edit"
 }
 
-const bulkEditImagesAction = {
+const bulkEditImagesAction: LayoutAction = {
   icon: "Pencil",
   key: "image-edit-bulk",
   onClick: () => handleBulkEditImages(selectedImagesIds.value),
   text: "Edit"
 }
 
-const baseImageActions = [
+const baseImageActions: LayoutAction[] = [
   {
     icon: "Trash",
     key: "image-delete-bulk",

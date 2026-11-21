@@ -25,7 +25,9 @@ export interface ImageFetchOptions {
 }
 
 export type ImageMetadataUpdate = Partial<{
-  [Key in keyof ImageMetadataForm]: ImageMetadataForm[Key] | null
+  [Key in keyof ImageMetadataForm]: Key extends "iso"
+    ? ImageMetadataForm[Key] | null | number
+    : ImageMetadataForm[Key] | null
 }> & { hidden?: boolean }
 
 export interface ImageOrderOptions {

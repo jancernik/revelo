@@ -1,7 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
+
+import type { GridImage } from "#src/components/dashboard/types"
+import type { CachedCollection } from "#src/stores/collections"
 
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -10,12 +13,7 @@ import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
 import { useImagesStore } from "#src/stores/images"
 
-const props = defineProps({
-  id: {
-    required: true,
-    type: String
-  }
-})
+const props = defineProps<{ id: string }>()
 
 const { show: showToast } = useToast()
 const router = useRouter()
@@ -24,12 +22,13 @@ const collectionsStore = useCollectionsStore()
 const imagesStore = useImagesStore()
 const { images } = storeToRefs(imagesStore)
 
-const collection = ref(null)
+const collection = ref<CachedCollection | null>(null)
 const loading = ref(true)
 const saving = ref(false)
-const selectedImagesIds = ref([])
+const selectedImagesIds = ref<string[]>([])
 
-const availableImages = computed(() => {
+// the grid emits Image | UploadPreview; this view only ever shows store images
+const availableImages = computed<GridImage[]>(() => {
   return images.value?.filter((i) => !i.collectionId || i.collectionId === props.id) || []
 })
 
@@ -38,7 +37,7 @@ const { handleSelect: handleSelectImage } = useRangeSelect(availableImages, sele
 const loadCollection = async () => {
   try {
     loading.value = true
-    collection.value = await collectionsStore.fetch(props.id)
+    collection.value = (await collectionsStore.fetch(props.id)) ?? null
     selectedImagesIds.value = await collectionsStore.getImageIdsInCollection(collection.value)
   } finally {
     loading.value = false
