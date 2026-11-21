@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, useTemplateRef, watch } from "vue"
 
 import Progress from "#src/components/common/Progress.vue"
@@ -6,18 +6,18 @@ import Progress from "#src/components/common/Progress.vue"
 const HIDE_DELAY = 300
 const HIDE_DELAY_MS = `${HIDE_DELAY}ms`
 
-const props = defineProps({
-  onComplete: {
-    default: null,
-    type: Function
-  },
-  progress: {
-    default: null,
-    type: Number
+const props = withDefaults(
+  defineProps<{
+    onComplete?: (() => void) | null
+    progress?: null | number
+  }>(),
+  {
+    onComplete: null,
+    progress: null
   }
-})
+)
 
-const loadingIndicator = useTemplateRef("loading-indicator")
+const loadingIndicator = useTemplateRef<HTMLDivElement>("loading-indicator")
 
 const isIndeterminate = computed(() => {
   return props.progress === null

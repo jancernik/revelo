@@ -44,8 +44,8 @@ Record the completion date and commit for each stage.
       the public gallery. On this branch the completion checks (no JS under `client/src`,
       `allowJs: false`) apply again after Stage L6.
 - [x] Audit fixes: the deferred follow-ups below. Commit: `7ce0e87`.
-- [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17.
-- [ ] Stage L2: Theme transition and small public components.
+- [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17. Commit: `ebbc421`.
+- [x] Stage L2: Theme transition and small public components. Completed 2026-11-17. Commit:
 - [ ] Stage L3: Menu and search.
 - [ ] Stage L4: Galleries and the home view.
 - [ ] Stage L5: Fullscreen viewer and the public image view.
@@ -1064,6 +1064,18 @@ Notes from the stage:
   and the app renders nothing. Restart it with `runtime.sh start` after renaming.
 - `usePWAUpdate.ts` stays comment-only. It is a script, not a module, so no test can
   import it; it is the one migrated file without a colocated test.
+- Quirks found and kept (candidates for later fixes): a hide requested from inside a
+  `flushPendingHide` callback is discarded; `useFullscreenImage.completeHide` keeps
+  `updatePositions`, and `isDifferentImage` survives a repeated `show()`; `show(null)` still
+  registers the popstate listener; in `useDragNavigation`, releasing at exactly zero
+  progress with only the next timeline leaves `isSwitchingImage` set until the next drag;
+  `useAdaptiveFrameRate` never records a frame at timestamp 0; forced gallery columns
+  outside 2 to 5 are ignored for the count but still use the uncapped window width;
+  a mouse press clears a pending tap click suppression but keeps an earlier touch start.
+- `groupImages` returns its input ungrouped for a non-positive count. Its public overload
+  promises groups because the only caller passes a count clamped to 2 to 5.
+- In `cdp.mjs`, use `tap` on mobile viewports; a mouse `click` under touch emulation can
+  hang.
 
 ### Stage L2: Theme transition and small public components
 
@@ -1079,6 +1091,19 @@ pause, settle and resume protocol with a fake `GalleryHandle`; toggler states an
 activation; About dialog content from settings; loading progress display; scrollable
 behaviour; empty state; image card tiny and thumbnail loading, error fallbacks, `alt` and
 `title` from `descriptions.en`.
+
+Notes from the stage:
+
+- `components/images/types.ts` exports `GalleryHandle`. Only `isAutoScrollActive` and
+  `queueAutoScrollResume` are optional. `registerImageGallery` accepts `null` and `undefined`
+  for the home view's initial and cleared refs. Stage L4 must keep these optional members.
+- Approved template exception: `ImageCard.vue` uses `undefined` instead of `null` for an
+  unloaded thumbnail's `src`. Vue omits the attribute in both cases; `vue-tsc` rejects `null`.
+  All other template and style blocks still match `origin/main`.
+- Quirks kept: `useTheme.isAnimating` clears before the tween finishes; an error inside the
+  tween promise rejects without cleanup or persistence. `Loading` does not cancel its hide
+  timer on restarted progress or unmount. `ImageCard` retains its error flag after a later
+  successful thumbnail load.
 
 ### Stage L3: Menu and search
 

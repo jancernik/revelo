@@ -1,28 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue"
+
+import type { Image } from "#src/types/models"
 
 import { getImageVersion } from "#src/utils/helpers"
 
-const props = defineProps({
-  hasDragged: {
-    default: false,
-    type: Boolean
-  },
-  image: {
-    required: true,
-    type: Object
-  },
-  nativeLayout: {
-    default: false,
-    type: Boolean
-  },
-  shouldLoad: {
-    default: false,
-    type: Boolean
+const props = withDefaults(
+  defineProps<{
+    hasDragged?: boolean
+    image: Image
+    nativeLayout?: boolean
+    shouldLoad?: boolean
+  }>(),
+  {
+    hasDragged: false,
+    nativeLayout: false,
+    shouldLoad: false
   }
-})
+)
 
-const emit = defineEmits(["load", "click", "tinyLoad"])
+const emit = defineEmits<{
+  click: [event: MouseEvent | TouchEvent, image: Image, flipId: string]
+  load: [id: string]
+  tinyLoad: [id: string]
+}>()
 
 const errorLoading = ref(false)
 const tinyLoaded = ref(false)
@@ -30,7 +31,7 @@ const thumbnailLoaded = ref(false)
 const tiny = getImageVersion(props.image, "tiny")
 const thumbnail = getImageVersion(props.image, "thumbnail")
 
-const handleClick = (event) => {
+const handleClick = (event: MouseEvent | TouchEvent) => {
   if (props.hasDragged) {
     event.preventDefault()
     return
@@ -38,7 +39,7 @@ const handleClick = (event) => {
   emit("click", event, props.image, `img-${props.image.id}`)
 }
 
-const handleTouchEnd = (event) => {
+const handleTouchEnd = (event: TouchEvent) => {
   if (props.nativeLayout) return
   handleClick(event)
 }
@@ -76,7 +77,7 @@ const handleTinyError = () => {
       v-show="shouldLoad"
       class="thumbnail"
       :class="{ loaded: thumbnailLoaded }"
-      :src="shouldLoad ? thumbnail.path : null"
+      :src="shouldLoad ? thumbnail.path : undefined"
       :height="thumbnail.height"
       :width="thumbnail.width"
       :title="image.descriptions?.en"
