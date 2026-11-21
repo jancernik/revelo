@@ -1,6 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
+
+import type { GalleryHandle } from "#src/components/images/types"
+import type { FullscreenReturnHandler } from "#src/composables/useFullscreenImage"
+import type { Image } from "#src/types/models"
+import type { Point } from "#src/utils/galleryHelpers"
 
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
@@ -33,6 +38,46 @@ import {
   smoothingFactor
 } from "#src/utils/helpers"
 
+interface GalleryWheelEvent extends WheelEvent {
+  wheelDelta?: number
+  wheelDeltaY?: number
+}
+
+interface ImageCardState {
+  animationDelay: number
+  cardHeight: number
+  cardIndex: number
+  cardTop: number
+  columnIndex: number
+  element: HTMLElement
+  imageId: string | undefined
+  setOpacity: ReturnType<typeof gsap.quickSetter>
+  setScale: (value: number) => void
+  setY: ReturnType<typeof gsap.quickSetter>
+  visible: boolean
+}
+
+interface ImageGalleryHandle extends GalleryHandle {
+  isAnimating: () => boolean
+}
+
+interface PositionOptions {
+  deltaTime?: number
+  forcePosition?: boolean
+}
+
+interface ScrollToOptions {
+  animated?: boolean
+  force?: boolean
+}
+
+interface ZoomReturnOptions {
+  duration?: number
+  flipDuration?: number
+  showAllImages?: boolean
+  withTarget?: boolean
+}
+
 const DRAG_FACTOR = 1 // Multiplier for drag sensitivity
 const WHEEL_IMPULSE = 5.0 // Scroll wheel velocity multiplier
 const DRAG_IMPULSE = 3 // Drag velocity impulse factor
@@ -60,19 +105,19 @@ let elapsedSinceLastUpdate = 0
 let lastDragTimestamp = 0
 let zoomAnimationEndTimestamp = 0
 let zoomAnimationStartTimestamp = 0
-let zoomReleaseTimer = null
-let zoomFlipImageId = null // Card whose element fullscreen owns; per-frame writes skip it until the fade ends
+let zoomReleaseTimer: ReturnType<typeof setTimeout> | undefined
+let zoomFlipImageId: null | string = null // Card whose element fullscreen owns; per-frame writes skip it until the fade ends
 let scrollPosition = 0
 let dragStartPosition = 0
 
-let columnImageCounts = []
-let imageCardData = []
-let scrollTargets = []
+let columnImageCounts: number[] = []
+const imageCardData: ImageCardState[] = []
+let scrollTargets: number[] = []
 let columnCountUpdateId = 0
-let columnScalableHeights = []
-let columnSpacing = []
-let columnLerpFactors = []
-let columnWrappedHeights = []
+let columnScalableHeights: number[] = []
+let columnSpacing: number[] = []
+let columnLerpFactors: number[] = []
+let columnWrappedHeights: number[] = []
 let lastResizeFactor = 1
 let renderLoopId = 0
 let currentVelocityDecay = VELOCITY_DECAY
@@ -81,34 +126,28 @@ let forceZoomTargetVisibility = false
 
 let isZoomTransitionActive = false
 let isZoomingOut = true
-let zoomTargetImageId = null
-let zoomReferencePoint = null
-let lastInputMethod = null
+let zoomTargetImageId: null | string = null
+let zoomReferencePoint: null | Point = null
+let lastInputMethod: null | string = null
 let lastTabDirection = 1
 let lastKeyEventTime = 0
 
-const props = defineProps({
-  alternatingScroll: {
-    default: false,
-    type: Boolean
-  },
-  columns: {
-    default: null,
-    type: Number
-  },
-  continuousScroll: {
-    default: false,
-    type: Boolean
-  },
-  menuVisible: {
-    default: true,
-    type: Boolean
-  },
-  scrollSpeed: {
-    default: 20,
-    type: Number
+const props = withDefaults(
+  defineProps<{
+    alternatingScroll?: boolean
+    columns?: null | number
+    continuousScroll?: boolean
+    menuVisible?: boolean
+    scrollSpeed?: number
+  }>(),
+  {
+    alternatingScroll: false,
+    columns: null,
+    continuousScroll: false,
+    menuVisible: true,
+    scrollSpeed: 20
   }
-})
+)
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const {
@@ -120,8 +159,7 @@ const {
   imagesStore,
   noImages,
   updateImageGroups,
-  windowHeight,
-  windowWidth
+  windowHeight
 } = useGalleryLayout(() => props.columns)
 const {
   cancelPendingHide: cancelPendingHideMenu,
@@ -134,13 +172,13 @@ const {
 const { dialogState } = useDialog()
 const { isMobile, isTouchPrimary } = useDevice()
 const frameRateAdapter = useAdaptiveFrameRate()
-const imageGallery = useTemplateRef("image-gallery")
+const imageGallery = useTemplateRef<HTMLDivElement>("image-gallery")
 
 const zoomTotalDuration = computed(() => transitionDuration(isMobile.value))
 
-const loadedImageIds = ref(new Set())
-const loadedTinyImageIds = ref(new Set())
-const visibleImageIds = ref(new Set())
+const loadedImageIds = ref(new Set<string>())
+const loadedTinyImageIds = ref(new Set<string>())
+const visibleImageIds = ref(new Set<string | undefined>())
 const imageCountForInitialLoad = ref(0)
 const isDragging = ref(false)
 const hasDragged = ref(false)
@@ -149,12 +187,12 @@ const velocity = ref(0)
 const isScrollPaused = ref(true)
 const canInfiniteScroll = ref(false)
 const isBuildingLayout = ref(false)
-const selectedImage = ref(null)
+const selectedImage = ref<ImageCardState | null | undefined>(null)
 const isAutoScrolling = ref(false)
 const autoScrollVelocity = ref(0)
-const columnsHeights = ref([])
+const columnsHeights = ref<number[]>([])
 
-let userInactivityTimer = null
+let userInactivityTimer: null | ReturnType<typeof setTimeout> = null
 const resizeFactor = computed(() => {
   return baselineColumnWidth.value === 0 ? 1 : columnWidth.value / baselineColumnWidth.value
 })
@@ -188,17 +226,17 @@ const maxScrollDistance = computed(() => {
   return Math.max(0, scrollRangeInBaseline)
 })
 
-const getBoundedScrollPosition = (targetPosition) => {
+const getBoundedScrollPosition = (targetPosition: number) => {
   if (canInfiniteScroll.value) return targetPosition
   return clamp(targetPosition, -maxScrollDistance.value, 0)
 }
 
-const getFocusTargetInColumn = (columnIndex) => {
+const getFocusTargetInColumn = (columnIndex: number) => {
   const columnImages = imageCardData.filter((img) => img.columnIndex === columnIndex && img.visible)
   if (columnImages.length === 0) return null
 
   const viewportCenter = windowHeight.value / 2
-  let closestImage = null
+  let closestImage: ImageCardState | null = null
   let closestDistance = Infinity
 
   for (const card of columnImages) {
@@ -218,7 +256,7 @@ const getFocusTargetInColumn = (columnIndex) => {
   return closestImage
 }
 
-const scrollToImage = (imageId, options = {}) => {
+const scrollToImage = (imageId: string | undefined, options: ScrollToOptions = {}) => {
   const { animated = true, force = false } = options
   if (!imageId) return
 
@@ -249,7 +287,7 @@ const scrollToImage = (imageId, options = {}) => {
     const scaledTargetPosition = targetScrollPosition / resizeFactor.value
 
     if (animated) {
-      const normalizePosition = (pos) => ((pos % wrapHeight) + wrapHeight) % wrapHeight
+      const normalizePosition = (pos: number) => ((pos % wrapHeight) + wrapHeight) % wrapHeight
 
       const currentNormalized = normalizePosition(currentPos)
       const targetNormalized = normalizePosition(scaledTargetPosition)
@@ -302,7 +340,7 @@ const selectImageHorizontally = (direction = 1) => {
   if (selectedImage.value) {
     selectedImage.value.element?.focus()
     updateImagePositions()
-    requestAnimationFrame(() => scrollToImage(selectedImage.value.imageId))
+    requestAnimationFrame(() => scrollToImage(selectedImage.value?.imageId))
   }
 }
 
@@ -312,7 +350,7 @@ const selectImageVertically = (direction = 1) => {
     const columnIndex = selectedImage.value.columnIndex
     const columnImages = imageCardData.filter((img) => img.columnIndex === columnIndex)
     const currentIndex = columnImages.findIndex(
-      (img) => img.imageId === selectedImage.value.imageId
+      (img) => img.imageId === selectedImage.value?.imageId
     )
     let targetIndex = currentIndex + direction
     if (targetIndex < 0) targetIndex = columnImages.length - 1
@@ -323,7 +361,7 @@ const selectImageVertically = (direction = 1) => {
   if (selectedImage.value) {
     selectedImage.value.element?.focus()
     updateImagePositions()
-    requestAnimationFrame(() => scrollToImage(selectedImage.value.imageId, { force: true }))
+    requestAnimationFrame(() => scrollToImage(selectedImage.value?.imageId, { force: true }))
   }
 }
 
@@ -337,34 +375,40 @@ const calculateImageCardsData = () => {
   columnImageCounts = createArray(columnCount.value, 0)
   clearArray(imageCardData)
 
-  imageGallery.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
-    columnElement.querySelectorAll(".image-card").forEach((cardElement, cardIndex) => {
-      const img = cardElement.querySelector("img")
-      const attrHeight = parseInt(img.getAttribute("height")) || 0
-      const attrWidth = parseInt(img.getAttribute("width")) || 1
+  if (!imageGallery.value) return
+  imageGallery.value
+    .querySelectorAll<HTMLElement>(".gallery-column")
+    .forEach((columnElement, columnIndex) => {
+      columnElement
+        .querySelectorAll<HTMLElement>(".image-card")
+        .forEach((cardElement, cardIndex) => {
+          const img = cardElement.querySelector("img")
+          if (!img) throw new Error("Missing card image")
+          const attrHeight = parseInt(img.getAttribute("height") ?? "") || 0
+          const attrWidth = parseInt(img.getAttribute("width") ?? "") || 1
 
-      const imgHeight = img.naturalHeight || attrHeight
-      const imgWidth = img.naturalWidth || attrWidth
-      const cardHeight = imgWidth > 0 ? (imgHeight / imgWidth) * columnWidth.value : 0
+          const imgHeight = img.naturalHeight || attrHeight
+          const imgWidth = img.naturalWidth || attrWidth
+          const cardHeight = imgWidth > 0 ? (imgHeight / imgWidth) * columnWidth.value : 0
 
-      imageCardData.push({
-        animationDelay: 0,
-        cardHeight,
-        cardIndex,
-        cardTop: columnsHeights.value[columnIndex],
-        columnIndex,
-        element: cardElement,
-        imageId: img.dataset.id,
-        setOpacity: gsap.quickSetter(cardElement, "opacity"),
-        setScale: (value) => gsap.set(cardElement, { scale: value }),
-        setY: gsap.quickSetter(cardElement, "y", "px"),
-        visible: false
-      })
-      columnsHeights.value[columnIndex] += cardHeight + currentSpacing.value
-      columnImageCounts[columnIndex]++
+          imageCardData.push({
+            animationDelay: 0,
+            cardHeight,
+            cardIndex,
+            cardTop: columnsHeights.value[columnIndex],
+            columnIndex,
+            element: cardElement,
+            imageId: img.dataset.id,
+            setOpacity: gsap.quickSetter(cardElement, "opacity"),
+            setScale: (value) => gsap.set(cardElement, { scale: value }),
+            setY: gsap.quickSetter(cardElement, "y", "px"),
+            visible: false
+          })
+          columnsHeights.value[columnIndex] += cardHeight + currentSpacing.value
+          columnImageCounts[columnIndex]++
+        })
+      columnsHeights.value[columnIndex] -= currentSpacing.value + VIRTUAL_BUFFER - 1
     })
-    columnsHeights.value[columnIndex] -= currentSpacing.value + VIRTUAL_BUFFER - 1
-  })
   const minColumnHeight = Math.min(...columnsHeights.value)
   const viewportHeightInBaselineSpace = windowHeight.value / resizeFactor.value
   canInfiniteScroll.value =
@@ -435,7 +479,7 @@ const initializeScrollTargets = () => {
   })
 }
 
-const assignFadeDelays = (imageCardData, duration) => {
+const assignFadeDelays = (imageCardData: ImageCardState[], duration?: number) => {
   const effectiveDuration = duration ?? zoomTotalDuration.value
   const totalImages = imageCardData.length
   const dynamicStagger = totalImages > 1 ? effectiveDuration / (totalImages - 1) : 0
@@ -444,7 +488,7 @@ const assignFadeDelays = (imageCardData, duration) => {
   })
 }
 
-const calculateZoomAnimationTiming = (imageCardData) => {
+const calculateZoomAnimationTiming = (imageCardData: ImageCardState[]) => {
   const now = performance.now()
   const totalDelay = imageCardData.length
     ? imageCardData[imageCardData.length - 1].animationDelay
@@ -458,22 +502,24 @@ const calculateZoomAnimationTiming = (imageCardData) => {
 
 const releaseZoomTarget = () => {
   clearTimeout(zoomReleaseTimer)
-  zoomReleaseTimer = null
+  zoomReleaseTimer = undefined
   zoomTargetImageId = null
   resumeScrolling()
 }
 
-const scheduleZoomRelease = (flipDuration) => {
+const scheduleZoomRelease = (flipDuration?: number) => {
   clearTimeout(zoomReleaseTimer)
   const settledFor = Math.max(zoomTotalDuration.value + ZOOM_DURATION, flipDuration ?? 0)
   zoomReleaseTimer = setTimeout(releaseZoomTarget, settledFor * 1000)
 }
 
-const startZoomTransition = (imageId, referenceElement) => {
+const startZoomTransition = (imageId: string, referenceElement: EventTarget | null) => {
   hideMenu(true)
   zoomTargetImageId = imageId
   zoomFlipImageId = imageId
 
+  if (referenceElement && !(referenceElement instanceof Element))
+    throw new TypeError("Expected a reference element")
   zoomReferencePoint = referenceElement
     ? elementCenter(referenceElement)
     : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
@@ -493,8 +539,8 @@ const startZoomTransition = (imageId, referenceElement) => {
   startRenderLoop()
 }
 
-const startZoomReturn = (options = {}) => {
-  props.menuVisible && setTimeout(() => showMenu(true), 200)
+const startZoomReturn = (options: ZoomReturnOptions = {}) => {
+  if (props.menuVisible) setTimeout(() => showMenu(true), 200)
   const { duration, flipDuration, showAllImages = false, withTarget = false } = options
   const effectiveDuration = duration ?? zoomTotalDuration.value
 
@@ -508,7 +554,12 @@ const startZoomReturn = (options = {}) => {
     ? zoomReferencePoint
     : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
 
-  const sortedStates = sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
+  if (!referencePoint && visibleNonTargetStates.length > 1) {
+    throw new Error("Missing zoom reference point")
+  }
+  const sortedStates = referencePoint
+    ? sortStatesByDistance(visibleNonTargetStates, referencePoint, false)
+    : visibleNonTargetStates
   assignFadeDelays(sortedStates, effectiveDuration)
 
   const timing = calculateZoomAnimationTiming(sortedStates)
@@ -522,7 +573,13 @@ const startZoomReturn = (options = {}) => {
   scheduleZoomRelease(flipDuration)
 }
 
-const calculateZoomAnimationValue = (imageCard, now, normalValue, visibleValue, hiddenValue) => {
+const calculateZoomAnimationValue = (
+  imageCard: ImageCardState,
+  now: number,
+  normalValue: number,
+  visibleValue: number,
+  hiddenValue: number
+) => {
   if (!isZoomTransitionActive) {
     if (
       zoomTargetImageId &&
@@ -567,7 +624,7 @@ const updateScrollTargets = (deltaTime = 1 / SMOOTHING_REFERENCE_FPS) => {
   }
 }
 
-const calculateWrappedPosition = (card) => {
+const calculateWrappedPosition = (card: ImageCardState) => {
   const constantSpacing = (card.cardIndex + 1) * currentSpacing.value
   const scaledCardTop = (card.cardTop - constantSpacing) * resizeFactor.value
   const scaledScrollTarget = scrollTargets[card.columnIndex] * resizeFactor.value
@@ -585,7 +642,7 @@ const calculateWrappedPosition = (card) => {
   return cardPosition
 }
 
-const updateImagePositions = (options = {}) => {
+const updateImagePositions = (options: PositionOptions = {}) => {
   const { deltaTime, forcePosition = false } = options
   if (isBuildingLayout.value) return
 
@@ -702,7 +759,7 @@ const queueAutoScrollResume = () => {
 
 setSearchCollapseCallback(queueAutoScrollResume)
 
-const updateVelocity = (deltaTime) => {
+const updateVelocity = (deltaTime: number) => {
   if (!isBuildingLayout.value && !isDragging.value) {
     const effectiveVelocity = isAutoScrolling.value ? autoScrollVelocity.value : velocity.value
 
@@ -725,7 +782,7 @@ const startRenderLoop = () => {
   renderLoopId = requestAnimationFrame(renderFrame)
 }
 
-let settleCallback = null
+let settleCallback: (() => void) | null = null
 
 const stopRenderLoop = () => {
   if (!renderLoopId) return
@@ -736,7 +793,7 @@ const stopRenderLoop = () => {
   settleCallback = null
 }
 
-const updateZoomTransitionState = (timestamp) => {
+const updateZoomTransitionState = (timestamp: number) => {
   if (isZoomTransitionActive && timestamp >= zoomAnimationEndTimestamp) {
     isZoomTransitionActive = false
     if (isZoomingOut) {
@@ -768,7 +825,7 @@ const isRenderLoopIdle = () => {
   return scrollTargetsSettled && velocitySettled && resizeFactorStable
 }
 
-const renderFrame = (timestamp) => {
+const renderFrame: FrameRequestCallback = (timestamp) => {
   renderLoopId = requestAnimationFrame(renderFrame)
 
   const deltaTime = Math.min(MAX_DELTA_TIME, (timestamp - (lastFrameTimestamp || timestamp)) / 1000)
@@ -804,7 +861,11 @@ const pauseScrolling = () => {
   currentVelocityDecay = PAUSED_VELOCITY_DECAY
 }
 
-const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
+const handleFullscreenReturn: FullscreenReturnHandler = (
+  withTarget,
+  isDifferentImage,
+  flipDuration
+) => {
   forceZoomTargetVisibility = !!isDifferentImage
   if (zoomTargetImageId) {
     updateImagePositions()
@@ -820,7 +881,7 @@ const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
   }
 }
 
-const checkImageVisibility = (imageId) => {
+const checkImageVisibility = (imageId: string) => {
   const card = imageCardData.find((card) => card.imageId === imageId)
   return card ? card.visible : false
 }
@@ -830,10 +891,10 @@ const onFirstLoadComplete = () => {
   isScrollPaused.value = false
   updateImagePositions()
   startZoomReturn({ duration: zoomTotalDuration.value / 2, withTarget: false })
-  props.menuVisible && showMenu(true)
+  if (props.menuVisible) showMenu(true)
 }
 
-const handleImageClick = (event, image, flipId) => {
+const handleImageClick = (event: MouseEvent | TouchEvent, image: Image, flipId: string) => {
   if (zoomTargetImageId) return
   pauseScrolling()
   stopAutoScroll()
@@ -847,15 +908,15 @@ const handleImageClick = (event, image, flipId) => {
   })
 }
 
-const handleImageLoad = (imageId) => {
+const handleImageLoad = (imageId: string) => {
   loadedImageIds.value.add(imageId)
 }
 
-const handleTinyImageLoad = (imageId) => {
+const handleTinyImageLoad = (imageId: string) => {
   loadedTinyImageIds.value.add(imageId)
 }
 
-const applyScrollImpulse = (delta, impulseMultiplier) => {
+const applyScrollImpulse = (delta: number, impulseMultiplier: number) => {
   scrollPosition = getBoundedScrollPosition(scrollPosition + delta / resizeFactor.value)
   velocity.value = clamp(
     velocity.value + (delta / resizeFactor.value) * impulseMultiplier,
@@ -865,7 +926,7 @@ const applyScrollImpulse = (delta, impulseMultiplier) => {
   startRenderLoop()
 }
 
-const handleWheel = (event) => {
+const handleWheel = (event: GalleryWheelEvent) => {
   event.preventDefault?.()
 
   if (isScrollPaused.value) return
@@ -885,7 +946,7 @@ const handleWheel = (event) => {
   applyScrollImpulse(-clampedDelta, WHEEL_IMPULSE)
 }
 
-const handleDragStart = (event) => {
+const handleDragStart = (event: MouseEvent | TouchEvent) => {
   event.preventDefault?.()
 
   stopAutoScroll()
@@ -893,17 +954,23 @@ const handleDragStart = (event) => {
 
   isDragging.value = true
   hasDragged.value = false
-  dragStartPosition = event.clientY || event.touches?.[0]?.clientY || 0
+  dragStartPosition =
+    ("clientY" in event ? event.clientY : undefined) ||
+    ("touches" in event ? event.touches[0]?.clientY : undefined) ||
+    0
   lastDragTimestamp = performance.now()
   velocity.value = 0
   imageGallery.value?.focus()
 }
 
-const handleDragMove = (event) => {
+const handleDragMove = (event: MouseEvent | TouchEvent) => {
   event.preventDefault?.()
 
   if (!isDragging.value || isScrollPaused.value) return
-  const currentY = event.clientY || event.touches?.[0]?.clientY || dragStartPosition
+  const currentY =
+    ("clientY" in event ? event.clientY : undefined) ||
+    ("touches" in event ? event.touches[0]?.clientY : undefined) ||
+    dragStartPosition
   const deltaY = (currentY - dragStartPosition) * DRAG_FACTOR
 
   if (Math.abs(deltaY) > 2) {
@@ -929,7 +996,7 @@ const handleDragMove = (event) => {
   startRenderLoop()
 }
 
-const handleDragEnd = (event) => {
+const handleDragEnd = (event: MouseEvent | TouchEvent) => {
   event.preventDefault?.()
 
   if (isScrollPaused.value) return
@@ -939,23 +1006,24 @@ const handleDragEnd = (event) => {
   if (wasDragging) resetUserInactivityTimer(hasDragged.value)
 }
 
-const handleWindowPointerDown = (event) => {
+const handleWindowPointerDown = (event: PointerEvent) => {
   lastInputMethod = event.pointerType
   if (selectedImage.value) {
     clearImageSelection()
   }
 }
 
-const handleWindowFocusIn = (event) => {
+const handleWindowFocusIn = (event: FocusEvent) => {
   if (
-    (event.target === imageGallery.value || event.target.tagName === "BODY") &&
+    (event.target === imageGallery.value ||
+      (event.target instanceof Element && event.target.tagName === "BODY")) &&
     lastInputMethod === "keyboard"
   ) {
     selectImageHorizontally(lastTabDirection)
   }
 }
 
-const handleKeyDown = (event) => {
+const handleKeyDown = (event: KeyboardEvent) => {
   if (fullscreenImageData.value) return
   if (dialogState.isOpen) return
 
@@ -1031,7 +1099,7 @@ const handleKeyDown = (event) => {
   }
 }
 
-const handleWindowKeyDown = (event) => {
+const handleWindowKeyDown = (event: KeyboardEvent) => {
   if (fullscreenImageData.value) return
   if (dialogState.isOpen) return
 
@@ -1045,7 +1113,12 @@ const handleWindowKeyDown = (event) => {
     case "Escape": {
       if (fullscreenImageData.value) break
       event.preventDefault()
-      document.activeElement?.blur()
+      if (
+        document.activeElement &&
+        "blur" in document.activeElement &&
+        typeof document.activeElement.blur === "function"
+      )
+        document.activeElement.blur()
       clearImageSelection()
       break
     }
@@ -1072,7 +1145,7 @@ const handleWindowKeyDown = (event) => {
           if (selectedImage.value.columnIndex > 0) {
             selectImageHorizontally(-1)
           } else {
-            document.querySelector(".menu li:last-of-type button")?.focus()
+            document.querySelector<HTMLButtonElement>(".menu li:last-of-type button")?.focus()
             clearImageSelection()
           }
           break
@@ -1081,7 +1154,7 @@ const handleWindowKeyDown = (event) => {
           if (selectedImage.value.columnIndex < columnCount.value - 1) {
             selectImageHorizontally(1)
           } else {
-            document.querySelector(".menu li:first-of-type button")?.focus()
+            document.querySelector<HTMLButtonElement>(".menu li:first-of-type button")?.focus()
             clearImageSelection()
           }
           break
@@ -1181,7 +1254,7 @@ onUnmounted(() => {
   clearTimeout(zoomReleaseTimer)
 })
 
-defineExpose({
+defineExpose<ImageGalleryHandle>({
   isAnimating: () => !isRenderLoopIdle(),
   isAutoScrollActive: () => isAutoScrolling.value,
   isScrollPaused: () => isScrollPaused.value,

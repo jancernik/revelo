@@ -6,11 +6,7 @@ import globals from "globals"
 import tseslint from "typescript-eslint"
 
 // JavaScript components not yet migrated to TypeScript.
-const untypedComponents = [
-  "client/src/components/common/FullscreenImage.vue",
-  "client/src/components/images/ImageGallery.vue",
-  "client/src/components/images/NativeImageGallery.vue"
-]
+const untypedComponents = ["client/src/components/common/FullscreenImage.vue"]
 
 export default [
   {

@@ -47,8 +47,8 @@ Record the completion date and commit for each stage.
 - [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17. Commit: `ebbc421`.
 - [x] Stage L2: Theme transition and small public components. Completed 2026-11-17. Commit:
       `1765762`.
-- [x] Stage L3: Menu and search. Completed 2026-11-17. Commit:
-- [ ] Stage L4: Galleries and the home view.
+- [x] Stage L3: Menu and search. Completed 2026-11-17. Commit: `0f422f6`.
+- [x] Stage L4: Galleries and the home view. Completed 2026-11-17. Commit:
 - [ ] Stage L5: Fullscreen viewer and the public image view.
 - [ ] Stage L6: Hardening and final audit of the public frontend.
 
@@ -1138,6 +1138,24 @@ and collections from the stores; opening an image into the fullscreen state; the
 `GalleryHandle` members and their effect; `capFrameRate`; cleanup on unmount (listeners,
 tickers, observers). Add an integration test that mounts `Home` with the real stores and a
 mocked API.
+
+Notes for Stage L5:
+
+- Both galleries explicitly expose `GalleryHandle` plus `isAnimating(): boolean` through
+  local handle interfaces. The native gallery has no `queueAutoScrollResume`; its
+  auto-scroll methods remain no-ops. Home's ref starts as `undefined`; its stopped watcher
+  does not unregister the gallery on unmount.
+- Opening passes `flipId: img-${image.id}`, `window.location.search`, `isThumbnailVisible`,
+  `updatePositions` and `onReturn` to `useFullscreenImage.show`. Return callbacks use
+  `FullscreenReturnHandler`: `(withTarget, isDifferentImage, duration?)`.
+- Custom `updatePositions` forces card positions before FLIP; the native callback is a
+  no-op. Custom thumbnail visibility uses the card registry; native visibility uses its
+  rectangle with the 400 px buffer. The custom renderer skips writes to the owned FLIP
+  card until its fade ends. A different-image return reveals the surrounding cards.
+- Scroll release waits for the larger of the FLIP duration and
+  `transitionDuration(isMobile) + ZOOM_DURATION`. Menu return is delayed by 200 ms.
+- Quirks kept: the custom gallery replaces pending settle callbacks and leaves an active
+  animation frame on unmount. Native settle callbacks are queued and flushed on unmount.
 
 ### Stage L5: Fullscreen viewer and the public image view
 
