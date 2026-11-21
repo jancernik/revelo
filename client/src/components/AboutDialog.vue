@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Icon from "#src/components/common/Icon.vue"
 import { useDialog } from "#src/composables/useDialog"
 import { useSettings } from "#src/composables/useSettings"
@@ -21,7 +21,7 @@ const handleClick = () => {
   showDialog()
 }
 
-const handlePointerUp = (event) => {
+const handlePointerUp = (event: PointerEvent) => {
   tapActivation.activateOnTap(event, showDialog)
 }
 </script>

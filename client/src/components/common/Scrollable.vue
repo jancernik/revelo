@@ -1,28 +1,26 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { ScrollSmoother } from "gsap/ScrollSmoother"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { nextTick, onMounted, onUnmounted, useTemplateRef } from "vue"
 
-const props = defineProps({
-  class: {
-    default: "",
-    type: String
-  },
-  smoothness: {
-    default: 2,
-    type: Number
-  },
-  smoothTouch: {
-    default: 0.1,
-    type: Number
+const props = withDefaults(
+  defineProps<{
+    class?: string
+    smoothness?: number
+    smoothTouch?: number
+  }>(),
+  {
+    class: "",
+    smoothness: 2,
+    smoothTouch: 0.1
   }
-})
+)
 
-const smoothWrapper = useTemplateRef("smooth-wrapper")
-const smoothContent = useTemplateRef("smooth-content")
+const smoothWrapper = useTemplateRef<HTMLDivElement>("smooth-wrapper")
+const smoothContent = useTemplateRef<HTMLDivElement>("smooth-content")
 
-let smoother = null
+let smoother: null | ScrollSmoother = null
 
 const initSmoothScroll = () => {
   gsap.registerPlugin(ScrollTrigger, ScrollSmoother)
@@ -43,13 +41,16 @@ const cleanup = () => {
   ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
 }
 
-const scrollTo = (position, smooth = true) => {
+const scrollTo = (position: gsap.DOMTarget | number, smooth = true) => {
   if (smoother) {
     smoother.scrollTo(position, smooth)
   }
 }
 
-defineExpose({
+defineExpose<{
+  getSmoother: () => null | ScrollSmoother
+  scrollTo: (position: gsap.DOMTarget | number, smooth?: boolean) => void
+}>({
   getSmoother: () => smoother,
   scrollTo
 })
