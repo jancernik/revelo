@@ -92,7 +92,8 @@ describe("Switch", () => {
       global: { stubs: { Icon: true } },
       props: {
         modelValue: "one",
-        "onUpdate:modelValue": (value: string) => wrapper.setProps({ modelValue: value }),
+        "onUpdate:modelValue": (value: number | string | undefined): Promise<void> =>
+          wrapper.setProps({ modelValue: value }),
         options: [...options]
       }
     })

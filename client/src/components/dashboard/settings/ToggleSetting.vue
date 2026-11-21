@@ -1,5 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue"
+
+import type { CompleteSetting } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Toggle from "#src/components/common/Toggle.vue"
@@ -7,26 +9,21 @@ import { useDialog } from "#src/composables/useDialog"
 
 const { show } = useDialog()
 
-const props = defineProps({
-  currentValue: {
-    required: true,
-    type: Boolean
-  },
-  isResetting: {
-    default: false,
-    type: Boolean
-  },
-  originalValue: {
-    required: true,
-    type: Boolean
-  },
-  setting: {
-    required: true,
-    type: Object
-  }
-})
+const props = withDefaults(
+  defineProps<{
+    currentValue: boolean
+    isResetting?: boolean
+    originalValue: boolean
+    setting: Extract<CompleteSetting, { type: "toggle" }>
+  }>(),
+  { isResetting: false }
+)
 
-const emit = defineEmits(["update", "reset", "reset-default"])
+const emit = defineEmits<{
+  (event: "update", value: boolean): void
+  (event: "reset"): void
+  (event: "reset-default"): void
+}>()
 
 const hasChanged = computed(() => {
   return props.currentValue !== props.originalValue
@@ -36,7 +33,7 @@ const showResetDefault = computed(() => {
   return props.originalValue !== props.setting.default
 })
 
-const handleUpdate = (newValue) => {
+const handleUpdate = (newValue: boolean) => {
   emit("update", newValue)
 }
 
