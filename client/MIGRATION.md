@@ -14,9 +14,10 @@ Stages 5–7 and the audit A test follow-up were committed together as `a867751`
 Stage 8a was committed as `d50cb19`.
 Stage 8b was committed as `237ca76`. Group audit B was accepted 2026-11-14 with no
 findings; report: `client/node_modules/.cache/revelo-migration/group-b-audit.md`.
-Current checkpoint: Stage 9 accepted and ready for the user's commit. Stages 10–12 follow
-sequentially with tests-first validation and an independent review per stage. Preserve
-unrelated image, navigation and viewer module work.
+Stage 9 was committed as `f954efc`. Stage 10 is accepted and staged for the user's commit.
+Current checkpoint: Stage 11 accepted and staged; commits must follow stage order
+(10 then 11). Stage 12 has not started; the user asked to pause there. Preserve unrelated
+image, navigation and viewer module work.
 
 ## Stage tracker
 
@@ -38,13 +39,17 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: `237ca76`.
 - [ ] Group audit B: All components, after Stage 8b.
 - [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: pending (user).
-- [ ] Stage 10: Image views.
-- [ ] Stage 11: Collection views.
+- [x] Stage 10: Image views. Completed 2026-11-14. Commit: pending (user).
+- [x] Stage 11: Collection views. Completed 2026-11-14. Commit: pending (user, after Stage 10).
 - [ ] Stage 12: Dashboard index, settings and tasks views.
 - [ ] Stage 13: Dev playground and hardening.
 - [ ] Final audit: After Stage 13.
 
 ## Deferred follow-ups
+
+- `Images.test.ts` contains fifteen redundant non-const `as Image` casts authored at the
+  test-first boundary (stage 10 review finding 7). Remove them in a later cleanup with a
+  focused rerun and reviewer verification; tests stay byte-identical until then.
 
 - [ ] Resolve the six Vue test-host lint warnings in
       `client/src/composables/useDevice.test.ts` and
@@ -656,6 +661,20 @@ Migration: typed component instance refs (`InstanceType<typeof ImageUploader>` f
 exposed API), typed action arrays, `ImageMetadataForm`.
 Completion: typed; tests green; manual pass over the five routes.
 
+Completed: all five image views typed with 41 JavaScript-first tests. Two supervisor-approved
+type-only adjacent changes: `ImageMetadataUpdate` iso accepts the numeric initial value, and
+MetadataEditor `previewUrl` became `string | undefined` (required, no default; generated
+runtime validator `{ type: null, required: true }`, requiredness and dev missing-prop warning
+preserved, production unaffected). UploadImages error toasts now render the axios/error
+message via the approved `errorMessage` convention; they previously rendered the literal
+string `{}` because the raw Error was JSON-stringified; the only two test assertions changed
+are those toast descriptions. Independent review accepted with no fixes: all five checks
+passed (77 files, 706 tests, zero lint errors, six deferred warnings), baseline and cross
+replays reproduced, templates/styles byte-identical. Report:
+`client/node_modules/.cache/revelo-migration/stage10-review.md`.
+Manual pass over the five routes remains for the user's own environment; the isolated-stack
+audit covered upload/review/confirm, edit Reset/Save and the images grid.
+
 ### Stage 11: Collection views
 
 Scope: `Collections`, `Collection`, `CreateOrEditCollection`, `SelectCollectionImages`.
@@ -666,6 +685,22 @@ vs edit titles and footer labels, save navigation and toasts, available images f
 (`!collectionId || collectionId === id`), initial selection from `getImageIdsInCollection`.
 Migration: typed `Ref<Collection | null>`, typed actions.
 Completion: typed; tests green; manual pass over the four routes.
+
+Completed: all four collection views typed with 32 JavaScript-first tests. The store is
+untouched; view refs use the honest cached-collection type (the plan's `Ref<Collection | null>`
+was shorthand). CollectionGrid accepts the cached rows the store actually holds, with the one
+approved template interpolation; hydrated rows render byte-identically and bare rows now take
+the generic render path instead of throwing. Impossible-undefined fetch/create paths resolve to
+the generic error path per section 3 (create stays on the form without navigation or toast;
+SelectCollectionImages treats a missing fetch row as empty selection instead of fetching
+`/collections/undefined`); the delete catch uses the approved `errorMessage` convention.
+Independent review accepted with no fixes: all five checks passed (81 files, 738 tests, zero
+lint errors, six deferred warnings), snapshot and cross replays reproduced (5 files, 36 tests
+over the original SFCs including CollectionGrid), templates byte-identical except the approved
+interpolation, mock-only test deltas. Report:
+`client/node_modules/.cache/revelo-migration/stage11-review.md`.
+Manual pass over the four routes remains for the user's own environment; the isolated-stack
+audit covered real drag reorder with persisted 0/1/2 orders and settings flows.
 
 ### Stage 12: Dashboard index, settings and tasks views
 

@@ -1,6 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { GridImage } from "#src/components/dashboard/types"
+import type { LayoutAction } from "#src/composables/useDashboardLayout"
+import type { CachedCollection } from "#src/stores/collections"
 
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -8,13 +12,9 @@ import { useDialog } from "#src/composables/useDialog"
 import { useRangeSelect } from "#src/composables/useRangeSelect"
 import { useToast } from "#src/composables/useToast"
 import { useCollectionsStore } from "#src/stores/collections"
+import { errorMessage } from "#src/utils/api"
 
-const props = defineProps({
-  id: {
-    required: true,
-    type: String
-  }
-})
+const props = defineProps<{ id: string }>()
 
 const router = useRouter()
 const { resetHeader, setHeader, setSelection } = useDashboardLayout()
@@ -22,13 +22,14 @@ const { show: showDialog } = useDialog()
 const { show: showToast } = useToast()
 const collectionsStore = useCollectionsStore()
 
-const selectedImagesIds = ref([])
-const collection = ref(null)
+const selectedImagesIds = ref<string[]>([])
+const collection = ref<CachedCollection | null>(null)
 const loading = ref(true)
 const reordering = ref(false)
-const pendingImages = ref([])
+const pendingImages = ref<GridImage[]>([])
 const saving = ref(false)
-const collectionImages = computed(() => collection.value?.images || [])
+// the grid emits Image | UploadPreview; this view only ever shows cached collection images
+const collectionImages = computed<GridImage[]>(() => collection.value?.images || [])
 const { clearLastSelected, handleSelect: handleSelectImage } = useRangeSelect(
   collectionImages,
   selectedImagesIds
@@ -43,7 +44,7 @@ const clearSelection = () => {
 const loadCollection = async () => {
   try {
     loading.value = true
-    collection.value = await collectionsStore.fetch(props.id)
+    collection.value = (await collectionsStore.fetch(props.id)) ?? null
   } finally {
     loading.value = false
   }
@@ -64,7 +65,7 @@ const handleDelete = () => {
             })
           } catch (error) {
             showToast({
-              description: error.message || "Failed to delete collection.",
+              description: errorMessage(error) || "Failed to delete collection.",
               title: "Delete Failed",
               type: "error"
             })
@@ -112,7 +113,7 @@ const saveOrder = async () => {
   }
 }
 
-const handleReorder = (newImages) => {
+const handleReorder = (newImages: GridImage[]) => {
   pendingImages.value = newImages
 }
 
@@ -177,7 +178,7 @@ const setupLayout = () => {
   }
 }
 
-const cancelSelectionAction = {
+const cancelSelectionAction: LayoutAction = {
   color: "secondary",
   icon: "X",
   key: "selection-cancel",
@@ -185,7 +186,7 @@ const cancelSelectionAction = {
   text: "Cancel"
 }
 
-const removeImagesFromCollectionAction = {
+const removeImagesFromCollectionAction: LayoutAction = {
   icon: "Trash",
   key: "selection-remove",
   onClick: async () => {
@@ -199,7 +200,7 @@ const removeImagesFromCollectionAction = {
 
 watch(
   selectedImagesIds,
-  (ids) => {
+  (ids: string[]) => {
     setSelection({
       actions: [removeImagesFromCollectionAction, cancelSelectionAction],
       items: ids.length

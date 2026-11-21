@@ -1,20 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
+
+import type { Image } from "#src/types/models"
 
 import ImageMetadata from "#src/components/images/ImageMetadata.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useDialog } from "#src/composables/useDialog"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
+import { errorMessage } from "#src/utils/api"
 import { getImageVersion } from "#src/utils/helpers"
 
-const props = defineProps({
-  id: {
-    required: true,
-    type: String
-  }
-})
+const props = defineProps<{ id: string }>()
 
 const router = useRouter()
 const { resetHeader, setHeader } = useDashboardLayout()
@@ -22,20 +20,24 @@ const { show: showDialog } = useDialog()
 const { show: showToast } = useToast()
 const imagesStore = useImagesStore()
 
-const image = ref(null)
+const image = ref<Image | null>(null)
 const loading = ref(true)
-const regularImageVersion = computed(() => getImageVersion(image.value, "regular"))
+const regularImageVersion = computed(() =>
+  image.value ? getImageVersion(image.value, "regular") : {}
+)
 const hasMetadata = computed(() =>
-  [
-    "camera",
-    "lens",
-    "aperture",
-    "shutterSpeed",
-    "iso",
-    "focalLength",
-    "focalLengthEquivalent",
-    "date"
-  ].some((k) => image?.value?.[k])
+  (
+    [
+      "camera",
+      "lens",
+      "aperture",
+      "shutterSpeed",
+      "iso",
+      "focalLength",
+      "focalLengthEquivalent",
+      "date"
+    ] as const
+  ).some((k) => image?.value?.[k])
 )
 
 const loadImage = async () => {
@@ -62,7 +64,7 @@ const handleDelete = () => {
             })
           } catch (error) {
             showToast({
-              description: error.message || "Failed to delete image.",
+              description: errorMessage(error),
               title: "Delete Failed",
               type: "error"
             })
@@ -79,7 +81,7 @@ const handleDelete = () => {
 
 const handleToggleHidden = async () => {
   try {
-    const updated = await imagesStore.toggleHidden(props.id, !image.value.hidden)
+    const updated = await imagesStore.toggleHidden(props.id, !image.value?.hidden)
     image.value = { ...image.value, ...updated }
     setupLayout()
   } catch {
