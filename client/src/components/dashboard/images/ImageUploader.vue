@@ -1,5 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
+
+import type { GridImage } from "#src/components/dashboard/types"
 
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
@@ -15,24 +17,30 @@ const maxUploadSize = settings.value.maxUploadSize || 50
 const dragActive = ref(false)
 const dropZoneHidden = ref(false)
 const dragCounter = ref(0)
-const selectedFiles = ref([])
-const previewUrls = ref([])
+const selectedFiles = ref<File[]>([])
+const previewUrls = ref<string[]>([])
 const hasSelectedImages = computed(() => selectedFiles.value.length > 0)
 const hasExceededFileLimit = computed(() => selectedFiles.value.length > maxFiles)
 const canAddMoreFiles = computed(() => selectedFiles.value.length < maxFiles)
 
-const fileInput = useTemplateRef("file-input")
-const container = useTemplateRef("container")
+const fileInput = useTemplateRef<HTMLInputElement>("file-input")
+const container = useTemplateRef<HTMLDivElement>("container")
 
-const emit = defineEmits(["upload"])
+const emit = defineEmits<{
+  upload: [payload: { images: File[]; previewUrls: string[] }]
+}>()
 
-const handleFileInput = (event) => {
-  if (event.target.files?.length > 0) {
+const handleFileInput = (event: Event) => {
+  if (
+    event.target instanceof HTMLInputElement &&
+    event.target.files &&
+    event.target.files.length > 0
+  ) {
     handleFileSelection(Array.from(event.target.files))
   }
 }
 
-const handleFileSelection = (files) => {
+const handleFileSelection = (files: File[]) => {
   for (const file of files) {
     if (!file.type.match(/image\/(jpeg|jpg|png)/i)) {
       files = files.filter((f) => f !== file)
@@ -59,7 +67,8 @@ const handleFileSelection = (files) => {
   })
 }
 
-const handleRemoveImage = (image) => {
+const handleRemoveImage = (image: GridImage) => {
+  if (!("name" in image)) return
   const index = selectedFiles.value.findIndex((file) => file.name === image.name)
   URL.revokeObjectURL(previewUrls.value[index])
   selectedFiles.value.splice(index, 1)
@@ -76,7 +85,7 @@ const handleUploadImages = () => {
 }
 
 const handleSelectImages = () => {
-  fileInput.value.click()
+  fileInput.value?.click()
 }
 
 const handleResetSelection = () => {
@@ -87,7 +96,7 @@ const handleResetSelection = () => {
   previewUrls.value = []
 }
 
-const handleDragEnter = (event) => {
+const handleDragEnter = (event: DragEvent) => {
   event.preventDefault()
   dragCounter.value++
   if (canAddMoreFiles.value) {
@@ -95,7 +104,7 @@ const handleDragEnter = (event) => {
   }
 }
 
-const handleDragLeave = (event) => {
+const handleDragLeave = (event: DragEvent) => {
   event.preventDefault()
   dragCounter.value--
   if (dragCounter.value <= 0) {
@@ -104,11 +113,11 @@ const handleDragLeave = (event) => {
   }
 }
 
-const handleDragOver = (event) => {
+const handleDragOver = (event: DragEvent) => {
   event.preventDefault()
 }
 
-const handleDrop = (event) => {
+const handleDrop = (event: DragEvent) => {
   event.preventDefault()
   dragActive.value = false
   dragCounter.value = 0
@@ -118,7 +127,7 @@ const handleDrop = (event) => {
     dropZoneHidden.value = false
   }, 400)
 
-  if (event.dataTransfer.files?.length > 0) {
+  if (event.dataTransfer && event.dataTransfer.files.length > 0) {
     handleFileSelection(Array.from(event.dataTransfer.files))
   }
 }
@@ -141,7 +150,14 @@ onBeforeUnmount(() => {
   }
 })
 
-defineExpose({
+defineExpose<{
+  canAddMoreFiles: typeof canAddMoreFiles
+  handleResetSelection: typeof handleResetSelection
+  handleSelectImages: typeof handleSelectImages
+  handleUploadImages: typeof handleUploadImages
+  hasExceededFileLimit: typeof hasExceededFileLimit
+  hasSelectedImages: typeof hasSelectedImages
+}>({
   canAddMoreFiles,
   handleResetSelection,
   handleSelectImages,

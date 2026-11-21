@@ -1,40 +1,40 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
+
+import type { ImageMetadataUpdate } from "#src/stores/images"
+import type { ImageMetadataForm } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
 
-const props = defineProps({
-  initialMetadata: {
-    required: true,
-    type: Object
-  },
-  previewFilename: {
-    default: "",
-    type: String
-  },
-  previewUrl: {
-    required: true,
-    type: String
-  },
+type EditorMetadata = {
+  [Key in keyof ImageMetadataForm]: Key extends "iso" ? string : ImageMetadataForm[Key] | null
+}
+type InitialMetadata = Omit<ImageMetadataUpdate, "iso"> & { iso?: null | number | string }
 
-  showHeader: {
-    default: false,
-    type: Boolean
-  },
-  showPreview: {
-    default: true,
-    type: Boolean
-  },
-  showResetButton: {
-    default: false,
-    type: Boolean
+const props = withDefaults(
+  defineProps<{
+    initialMetadata: InitialMetadata
+    previewFilename?: string
+    previewUrl: string
+    showHeader?: boolean
+    showPreview?: boolean
+    showResetButton?: boolean
+  }>(),
+  {
+    previewFilename: "",
+    showHeader: false,
+    showPreview: true,
+    showResetButton: false
   }
-})
+)
 
-const emit = defineEmits(["update", "remove"])
+const emit = defineEmits<{
+  remove: []
+  update: [metadata: EditorMetadata]
+}>()
 
-const createDefaultMetadata = () => ({
+const createDefaultMetadata = (): EditorMetadata => ({
   aperture: "",
   camera: "",
   comment: "",
@@ -46,8 +46,8 @@ const createDefaultMetadata = () => ({
   shutterSpeed: ""
 })
 
-const metadata = ref({})
-const originalMetadata = ref({})
+const metadata = ref<EditorMetadata>(createDefaultMetadata())
+const originalMetadata = ref<EditorMetadata>(createDefaultMetadata())
 const shutterSpeed = ref("")
 let suppressEmit = false
 
@@ -56,8 +56,23 @@ const initializeMetadata = async () => {
   const safeMetadata = { ...createDefaultMetadata() }
   if (props.initialMetadata) {
     for (const k in safeMetadata) {
-      if (props.initialMetadata[k] !== undefined) {
-        safeMetadata[k] = k === "iso" ? String(props.initialMetadata[k]) : props.initialMetadata[k]
+      if (k === "iso") {
+        if (props.initialMetadata[k] !== undefined) {
+          safeMetadata[k] = String(props.initialMetadata[k])
+        }
+      } else if (
+        k === "aperture" ||
+        k === "camera" ||
+        k === "comment" ||
+        k === "date" ||
+        k === "focalLength" ||
+        k === "focalLengthEquivalent" ||
+        k === "lens" ||
+        k === "shutterSpeed"
+      ) {
+        if (props.initialMetadata[k] !== undefined) {
+          safeMetadata[k] = props.initialMetadata[k]
+        }
       }
     }
   }
@@ -78,7 +93,7 @@ const handleReset = () => {
   updateShutterSpeed()
 }
 
-const decimalToShutterSpeed = (decimalValue) => {
+const decimalToShutterSpeed = (decimalValue: null | string | undefined) => {
   if (!decimalValue || decimalValue === "") return ""
   const shutterNum = Number(decimalValue)
   if (shutterNum >= 1) return `${shutterNum}`
@@ -86,7 +101,7 @@ const decimalToShutterSpeed = (decimalValue) => {
   return `1/${denominator}`
 }
 
-const shutterSpeedToDecimal = (displayValue) => {
+const shutterSpeedToDecimal = (displayValue: string) => {
   if (!displayValue || displayValue === "") return ""
   const trimmed = displayValue.trim()
 
