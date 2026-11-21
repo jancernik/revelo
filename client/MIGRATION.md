@@ -1,59 +1,55 @@
 # Revelo frontend: TypeScript migration plan
 
-Worktree: `/home/jan/revelo-frontend-rebuild` (branch `frontend-rebuild`). All work happens
-there. Agents never commit, push or open pull requests; the user creates commits.
+Worktree: `/home/jan/revelo-typescript` (branch `typescript-migration`, based on `main`).
+The frontend rebuild lives on `frontend-rebuild` in `/home/jan/revelo-frontend-rebuild` and
+is based on this branch; nothing from it belongs here. Implementation agents never commit,
+push, rebase or change branches; the orchestrator reviews and commits each stage.
 
-During the autonomous run, advance after each validated and independently accepted stage.
 Evidence is stored in the Git-ignored `client/node_modules/.cache/revelo-migration/`.
-The PC reboot cleared the earlier temporary snapshots and isolated runtime. `RECOVERY.md`
-in that directory documents recovered agent records, original Git sources and evidence
-limits. Earlier live checks used frontend port 5191, API port 5301 and a disposable
-PostgreSQL database. Those original processes were not reused. A fresh disposable stack
-on those ports was identity-checked for the independent audit; unrelated services were not operated.
-
-Stages 5–7 and the audit A test follow-up were committed together as `a867751`.
-Stage 8a was committed as `d50cb19`.
-Stage 8b was committed as `237ca76`. Group audit B was accepted 2026-11-14 with no
-findings; report: `client/node_modules/.cache/revelo-migration/group-b-audit.md`.
-Stage 9 was committed as `f954efc`. Stages 10–11 were committed together as `ef4c233`.
-Stages 12–13 were committed together as `eadb8f1`.
-Current checkpoint: migration complete and committed; independent audit of Stages 0–11 in
-[AUDIT.md](AUDIT.md). Deferred behavior follow-ups are tracked below. Preserve unrelated
-image, navigation and viewer module work.
+Stages 0 to 13 migrated everything except the public gallery. The legacy stages L1 to L6
+in section 11 migrate the public gallery, menu, theme transition and fullscreen viewer.
+Deferred behavior follow-ups are tracked below.
 
 ## Stage tracker
 
-Record the completion date for each stage. Commit fields remain pending until the user commits.
+Record the completion date and commit for each stage.
 
-- [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
-- [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `993b4f8`.
-- [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: `36f5c9b`.
-- [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: `24b1d8f`.
-- [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: `b0e0425`.
+- [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `7397acb`.
+- [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `4f37def`.
+- [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: `1c3c205`.
+- [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: `b70dee4`.
+- [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: `5b4c32c`.
 - [x] Group audit A: Data layer, after Stage 4. Completed 2026-11-14. Accepted, no migration
       regressions or blocking type drift. Report: `client/node_modules/.cache/revelo-migration/group-a-audit.md`. The auditor
       performed DOM login and independently assessed the remaining supervisor-run real-browser
       evidence at `client/node_modules/.cache/revelo-migration/group-a-live-evidence.md`.
-- [x] Stage 5: Common components. Completed 2026-11-14. Commit: `a867751`.
-- [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: `a867751`.
-- [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `a867751`.
-- [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: `d50cb19`.
-- [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: `237ca76`.
+- [x] Stage 5: Common components. Completed 2026-11-14. Commit: `2aab670`.
+- [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: `2aab670`.
+- [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: `2aab670`.
+- [x] Stage 8a: Image form components. Completed 2026-11-14. Commit: `e3c8097`.
+- [x] Stage 8b: Settings components. Completed 2026-11-14. Commit: `b16aed9`.
 - [x] Group audit B: All components, after Stage 8b. Completed 2026-11-14. Parent-completed
       live checks; reduced review independence is disclosed in `group-b-audit.md`.
-- [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: `f954efc`.
-- [x] Stage 10: Image views. Completed 2026-11-14. Commit: `ef4c233`.
-- [x] Stage 11: Collection views. Completed 2026-11-14. Commit: `ef4c233`.
+- [x] Stage 9: Auth and utility views. Completed 2026-11-14. Commit: `14f55d5`.
+- [x] Stage 10: Image views. Completed 2026-11-14. Commit: `067b8da`.
+- [x] Stage 11: Collection views. Completed 2026-11-14. Commit: `067b8da`.
 - [x] Stage 12: Dashboard index, settings and tasks views. Completed 2026-11-15. Commit:
-      `eadb8f1`. Report: `client/node_modules/.cache/revelo-migration/stage12-review.md`.
-- [x] Stage 13: Dev playground and hardening. Completed 2026-11-15. Commit: `eadb8f1`.
+      `05a20ef`. Report: `client/node_modules/.cache/revelo-migration/stage12-review.md`.
+- [x] Stage 13: Dev playground and hardening. Completed 2026-11-15. Commit: `05a20ef`.
       Report: `client/node_modules/.cache/revelo-migration/stage13-review.md`.
 - [x] Final audit: After Stage 13. Completed 2026-11-15. Source-contract lane
       `client/node_modules/.cache/revelo-migration/final-audit-source.md` verified shared
       types against backend sources with no drift; browser lanes covered the dev playground
-      and every migrated view on the owned runtime. Completion checks pass: no JS under
-      `client/src`, every SFC typed, `allowJs: false`, no shims/suppressions, CI covers
-      client tests and typecheck. Migration complete; committed in `eadb8f1`.
+      and every migrated view on the owned runtime. That audit covered the client without
+      the public gallery. On this branch the completion checks (no JS under `client/src`,
+      `allowJs: false`) apply again after Stage L6.
+- [x] Audit fixes: the deferred follow-ups below. Commit: `7ce0e87`.
+- [ ] Stage L1: Gallery foundations (section 11).
+- [ ] Stage L2: Theme transition and small public components.
+- [ ] Stage L3: Menu and search.
+- [ ] Stage L4: Galleries and the home view.
+- [ ] Stage L5: Fullscreen viewer and the public image view.
+- [ ] Stage L6: Hardening and final audit of the public frontend.
 
 ## Deferred follow-ups
 
@@ -989,4 +985,181 @@ Beyond the per-stage review checks, do the following:
 
 Output: findings ranked by severity with evidence, a list of follow-up tasks small enough
 for one session each, and a verdict on whether the next stage group can start.
+```
+
+## 11. Legacy public frontend (Stages L1–L6)
+
+Stages 0 to 13 were done on a branch that had already removed the public gallery, so they
+migrated everything else. This branch keeps the original public frontend; these stages
+migrate what is still JavaScript, 27 files and about 6,700 lines, with the same rules as
+sections 3, 4 and 7. Shared modules (stores, `useSettings`, `useDevice`, `useWindowSize`,
+`useDialog`, `useToast`, `utils/helpers`, `ImageMetadata.vue`) are already typed; the
+legacy code consumes them unchanged. `utils/helpers` already has typed `clamp`, `lerp`,
+`smoothingFactor`, `createArray`, `clearArray` and `easeInOutSine`.
+
+### Rules specific to these stages
+
+- Appearance must not change. The `<template>` and `<style>` blocks of every legacy SFC stay
+  identical to `origin/main`. Check with
+  `python3 client/node_modules/.cache/revelo-migration/tools/sfc-parity.py <paths>`.
+  Type in the script block, not the template. A template edit is acceptable only when
+  `vue-tsc` cannot be satisfied otherwise; keep it minimal and list it in the report.
+- Behaviour must not change, including timing constants, easing, thresholds and the order
+  of side effects. Typing may add narrowing (`if (!element) return`) only where the old
+  code would have thrown on the same value; list each such guard in the report.
+- `eslint.config.js` lists `untypedComponents`. Remove a component from the list in the
+  stage that migrates it. The list must be empty after Stage L4 and L5, and the constant is
+  deleted in Stage L6.
+- GSAP ships its own types (`gsap`, `gsap/Flip`, `gsap/ScrollTrigger`,
+  `gsap/ScrollSmoother`). Use them; do not declare local module types.
+- jsdom has no layout, animation frames or real scrolling. Tests stub what a case needs:
+  `getBoundingClientRect`, `offsetWidth`/`offsetHeight`, `scrollTo`, `ResizeObserver`,
+  `IntersectionObserver` and `requestAnimationFrame` with `vi.stubGlobal` or
+  `vi.spyOn(..., "get")`, and use fake timers. Mock `gsap` only to the surface the module
+  uses, and assert on the calls that matter (targets and the decisive properties), not on
+  full option objects.
+- No snapshot tests. Test through public contracts: composable return values and side
+  effects, component props, emits, exposed methods, rendered classes and text, store calls,
+  router navigation, keyboard and pointer handling.
+- Browser verification is required for every stage that touches UI. The isolated runtime
+  is started with
+  `client/node_modules/.cache/revelo-migration/tools/runtime.sh start`
+  (client on http://localhost:5190, API on port 3200, database `revelo_ai_development`, 132
+  images in 8 collections). Treat the data as read-only: do not log in, upload, edit or
+  delete. Drive headless Chromium with
+  `node client/node_modules/.cache/revelo-migration/tools/cdp.mjs <script.json>`
+  (steps are documented at the top of that file). Capture the baseline before changing any
+  file in the stage, and the same scenarios after, at 1280×800 desktop and 390×844 mobile
+  with touch. Keep scripts and screenshots under
+  `client/node_modules/.cache/revelo-migration/legacy/<stage>/` and compare them by viewing
+  the images. The runtime serves the worktree with hot reload.
+
+### Cross-stage contract
+
+`useTheme` coordinates the theme transition with the active gallery through
+`registerImageGallery`. Stage L2 defines that contract as an exported `GalleryHandle`
+type in `client/src/components/images/types.ts`, from exactly the members `useTheme`
+calls (optional members stay optional). Stage L4 makes both galleries' `defineExpose`
+satisfy it; `Home.vue` passes the exposed instance to `registerImageGallery`. Other shared
+legacy types (gallery layout, fullscreen state) live with the composable that owns them.
+
+### Stage L1: Gallery foundations
+
+Scope: `utils/galleryConstants.js`, `utils/galleryHelpers.js`, and the composables
+`useAdaptiveFrameRate`, `useElementRect`, `useElementSize`, `useTapActivation`, `useMenu`,
+`useFullscreenImage`, `useGalleryLayout`, `useDragNavigation`, `usePWAUpdate`.
+
+Test: helper maths and edge values; reactive state and cleanup of the observer and
+listener composables (listeners removed on unmount, observers disconnected); tap versus
+drag discrimination and thresholds in `useTapActivation`; menu open, close and toggle state
+shared between callers in `useMenu`; open, close, navigation and state sharing in
+`useFullscreenImage`; column counts and distribution across breakpoints in
+`useGalleryLayout`; pointer drag, velocity, thresholds and direction decisions in
+`useDragNavigation`. `usePWAUpdate` is entirely commented out; rename it, keep the comments,
+and report how the empty module is handled.
+
+### Stage L2: Theme transition and small public components
+
+Scope: `composables/useTheme.js` (the full version with the masked transition and gallery
+coordination), `components/ThemeToggler.vue`, `components/AboutDialog.vue`,
+`components/Loading.vue`, `components/common/Scrollable.vue`,
+`components/images/EmptyGalleryState.vue`, `components/images/ImageCard.vue`, and the new
+`components/images/types.ts` with `GalleryHandle`.
+
+Test: theme preference persistence, system preference changes, `themeClass`, the
+`isAnimating` guard, the transition sequence with and without animation, and the gallery
+pause, settle and resume protocol with a fake `GalleryHandle`; toggler states and tap
+activation; About dialog content from settings; loading progress display; scrollable
+behaviour; empty state; image card tiny and thumbnail loading, error fallbacks, `alt` and
+`title` from `descriptions.en`.
+
+### Stage L3: Menu and search
+
+Scope: `components/Menu.vue`, `components/ImageSearcher.vue`.
+
+Test: menu open and close, keyboard and outside interaction, which items show for
+anonymous and signed-in users and for the settings that control them (`showAboutDialog`,
+`showLoginLink`), the theme toggler and About dialog integration, search input debounce,
+empty query, results, loading and error states, and how the search drives
+`imagesStore.search` and the gallery's filtered images.
+
+### Stage L4: Galleries and the home view
+
+Scope: `components/images/ImageGallery.vue`, `components/images/NativeImageGallery.vue`,
+`views/Home.vue`, `views/Collections.vue` (a five-line placeholder that no route uses).
+
+Test: which gallery `Home` renders for the `nativeScroll` setting and device; initial
+loading progress and the transition to ready; empty and error states; rendering of images
+and collections from the stores; opening an image into the fullscreen state; the exposed
+`GalleryHandle` members and their effect; `capFrameRate`; cleanup on unmount (listeners,
+tickers, observers). Add an integration test that mounts `Home` with the real stores and a
+mocked API.
+
+### Stage L5: Fullscreen viewer and the public image view
+
+Scope: `components/images/CollectionImages.vue`, `components/common/FullscreenImage.vue`,
+`views/Image.vue`.
+
+Test: opening from the gallery and from `/images/:id`, closing, next and previous within a
+collection, keyboard handling, drag and swipe decisions through `useDragNavigation`, URL
+updates and preserved router history state, metadata panel on desktop and mobile, the
+collection strip selection and scrolling, loading and error states for the image request.
+Add an integration test for gallery to fullscreen to back.
+
+### Stage L6: Hardening and final audit
+
+Set `allowJs` to `false`, delete `untypedComponents` from `eslint.config.js` and restrict
+the client block to `client/**/*.{ts,vue}`, run the completion checks in section 7, run a
+full browser pass over every public and dashboard screen at both viewports, and record the
+results here. The orchestrator runs the independent audit.
+
+### Stage prompt (legacy stages)
+
+```
+You are migrating one stage of Revelo's original public frontend from JavaScript to
+TypeScript. You are the implementation agent; an orchestrator reviews and commits your work.
+
+Worktree: /home/jan/revelo-typescript (branch typescript-migration). Work only there.
+Never run git commands that change history, branches, the index or the working tree
+(no commit, stash, reset, checkout, restore, rebase, merge, mv of tracked files except
+`git mv` for the renames below, push). Never touch other worktrees, the backend, .env
+files or the database. Do not open pull requests or post anything anywhere.
+
+Your stage is "[Stage Lx: title]" in client/MIGRATION.md section 11.
+
+Read first:
+1. client/MIGRATION.md sections 3, 4, 7, 9 and 11.
+2. Every file in your scope and everything it imports.
+3. As house style: client/src/stores/images.ts and images.test.ts, client/src/components/
+   dashboard/images/DescriptionEditor.vue and its test, client/src/test/composableProbe.ts,
+   client/src/stores/test/helpers.ts.
+
+Steps, in order:
+1. Baseline. Run client/node_modules/.cache/revelo-migration/tools/check.sh;
+   it must be green before you change anything. For UI stages, start the runtime and
+   capture the browser baseline described in section 11 before editing.
+2. Tests first, against the JavaScript. Colocated *.test.ts files, extensionless #src
+   imports, behaviour-focused (section 3 and the stage's "Test" list). They must pass
+   before migration. If a test exposes a bug, document current behaviour and report it.
+3. Migrate with `git mv` and `lang="ts"` following section 4 and the rules in section 11.
+   No any, no casts other than as const, no non-null assertions, no ts-ignore or
+   ts-expect-error, no shims. Keep templates, styles, comments and behaviour identical.
+4. Verify. The same tests pass unchanged (section 3's two exceptions only, explained).
+   Run check.sh, sfc-parity.py on the stage's SFCs, and the browser scenarios again;
+   compare screenshots and console output with the baseline.
+5. Tick the stage in the tracker with today's date; leave the commit field empty.
+
+Report, in this shape:
+- Files migrated and tests added (paths), with test counts.
+- Types introduced and where they live.
+- Every template edit, behaviour-preserving guard and test changed after migration, with
+  the reason.
+- Decisions the plan did not cover, with the alternative you rejected.
+- Quirks or bugs noticed (not fixed).
+- Validation results: each check, parity output, browser scenarios with screenshot paths.
+- Anything left undone.
+
+Comments and docstrings: minimal, only for non-obvious constraints, no references to the
+migration or to the old code, no em dashes or double hyphens as punctuation, avoid the
+word "rather".
 ```
