@@ -1,20 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { ImageMetadataUpdate } from "#src/stores/images"
+import type { Image } from "#src/types/models"
 
 import DescriptionEditor from "#src/components/dashboard/images/DescriptionEditor.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
+import { errorMessage } from "#src/utils/api"
 import { getImageVersion } from "#src/utils/helpers"
 
-const props = defineProps({
-  id: {
-    required: true,
-    type: String
-  }
-})
+const props = defineProps<{ id: string }>()
 
 const { show: showToast } = useToast()
 const router = useRouter()
@@ -23,11 +22,13 @@ const imagesStore = useImagesStore()
 
 const loading = ref(false)
 const saving = ref(false)
-const image = ref(null)
-const metadata = ref({})
-const originalMetadata = ref({})
+const image = ref<Image | null>(null)
+const metadata = ref<ImageMetadataUpdate>({})
+const originalMetadata = ref<ImageMetadataUpdate>({})
 
-const regularImageVersion = computed(() => getImageVersion(image.value, "regular"))
+const regularImageVersion = computed(() =>
+  image.value ? getImageVersion(image.value, "regular") : {}
+)
 const hasChanges = computed(() => {
   return JSON.stringify(metadata.value) !== JSON.stringify(originalMetadata.value)
 })
@@ -37,14 +38,14 @@ const loadImage = async () => {
     loading.value = true
     image.value = await imagesStore.fetch(props.id)
 
-    const imageMetadata = {
+    const imageMetadata: ImageMetadataUpdate = {
       aperture: image.value.aperture || "",
       camera: image.value.camera || "",
       comment: image.value.comment || "",
       date: image.value.date ? new Date(image.value.date).toISOString().split("T")[0] : null,
       focalLength: image.value.focalLength || "",
       focalLengthEquivalent: image.value.focalLengthEquivalent || "",
-      iso: image.value.iso || "",
+      iso: image.value.iso ? String(image.value.iso) : "",
       lens: image.value.lens || "",
       shutterSpeed: image.value.shutterSpeed || ""
     }
@@ -69,7 +70,7 @@ const handleSave = async () => {
     })
   } catch (error) {
     showToast({
-      description: error.message || "Failed to update image metadata.",
+      description: errorMessage(error),
       title: "Update Failed",
       type: "error"
     })
@@ -86,7 +87,7 @@ const handleReset = () => {
   metadata.value = { ...originalMetadata.value }
 }
 
-const handleMetadataUpdate = (newMetadata) => {
+const handleMetadataUpdate = (newMetadata: ImageMetadataUpdate) => {
   metadata.value = newMetadata
 }
 

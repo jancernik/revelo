@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Footer from "#src/components/dashboard/Footer.vue"
 import Header from "#src/components/dashboard/Header.vue"
 import Sidebar from "#src/components/dashboard/Sidebar.vue"

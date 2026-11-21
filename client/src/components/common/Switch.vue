@@ -1,29 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onMounted, useTemplateRef, watch } from "vue"
+
+import type { SwitchOption } from "#src/components/common/types"
 
 import Icon from "#src/components/common/Icon.vue"
 
-const props = defineProps({
-  disabled: {
-    default: false,
-    type: Boolean
-  },
-  modelValue: {
-    default: null,
-    type: [String, Number]
-  },
-  options: {
-    default: () => [],
-    type: Array
-  },
-  vertical: {
-    default: false,
-    type: Boolean
+const props = withDefaults(
+  defineProps<{
+    disabled?: boolean
+    modelValue?: null | number | string
+    options?: SwitchOption[]
+    vertical?: boolean
+  }>(),
+  {
+    disabled: false,
+    modelValue: null,
+    options: () => [],
+    vertical: false
   }
-})
+)
 
-const emit = defineEmits(["update:modelValue"])
-const switchElement = useTemplateRef("switch")
+const emit = defineEmits<{
+  "update:modelValue": [value: number | string | undefined]
+}>()
+const switchElement = useTemplateRef<HTMLDivElement>("switch")
 
 onMounted(() => {
   if (!props.modelValue && props.options.length > 0) {
@@ -54,7 +54,7 @@ const updateIndicatorPosition = () => {
   if (!switchElement.value || valueIndex.value === -1) return
 
   const currentIndex = valueIndex.value
-  const optionElements = switchElement.value.querySelectorAll(".option")
+  const optionElements = switchElement.value.querySelectorAll<HTMLLabelElement>(".option")
 
   if (optionElements.length === 0) return
 
@@ -89,11 +89,13 @@ const updateIndicatorPosition = () => {
 
 watch(valueIndex, () => nextTick(updateIndicatorPosition))
 
-const handleChange = (event) => {
-  emit("update:modelValue", event.target.value)
+const handleChange = (event: Event) => {
+  if (event.target instanceof HTMLInputElement) {
+    emit("update:modelValue", event.target.value)
+  }
 }
 
-const handleKeyDown = (event) => {
+const handleKeyDown = (event: KeyboardEvent) => {
   if (props.disabled) return
 
   const currentIndex = valueIndex.value

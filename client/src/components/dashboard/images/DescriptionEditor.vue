@@ -1,21 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue"
+
+import type { DescriptionSource, ImageDescription } from "#src/types/models"
 
 import Button from "#src/components/common/Button.vue"
 import Input from "#src/components/common/Input.vue"
 import { useToast } from "#src/composables/useToast"
 import { useImagesStore } from "#src/stores/images"
 
-const props = defineProps({
-  imageId: {
-    required: true,
-    type: String
-  }
-})
+const props = defineProps<{ imageId: string }>()
 
 const MAX_LENGTH = 500
 const POLL_INTERVAL_MS = 4000
-const SOURCE_LABELS = {
+const SOURCE_LABELS: Record<DescriptionSource, string> = {
   edited: "Edited",
   generated: "Generated",
   translated: "Translated"
@@ -25,28 +22,31 @@ const imagesStore = useImagesStore()
 const { show: showToast } = useToast()
 const languageNames = new Intl.DisplayNames(["en"], { type: "language" })
 
-const descriptions = ref([])
-const drafts = ref({})
-const busy = ref(null)
-let pollTimer = null
+const descriptions = ref<ImageDescription[]>([])
+const drafts = ref<Record<string, string>>({})
+const busy = ref<null | string>(null)
+let pollTimer: ReturnType<typeof setTimeout> | undefined
+// Counts requests, so a response is applied only while it is the latest one.
+let latest = 0
 
 const rows = computed(() =>
   descriptions.value.map((item) => {
-    const draft = drafts.value[item.language] ?? ""
+    const draft = (drafts.value[item.language] ?? "").trim()
     return {
       ...item,
-      changed: draft.trim() !== (item.text ?? "") && draft.trim() !== "",
-      label: languageNames.of(item.language),
-      status: SOURCE_LABELS[item.source] ?? "Pending"
+      changed: draft !== "" && draft !== (item.text ?? ""),
+      label: languageNames.of(item.language) ?? item.language,
+      status: item.source ? SOURCE_LABELS[item.source] : "Pending"
     }
   })
 )
 
-const apply = (list) => {
-  const previous = Object.fromEntries(descriptions.value.map((item) => [item.language, item.text]))
+// A draft follows the server text until the user changes it.
+const apply = (list: ImageDescription[]) => {
+  const previous = new Map(descriptions.value.map((item) => [item.language, item.text ?? ""]))
   for (const item of list) {
     const draft = drafts.value[item.language]
-    if (draft === undefined || draft === (previous[item.language] ?? "")) {
+    if (draft === undefined || draft === (previous.get(item.language) ?? "")) {
       drafts.value[item.language] = item.text ?? ""
     }
   }
@@ -56,60 +56,74 @@ const apply = (list) => {
 
 const stopPolling = () => {
   clearTimeout(pollTimer)
-  pollTimer = null
+  pollTimer = undefined
 }
 
 const schedulePoll = () => {
   stopPolling()
   if (!descriptions.value.some((item) => item.source === null)) return
 
-  pollTimer = setTimeout(async () => {
-    try {
-      apply(await imagesStore.fetchDescriptions(props.imageId))
-    } catch {
-      stopPolling()
-    }
-  }, POLL_INTERVAL_MS)
+  pollTimer = setTimeout(() => void refresh(), POLL_INTERVAL_MS)
 }
 
-const run = async (language, action, success) => {
+const refresh = async () => {
+  const request = ++latest
   try {
-    busy.value = language
+    const list = await imagesStore.fetchDescriptions(props.imageId)
+    if (request === latest) apply(list)
+  } catch {
+    // error handled by store
+  }
+}
+
+const run = async (
+  language: string,
+  action: () => Promise<ImageDescription[]>,
+  success: string
+) => {
+  const request = ++latest
+  stopPolling()
+  busy.value = language
+  try {
     const list = await action()
-    drafts.value[language] = undefined
-    apply(list)
+    if (request === latest) {
+      delete drafts.value[language]
+      apply(list)
+    }
     showToast({ description: success, title: "Description Updated", type: "success" })
   } catch {
     // error handled by store
+    if (request === latest) schedulePoll()
   } finally {
     busy.value = null
   }
 }
 
-const save = (row) =>
+const save = (row: (typeof rows.value)[number]) =>
   run(
     row.language,
     () =>
-      imagesStore.updateDescription(props.imageId, row.language, drafts.value[row.language].trim()),
+      imagesStore.updateDescription(
+        props.imageId,
+        row.language,
+        (drafts.value[row.language] ?? "").trim()
+      ),
     `${row.label} description saved.`
   )
 
-const regenerate = (row) =>
+const regenerate = (row: (typeof rows.value)[number]) =>
   run(
     row.language,
     () => imagesStore.regenerateDescriptions(props.imageId, [row.language]),
     `${row.label} description will be generated again.`
   )
 
-onMounted(async () => {
-  try {
-    apply(await imagesStore.fetchDescriptions(props.imageId))
-  } catch {
-    // error handled by store
-  }
-})
+onMounted(refresh)
 
-onUnmounted(stopPolling)
+onUnmounted(() => {
+  latest++
+  stopPolling()
+})
 </script>
 
 <template>

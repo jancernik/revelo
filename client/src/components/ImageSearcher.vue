@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { computed, ref, useTemplateRef } from "vue"
 
@@ -9,9 +9,9 @@ import { useTapActivation } from "#src/composables/useTapActivation"
 import { useWindowSize } from "#src/composables/useWindowSize"
 import { useImagesStore } from "#src/stores/images"
 
-const props = defineProps({
-  menu: { required: true, type: Object }
-})
+const props = defineProps<{
+  menu: HTMLElement
+}>()
 
 const imagesStore = useImagesStore()
 const { cancelPendingHide, flushSearchCollapseCallback } = useMenu()
@@ -19,10 +19,10 @@ const tapActivation = useTapActivation()
 const isSearchExpanded = ref(false)
 const searchValue = ref("")
 
-const searchButton = useTemplateRef("search-button")
-const searchInput = useTemplateRef("search-input")
-const searchInputContainer = useTemplateRef("search-input-container")
-const clearButton = useTemplateRef("clear-button")
+const searchButton = useTemplateRef<HTMLButtonElement>("search-button")
+const searchInput = useTemplateRef<HTMLInputElement>("search-input")
+const searchInputContainer = useTemplateRef<HTMLDivElement>("search-input-container")
+const clearButton = useTemplateRef<HTMLButtonElement>("clear-button")
 
 const { width: searchButtonWidth } = useElementRect(searchButton)
 const { width: windowWidth } = useWindowSize()
@@ -36,7 +36,7 @@ const menuOffset = computed(() => {
   return parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth)
 })
 
-const createAnimationTimeline = (options = {}) => {
+const createAnimationTimeline = (options: gsap.TimelineVars = {}) => {
   return gsap.timeline({
     defaults: {
       duration: 0.5,
@@ -46,7 +46,7 @@ const createAnimationTimeline = (options = {}) => {
   })
 }
 
-const animateSearchInput = (visible, callback) => {
+const animateSearchInput = (visible: boolean, callback?: () => void) => {
   const tl = createAnimationTimeline({
     onComplete: () => callback?.()
   })
@@ -61,6 +61,7 @@ const animateSearchInput = (visible, callback) => {
 
   if (visible) {
     const menuRect = props.menu.getBoundingClientRect()
+    if (!searchButton.value) return
     const buttonRect = searchButton.value.getBoundingClientRect()
     const menuStyle = getComputedStyle(props.menu)
     const padding = parseFloat(menuStyle.paddingLeft)
@@ -79,7 +80,7 @@ const animateSearchInput = (visible, callback) => {
 
     tl.to(searchInputElements, { ...animateIn, duration: 0.3, stagger: 0.05 }, 0.2)
     tl.to(searchButton.value, { duration: 0.3, ease: "power2.inOut", x: currentOffset }, 0)
-    document.querySelectorAll(menuButtons).forEach((b) => (b.tabIndex = -1))
+    document.querySelectorAll<HTMLButtonElement>(menuButtons).forEach((b) => (b.tabIndex = -1))
   } else {
     tl.to(".menu", { width: initialWidth })
     tl.to(staggeredElements, { ...animateIn, stagger: 0.03 }, 0)
@@ -89,12 +90,12 @@ const animateSearchInput = (visible, callback) => {
 
     tl.to(searchInputElements, { ...animateOut, duration: 0.3, stagger: -0.05 }, 0)
     tl.to(searchButton.value, { duration: 0.3, ease: "power2.inOut", x: 0 }, 0)
-    document.querySelectorAll(menuButtons).forEach((b) => (b.tabIndex = 0))
+    document.querySelectorAll<HTMLButtonElement>(menuButtons).forEach((b) => (b.tabIndex = 0))
   }
 }
 
-const showSearchInput = (callback) => animateSearchInput(true, callback)
-const hideSearchInput = (callback) => animateSearchInput(false, callback)
+const showSearchInput = (callback?: () => void) => animateSearchInput(true, callback)
+const hideSearchInput = (callback?: () => void) => animateSearchInput(false, callback)
 
 const expandSearch = () => {
   if (isSearchExpanded.value) return
@@ -122,7 +123,7 @@ const handleExpandClick = () => {
   expandSearch()
 }
 
-const handleExpandPointerUp = (event) => {
+const handleExpandPointerUp = (event: PointerEvent) => {
   tapActivation.activateOnTap(event, expandSearch)
 }
 
@@ -131,24 +132,25 @@ const handleCollapseClick = () => {
   collapseSearch()
 }
 
-const handleCollapsePointerUp = (event) => {
+const handleCollapsePointerUp = (event: PointerEvent) => {
   tapActivation.activateOnTap(event, collapseSearch)
 }
 
-const handleInput = (event) => {
+const handleInput = (event: Event) => {
+  if (!(event.target instanceof HTMLInputElement)) return
   searchValue.value = event.target.value
   imagesStore.search(event.target.value)
 }
 
-const handleBlur = (event) => {
+const handleBlur = (event: FocusEvent) => {
   if (!searchValue.value.trim() && event.relatedTarget !== clearButton.value) {
     collapseSearch()
   }
 }
 
-const handleFocusOut = (event) => {
+// Focus moving to another menu button also collapses the search.
+const handleFocusOut = () => {
   if (!isSearchExpanded.value) return
-  if (props.menu.value?.contains(event.relatedTarget)) return
   cancelPendingHide()
   flushSearchCollapseCallback()
 }

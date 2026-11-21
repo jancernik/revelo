@@ -1,7 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { LayoutAction } from "#src/composables/useDashboardLayout"
+import type { CachedCollection } from "#src/stores/collections"
 
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -17,7 +20,7 @@ const { show: showToast } = useToast()
 const collectionsStore = useCollectionsStore()
 const { collections } = storeToRefs(collectionsStore)
 
-const selectedCollectionsIds = ref([])
+const selectedCollectionsIds = ref<string[]>([])
 const { clearLastSelected, handleSelect: handleSelectCollection } = useRangeSelect(
   collections,
   selectedCollectionsIds
@@ -27,17 +30,17 @@ const handleNewCollection = () => {
   router.push("/dashboard/collections/new")
 }
 
-const handleEditCollection = (collectionOrId) => {
+const handleEditCollection = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   router.push(`/dashboard/collections/${collectionId}/edit`)
 }
 
-const handleSelectCollectionImages = (collectionOrId) => {
+const handleSelectCollectionImages = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   router.push(`/dashboard/collections/${collectionId}/images`)
 }
 
-const handleDeleteCollection = (collectionOrId) => {
+const handleDeleteCollection = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   showDialog({
     actions: [
@@ -63,7 +66,7 @@ const handleDeleteCollection = (collectionOrId) => {
   })
 }
 
-const handleBulkDeleteCollections = (collectionIds) => {
+const handleBulkDeleteCollections = (collectionIds: string[]) => {
   showDialog({
     actions: [
       {
@@ -94,7 +97,7 @@ const clearSelection = () => {
   setSelection({ items: 0 })
 }
 
-const cancelSelectionAction = {
+const cancelSelectionAction: LayoutAction = {
   color: "secondary",
   icon: "X",
   key: "selection-cancel",
@@ -102,28 +105,28 @@ const cancelSelectionAction = {
   text: "Cancel"
 }
 
-const bulkDeleteCollectionsAction = {
+const bulkDeleteCollectionsAction: LayoutAction = {
   icon: "Trash",
   key: "collection-delete-bulk",
   onClick: () => handleBulkDeleteCollections(selectedCollectionsIds.value),
   text: "Delete"
 }
 
-const downloadCollectionsAction = {
+const downloadCollectionsAction: LayoutAction = {
   icon: "Download",
   key: "collection-download",
   onClick: () => collectionsStore.bulkDownload(selectedCollectionsIds.value),
   text: "Download"
 }
 
-const editCollectionAction = {
+const editCollectionAction: LayoutAction = {
   icon: "Pencil",
   key: "collection-edit-single",
   onClick: () => handleEditCollection(selectedCollectionsIds.value[0]),
   text: "Edit"
 }
 
-const selectCollectionImagesAction = {
+const selectCollectionImagesAction: LayoutAction = {
   icon: "Grid",
   key: "collection-select-images",
   onClick: () => handleSelectCollectionImages(selectedCollectionsIds.value[0]),
@@ -132,7 +135,7 @@ const selectCollectionImagesAction = {
 
 watch(
   selectedCollectionsIds,
-  (ids) => {
+  (ids: string[]) => {
     if (ids.length === 1) {
       setSelection({
         actions: [

@@ -1,76 +1,55 @@
-<script setup>
+<script setup lang="ts">
 import { nextTick, onMounted, useTemplateRef } from "vue"
+
+import type { IconName } from "#src/components/common/types"
 
 import Icon from "#src/components/common/Icon.vue"
 
-const props = defineProps({
-  description: {
-    default: "",
-    type: String
-  },
-  disabled: {
-    default: false,
-    type: Boolean
-  },
-  error: {
-    default: "",
-    type: String
-  },
-  icon: {
-    default: "",
-    type: String
-  },
-  iconPosition: {
-    default: "left",
-    type: String,
-    validator: (value) => ["left", "right"].includes(value)
-  },
-  label: {
-    default: "",
-    type: String
-  },
-  modelValue: {
-    default: "",
-    type: [String, Number]
-  },
-  multiline: {
-    default: false,
-    type: Boolean
-  },
-  placeholder: {
-    default: "",
-    type: String
-  },
-  resize: {
-    default: "none",
-    type: String,
-    validator: (value) => ["both", "horizontal", "none", "vertical"].includes(value)
-  },
-  rows: {
-    default: 3,
-    type: Number
-  },
-  type: {
-    default: "text",
-    type: String
-  },
-  unit: {
-    default: "",
-    type: String
-  },
-  unitPosition: {
-    default: "right",
-    type: String,
-    validator: (value) => ["left", "right"].includes(value)
+const props = withDefaults(
+  defineProps<{
+    description?: string
+    disabled?: boolean
+    error?: string
+    icon?: "" | IconName
+    iconPosition?: "left" | "right"
+    label?: string
+    modelValue?: null | number | string
+    multiline?: boolean
+    placeholder?: string
+    resize?: "both" | "horizontal" | "none" | "vertical"
+    rows?: number
+    type?: string
+    unit?: string
+    unitPosition?: "left" | "right"
+  }>(),
+  {
+    description: "",
+    disabled: false,
+    error: "",
+    icon: "",
+    iconPosition: "left",
+    label: "",
+    modelValue: "",
+    multiline: false,
+    placeholder: "",
+    resize: "none",
+    rows: 3,
+    type: "text",
+    unit: "",
+    unitPosition: "right"
   }
-})
+)
 
-const emit = defineEmits(["update:modelValue"])
-const inputUnit = useTemplateRef("input-unit")
-const inputContainer = useTemplateRef("input-container")
+const emit = defineEmits<{
+  "update:modelValue": [value: string]
+}>()
+const inputUnit = useTemplateRef<HTMLSpanElement>("input-unit")
+const inputContainer = useTemplateRef<HTMLDivElement>("input-container")
 
-const handleInput = (event) => {
-  emit("update:modelValue", event.target.value)
+const handleInput = (event: Event) => {
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    emit("update:modelValue", event.target.value)
+  }
 }
 
 const updateUnitWidth = () => {

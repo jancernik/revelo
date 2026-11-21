@@ -1,4 +1,6 @@
-<script setup>
+<script setup lang="ts">
+import type { Toast, ToastType } from "#src/composables/useToast"
+
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
 import { useToast } from "#src/composables/useToast"
@@ -8,15 +10,15 @@ const ICONS = {
   info: "Info",
   success: "CheckCircle",
   warning: "AlertTriangle"
-}
+} as const
 
 const { remove, toastState } = useToast()
 
-const getTypeIcon = (type) => {
+const getTypeIcon = (type: ToastType) => {
   return ICONS[type] || "info"
 }
 
-const handleAction = (toast) => {
+const handleAction = (toast: Toast) => {
   if (toast.action?.callback) {
     toast.action.callback()
   }
@@ -27,11 +29,7 @@ const handleAction = (toast) => {
 <template>
   <div class="toast-container">
     <TransitionGroup name="toast">
-      <div
-        v-for="toast in toastState.toasts"
-        :key="toast.id"
-        :class="['toast-wrapper', { 'toast-visible': toast.visible }]"
-      >
+      <div v-for="toast in toastState.toasts" :key="toast.id" :class="['toast-wrapper']">
         <div :class="['toast', `toast-${toast.type}`]">
           <div class="content">
             <div class="icon">

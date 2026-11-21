@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Icon from "#src/components/common/Icon.vue"
 </script>
 

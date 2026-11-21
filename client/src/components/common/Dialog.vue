@@ -1,5 +1,7 @@
-<script setup>
-import { watch } from "vue"
+<script setup lang="ts">
+import { onUnmounted, watch } from "vue"
+
+import type { DialogAction } from "#src/composables/useDialog"
 
 import Button from "#src/components/common/Button.vue"
 import Icon from "#src/components/common/Icon.vue"
@@ -27,14 +29,14 @@ const handleOverlayClick = () => {
   handleHide()
 }
 
-const handleAction = (action) => {
+const handleAction = (action: DialogAction) => {
   if (action.callback) {
     action.callback()
   }
   hide()
 }
 
-const handleKeyDown = (event) => {
+const handleKeyDown = (event: KeyboardEvent) => {
   if (dialogState.dismissible && event.key === "Escape") {
     event.preventDefault()
     handleHide()
@@ -50,6 +52,8 @@ watch(dialogState, ({ isOpen }) => {
     window.removeEventListener("keydown", handleKeyDown)
   }
 })
+
+onUnmounted(() => window.removeEventListener("keydown", handleKeyDown))
 </script>
 
 <template>

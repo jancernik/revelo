@@ -1,6 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { computed, nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue"
+
+import type { GalleryHandle } from "#src/components/images/types"
+import type { FullscreenReturnHandler } from "#src/composables/useFullscreenImage"
+import type { Image } from "#src/types/models"
+import type { Point } from "#src/utils/galleryHelpers"
 
 import EmptyGalleryState from "#src/components/images/EmptyGalleryState.vue"
 import ImageCard from "#src/components/images/ImageCard.vue"
@@ -13,20 +18,44 @@ import { transitionDuration, VIRTUAL_BUFFER, ZOOM_DURATION } from "#src/utils/ga
 import { elementCenter, sortStatesByDistance } from "#src/utils/galleryHelpers"
 import { clamp } from "#src/utils/helpers"
 
+interface NativeCardState {
+  columnIndex: number
+  element: HTMLElement
+  imageId: string
+  visible: boolean
+}
+
+interface NativeImageGalleryHandle extends GalleryHandle {
+  isAnimating: () => boolean
+}
+
+interface ZoomReturnOptions {
+  duration?: number
+  flipDuration?: number
+  showAllImages?: boolean
+  withTarget?: boolean
+}
+
+interface ZoomTweenOptions {
+  duration?: number
+  onComplete?: () => void
+  reveal?: boolean
+}
+
 const ZOOM_EASE = "sine.inOut" // Matches easeInOutSine used by the rAF renderer
 const ZOOM_HIDDEN_SCALE = 0.8 // Scale surrounding images shrink to while zoomed into one image
 const SCROLL_IDLE_DELAY = 120 // Milliseconds of no scroll events before the gallery counts as still
 
-const props = defineProps({
-  columns: {
-    default: null,
-    type: Number
-  },
-  menuVisible: {
-    default: true,
-    type: Boolean
+const props = withDefaults(
+  defineProps<{
+    columns?: null | number
+    menuVisible?: boolean
+  }>(),
+  {
+    columns: null,
+    menuVisible: true
   }
-})
+)
 
 const { imageData: fullscreenImageData, show: showFullscreenImage } = useFullscreenImage()
 const { hide: hideMenu, show: showMenu } = useMenu()
@@ -42,26 +71,26 @@ const {
   updateImageGroups
 } = useGalleryLayout(() => props.columns)
 
-const scroller = useTemplateRef("scroller")
+const scroller = useTemplateRef<HTMLDivElement>("scroller")
 
 const cardCount = ref(0)
 const isFirstLoad = ref(true)
 const isScrolling = ref(false)
 const isScrollLocked = ref(false)
 const imageCountForInitialLoad = ref(0)
-const loadedImageIds = ref(new Set())
-const loadedTinyImageIds = ref(new Set())
-const visibleImageIds = ref(new Set())
+const loadedImageIds = ref(new Set<string>())
+const loadedTinyImageIds = ref(new Set<string>())
+const visibleImageIds = ref(new Set<string>())
 
-let cardObserver = null
-let imageCardData = []
+let cardObserver: IntersectionObserver | null = null
+let imageCardData: NativeCardState[] = []
 let lockedScrollTop = 0
-let scrollIdleTimer = null
-let zoomReleaseTimer = null
-let settleCallbacks = []
-let zoomReferencePoint = null
-let zoomTargetImageId = null
-let zoomTween = null
+let scrollIdleTimer: ReturnType<typeof setTimeout> | undefined
+let zoomReleaseTimer: ReturnType<typeof setTimeout> | undefined
+let settleCallbacks: (() => void)[] = []
+let zoomReferencePoint: null | Point = null
+let zoomTargetImageId: null | string = null
+let zoomTween: gsap.core.Tween | null = null
 
 const zoomTotalDuration = computed(() => transitionDuration(isMobile.value))
 
@@ -79,7 +108,7 @@ const viewportCenter = () => ({ x: window.innerWidth / 2, y: window.innerHeight 
 
 const visibleCards = () => imageCardData.filter((card) => card.visible)
 
-const cardElements = (cards) => cards.map((card) => card.element)
+const cardElements = (cards: NativeCardState[]) => cards.map((card) => card.element)
 
 const lockScroll = () => {
   if (isScrollLocked.value || !scroller.value) return
@@ -119,23 +148,25 @@ const buildCardRegistry = () => {
   imageCardData = []
   if (!scroller.value) return
 
-  scroller.value.querySelectorAll(".gallery-column").forEach((columnElement, columnIndex) => {
-    columnElement.querySelectorAll(".image-card").forEach((cardElement) => {
-      const image = cardElement.querySelector("img")
-      if (!image?.dataset.id) return
-      imageCardData.push({
-        columnIndex,
-        element: cardElement,
-        imageId: image.dataset.id,
-        visible: false
+  scroller.value
+    .querySelectorAll<HTMLElement>(".gallery-column")
+    .forEach((columnElement, columnIndex) => {
+      columnElement.querySelectorAll<HTMLElement>(".image-card").forEach((cardElement) => {
+        const image = cardElement.querySelector("img")
+        if (!image?.dataset.id) return
+        imageCardData.push({
+          columnIndex,
+          element: cardElement,
+          imageId: image.dataset.id,
+          visible: false
+        })
       })
     })
-  })
 
   cardCount.value = imageCardData.length
 }
 
-const handleIntersect = (entries) => {
+const handleIntersect: IntersectionObserverCallback = (entries) => {
   for (const entry of entries) {
     const card = imageCardData.find(({ element }) => element === entry.target)
     if (!card) continue
@@ -161,7 +192,7 @@ const observeCards = () => {
   for (const card of imageCardData) cardObserver.observe(card.element)
 }
 
-const centerCardInScroller = (card) => {
+const centerCardInScroller = (card: NativeCardState) => {
   if (!scroller.value) return
   const cardRect = card.element.getBoundingClientRect()
   const scrollerRect = scroller.value.getBoundingClientRect()
@@ -192,7 +223,7 @@ const rebuildLayout = async () => {
   observeCards()
 }
 
-const runZoomTween = (cards, options = {}) => {
+const runZoomTween = (cards: NativeCardState[], options: ZoomTweenOptions = {}) => {
   const { duration, onComplete, reveal } = options
   zoomTween?.kill()
 
@@ -223,9 +254,11 @@ const runZoomTween = (cards, options = {}) => {
   })
 }
 
-const startZoomTransition = (imageId, referenceElement) => {
+const startZoomTransition = (imageId: string, referenceElement: EventTarget | null) => {
   hideMenu(true)
   zoomTargetImageId = imageId
+  if (referenceElement && !(referenceElement instanceof Element))
+    throw new TypeError("Expected a reference element")
   zoomReferencePoint = referenceElement ? elementCenter(referenceElement) : viewportCenter()
 
   const cards = visibleCards().filter((card) => card.imageId !== imageId)
@@ -240,20 +273,20 @@ const startZoomTransition = (imageId, referenceElement) => {
 
 const releaseZoomTarget = () => {
   clearTimeout(zoomReleaseTimer)
-  zoomReleaseTimer = null
+  zoomReleaseTimer = undefined
   zoomTargetImageId = null
   unlockScroll()
 }
 
-const scheduleZoomRelease = (flipDuration) => {
+const scheduleZoomRelease = (flipDuration?: number) => {
   clearTimeout(zoomReleaseTimer)
   const settledFor = Math.max(zoomTotalDuration.value + ZOOM_DURATION, flipDuration ?? 0)
   zoomReleaseTimer = setTimeout(releaseZoomTarget, settledFor * 1000)
 }
 
-const startZoomReturn = (options = {}) => {
+const startZoomReturn = (options: ZoomReturnOptions = {}) => {
   const { duration, flipDuration, showAllImages = false, withTarget = false } = options
-  props.menuVisible && setTimeout(() => showMenu(true), 200)
+  if (props.menuVisible) setTimeout(() => showMenu(true), 200)
 
   const cards = imageCardData.filter(
     (card) =>
@@ -274,7 +307,7 @@ const startZoomReturn = (options = {}) => {
   scheduleZoomRelease(flipDuration)
 }
 
-const isCardOnScreen = (imageId) => {
+const isCardOnScreen = (imageId: string) => {
   const card = imageCardData.find((entry) => entry.imageId === imageId)
   if (!card) return false
 
@@ -282,7 +315,11 @@ const isCardOnScreen = (imageId) => {
   return rect.bottom >= -VIRTUAL_BUFFER && rect.top <= window.innerHeight + VIRTUAL_BUFFER
 }
 
-const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
+const handleFullscreenReturn: FullscreenReturnHandler = (
+  withTarget,
+  isDifferentImage,
+  flipDuration
+) => {
   if (!zoomTargetImageId) {
     unlockScroll()
     return
@@ -295,7 +332,7 @@ const handleFullscreenReturn = (withTarget, isDifferentImage, flipDuration) => {
   startZoomReturn({ flipDuration, showAllImages: !!isDifferentImage, withTarget })
 }
 
-const handleImageClick = (event, image, flipId) => {
+const handleImageClick = (event: MouseEvent | TouchEvent, image: Image, flipId: string) => {
   if (zoomTargetImageId) return
 
   lockScroll()
@@ -310,18 +347,18 @@ const handleImageClick = (event, image, flipId) => {
   })
 }
 
-const handleImageLoad = (imageId) => {
+const handleImageLoad = (imageId: string) => {
   loadedImageIds.value.add(imageId)
 }
 
-const handleTinyImageLoad = (imageId) => {
+const handleTinyImageLoad = (imageId: string) => {
   loadedTinyImageIds.value.add(imageId)
 }
 
 const onFirstLoadComplete = () => {
   isFirstLoad.value = false
   startZoomReturn({ duration: zoomTotalDuration.value / 2, withTarget: false })
-  props.menuVisible && showMenu(true)
+  if (props.menuVisible) showMenu(true)
 }
 
 watch(
@@ -367,7 +404,7 @@ onUnmounted(() => {
   clearTimeout(zoomReleaseTimer)
 })
 
-defineExpose({
+defineExpose<NativeImageGalleryHandle>({
   isAnimating: () => isScrolling.value,
   isAutoScrollActive: () => false,
   isScrollPaused: () => isScrollLocked.value,
