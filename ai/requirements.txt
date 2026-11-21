@@ -1,6 +1,6 @@
-fastapi==0.163.1
+fastapi==0.163.2
 uvicorn[standard]==0.54.0
-python-multipart==0.0.33
+python-multipart==0.0.34
 pillow==13.0.0
 torch==2.15.0
 torchvision==0.29.2
@@ -9,6 +9,6 @@ sentencepiece==0.2.3
 safetensors==0.8.0
 huggingface-hub==2.4.0
 tokenizers==0.23.3
-regex==2026.11.15
+regex==2026.11.18
 numpy==2.5.5
 scipy==1.18.1
