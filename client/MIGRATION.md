@@ -44,7 +44,7 @@ Record the completion date and commit for each stage.
       the public gallery. On this branch the completion checks (no JS under `client/src`,
       `allowJs: false`) apply again after Stage L6.
 - [x] Audit fixes: the deferred follow-ups below. Commit: `7ce0e87`.
-- [ ] Stage L1: Gallery foundations (section 11).
+- [x] Stage L1: Gallery foundations (section 11). Completed 2026-11-17.
 - [ ] Stage L2: Theme transition and small public components.
 - [ ] Stage L3: Menu and search.
 - [ ] Stage L4: Galleries and the home view.
@@ -1057,6 +1057,13 @@ shared between callers in `useMenu`; open, close, navigation and state sharing i
 `useGalleryLayout`; pointer drag, velocity, thresholds and direction decisions in
 `useDragNavigation`. `usePWAUpdate` is entirely commented out; rename it, keep the comments,
 and report how the empty module is handled.
+
+Notes from the stage:
+
+- The running Vite server keeps resolving importers to the old `.js` paths after `git mv`,
+  and the app renders nothing. Restart it with `runtime.sh start` after renaming.
+- `usePWAUpdate.ts` stays comment-only. It is a script, not a module, so no test can
+  import it; it is the one migrated file without a colocated test.
 
 ### Stage L2: Theme transition and small public components
 

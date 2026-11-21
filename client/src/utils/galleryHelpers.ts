@@ -1,8 +1,27 @@
-export const getImageVersion = (imageObject = {}, type) => {
+import type { Image, ImageVersion, ImageVersionType } from "#src/types/models"
+
+export interface AnimationProgress {
+  progress: number
+  started: boolean
+}
+
+export interface GroupImagesOptions {
+  preserveOrder?: boolean
+}
+
+export interface Point {
+  x: number
+  y: number
+}
+
+export const getImageVersion = (
+  imageObject: null | Partial<Image> = {},
+  type: ImageVersionType
+): Partial<ImageVersion> => {
   return imageObject?.versions?.find((v) => v.type === type) || {}
 }
 
-export const calculateImageAspectRatio = (imageObject = {}) => {
+export const calculateImageAspectRatio = (imageObject: null | Partial<Image> = {}) => {
   const imageData = getImageVersion(imageObject, "regular")
   const height = imageData.height || 0
   const width = imageData.width || 0
@@ -10,7 +29,17 @@ export const calculateImageAspectRatio = (imageObject = {}) => {
   return Number(aspectRatio.toFixed(3))
 }
 
-export const groupImages = (images = [], groupCount, options = {}) => {
+/** Callers pass a positive group count; without one the input list is returned ungrouped. */
+export function groupImages(
+  images: Image[] | undefined,
+  groupCount: number,
+  options?: GroupImagesOptions
+): Image[][]
+export function groupImages(
+  images: Image[] = [],
+  groupCount: number,
+  options: GroupImagesOptions = {}
+): Image[] | Image[][] {
   if (!Array.isArray(images) || images.length === 0) return []
   if (!groupCount || groupCount <= 0) return images
 
@@ -25,7 +54,7 @@ export const groupImages = (images = [], groupCount, options = {}) => {
     imagesWithWeights.sort((a, b) => b._weight - a._weight)
   }
 
-  const groups = Array.from({ length: groupCount }, () => [])
+  const groups = Array.from({ length: groupCount }, (): Image[] => [])
   const totals = Array.from({ length: groupCount }, () => 0)
 
   for (const { _weight: weight, ...image } of imagesWithWeights) {
@@ -37,18 +66,22 @@ export const groupImages = (images = [], groupCount, options = {}) => {
   return groups
 }
 
-export const elementCenter = (element) => {
+export const elementCenter = (element: Element): Point => {
   const rect = element.getBoundingClientRect()
   return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
 }
 
-export const calculateDistance = (point1, point2) => {
+export const calculateDistance = (point1: Point, point2: Point) => {
   const deltaX = point2.x - point1.x
   const deltaY = point2.y - point1.y
   return Math.sqrt(deltaX * deltaX + deltaY * deltaY)
 }
 
-export const sortStatesByDistance = (imageStates, referencePoint, ascending = true) => {
+export const sortStatesByDistance = <State extends { element: Element }>(
+  imageStates: State[],
+  referencePoint: Point,
+  ascending = true
+) => {
   return imageStates.sort((stateA, stateB) => {
     const centerA = elementCenter(stateA.element)
     const centerB = elementCenter(stateB.element)
@@ -58,7 +91,12 @@ export const sortStatesByDistance = (imageStates, referencePoint, ascending = tr
   })
 }
 
-export const calculateAnimationProgress = (currentTime, startTime, delay, duration) => {
+export const calculateAnimationProgress = (
+  currentTime: number,
+  startTime: number,
+  delay: number,
+  duration: number
+): AnimationProgress => {
   const timeSinceStart = currentTime - startTime - delay
   if (timeSinceStart < 0) return { progress: 0, started: false }
 
@@ -67,7 +105,12 @@ export const calculateAnimationProgress = (currentTime, startTime, delay, durati
   return { progress: clampedProgress, started: true }
 }
 
-export const interpolateFadeValue = (fromValue, toValue, progress, easeFunction) => {
+export const interpolateFadeValue = (
+  fromValue: number,
+  toValue: number,
+  progress: number,
+  easeFunction?: ((progress: number) => number) | null
+) => {
   const easedProgress = easeFunction ? easeFunction(progress) : progress
   return fromValue + (toValue - fromValue) * easedProgress
 }

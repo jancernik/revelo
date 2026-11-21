@@ -1,10 +1,12 @@
 import { ref } from "vue"
 
+export type MenuCallback = () => void
+
 const isVisible = ref(false)
 const shouldAnimate = ref(false)
-const pendingHide = ref(null)
-const pendingCallback = ref(null)
-const searchCollapseCallback = ref(null)
+const pendingHide = ref<boolean | null>(null)
+const pendingCallback = ref<MenuCallback | null>(null)
+const searchCollapseCallback = ref<MenuCallback | null>(null)
 
 export function useMenu() {
   const show = (animate = true) => {
@@ -23,7 +25,7 @@ export function useMenu() {
     isVisible.value = false
   }
 
-  const requestHide = (animate = true, callback = null) => {
+  const requestHide = (animate = true, callback: MenuCallback | null = null) => {
     if (!isVisible.value) return
     pendingHide.value = animate
     if (typeof callback !== "function") return
@@ -35,7 +37,7 @@ export function useMenu() {
     pendingCallback.value = null
   }
 
-  const setHideCallback = (callback) => {
+  const setHideCallback = (callback: MenuCallback | null) => {
     if (typeof callback !== "function") return
     pendingCallback.value = callback
   }
@@ -48,7 +50,7 @@ export function useMenu() {
     pendingCallback.value = null
   }
 
-  const setSearchCollapseCallback = (callback) => {
+  const setSearchCollapseCallback = (callback: MenuCallback | null) => {
     if (typeof callback !== "function") return
     searchCollapseCallback.value = callback
   }
