@@ -1,8 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { gsap } from "gsap"
 import { Flip } from "gsap/Flip"
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { CachedCollection } from "#src/stores/collections"
+import type { Image as GalleryImage } from "#src/types/models"
 
 import Icon from "#src/components/common/Icon.vue"
 import CollectionImages from "#src/components/images/CollectionImages.vue"
@@ -14,10 +17,28 @@ import { useElementSize } from "#src/composables/useElementSize"
 import { useFullscreenImage } from "#src/composables/useFullscreenImage"
 import { useMenu } from "#src/composables/useMenu"
 import { useWindowSize } from "#src/composables/useWindowSize"
-import { useCollectionsStore } from "#src/stores/collections.js"
+import { useCollectionsStore } from "#src/stores/collections"
 import { SPACING_BASE, SPACING_SMALL, transitionDuration } from "#src/utils/galleryConstants"
 import { calculateImageAspectRatio } from "#src/utils/galleryHelpers"
 import { getImageVersion } from "#src/utils/helpers"
+
+interface ImageSizeOptions extends ImageSpaceOptions {
+  aspectRatio?: null | number
+}
+
+interface ImageSpaceOptions {
+  collectionVisible?: boolean
+  metadataVisible?: boolean
+  titleDescriptionVisible?: boolean
+}
+
+interface SlideCompleteOptions {
+  height: string
+  targetImage: GalleryImage
+  width: string
+}
+
+type StyleTarget = Element | null | undefined
 
 const FLIP_EASE = "power2.inOut" // Easing function for FLIP animation transitions
 const REGULAR_DURATION = 0.4 // Duration for fallback fade/scale animation when no thumbnail available
@@ -38,7 +59,7 @@ const METADATA_FIELDS = [
   "focalLength",
   "focalLengthEquivalent",
   "date"
-]
+] as const
 
 const SHOW_DEBUG_INFO = false // Toggle display of debug information
 
@@ -63,41 +84,47 @@ const { hide: hideMenu } = useMenu()
 const { isMobile } = useDevice()
 const frameRateAdapter = useAdaptiveFrameRate()
 
-const collectionData = ref(null)
+const collectionData = ref<CachedCollection | null | undefined>(null)
 const metadataVisible = ref(false)
 const collectionVisible = ref(false)
 const titleDescriptionVisible = ref(false)
 const initialMetadataWidth = ref(0)
 const isSettingInitialWidth = ref(false)
-const originalFlipId = ref(null)
-const leftSlideImagePath = ref("")
-const rightSlideImagePath = ref("")
+const originalFlipId = ref<null | string>(null)
+const leftSlideImagePath = ref<string | undefined>("")
+const rightSlideImagePath = ref<string | undefined>("")
 const isAnimatingMetadata = ref(false)
-const showHideTimeline = ref(null)
+const showHideTimeline = ref<gsap.core.Timeline | null>(null)
 const isShowingImage = ref(false)
 const isReturningToGallery = ref(false)
 const isProcessingHide = ref(false)
 
-const fullscreenContainerElement = useTemplateRef("fullscreen-image-container")
-const fullscreenElement = useTemplateRef("fullscreen-image")
-const fullscreenImageElement = computed(() => fullscreenElement.value?.querySelector(".image"))
-const fallbackImageElement = computed(() => fullscreenElement.value?.querySelector(".fallback"))
-const leftSlideImageElement = useTemplateRef("left-slide-image")
-const rightSlideImageElement = useTemplateRef("right-slide-image")
-const imageMetadataRef = useTemplateRef("image-metadata")
-const imageMetadataElement = computed(() => imageMetadataRef.value?.$el)
-const metadataOverlay = useTemplateRef("metadata-overlay")
-const collectionRef = useTemplateRef("collection-images")
-const collectionElement = computed(() => collectionRef.value?.$el)
-const titleDescriptionRef = useTemplateRef("title-description")
+const fullscreenContainerElement = useTemplateRef<HTMLDivElement>("fullscreen-image-container")
+const fullscreenElement = useTemplateRef<HTMLDivElement>("fullscreen-image")
+const fullscreenImageElement = computed(() =>
+  fullscreenElement.value?.querySelector<HTMLImageElement>(".image")
+)
+const fallbackImageElement = computed(() =>
+  fullscreenElement.value?.querySelector<HTMLImageElement>(".fallback")
+)
+const leftSlideImageElement = useTemplateRef<HTMLImageElement>("left-slide-image")
+const rightSlideImageElement = useTemplateRef<HTMLImageElement>("right-slide-image")
+const imageMetadataRef = useTemplateRef<InstanceType<typeof ImageMetadata>>("image-metadata")
+const imageMetadataElement = computed(() => imageMetadataRef.value?.imageMetadata)
+const metadataOverlay = useTemplateRef<HTMLDivElement>("metadata-overlay")
+const collectionRef = useTemplateRef<InstanceType<typeof CollectionImages>>("collection-images")
+const collectionElement = computed(() => collectionRef.value?.collectionImages)
+const titleDescriptionRef = useTemplateRef<HTMLDivElement>("title-description")
 const titleDescriptionElement = computed(() => titleDescriptionRef.value)
-const leftControlsRef = useTemplateRef("left-controls")
-const rightControlsRef = useTemplateRef("right-controls")
-const navLeftRef = useTemplateRef("nav-left")
-const navRightRef = useTemplateRef("nav-right")
+const leftControlsRef = useTemplateRef<HTMLDivElement>("left-controls")
+const rightControlsRef = useTemplateRef<HTMLDivElement>("right-controls")
+const navLeftRef = useTemplateRef<HTMLButtonElement>("nav-left")
+const navRightRef = useTemplateRef<HTMLButtonElement>("nav-right")
 
-const regularImageVersion = computed(() => getImageVersion(imageData.value, "regular"))
-const thumbnailImageVersion = computed(() => getImageVersion(imageData.value, "thumbnail"))
+const regularImageVersion = computed(() => getImageVersion(imageData.value ?? undefined, "regular"))
+const thumbnailImageVersion = computed(() =>
+  getImageVersion(imageData.value ?? undefined, "thumbnail")
+)
 const imageAspectRatio = computed(() => calculateImageAspectRatio(imageData.value))
 
 const { height: windowHeight, width: windowWidth } = useWindowSize()
@@ -126,7 +153,8 @@ const isMobileLayout = computed(() => {
   return false
 })
 
-const imageHasMetadata = (image) => METADATA_FIELDS.some((k) => image?.[k])
+const imageHasMetadata = (image: GalleryImage | null | undefined) =>
+  METADATA_FIELDS.some((k) => image?.[k])
 const hasMetadata = computed(() => METADATA_FIELDS.some((k) => imageData?.value?.[k]))
 const visibleCollectionImages = computed(
   () => collectionData.value?.images?.filter((img) => !img.hidden) || []
@@ -161,7 +189,7 @@ const {
 })
 
 const getThumbnailElement = () =>
-  flipId.value ? document.querySelector(`[data-flip-id="${flipId.value}"]`) : null
+  flipId.value ? document.querySelector<HTMLElement>(`[data-flip-id="${flipId.value}"]`) : null
 
 const hasThumbnailAvailable = () => {
   if (!flipId.value) return false
@@ -195,7 +223,7 @@ const getScaleRatio = () => {
   return thumbnailSize / imageSize
 }
 
-const getAvailableImageSpace = (options = {}) => {
+const getAvailableImageSpace = (options: ImageSpaceOptions = {}) => {
   const {
     collectionVisible = false,
     metadataVisible = false,
@@ -220,7 +248,7 @@ const getAvailableImageSpace = (options = {}) => {
   return { height: availableHeight, width: availableWidth }
 }
 
-const calculateOptimalImageSize = (options = {}) => {
+const calculateOptimalImageSize = (options: ImageSizeOptions = {}) => {
   const {
     aspectRatio = null,
     collectionVisible = false,
@@ -237,7 +265,7 @@ const calculateOptimalImageSize = (options = {}) => {
     titleDescriptionVisible
   })
 
-  let height, width
+  let height: number, width: number
 
   if (maxWidth / targetAspectRatio <= maxHeight) {
     width = maxWidth
@@ -250,7 +278,7 @@ const calculateOptimalImageSize = (options = {}) => {
   return { height: `${height}px`, width: `${width}px` }
 }
 
-const maxImageHeight = (collectionVisible, titleDescriptionVisible) => {
+const maxImageHeight = (collectionVisible: boolean, titleDescriptionVisible: boolean) => {
   let availableVh = 100
   let totalReduction = spacing.value * 2
 
@@ -270,18 +298,18 @@ const maxImageHeight = (collectionVisible, titleDescriptionVisible) => {
   return `calc(${availableVh}vh - calc(${spacingPx.value} * 2))`
 }
 
-const maxImageWidth = (metadataVisible) => {
+const maxImageWidth = (metadataVisible: boolean) => {
   if (!metadataVisible || isMobileLayout.value) return `calc(100vw - calc(${spacingPx.value} * 2))`
   const availableVw = 100 - ((initialMetadataWidth.value + spacing.value) / windowWidth.value) * 100
   return `calc(${availableVw}vw - calc(${spacingPx.value} * 2))`
 }
 
-const setVisibility = (element, visible) => {
+const setVisibility = (element: StyleTarget, visible: boolean) => {
   if (!element) return
   gsap.set(element, { visibility: visible ? "visible" : "hidden" })
 }
 
-const setStyles = (elements, styles) => {
+const setStyles = (elements: StyleTarget | StyleTarget[], styles: gsap.TweenVars) => {
   if (!elements) return
   if (Array.isArray(elements)) {
     elements.forEach((el) => el && gsap.set(el, styles))
@@ -290,7 +318,7 @@ const setStyles = (elements, styles) => {
   }
 }
 
-const createAnimationTimeline = (options = {}) => {
+const createAnimationTimeline = (options: gsap.TimelineVars = {}) => {
   return gsap.timeline({
     defaults: {
       duration: 0.3,
@@ -301,16 +329,18 @@ const createAnimationTimeline = (options = {}) => {
 }
 
 const showFullscreenElements = () => {
+  if (!fullscreenElement.value || !fullscreenContainerElement.value) return
   fullscreenElement.value.style.display = "flex"
   fullscreenContainerElement.value.style.display = "flex"
 }
 
 const hideFullscreenElements = () => {
+  if (!fullscreenElement.value || !fullscreenContainerElement.value) return
   fullscreenElement.value.style.display = "none"
   fullscreenContainerElement.value.style.display = "none"
 }
 
-const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
+const setBaseMobileMetadataStyles = (metadataVisible: boolean, animate = false) => {
   if (!imageMetadataElement.value) return
 
   const metadataHeight = imageMetadataElement.value.offsetHeight
@@ -340,7 +370,7 @@ const setBaseMobileMetadataStyles = (metadataVisible, animate = false) => {
   }
 }
 
-const setHiddenMetadataStyles = (isMobile) => {
+const setHiddenMetadataStyles = (isMobile: boolean) => {
   if (!imageMetadataElement.value) return
 
   if (isMobile) {
@@ -458,6 +488,8 @@ const showWithFlipAnimation = () => {
     const thumbnail = getThumbnailElement()
     if (performCalled || !thumbnail) return
     performCalled = true
+    if (!fallbackImageElement.value || !fullscreenImageElement.value || !fullscreenElement.value)
+      return
 
     const borderRadius = getThumbnailBorderRadius()
     const scaleRatio = getScaleRatio()
@@ -514,7 +546,7 @@ const showWithFlipAnimation = () => {
 
     if (!fullscreenImageElement.value.complete) {
       fullscreenImageElement.value.onload = () => {
-        gsap.to(fullscreenImageElement.value, {
+        gsap.to(fullscreenImageElement.value ?? null, {
           duration: 0.3,
           ease: "power2.inOut",
           opacity: 1
@@ -531,10 +563,12 @@ const showWithFlipAnimation = () => {
     visibility: "hidden"
   })
 
-  if (fallbackImageElement.value.complete) {
+  const fallback = fallbackImageElement.value
+  if (!fallback) return
+  if (fallback.complete) {
     perform()
   } else {
-    fallbackImageElement.value.onload = perform
+    fallback.onload = perform
   }
 }
 
@@ -553,6 +587,7 @@ const hideWithFlipAnimation = () => {
 
   const state = Flip.getState([thumbnail, fullscreenElement.value])
 
+  if (!fullscreenElement.value) return
   fullscreenElement.value.style.display = "none"
   thumbnail.style.visibility = "visible"
 
@@ -645,7 +680,7 @@ const canReverseShowAnimation = () => {
 }
 
 const waitForGalleryToSettle = () => {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     const checkSettled = () => {
       callUpdatePositions()
 
@@ -677,6 +712,7 @@ const reverseShowAnimation = async () => {
   }
 
   const MIN_REVERSE_DURATION = 0.35
+  if (!showHideTimeline.value) return false
   const progress = showHideTimeline.value.progress()
   const duration = showHideTimeline.value.duration()
   const naturalReverseDuration = progress * duration
@@ -719,7 +755,7 @@ const hideImage = async () => {
   isShowingImage.value = false
 
   if (metadataVisible.value) {
-    gsap.to(imageMetadataElement.value, {
+    gsap.to(imageMetadataElement.value ?? null, {
       duration: SLIDE_DURATION,
       ease: SLIDE_EASE,
       filter: "blur(15px)",
@@ -728,7 +764,7 @@ const hideImage = async () => {
   }
 
   if (collectionVisible.value) {
-    gsap.to(collectionElement.value, {
+    gsap.to(collectionElement.value ?? null, {
       duration: SLIDE_DURATION,
       ease: SLIDE_EASE,
       filter: "blur(15px)",
@@ -761,7 +797,7 @@ const hideImage = async () => {
   }
 }
 
-const animateMetadata = (visible, callback) => {
+const animateMetadata = (visible: boolean, callback?: () => void) => {
   if (!hasMetadata.value || !imageMetadataElement.value) return
 
   isAnimatingMetadata.value = true
@@ -795,6 +831,7 @@ const animateMetadata = (visible, callback) => {
       }
 
       nextTick(() => {
+        if (!imageMetadataElement.value) return
         const metadataHeight = imageMetadataElement.value.offsetHeight
         const bottomOffset = spacing.value
 
@@ -805,7 +842,7 @@ const animateMetadata = (visible, callback) => {
       const metadataOffset = initialMetadataWidth.value + spacing.value
       const centerOffset = metadataOffset / -2
 
-      tl.to(imageMetadataElement.value, { x: visible ? metadataOffset : 0 }, 0)
+      tl.to(imageMetadataElement.value ?? null, { x: visible ? metadataOffset : 0 }, 0)
       tl.to(fullscreenElement.value, { x: visible ? centerOffset : 0 }, 0)
       const { height, width } = calculateOptimalImageSize({
         collectionVisible: collectionVisible.value,
@@ -817,7 +854,7 @@ const animateMetadata = (visible, callback) => {
   })
 }
 
-const getFullscreenElementYOffset = (options = {}) => {
+const getFullscreenElementYOffset = (options: ImageSpaceOptions = {}) => {
   const {
     collectionVisible: isCollectionVisible = collectionVisible.value,
     titleDescriptionVisible: isTitleDescriptionVisible = titleDescriptionVisible.value
@@ -838,7 +875,7 @@ const getFullscreenElementYOffset = (options = {}) => {
   return offset
 }
 
-const animateCollection = (visible, callback) => {
+const animateCollection = (visible: boolean, callback?: () => void) => {
   if (!hasCollection.value || !collectionElement.value) return
 
   collectionVisible.value = !!visible
@@ -885,7 +922,7 @@ const animateCollection = (visible, callback) => {
   }
 
   if (metadataVisible.value && isMobileLayout.value) {
-    tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true), 0)
+    tl.add(setBaseMobileMetadataStyles(metadataVisible.value, true) ?? [], 0)
   }
 }
 
@@ -1012,17 +1049,17 @@ const hideFloatingControls = async () => {
   await Promise.all(promises)
 }
 
-const showMetadata = (callback) => animateMetadata(true, callback)
-const hideMetadata = (callback) => animateMetadata(false, callback)
-const showCollection = (callback) => animateCollection(true, callback)
-const hideCollection = (callback) => animateCollection(false, callback)
+const showMetadata = (callback?: () => void) => animateMetadata(true, callback)
+const hideMetadata = (callback?: () => void) => animateMetadata(false, callback)
+const showCollection = (callback?: () => void) => animateCollection(true, callback)
+const hideCollection = (callback?: () => void) => animateCollection(false, callback)
 
 const toggleMetadata = () => (metadataVisible.value ? hideMetadata() : showMetadata())
 const toggleCollection = () => (collectionVisible.value ? hideCollection() : showCollection())
 
 let slideCompletionGeneration = 0
 
-const onSlideComplete = async (options) => {
+const onSlideComplete = async (options: SlideCompleteOptions) => {
   const { height, targetImage, width } = options
   const previousHadMetadata = hasMetadata.value
   const nextImageHasMetadata = imageHasMetadata(targetImage)
@@ -1086,13 +1123,15 @@ const onSlideComplete = async (options) => {
   slideProgress.value = 0
 
   const generation = slideCompletionGeneration
+  if (!fallbackElement) return
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     if (fallbackElement.complete && fallbackElement.naturalWidth > 0) {
       resolve()
     } else {
-      fallbackElement.addEventListener("load", resolve, { once: true })
-      fallbackElement.addEventListener("error", resolve, { once: true })
+      const settle = () => resolve()
+      fallbackElement.addEventListener("load", settle, { once: true })
+      fallbackElement.addEventListener("error", settle, { once: true })
     }
   })
 
@@ -1124,12 +1163,12 @@ const onSlideComplete = async (options) => {
   loadRegularImageInBackground(imageElement)
 }
 
-const createSlideTimeline = (targetImage, direction) => {
+const createSlideTimeline = (targetImage: GalleryImage | null, direction: -1 | 1) => {
   if (!targetImage) return null
 
   slideCompletionGeneration++
   cancelPendingRegularImageFadeIn()
-  gsap.killTweensOf(fullscreenImageElement.value, "opacity")
+  gsap.killTweensOf(fullscreenImageElement.value ?? null, "opacity")
 
   const nextThumbnailVersion = getImageVersion(targetImage, "thumbnail")
   const nextImageAspectRatio = calculateImageAspectRatio(targetImage)
@@ -1164,7 +1203,7 @@ const createSlideTimeline = (targetImage, direction) => {
       slideProgress.value = 0
       isSwitchingImage.value = false
     },
-    onUpdate: function () {
+    onUpdate: function (this: gsap.core.Timeline) {
       slideProgress.value = this.progress() * direction
     },
     paused: true
@@ -1257,8 +1296,17 @@ const createPopstateCallback = () => {
   hideImage()
 }
 
-const pushPath = (path) => {
-  const state = history.state || {}
+const isHistoryRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object"
+
+const readHistoryState = (): Record<string, unknown> => {
+  const state: unknown = history.state
+  if (isHistoryRecord(state)) return state
+  return typeof state === "string" ? Object.fromEntries<unknown>(Object.entries(state)) : {}
+}
+
+const pushPath = (path: string) => {
+  const state = readHistoryState()
   const position = typeof state.position === "number" ? state.position : 0
   history.pushState(
     {
@@ -1275,25 +1323,23 @@ const pushPath = (path) => {
   )
 }
 
-const replacePath = (path) => {
-  history.replaceState({ ...history.state, current: path, replaced: true }, "", path)
+const replacePath = (path: string) => {
+  history.replaceState({ ...readHistoryState(), current: path, replaced: true }, "", path)
 }
 
-const setupRouting = (imageId) => {
+const setupRouting = (imageId: string) => {
   pushPath(`/images/${imageId}`)
   setPopstateCallback(createPopstateCallback)
 }
 
-const replaceRoutedImage = (imageId) => {
+const replaceRoutedImage = (imageId: string) => {
   const path = `/images/${imageId}`
   if (updateRoute.value) replacePath(path)
   else router.replace(path)
 }
 
-const getSlideDirection = (image) => {
-  let direction = null
-
-  if (!hasCollection.value || !visibleCollectionImages.value.length || !image) direction
+const getSlideDirection = (image: GalleryImage) => {
+  let direction: -1 | 1 | null = null
   const currentIndex = visibleCollectionImages.value.findIndex((i) => i.id === imageData.value?.id)
   const nextIndex = visibleCollectionImages.value.findIndex((i) => i.id === image.id)
 
@@ -1331,7 +1377,7 @@ const getPreviousImage = () => {
   return visibleCollectionImages.value[prevIndex]
 }
 
-const switchToImage = (image, direction) => {
+const switchToImage = (image: GalleryImage | null, direction?: -1 | 1) => {
   if (
     !image ||
     image.id === imageData.value?.id ||
@@ -1361,12 +1407,12 @@ const switchToImage = (image, direction) => {
   }
 }
 
-const handleCollectionImageClick = (event, image) => {
+const handleCollectionImageClick = (event: MouseEvent | TouchEvent, image: GalleryImage) => {
   event.stopPropagation()
   switchToImage(image)
 }
 
-const handleImageClick = (event) => {
+const handleImageClick = (event: MouseEvent) => {
   event.stopPropagation()
   if (hasDragMovement.value) return
   if (hasCollection.value) {
@@ -1394,7 +1440,7 @@ const handleImageError = () => {
   setStyles(fullscreenImageElement.value, { visibility: "hidden" })
 }
 
-const preloadedCollectionIds = new Set()
+const preloadedCollectionIds = new Set<string>()
 
 const preloadCollectionThumbnails = () => {
   if (!hasCollection.value || !collectionData.value?.images) return
@@ -1425,9 +1471,9 @@ const preloadAdjacentRegularImages = () => {
   }
 }
 
-let pendingRegularImageFadeIn = null
+let pendingRegularImageFadeIn: (() => void) | null = null
 
-const loadRegularImageInBackground = (imageElement) => {
+const loadRegularImageInBackground = (imageElement: HTMLImageElement | null | undefined) => {
   if (!imageElement) return
 
   cancelPendingRegularImageFadeIn()
@@ -1452,7 +1498,7 @@ const cancelPendingRegularImageFadeIn = () => {
   }
 }
 
-const onImageUpdate = async (image) => {
+const onImageUpdate = async (image: GalleryImage | null) => {
   if (image) {
     if (isSwitchingImage.value) replaceRoutedImage(image.id)
     else if (updateRoute.value) setupRouting(image.id)
@@ -1499,7 +1545,7 @@ const onWindowHeightUpdate = () => {
   updateMobileLayout()
 }
 
-const onLayoutChange = (isMobile) => {
+const onLayoutChange = (isMobile: boolean) => {
   if (!metadataVisible.value || isSettingInitialWidth.value) return
   metadataVisible.value = false
   setVisibility(imageMetadataElement.value, false)
@@ -1507,7 +1553,7 @@ const onLayoutChange = (isMobile) => {
   setHiddenMetadataStyles(isMobile)
 }
 
-const handleWindowKeyDown = (event) => {
+const handleWindowKeyDown = (event: KeyboardEvent) => {
   if (event.key === "Escape") {
     event.preventDefault()
     handleBackToGallery()
