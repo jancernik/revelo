@@ -389,6 +389,11 @@ export const useImagesStore = defineStore("images", () => {
   function updateLocal(id: string, image?: Partial<Image>) {
     const index = images.value.findIndex((i) => i.id === id)
     if (index !== -1) images.value[index] = { ...images.value[index], ...image }
+    // Active search results are separately fetched objects.
+    const filteredIndex = filteredImages.value.findIndex((i) => i.id === id)
+    if (filteredIndex !== -1) {
+      filteredImages.value[filteredIndex] = { ...filteredImages.value[filteredIndex], ...image }
+    }
   }
 
   function setOrder(options: ImageOrderOptions = {}) {

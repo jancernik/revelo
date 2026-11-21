@@ -103,6 +103,14 @@ describe("Input", () => {
     )
   })
 
+  it("skips the deferred unit measurement after an immediate unmount", async () => {
+    const wrapper = mount(Input, { global, props: { unit: "USD" } })
+    const container = wrapper.get<HTMLDivElement>(".input-container").element
+    wrapper.unmount()
+    await nextTick()
+    expect(container.style.getPropertyValue("--unit-width")).toBe("")
+  })
+
   it("does not measure a unit added after mount", async () => {
     const wrapper = mount(Input, { global })
     await wrapper.setProps({ unit: "kg" })

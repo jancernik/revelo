@@ -225,6 +225,25 @@ describe("useSortableGrid", () => {
     expect(controls.to.mock.calls[1]?.[1].zIndex).toBe(202)
   })
 
+  it("ignores a valid hit on another dragging item and moves to the next valid target", () => {
+    const { images, reorder } = setup()
+    const options = config(0)
+    const ctx: DragContext = { deltaX: 1, hitTest: vi.fn(() => true) }
+    options.onDragStart.call(ctx)
+    config(1).onDragStart.call(ctx)
+    options.onDrag.call(ctx)
+    finish(options, ctx)
+    expect(reorder).toHaveBeenCalledWith([images[1], images[2], images[0], images[3]])
+  })
+
+  it("does not measure a grid without items", () => {
+    const measure = vi.fn(() => ({ columnGap, gridTemplateColumns: columns, rowGap }))
+    vi.stubGlobal("getComputedStyle", measure)
+    setup(0)
+    expect(measure).not.toHaveBeenCalled()
+    expect(controls.configs).toHaveLength(0)
+  })
+
   it("does not reorder without a hit and resize does not move the dragging item", () => {
     const { elements, images, reorder } = setup()
     const options = config(0)
@@ -237,6 +256,22 @@ describe("useSortableGrid", () => {
     expect(controls.set.mock.calls.some(([el]) => el === elements[0])).toBe(false)
     finish(options, ctx)
     expect(reorder).toHaveBeenCalledWith(images)
+  })
+
+  it("ignores a snap completion that settles after cleanup or a later init", () => {
+    const { container, elements, grid, images, reorder } = setup()
+    const options = config(0)
+    const ctx = context(elements[1])
+    options.onDragStart.call(ctx)
+    options.onDrag.call(ctx)
+    options.onDragEnd.call(ctx)
+    const complete = controls.to.mock.calls.at(-1)?.[1].onComplete
+    grid.cleanup()
+    complete?.()
+    expect(reorder).not.toHaveBeenCalled()
+    grid.init(container, images, reorder)
+    complete?.()
+    expect(reorder).not.toHaveBeenCalled()
   })
 
   it("kills all draggables, disconnects and clears exactly the layout styles, idempotently", () => {

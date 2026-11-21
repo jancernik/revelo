@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import type { UploadConfirmation } from "#src/stores/images"
 import type { UploadedImage, UploadReview } from "#src/types/models"
 
+import Input from "#src/components/common/Input.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -65,14 +66,19 @@ const uploadPayload = {
   previewUrls: ["blob:1"]
 }
 
-const setup = async () => {
+const setup = async (realEditor = false) => {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push("/dashboard/images/upload")
   await router.isReady()
   const wrapper = mount(UploadImages, {
     global: {
       plugins: [router],
-      stubs: { Icon: true, ImageGrid: true, ImageUploader: UploaderStub, MetadataEditor: true }
+      stubs: {
+        Icon: true,
+        ImageGrid: true,
+        ImageUploader: UploaderStub,
+        MetadataEditor: !realEditor
+      }
     }
   })
   await flushPromises()
@@ -180,6 +186,16 @@ describe("UploadImages", () => {
     expect(wrapper.find(".loading-title").text()).toBe("Extracting metadata...")
   })
 
+  it("shows the uploading state while the confirmation is pending", async () => {
+    const { wrapper } = await setup()
+    await startReview(wrapper)
+    vi.mocked(useImagesStore().confirmUpload).mockImplementation(() => new Promise(() => {}))
+    footerAction("confirm").onClick()
+    await nextTick()
+    expect(wrapper.find(".loading-title").text()).toBe("Uploading images...")
+    expect(wrapper.find(".review-step").exists()).toBe(false)
+  })
+
   it("moves to the review step with the uploaded count and editor", async () => {
     const { wrapper } = await setup()
     await startReview(wrapper)
@@ -262,10 +278,10 @@ describe("UploadImages", () => {
     expect(useDashboardLayout().header.title).toBe("Upload Images")
   })
 
-  it("toasts the failure when the confirm fails and keeps the review layout", async () => {
+  it("toasts a failed confirmation and keeps the review data for a retry", async () => {
     const { wrapper } = await setup()
     await startReview(wrapper)
-    vi.mocked(useImagesStore().confirmUpload).mockRejectedValue(new Error("boom"))
+    vi.mocked(useImagesStore().confirmUpload).mockRejectedValueOnce(new Error("boom"))
     footerAction("confirm").onClick()
     await flushPromises()
     expect(toast).toHaveBeenCalledWith({
@@ -273,7 +289,50 @@ describe("UploadImages", () => {
       title: "Error Confirming Upload",
       type: "error"
     })
-    expect(useDashboardLayout().header.title).toBe("Review Images (0)")
+    expect(useDashboardLayout().header.title).toBe("Review Images (1)")
+    expect(wrapper.getComponent(MetadataEditor).props("previewUrl")).toBe("blob:1")
+    footerAction("confirm").onClick()
+    await flushPromises()
+    expect(useImagesStore().confirmUpload).toHaveBeenCalledTimes(2)
+    expect(useImagesStore().confirmUpload).toHaveBeenLastCalledWith([
+      { metadata: { camera: "Canon" }, sessionId: "s1" }
+    ])
+    expect(useDashboardLayout().header.title).toBe("Upload Complete")
+  })
+
+  it("keeps each real editor's extracted Reset baseline across edits and image switches", async () => {
+    const { wrapper } = await setup(true)
+    await startReview(wrapper, 2)
+    const camera = () => {
+      const field = wrapper
+        .findAllComponents(Input)
+        .find((item) => item.props("label") === "Camera")
+      if (!field) throw new Error("Missing camera input")
+      return field.get("input")
+    }
+    await camera().setValue("Nikon")
+    await flushPromises()
+    expect(wrapper.find(".reset").exists()).toBe(true)
+    await wrapper.findAll(".image-list-item")[1]?.trigger("click")
+    await flushPromises()
+    expect(camera().element.value).toBe("Canon")
+    expect(wrapper.find(".reset").exists()).toBe(false)
+    await wrapper.findAll(".image-list-item")[0]?.trigger("click")
+    await flushPromises()
+    expect(camera().element.value).toBe("Nikon")
+    await wrapper.get(".reset").trigger("click")
+    await flushPromises()
+    expect(camera().element.value).toBe("Canon")
+    expect(wrapper.find(".reset").exists()).toBe(false)
+    footerAction("confirm").onClick()
+    await flushPromises()
+    expect(useImagesStore().confirmUpload).toHaveBeenCalledWith([
+      expect.objectContaining({
+        metadata: expect.objectContaining({ camera: "Canon" }),
+        sessionId: "s1"
+      }),
+      { metadata: { camera: "Canon" }, sessionId: "s2" }
+    ])
   })
 
   it("removes a reviewed image and keeps the review count in sync", async () => {
@@ -284,6 +343,26 @@ describe("UploadImages", () => {
     expect(useDashboardLayout().header.title).toBe("Review Images (1)")
     expect(wrapper.getComponent(MetadataEditor).props("previewUrl")).toBe("blob:2")
     expect(wrapper.getComponent(MetadataEditor).props("previewFilename")).toBe("photo.jpg")
+  })
+
+  it("confirms the remaining image with its own metadata after removing an earlier one", async () => {
+    const { wrapper } = await setup()
+    vi.mocked(useImagesStore().uploadForReview).mockResolvedValue([
+      review("s1", { camera: "First" }),
+      review("s2", { camera: "Second" })
+    ])
+    uploader(wrapper).vm.$emit("upload", {
+      images: [new File([], "first.jpg"), new File([], "second.jpg")],
+      previewUrls: ["blob:1", "blob:2"]
+    })
+    await flushPromises()
+    await wrapper.findAll(".remove-button")[0]?.trigger("click")
+    await flushPromises()
+    footerAction("confirm").onClick()
+    await flushPromises()
+    expect(useImagesStore().confirmUpload).toHaveBeenCalledExactlyOnceWith([
+      { metadata: { camera: "Second" }, sessionId: "s2" }
+    ])
   })
 
   it("cancels back to the select layout when the last image is removed", async () => {
