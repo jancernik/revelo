@@ -10,9 +10,11 @@ Record the completion date for each stage. The user fills in the commit after co
 - [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
 - [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `993b4f8`.
 - [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: `36f5c9b`.
-- [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: pending (user).
-- [ ] Stage 4: Data stores and useSettings.
-- [ ] Group audit A: Data layer, after Stage 4.
+- [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: `24b1d8f`.
+- [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: pending (user).
+- [ ] Group audit A: Data layer, after Stage 4. Live checks pending: the development
+      server on port 5190 returns HTTP 404 for `/api/settings`, `/api/images` and
+      `/api/collections`.
 - [ ] Stage 5: Common components.
 - [ ] Stage 6: Shell, layouts, router, App.
 - [ ] Stage 7: Grids and drag reorder.
@@ -661,8 +663,9 @@ Preserve these during migration. They are candidates for separate fixes afterwar
    `setTimeout` plus `requestAnimationFrame`.
 7. `Settings.vue` passes `setting.type` (`integer`, `decimal`, `text`) to `Input`, which
    puts it on `<input type>`; browsers fall back to a text input.
-8. `images.fetch(id)` returns the cached object without refreshing; `collections.fetch(id)`
-   refreshes and replaces the cache entry.
+8. Both `images.fetch(id)` and `collections.fetch(id)` return cached objects unless forced.
+   Forced collection fetches replace or append cache entries. Image fetches do not populate
+   or replace the cache.
 9. `images.search` is a debounced function that returns `undefined`; callers cannot await it.
 10. `useRangeSelect` pushes into `selectedIds.value` in place for additions, including
     ranges, and reassigns for single or range deselections. Views rely on `deep: true`
@@ -703,6 +706,18 @@ Preserve these during migration. They are candidates for separate fixes afterwar
     the 401 retry. `/logout` and `/resend-verification` are not excluded.
 27. Readable token payloads without `exp` are retained without refresh; numeric-string
     expiry values are coerced to numbers.
+28. Collection create/update responses are unhydrated rows without `images`. Create caches
+    the bare row; update merges it into the existing cache entry and retains cached images.
+29. `getImageIdsInCollection` sorts the supplied image array in place. Passing an id forces
+    a collection fetch first.
+30. `collections.setImages` rebuilds cached images from the old collection and image store,
+    ignoring the response's image array. Unresolved ids are dropped and cached ordering is
+    compressed, while image-store ordering follows the requested positions. The rebuilt
+    collection images retain their old `collectionId` values.
+31. Removing a collection does not clear image-store membership locally, although the
+    backend clears it in the database.
+32. `images.updateLocal` updates the main cache only. Separately fetched search results
+    retain their old values.
 
 ## 10. Prompt templates
 
