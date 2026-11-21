@@ -17,5 +17,5 @@ export const MAX_DELTA_TIME = 0.05 // Maximum delta time for frame rate limiting
 export const TRANSITION_DURATION_MOBILE = 0.35
 export const TRANSITION_DURATION_DESKTOP = 0.5
 
-export const transitionDuration = (isMobile) =>
+export const transitionDuration = (isMobile: boolean) =>
   isMobile ? TRANSITION_DURATION_MOBILE : TRANSITION_DURATION_DESKTOP

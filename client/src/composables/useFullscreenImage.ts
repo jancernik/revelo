@@ -1,23 +1,40 @@
 import { ref, shallowRef } from "vue"
 
-const imageData = shallowRef(null)
+import type { Image } from "#src/types/models"
+
+export type FullscreenReturnHandler = (
+  withTarget: boolean,
+  isDifferentImage: boolean,
+  duration?: number
+) => void
+
+export interface FullscreenShowOptions {
+  flipId?: null | string
+  isThumbnailVisible?: (() => boolean) | null
+  onReturn?: FullscreenReturnHandler | null
+  queryParams?: string
+  updatePositions?: (() => void) | null
+  updateRoute?: boolean
+}
+
+const imageData = shallowRef<Image | null>(null)
 const isAnimating = ref(false)
-const flipId = ref(null)
+const flipId = ref<null | string>(null)
 const updateRoute = ref(true)
 const triggerHide = ref(false)
-const updatePositions = ref(null)
+const updatePositions = ref<(() => void) | null>(null)
 const updatePositionsCalled = ref(false)
-const onReturn = ref(null)
+const onReturn = ref<FullscreenReturnHandler | null>(null)
 const onReturnCalled = ref(false)
-const isThumbnailVisible = ref(null)
+const isThumbnailVisible = ref<(() => boolean) | null>(null)
 const isDifferentImage = ref(false)
 const queryParams = ref("")
 
-let popstateHandler = null
-let popstateCallback = null
+let popstateHandler: (() => void) | null = null
+let popstateCallback: (() => void) | null = null
 
 export function useFullscreenImage() {
-  const show = (image, options = {}) => {
+  const show = (image: Image | null, options: FullscreenShowOptions = {}) => {
     if (isAnimating.value) return
 
     flipId.value = options.flipId || null
@@ -60,7 +77,7 @@ export function useFullscreenImage() {
     }
   }
 
-  const callOnReturn = (withTarget, duration) => {
+  const callOnReturn = (withTarget: boolean, duration?: number) => {
     if (onReturn.value && !onReturnCalled.value) {
       onReturnCalled.value = true
       onReturn.value(withTarget, isDifferentImage.value, duration)
@@ -75,7 +92,7 @@ export function useFullscreenImage() {
     isDifferentImage.value = false
   }
 
-  const setPopstateCallback = (callback) => {
+  const setPopstateCallback = (callback: () => void) => {
     popstateCallback = callback
   }
 

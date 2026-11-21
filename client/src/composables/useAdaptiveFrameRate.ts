@@ -17,7 +17,7 @@ export function useAdaptiveFrameRate() {
     if (isEnabled()) gsap.ticker.fps(TARGET_FPS)
   }
 
-  const shouldSkipFrame = (timestamp) => {
+  const shouldSkipFrame = (timestamp: number) => {
     if (!isEnabled()) return false
     if (lastProcessedTimestamp > 0 && timestamp - lastProcessedTimestamp < 1000 / TARGET_FPS) {
       return true

@@ -1,9 +1,14 @@
+import type { ComponentPublicInstance, MaybeRefOrGetter } from "vue"
+
 import { onMounted, onUnmounted, ref, toValue, watch } from "vue"
 
-export function useElementRect(target) {
-  function unrefElement(elRef) {
+type ElementTarget = MaybeRefOrGetter<ComponentPublicInstance | Element | null | undefined>
+
+export function useElementRect(target: ElementTarget) {
+  function unrefElement(elRef: ElementTarget) {
     const plain = toValue(elRef)
-    return plain?.$el ?? plain
+    const element: unknown = plain && "$el" in plain ? (plain.$el ?? plain) : plain
+    return element instanceof Element ? element : null
   }
 
   const x = ref(0)
@@ -28,7 +33,7 @@ export function useElementRect(target) {
     height.value = rect.height
   }
 
-  let resizeObserver = null
+  let resizeObserver: null | ResizeObserver = null
 
   onMounted(() => {
     update()
