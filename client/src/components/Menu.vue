@@ -1,7 +1,11 @@
-<script setup>
+<script setup lang="ts">
+import type { Component } from "vue"
+
 import gsap from "gsap"
 import { computed, markRaw, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
+
+import type { IconName } from "#src/components/common/types"
 
 import AboutDialog from "#src/components/AboutDialog.vue"
 import Icon from "#src/components/common/Icon.vue"
@@ -13,26 +17,44 @@ import { useTapActivation } from "#src/composables/useTapActivation"
 import { useAuthStore } from "#src/stores/auth"
 import { useImagesStore } from "#src/stores/images"
 
+// The persisted auth user is unvalidated; the store keeps it unknown.
+const isAccount = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
+
+interface MenuItem {
+  action?: () => void
+  className?: string
+  component?: Component
+  hasIndicator?: boolean
+  icon?: IconName
+  id: string
+  label?: string
+  path?: string
+  props?: Record<string, unknown>
+  visible: (() => unknown) | boolean
+}
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const imagesStore = useImagesStore()
 const { settings } = useSettings()
-const { flushPendingHide, hide, isVisible, pendingCallback, pendingHide, shouldAnimate } =
-  useMenu("menu")
+const { flushPendingHide, hide, isVisible, pendingCallback, pendingHide, shouldAnimate } = useMenu()
 const tapActivation = useTapActivation()
 
 const canFocus = computed(() => isVisible.value && !isMenuAnimating.value)
 
-const menu = useTemplateRef("menu")
-const menuUl = useTemplateRef("menu-ul")
-const activeIndicator = useTemplateRef("active-indicator")
+const menu = useTemplateRef<HTMLElement>("menu")
+const menuUl = useTemplateRef<HTMLUListElement>("menu-ul")
+const activeIndicator = useTemplateRef<HTMLDivElement>("active-indicator")
 
 const isLoggedIn = computed(() => authStore && !!authStore.user)
-const isAdmin = computed(() => isLoggedIn.value && authStore.user.admin)
+const isAdmin = computed(
+  () => isLoggedIn.value && isAccount(authStore.user) && authStore.user.admin
+)
 const isAnimating = ref(false)
 const isMenuAnimating = ref(false)
-const sortIcon = ref("Shuffle")
+const sortIcon = ref<IconName>("Shuffle")
 
 const toggleSort = () => {
   const sortButton = menuUl.value?.querySelector('[data-item-id="sort-toggler"]')
@@ -56,7 +78,7 @@ const toggleSort = () => {
   }
 }
 
-const menuConfig = reactive({
+const menuConfig: Record<string, MenuItem[]> = reactive({
   center: [
     {
       action: toggleSort,
@@ -101,7 +123,7 @@ const menuConfig = reactive({
 })
 
 const visibleMenuItems = computed(() => {
-  const result = {
+  const result: Record<string, MenuItem[]> = {
     center: [],
     left: [],
     right: []
@@ -119,7 +141,7 @@ const visibleMenuItems = computed(() => {
   return result
 })
 
-const activateItem = (item) => {
+const activateItem = (item: MenuItem) => {
   if (item.hasIndicator) {
     animateIndicator(item.id)
   }
@@ -131,16 +153,16 @@ const activateItem = (item) => {
   }
 }
 
-const handleItemClick = (item) => {
+const handleItemClick = (item: MenuItem) => {
   if (tapActivation.shouldSkipClick()) return
   activateItem(item)
 }
 
-const handleItemPointerUp = (event, item) => {
+const handleItemPointerUp = (event: PointerEvent, item: MenuItem) => {
   tapActivation.activateOnTap(event, () => activateItem(item))
 }
 
-const animateIndicator = (itemId) => {
+const animateIndicator = (itemId: string) => {
   const targetElement = menuUl.value?.querySelector(`[data-item-id="${itemId}"]`)
 
   if (!targetElement || !activeIndicator.value) return
@@ -151,6 +173,7 @@ const animateIndicator = (itemId) => {
   isAnimating.value = true
 
   const buttonRect = buttonElement.getBoundingClientRect()
+  if (!menuUl.value) return
   const containerRect = menuUl.value.getBoundingClientRect()
 
   const targetX = buttonRect.left - containerRect.left
@@ -171,7 +194,7 @@ const animateIndicator = (itemId) => {
   })
 }
 
-const isActive = (path) => {
+const isActive = (path?: string) => {
   if (!path) return false
   if (path === "/") {
     return route?.path === path
@@ -195,6 +218,7 @@ const initializeIndicator = async () => {
       if (!buttonElement) return
 
       const buttonRect = buttonElement.getBoundingClientRect()
+      if (!menuUl.value) return
       const containerRect = menuUl.value.getBoundingClientRect()
 
       const targetX = buttonRect.left - containerRect.left
