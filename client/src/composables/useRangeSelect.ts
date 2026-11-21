@@ -1,9 +1,14 @@
+import type { Ref } from "vue"
+
 import { ref } from "vue"
 
-export function useRangeSelect(items, selectedIds) {
-  const lastSelectedId = ref(null)
+export function useRangeSelect<Item extends { id: string }>(
+  items: Ref<Item[]>,
+  selectedIds: Ref<string[]>
+) {
+  const lastSelectedId = ref<null | string>(null)
 
-  const selectRange = (rangeItems) => {
+  const selectRange = (rangeItems: Item[]) => {
     const ids = rangeItems.map((i) => i.id)
     const allSelected = ids.every((id) => selectedIds.value.includes(id))
 
@@ -16,7 +21,7 @@ export function useRangeSelect(items, selectedIds) {
     }
   }
 
-  const handleSelect = (item, event) => {
+  const handleSelect = (item: Item, event?: Pick<MouseEvent, "shiftKey">) => {
     if (event?.shiftKey && lastSelectedId.value) {
       const startIndex = items.value.findIndex((i) => i.id === lastSelectedId.value)
       const endIndex = items.value.findIndex((i) => i.id === item.id)

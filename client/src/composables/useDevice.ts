@@ -14,8 +14,8 @@ export function useDevice() {
   const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
   const isTouchPrimary = ref(getIsTouchPrimary())
 
-  let mediaQuery = null
-  const handlePointerChange = (e) => {
+  let mediaQuery: MediaQueryList | null = null
+  const handlePointerChange = (e: MediaQueryListEvent) => {
     isTouchPrimary.value = e.matches
   }
 

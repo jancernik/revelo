@@ -1,15 +1,42 @@
 import { reactive } from "vue"
 
-const dialogState = reactive({
+import type { ButtonColor, IconName } from "#src/components/common/types"
+
+export interface DialogAction {
+  callback?: () => void
+  color?: ButtonColor
+  icon?: IconName
+  name: string
+}
+
+export interface DialogOptions {
+  actions?: DialogAction[]
+  description?: string
+  dismissible?: boolean
+  title?: string
+  useX?: boolean
+}
+
+export interface DialogState {
+  actions: DialogAction[]
+  description: string
+  dismissible: boolean
+  isOpen: boolean
+  title: string
+  useX: boolean
+}
+
+const dialogState = reactive<DialogState>({
   actions: [],
   description: "",
   dismissible: true,
   isOpen: false,
-  title: ""
+  title: "",
+  useX: false
 })
 
 export function useDialog() {
-  const show = (options = {}) => {
+  const show = (options: DialogOptions = {}) => {
     Object.assign(dialogState, {
       actions: options.actions || [],
       description: options.description || "",
