@@ -1,23 +1,20 @@
-<script setup>
+<script setup lang="ts">
+import type { ButtonColor, IconName } from "#src/components/common/types"
+
 import Icon from "#src/components/common/Icon.vue"
 
-defineProps({
-  color: {
-    default: "primary",
-    type: String,
-    validator: (value) => {
-      return ["primary", "secondary"].includes(value)
-    }
-  },
-  icon: {
-    default: "",
-    type: String
-  },
-  iconOnly: {
-    default: false,
-    type: Boolean
+withDefaults(
+  defineProps<{
+    color?: ButtonColor
+    icon?: "" | IconName
+    iconOnly?: boolean
+  }>(),
+  {
+    color: "primary",
+    icon: "",
+    iconOnly: false
   }
-})
+)
 </script>
 
 <template>

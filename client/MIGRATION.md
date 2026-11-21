@@ -1,23 +1,33 @@
 # Revelo frontend: TypeScript migration plan
 
 Worktree: `/home/jan/revelo-frontend-rebuild` (branch `frontend-rebuild`). All work happens
-there. Agents never commit, push or open pull requests; the user commits after each stage.
+there. Agents never commit, push or open pull requests; the user creates commits.
+
+During the autonomous run, advance after each validated and independently accepted stage.
+Preserve stage boundaries as snapshots and patches in `/tmp/revelo-overnight.wNjKUb`.
+Manual checks use the isolated frontend at `http://127.0.0.1:5191`, backed by the real API
+at port 5301 and a disposable PostgreSQL database. Existing services on 3000 and 5190 stay
+untouched. Runtime details and private test credentials are in `/tmp/revelo-audit-a.qqZzmB`.
+
+Current checkpoint: Stages 5–7 and the audit A test follow-up are ready for the user's
+combined commit. Pause before Stage 8a.
 
 ## Stage tracker
 
-Record the completion date for each stage. The user fills in the commit after committing.
+Record the completion date for each stage. Commit fields remain pending until the user commits.
 
 - [x] Stage 0: Test infrastructure and tracker. Completed 2026-11-13. Commit: `99bae66`.
 - [x] Stage 1: Tooling, entry point and shared types. Completed 2026-11-13. Commit: `993b4f8`.
 - [x] Stage 2: Leaf composables. Completed 2026-11-13. Commit: `36f5c9b`.
 - [x] Stage 3: API client and auth store. Completed 2026-11-13. Commit: `24b1d8f`.
-- [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: pending (user).
-- [ ] Group audit A: Data layer, after Stage 4. Live checks pending: the development
-      server on port 5190 returns HTTP 404 for `/api/settings`, `/api/images` and
-      `/api/collections`.
-- [ ] Stage 5: Common components.
-- [ ] Stage 6: Shell, layouts, router, App.
-- [ ] Stage 7: Grids and drag reorder.
+- [x] Stage 4: Data stores and useSettings. Completed 2026-11-13. Commit: `b0e0425`.
+- [x] Group audit A: Data layer, after Stage 4. Completed 2026-11-14. Accepted, no migration
+      regressions or blocking type drift. Report: `/tmp/revelo-group-a-audit.md`. The auditor
+      performed DOM login and independently assessed the remaining supervisor-run real-browser
+      evidence at `/tmp/revelo-audit-a.qqZzmB/LIVE-EVIDENCE.md`.
+- [x] Stage 5: Common components. Completed 2026-11-14. Commit: pending (user).
+- [x] Stage 6: Shell, layouts, router, App. Completed 2026-11-14. Commit: pending (user).
+- [x] Stage 7: Grids and drag reorder. Completed 2026-11-14. Commit: pending (user).
 - [ ] Stage 8a: Image form components.
 - [ ] Stage 8b: Settings components.
 - [ ] Group audit B: All components, after Stage 8b.
@@ -34,6 +44,23 @@ Record the completion date for each stage. The user fills in the commit after co
       `client/src/composables/useDevice.test.ts` and
       `client/src/composables/useWindowSize.test.ts` (component property order and multiple
       host components). Preserve their assertions.
+- [ ] Collection cache coherence (audit A, B1): synchronize survivor orders and membership
+      after mutations and clear image membership after collection deletion. These are
+      pre-existing behavior defects, excluded from the TypeScript-only stages.
+- [ ] Search cache coherence (audit A, B2): decide and test an update/invalidation policy
+      for separately fetched search results before changing their current behavior.
+- [ ] Backend wire-boolean parsing (audit A, B3): parse omitted/true/false explicitly and
+      add request-level tests. Authenticated `includeHidden=false` currently coerces to true;
+      anonymous and omitted-flag requests still exclude hidden images.
+- [ ] Dialog listener cleanup on unmount (Stage 5 baseline): remove the window key listener
+      when an open dialog unmounts. The new regression test preserves the existing leak;
+      change it only with a separate behavior fix.
+
+Audit A's test-contract follow-up A1 corrects the collection-removal response fixture and
+adds a realistic add/remove sequence. It asserts the existing divergence between hydrated
+collection orders and the stale surviving image-store order. The original JavaScript replay
+passes 82 tests. Full validation passes with 32 files and 377 tests, zero lint errors and
+the six deferred warnings. Runtime behavior is unchanged.
 
 ## 1. Baseline
 
@@ -458,6 +485,14 @@ Tests first (mount with test-utils):
   Completion: all eight files typed; tests unchanged and green; `/dev` playground renders every
   example without console errors (manual).
 
+Completed: all eight scripts are typed, with 52 colocated tests passing unchanged from the
+JavaScript-first snapshot. Progress retains cast-free runtime props to preserve its range
+validator and nullable public value type. All eight real `/dev` examples render and key
+controls work without captured runtime errors. Independent review accepted with no findings:
+`/tmp/revelo-overnight.wNjKUb/stage5-review.md`. The reviewer independently replayed all 52
+tests on original JavaScript and passed all five validations: 40 files, 429 tests, zero lint
+errors and six deferred warnings. Stage snapshot and patch receipts are in the session directory.
+
 ### Stage 6: Shell, layouts, router, App
 
 Scope: `Footer`, `Header`, `Sidebar`, `layouts/*`, `App.vue`, `router/index.ts`.
@@ -476,6 +511,14 @@ Tests first:
   Migration: typed sidebar items (`{ icon; key; label; path? ; action?; className? }`),
   `RouteMeta` augmentation, typed routes array.
   Completion: files typed; tests green; manual check of dashboard navigation at 5190.
+
+Completed: the three shell components, all four layouts, App and router are typed, with
+44 new tests passing on original JavaScript and TypeScript. One test has a type-only
+Vue Test Utils correction from `get(...).exists()` to `find(...).exists()`; assertion
+strength is unchanged. Real dashboard navigation, selection, footer cancellation, theme
+updates, login/logout and protected redirects pass. Independent review accepted with no
+findings: `/tmp/revelo-overnight.wNjKUb/stage6-review.md`. All five checks pass: 49 files,
+473 tests, zero lint errors and six deferred warnings.
 
 ### Stage 7: Grids and drag reorder
 
@@ -496,6 +539,14 @@ Tests first:
   vs `n images`, selection and action emits, untitled fallback.
   Migration: `GridImage` type, typed emits, typed sortable item records.
   Completion: typed; tests green; manual drag reorder in a collection still works.
+
+Completed: all three modules are typed, with 23 JavaScript-first tests and their fixture
+unchanged after migration. Seven minimal ImageGrid binding guards preserve both real
+image and upload-preview values; DOM structure and styles are unchanged. Actual Chromium
+pointer dragging, DOM Save Order and a fresh API read confirm persisted order 0/1/2.
+Collection thumbnails and upload previews also pass. Independent review accepted without
+findings: `/tmp/revelo-overnight.wNjKUb/stage7-review.md`. All five checks pass: 52 files,
+496 tests, zero lint errors and six deferred warnings.
 
 ### Stage 8a: Image form components
 
