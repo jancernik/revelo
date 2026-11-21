@@ -50,7 +50,10 @@ Record the completion date and commit for each stage.
 - [x] Stage L3: Menu and search. Completed 2026-11-17. Commit: `0f422f6`.
 - [x] Stage L4: Galleries and the home view. Completed 2026-11-17. Commit: `750592b`.
 - [x] Stage L5: Fullscreen viewer and the public image view. Completed 2026-11-18. Commit: `f3d5fa2`.
-- [x] Stage L6: Hardening and final audit of the public frontend. Completed 2026-11-18. Commit:
+- [x] Stage L6: Hardening and final audit of the public frontend. Completed 2026-11-18. Commit: `d751695`.
+- [x] Final audit: After Stage L6. Completed 2026-11-18. Completion checks pass, template and
+      style parity with `main` holds for every legacy SFC, and a desktop and mobile run on the
+      owned runtime (open from the gallery, close, direct and unknown image links) is clean.
 
 ## Deferred follow-ups
 
