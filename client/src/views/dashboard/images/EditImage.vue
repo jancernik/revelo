@@ -45,7 +45,7 @@ const loadImage = async () => {
       date: image.value.date ? new Date(image.value.date).toISOString().split("T")[0] : null,
       focalLength: image.value.focalLength || "",
       focalLengthEquivalent: image.value.focalLengthEquivalent || "",
-      iso: image.value.iso || "",
+      iso: image.value.iso ? String(image.value.iso) : "",
       lens: image.value.lens || "",
       shutterSpeed: image.value.shutterSpeed || ""
     }

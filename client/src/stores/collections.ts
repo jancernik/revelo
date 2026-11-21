@@ -171,6 +171,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     try {
       await api.delete(`/collections/${id}`)
       collections.value = collections.value.filter((c) => c.id !== id)
+      clearImageMembership([id])
     } catch (error) {
       showToast({
         description: errorMessage(error),
@@ -185,6 +186,7 @@ export const useCollectionsStore = defineStore("collections", () => {
     try {
       await api.delete("/collections", { data: { ids } })
       collections.value = collections.value.filter((c) => !ids.includes(c.id))
+      clearImageMembership(ids)
     } catch (error) {
       showToast({
         description: errorMessage(error),
@@ -209,12 +211,16 @@ export const useCollectionsStore = defineStore("collections", () => {
       const index = collections.value.findIndex((c) => c.id === id)
       if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      imageIds.forEach((imageId) => {
-        imagesStore.updateLocal(imageId, {
-          collectionId: id,
-          collectionOrder: newImageIds.indexOf(imageId)
+      if (collection?.images) {
+        syncImageMembership(id, collection.images)
+      } else {
+        imageIds.forEach((imageId) => {
+          imagesStore.updateLocal(imageId, {
+            collectionId: id,
+            collectionOrder: newImageIds.indexOf(imageId)
+          })
         })
-      })
+      }
 
       return collection
     } catch (error) {
@@ -241,9 +247,13 @@ export const useCollectionsStore = defineStore("collections", () => {
       const index = collections.value.findIndex((c) => c.id === id)
       if (index !== -1) collections.value[index] = { ...collections.value[index], ...collection }
 
-      imageIds.forEach((id) => {
-        imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
-      })
+      if (collection?.images) {
+        syncImageMembership(id, collection.images)
+      } else {
+        imageIds.forEach((id) => {
+          imagesStore.updateLocal(id, { collectionId: null, collectionOrder: null })
+        })
+      }
 
       return collection
     } catch (error) {
@@ -278,19 +288,25 @@ export const useCollectionsStore = defineStore("collections", () => {
         collections.value[collectionIndex] = {
           ...collections.value[collectionIndex],
           ...collection,
-          images: imageIds
-            .map(findImage)
-            .filter((image): image is Image => Boolean(image))
-            .map((img, order) => ({ ...img, collectionOrder: order }))
+          images:
+            collection?.images ??
+            imageIds
+              .map(findImage)
+              .filter((image): image is Image => Boolean(image))
+              .map((img, order) => ({ ...img, collectionOrder: order }))
         }
       }
 
-      removedImageIds.forEach((imageId) => {
-        imagesStore.updateLocal(imageId, { collectionId: null, collectionOrder: null })
-      })
-      imageIds.forEach((imageId, order) => {
-        imagesStore.updateLocal(imageId, { collectionId: id, collectionOrder: order })
-      })
+      if (collection?.images) {
+        syncImageMembership(id, collection.images)
+      } else {
+        removedImageIds.forEach((imageId) => {
+          imagesStore.updateLocal(imageId, { collectionId: null, collectionOrder: null })
+        })
+        imageIds.forEach((imageId, order) => {
+          imagesStore.updateLocal(imageId, { collectionId: id, collectionOrder: order })
+        })
+      }
 
       return collection
     } catch (error) {
@@ -371,6 +387,30 @@ export const useCollectionsStore = defineStore("collections", () => {
         return true
       }
       return false
+    })
+  }
+
+  function clearImageMembership(collectionIds: string[]) {
+    imagesStore.images
+      .filter((image) => image.collectionId !== null && collectionIds.includes(image.collectionId))
+      .forEach((image) => {
+        imagesStore.updateLocal(image.id, { collectionId: null, collectionOrder: null })
+      })
+  }
+
+  // The membership response lists every current member with its server-assigned order.
+  function syncImageMembership(id: string, members: Image[]) {
+    const memberIds = members.map((image) => image.id)
+    imagesStore.images
+      .filter((image) => image.collectionId === id && !memberIds.includes(image.id))
+      .forEach((image) => {
+        imagesStore.updateLocal(image.id, { collectionId: null, collectionOrder: null })
+      })
+    members.forEach((image) => {
+      imagesStore.updateLocal(image.id, {
+        collectionId: image.collectionId,
+        collectionOrder: image.collectionOrder
+      })
     })
   }
 

@@ -146,7 +146,11 @@ export function useSortableGrid<T>() {
           gsap.to(item.el, {
             duration: 0.2,
             ease: "power2.out",
-            onComplete: () => onReorder(sortableItems.map((si) => si.image)),
+            onComplete: () => {
+              // The snap can settle after cleanup or a later init replaced the items.
+              if (!sortableItems.includes(item)) return
+              onReorder(sortableItems.map((si) => si.image))
+            },
             scale: 1,
             x: pos.x,
             y: pos.y

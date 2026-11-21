@@ -120,15 +120,16 @@ describe("Dialog", () => {
     expect(wrapper.findComponent(Icon).exists()).toBe(false)
   })
 
-  it("retains its existing key listener when unmounted while open", async () => {
+  it("removes its key listener when unmounted while open", async () => {
     const add = vi.spyOn(window, "addEventListener")
+    const remove = vi.spyOn(window, "removeEventListener")
     const wrapper = setup()
     dialog.show()
     await nextTick()
     const listener = add.mock.calls.find(([type]) => type === "keydown")?.[1]
     wrapper.unmount()
-    expect(escape().defaultPrevented).toBe(true)
-    expect(dialog.dialogState.isOpen).toBe(false)
-    if (listener) window.removeEventListener("keydown", listener)
+    expect(remove).toHaveBeenCalledWith("keydown", listener)
+    expect(escape().defaultPrevented).toBe(false)
+    expect(dialog.dialogState.isOpen).toBe(true)
   })
 })

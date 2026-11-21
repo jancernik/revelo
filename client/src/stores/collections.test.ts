@@ -154,18 +154,22 @@ describe("collection mutations", () => {
     expect(store.collections).toEqual([{ ...row, images: [a] }])
   })
 
-  it("removes collections without clearing image membership locally", async () => {
-    const a = image({ collectionId: "a" })
-    const images = await seedImages([a])
+  it("removes collections and clears their image membership locally", async () => {
+    const a = image({ collectionId: "a", collectionOrder: 0, id: "a1" })
+    const b = image({ collectionId: "b", collectionOrder: 0, id: "b1" })
+    const kept = image({ collectionId: "d", collectionOrder: 0, id: "d1" })
+    const cleared = { collectionId: null, collectionOrder: null }
+    const images = await seedImages([a, b, kept])
     const store = await seed([collection("a"), collection("b"), collection("c")])
     vi.mocked(api.delete).mockResolvedValue(success(null))
     await store.remove("a")
     expect(api.delete).toHaveBeenNthCalledWith(1, "/collections/a")
     expect(store.collections).toEqual([collection("b"), collection("c")])
-    expect(images.images).toEqual([a])
+    expect(images.images).toEqual([{ ...a, ...cleared }, b, kept])
     await store.bulkRemove(["b", "c"])
     expect(api.delete).toHaveBeenNthCalledWith(2, "/collections", { data: { ids: ["b", "c"] } })
     expect(store.collections).toEqual([])
+    expect(images.images).toEqual([{ ...a, ...cleared }, { ...b, ...cleared }, kept])
   })
 
   it("adds unique ids after the existing collection order and updates image metadata", async () => {
@@ -187,15 +191,15 @@ describe("collection mutations", () => {
       imageIds: ["a", "b", "c"]
     })
     expect(sync.mock.calls).toEqual([
+      ["a", { collectionId: "c", collectionOrder: 0 }],
       ["b", { collectionId: "c", collectionOrder: 1 }],
-      ["c", { collectionId: "c", collectionOrder: 2 }],
       ["c", { collectionId: "c", collectionOrder: 2 }]
     ])
     expect(images.images).toEqual(updated.images)
     expect(store.collections).toEqual([updated])
   })
 
-  it("clears removed membership without updating surviving image orders", async () => {
+  it("clears removed membership and renumbers survivors from the response", async () => {
     const a = image({ collectionId: "c", collectionOrder: 0, id: "a" })
     const b = image({ collectionId: "c", collectionOrder: 1, id: "b" })
     const images = await seedImages([a, b])
@@ -206,12 +210,18 @@ describe("collection mutations", () => {
     vi.mocked(api.put).mockResolvedValue(success({ collection: updated }))
     expect(await store.removeImages("c", ["a"])).toEqual(updated)
     expect(api.put).toHaveBeenCalledExactlyOnceWith("/collections/c/images", { imageIds: ["b"] })
-    expect(sync).toHaveBeenCalledExactlyOnceWith("a", { collectionId: null, collectionOrder: null })
+    expect(sync.mock.calls).toEqual([
+      ["a", { collectionId: null, collectionOrder: null }],
+      ["b", { collectionId: "c", collectionOrder: 0 }]
+    ])
     expect(store.collections).toEqual([updated])
-    expect(images.images).toEqual([{ ...a, collectionId: null, collectionOrder: null }, b])
+    expect(images.images).toEqual([
+      { ...a, collectionId: null, collectionOrder: null },
+      { ...b, collectionOrder: 0 }
+    ])
   })
 
-  it("keeps backend survivor renumbering in the collection cache after an add/remove sequence", async () => {
+  it("keeps backend survivor renumbering in both caches after an add/remove sequence", async () => {
     const a = image({ id: "a" })
     const b = image({ id: "b" })
     const assignedA = { ...a, collectionId: "c", collectionOrder: 0 }
@@ -236,10 +246,10 @@ describe("collection mutations", () => {
       ["/collections/c/images", { imageIds: ["b"] }]
     ])
     expect(store.collections).toEqual([removed])
-    expect(images.images).toEqual([a, assignedB])
+    expect(images.images).toEqual([a, { ...assignedB, collectionOrder: 0 }])
   })
 
-  it("rebuilds a new image order using old collection and image-store cache entries", async () => {
+  it("caches the response collection and its membership after setting images", async () => {
     const a = image({ collectionId: "c", collectionOrder: 0, id: "a" })
     const b = image({ collectionId: "c", collectionOrder: 1, id: "b" })
     const c = image({ id: "c" })
@@ -255,12 +265,7 @@ describe("collection mutations", () => {
     expect(api.put).toHaveBeenCalledExactlyOnceWith("/collections/c/images", {
       imageIds: ["c", "b"]
     })
-    expect(store.collections).toEqual([
-      collection("c", [
-        { ...c, collectionOrder: 0 },
-        { ...b, collectionOrder: 1 }
-      ])
-    ])
+    expect(store.collections).toEqual([returned])
     expect(images.images).toEqual([
       { ...a, collectionId: null, collectionOrder: null },
       b,
@@ -273,14 +278,12 @@ describe("collection mutations", () => {
     ])
   })
 
-  it("drops unresolved ids from the cache rebuild and compresses its collectionOrder", async () => {
+  it("falls back to a local rebuild without a response collection and drops unresolved ids", async () => {
     const a = image({ collectionId: "c", collectionOrder: 0, id: "a" })
     const b = image({ collectionId: "c", collectionOrder: 1, id: "b" })
     const images = await seedImages([a, b])
     const store = await seed([collection("c", [a, b])])
-    vi.mocked(api.put).mockResolvedValue(
-      success({ collection: collection("c", [b, image({ id: "missing" }), a]) })
-    )
+    vi.mocked(api.put).mockResolvedValue(success({ collection: null }))
     await store.setImages("c", ["b", "missing", "a"])
     expect(store.collections).toEqual([
       collection("c", [
@@ -291,6 +294,24 @@ describe("collection mutations", () => {
     expect(images.images).toEqual([
       { ...a, collectionOrder: 2 },
       { ...b, collectionOrder: 0 }
+    ])
+  })
+
+  it("falls back to request-based membership updates without a response collection", async () => {
+    const a = image({ collectionId: "c", collectionOrder: 0, id: "a" })
+    const b = image({ collectionId: "c", collectionOrder: 1, id: "b" })
+    const c = image({ id: "c" })
+    const images = await seedImages([a, b, c])
+    const store = await seed([collection("c", [a, b])])
+    vi.mocked(api.get).mockResolvedValue(success({ collection: collection("c", [a, b]) }))
+    vi.mocked(api.put).mockResolvedValue(success({ collection: null }))
+    await store.addImages("c", ["c"])
+    expect(images.images).toEqual([a, b, { ...c, collectionId: "c", collectionOrder: 2 }])
+    await store.removeImages("c", ["a"])
+    expect(images.images).toEqual([
+      { ...a, collectionId: null, collectionOrder: null },
+      b,
+      { ...c, collectionId: "c", collectionOrder: 2 }
     ])
   })
 })

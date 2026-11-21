@@ -296,6 +296,115 @@ describe("Settings", () => {
     expect(controls.refresh).toHaveBeenCalledOnce()
   })
 
+  it("renders malformed switch and pair values through the fallback", async () => {
+    vi.mocked(api.get).mockResolvedValueOnce(
+      success({
+        settings: [
+          {
+            category: "Alpha",
+            default: null,
+            description: "Null mode",
+            name: "nullMode",
+            options: [null],
+            type: "switch",
+            value: null
+          },
+          {
+            category: "Alpha",
+            default: [],
+            description: "Flat pairs",
+            name: "flatPairs",
+            type: "textpairs",
+            value: [["a"]]
+          },
+          {
+            category: "Alpha",
+            default: [],
+            description: "Text pairs",
+            name: "textPairs",
+            type: "textpairs",
+            value: "a=b"
+          }
+        ]
+      })
+    )
+    const wrapper = mount(Settings, { global: { stubs: { Icon: true } } })
+    await flushPromises()
+    expect(wrapper.findAllComponents(SwitchSetting)).toHaveLength(0)
+    expect(wrapper.findAllComponents(TextPairsSetting)).toHaveLength(0)
+    expect(wrapper.findAll(".unknown-type").map((item) => item.get(".name").text())).toEqual([
+      "nullMode",
+      "flatPairs",
+      "textPairs"
+    ])
+  })
+
+  it("accepts object switch values from options and without an options list", async () => {
+    vi.mocked(api.get).mockResolvedValueOnce(
+      success({
+        settings: [
+          ...definitions(),
+          {
+            category: "Zebra",
+            default: { value: "a" },
+            description: "No options",
+            name: "bareMode",
+            type: "switch",
+            value: { value: "a" }
+          }
+        ]
+      })
+    )
+    const wrapper = mount(Settings, { global: { stubs: { Icon: true } } })
+    await flushPromises()
+    const switches = () => wrapper.findAllComponents(SwitchSetting)
+    expect(switches().map((item) => item.props("setting").name)).toEqual([
+      "mode",
+      "objectMode",
+      "bareMode"
+    ])
+    switches()[1]?.vm.$emit("update", { label: "Second", value: "two" })
+    await nextTick()
+    expect(switches().map((item) => item.props("setting").name)).toEqual([
+      "mode",
+      "objectMode",
+      "bareMode"
+    ])
+    expect(switches()[1]?.props("currentValue")).toEqual({ label: "Second", value: "two" })
+  })
+
+  it("excludes an object draft with saved content from the changed settings", async () => {
+    const wrapper = await setup()
+    const mode = wrapper
+      .findAllComponents(SwitchSetting)
+      .find((item) => item.props("setting").name === "objectMode")
+    if (!mode) throw new Error("Missing object mode")
+    mode.vm.$emit("update", { label: "First", value: "one" })
+    wrapper.getComponent(ToggleSetting).vm.$emit("update", false)
+    await nextTick()
+    expect(footer("save").text).toBe("Save 1 change")
+    vi.mocked(api.put).mockResolvedValue(success({}))
+    await footer("save").onClick()
+    expect(api.put).toHaveBeenCalledExactlyOnceWith("/settings", {
+      settings: [{ name: "enabled", value: false }]
+    })
+  })
+
+  it("resets an object draft to a detached copy of its saved value", async () => {
+    const wrapper = await setup()
+    const mode = wrapper
+      .findAllComponents(SwitchSetting)
+      .find((item) => item.props("setting").name === "objectMode")
+    if (!mode) throw new Error("Missing object mode")
+    mode.vm.$emit("update", { label: "Second", value: "two" })
+    await nextTick()
+    mode.vm.$emit("reset")
+    await nextTick()
+    expect(mode.props("currentValue")).toEqual({ label: "First", value: "one" })
+    expect(mode.props("currentValue")).not.toBe(mode.props("originalValue"))
+    expect(useDashboardLayout().footer.actions).toEqual([])
+  })
+
   it("finishes loading with empty settings when the response has no settings", async () => {
     vi.mocked(api.get).mockResolvedValueOnce(success({}))
     const wrapper = mount(Settings, { global: { stubs: { Icon: true } } })

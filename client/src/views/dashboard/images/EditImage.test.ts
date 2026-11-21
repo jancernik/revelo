@@ -50,7 +50,7 @@ const initialMetadata = {
   date: "2026-01-02",
   focalLength: "",
   focalLengthEquivalent: "",
-  iso: 200,
+  iso: "200",
   lens: "",
   shutterSpeed: ""
 }
@@ -130,6 +130,21 @@ describe("EditImage", () => {
       iso: "200"
     })
     expect(router.currentRoute.value.path).toBe("/dashboard/images/img-1")
+  })
+
+  it("disables save again after a real editor field is edited and reverted", async () => {
+    const { wrapper } = await setup(true)
+    const camera = wrapper
+      .findAllComponents(Input)
+      .find((field) => field.props("label") === "Camera")
+    if (!camera) throw new Error("Missing camera input")
+    await camera.get("input").setValue("Nikon")
+    await flushPromises()
+    expect(footerAction("save").disabled).toBe(false)
+    await camera.get("input").setValue("Canon")
+    await flushPromises()
+    expect(footerAction("save").disabled).toBe(true)
+    expect(useDashboardLayout().header.actions).toEqual([])
   })
 
   it("maps the image into the editor metadata and registers the layout", async () => {

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { DescriptionSource } from "#src/types/models"
 
+import { useAuthStore } from "#src/stores/auth"
 import { useCollectionsStore } from "#src/stores/collections"
 import { useImagesStore } from "#src/stores/images"
 import {
@@ -98,6 +99,16 @@ describe("image fetching", () => {
     expect(api.get).toHaveBeenCalledTimes(2)
     await store.refreshImages()
     expect(api.get).toHaveBeenCalledTimes(3)
+  })
+
+  it("force-refetches the initialized list when the access token changes", async () => {
+    const store = await seed()
+    const refreshed = [image({ hidden: true, id: "hidden" })]
+    vi.mocked(api.get).mockResolvedValue(success({ collections: [], images: refreshed }))
+    useAuthStore().setUser({ accessToken: "token" })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(api.get).toHaveBeenCalledWith("/images", { params: { includeHidden: true } })
+    expect(store.images).toEqual(refreshed)
   })
 
   it("initializes only once", async () => {
@@ -476,14 +487,18 @@ describe("image search", () => {
     expect(store.visibleFilteredImages).toEqual([originals[0]])
   })
 
-  it("leaves separate search results unchanged when the main cache is updated", async () => {
-    const store = await seed([image()])
-    vi.mocked(api.get).mockResolvedValue(success({ images: [image()] }))
+  it("patches separate search results with main-cache updates", async () => {
+    const other = image({ id: "other" })
+    const store = await seed([image(), other])
+    vi.mocked(api.get).mockResolvedValue(success({ images: [image(), other] }))
     store.search("query")
     await vi.advanceTimersByTimeAsync(300)
-    store.updateLocal("image-1", { hidden: true })
-    expect(store.images).toEqual([image({ hidden: true })])
-    expect(store.visibleFilteredImages).toEqual([image()])
+    vi.mocked(api.put).mockResolvedValue(success({ image: image({ hidden: true }) }))
+    await store.toggleHidden("image-1", true)
+    expect(store.images).toEqual([image({ hidden: true }), other])
+    expect(store.visibleFilteredImages).toEqual([other])
+    store.updateLocal("other", { camera: "Edited" })
+    expect(store.visibleFilteredImages).toEqual([image({ camera: "Edited", id: "other" })])
   })
 
   it("shows search errors, resets loading and rejects its background callback", async () => {

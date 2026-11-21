@@ -16,9 +16,10 @@ Stage 8a was committed as `d50cb19`.
 Stage 8b was committed as `237ca76`. Group audit B was accepted 2026-11-14 with no
 findings; report: `client/node_modules/.cache/revelo-migration/group-b-audit.md`.
 Stage 9 was committed as `f954efc`. Stages 10–11 were committed together as `ef4c233`.
-Current checkpoint: independent audit of Stages 0–11 recorded in [AUDIT.md](AUDIT.md);
-Stage 12 accepted. Stage 13 in progress. Preserve unrelated image, navigation and viewer
-module work.
+Stages 12–13 were committed together as `eadb8f1`.
+Current checkpoint: migration complete and committed; independent audit of Stages 0–11 in
+[AUDIT.md](AUDIT.md). Deferred behavior follow-ups are tracked below. Preserve unrelated
+image, navigation and viewer module work.
 
 ## Stage tracker
 
@@ -44,51 +45,66 @@ Record the completion date for each stage. Commit fields remain pending until th
 - [x] Stage 10: Image views. Completed 2026-11-14. Commit: `ef4c233`.
 - [x] Stage 11: Collection views. Completed 2026-11-14. Commit: `ef4c233`.
 - [x] Stage 12: Dashboard index, settings and tasks views. Completed 2026-11-15. Commit:
-      pending (user). Report: `client/node_modules/.cache/revelo-migration/stage12-review.md`.
-- [x] Stage 13: Dev playground and hardening. Completed 2026-11-15. Commit: pending (user).
+      `eadb8f1`. Report: `client/node_modules/.cache/revelo-migration/stage12-review.md`.
+- [x] Stage 13: Dev playground and hardening. Completed 2026-11-15. Commit: `eadb8f1`.
       Report: `client/node_modules/.cache/revelo-migration/stage13-review.md`.
 - [x] Final audit: After Stage 13. Completed 2026-11-15. Source-contract lane
       `client/node_modules/.cache/revelo-migration/final-audit-source.md` verified shared
       types against backend sources with no drift; browser lanes covered the dev playground
       and every migrated view on the owned runtime. Completion checks pass: no JS under
       `client/src`, every SFC typed, `allowJs: false`, no shims/suppressions, CI covers
-      client tests and typecheck. Migration complete; commits pending (user).
+      client tests and typecheck. Migration complete; committed in `eadb8f1`.
 
 ## Deferred follow-ups
 
 - [x] The six Vue test-host lint warnings in `useDevice.test.ts` and
       `useWindowSize.test.ts` were resolved in Stage 13 through a shared dynamically built
       probe component; all assertions were preserved.
-- [ ] Collection cache coherence (audit A, B1): synchronize survivor orders and membership
-      after mutations and clear image membership after collection deletion. These are
-      pre-existing behavior defects, excluded from the TypeScript-only stages.
-- [ ] Search cache coherence (audit A, B2): decide and test an update/invalidation policy
-      for separately fetched search results before changing their current behavior.
-- [ ] Backend wire-boolean parsing (audit A, B3): parse omitted/true/false explicitly and
-      add request-level tests. Authenticated `includeHidden=false` currently coerces to true;
-      anonymous and omitted-flag requests still exclude hidden images.
-- [ ] Dialog listener cleanup on unmount (Stage 5 baseline): remove the window key listener
-      when an open dialog unmounts. The new regression test preserves the existing leak;
-      change it only with a separate behavior fix.
-- [ ] Upload confirmation retry (independent audit, baseline): failed confirmation clears
+- [x] Collection cache coherence (audit A, B1): synchronize survivor orders and membership
+      after mutations and clear image membership after collection deletion. Fixed
+      2026-11-15: membership responses drive both caches; deletion clears local membership.
+- [x] Search cache coherence (audit A, B2): decide and test an update/invalidation policy
+      for separately fetched search results before changing their current behavior. Fixed
+      2026-11-15: `updateLocal` also patches matching active search results.
+- [x] Backend wire-boolean parsing (audit A, B3): parse omitted/true/false explicitly and
+      add request-level tests. Authenticated `includeHidden=false` coerced to true. Fixed
+      2026-11-15: query flags (`includeHidden`, `complete`, `force`) use `queryBoolean` in
+      `api/src/validation/baseSchemas.js`; other values are rejected with 400.
+- [x] Dialog listener cleanup on unmount (Stage 5 baseline): remove the window key listener
+      when an open dialog unmounts. Fixed 2026-11-15: `Dialog.vue` removes it in `onUnmounted`.
+- [x] Upload confirmation retry (independent audit, baseline): failed confirmation clears
       review sessions and metadata; a second Confirm can show completion without a request.
-      Preserve review data for retry in a separate behavior fix.
-- [ ] Editor dirty-state comparison (independent audit, baseline): editing then reverting a
+      Fixed 2026-11-15: review data is cleared only after a successful confirmation.
+- [x] Editor dirty-state comparison (independent audit, baseline): editing then reverting a
       field can leave Save enabled because the child stringifies the parent's numeric ISO.
-      Align draft comparison and payload contracts in a separate behavior fix.
-- [ ] Sortable cleanup timing (independent audit, baseline): a pending GSAP completion can
-      emit an empty order after cleanup clears the item array. Cancel obsolete completions;
-      no persisted data loss was established by this audit.
-- [ ] Upload editor Reset baseline (Stage 8a, P2 baseline): UploadImages immediately echoes
+      Fixed 2026-11-15: `EditImage.vue` keeps the ISO draft as a string, as the editor emits it.
+- [x] Sortable cleanup timing (independent audit, baseline): a pending GSAP completion can
+      emit an empty order after cleanup clears the item array. Fixed 2026-11-15: a snap
+      completion is ignored once its item has left the active grid.
+- [x] Upload editor Reset baseline (Stage 8a, P2 baseline): UploadImages immediately echoes
       emitted metadata into `initialMetadata`, replacing the editor's original snapshot.
-      Preserve the originally extracted metadata and add a parent-integration regression
-      test in a separate behavior fix, not during the view's TypeScript migration.
+      Fixed 2026-11-15: one kept-alive editor per review image, seeded from extracted metadata.
+- [x] Upload review removal alignment (found 2026-11-15, baseline): removing a review image
+      left its edited metadata in place, so Confirm paired later sessions with the wrong
+      metadata. Fixed 2026-11-15: removal also splices the metadata drafts.
 
 Audit A's test-contract follow-up A1 corrects the collection-removal response fixture and
 adds a realistic add/remove sequence. It asserts the existing divergence between hydrated
 collection orders and the stale surviving image-store order. The original JavaScript replay
 passes 82 tests. Full validation passes with 32 files and 377 tests, zero lint errors and
 the six deferred warnings. Runtime behavior is unchanged.
+
+2026-11-15 follow-up pass. Mutation-gap tests were added for ImageGrid defaults, Settings
+value guards and object branches, useSortableGrid guards, the images token refresh, the
+upload loading state and the Input unit guard. The remaining survivors found are
+equivalent under reachable values: the `&&`→`||` variants of the Settings object branches
+and `inputUnit && (inputContainer && unit)` in Input. The auth `console.error` survivors were
+skipped. Fixed: dialog listener cleanup, upload confirmation retry, editor dirty state,
+sortable cleanup timing, upload Reset baseline, upload removal alignment, collection and
+search cache coherence. The A1 sequence test now asserts agreement between both caches.
+Left open: backend wire-boolean parsing (B3); images moved between collections by the
+backend stay listed in the previous collection's cache; quirk 18 (a missing date drafts as
+`null`, so clearing a newly typed date leaves Save enabled).
 
 ## 1. Baseline
 
@@ -333,7 +349,8 @@ the optional chains on an untyped error.
 - `Image`: `id: string`, `aperture`, `camera`, `comment`, `focalLength`,
   `focalLengthEquivalent`, `lens`, `shutterSpeed` as `null | string`; `iso: null | number`;
   `date: null | string` (ISO timestamp in JSON); `hidden: boolean`;
-  `captions: null | Record<string, string>`; `collectionId: null | string`;
+  `descriptions: Record<string, string>` (texts by language, `{}` when none);
+  `collectionId: null | string`;
   `collectionOrder: null | number`; `versions: ImageVersion[]`. The confirm-upload response
   also carries `originalFilename` and timestamps; model those as optional on `Image` or as a
   separate `UploadedImage` extending it. Check `Image.transformImageWithUrls` before deciding.
@@ -858,11 +875,12 @@ Preserve these during migration. They are candidates for separate fixes afterwar
 30. `collections.setImages` rebuilds cached images from the old collection and image store,
     ignoring the response's image array. Unresolved ids are dropped and cached ordering is
     compressed, while image-store ordering follows the requested positions. The rebuilt
-    collection images retain their old `collectionId` values.
+    collection images retain their old `collectionId` values. Since 2026-11-15 this applies
+    only when the response has no collection.
 31. Removing a collection does not clear image-store membership locally, although the
-    backend clears it in the database.
+    backend clears it in the database. Fixed 2026-11-15.
 32. `images.updateLocal` updates the main cache only. Separately fetched search results
-    retain their old values.
+    retain their old values. Fixed 2026-11-15.
 
 ## 10. Prompt templates
 
