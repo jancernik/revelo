@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from "vue-router"
 import type { DialogOptions } from "#src/composables/useDialog"
 import type { Image, ImageDescription } from "#src/types/models"
 
+import Input from "#src/components/common/Input.vue"
 import DescriptionEditor from "#src/components/dashboard/images/DescriptionEditor.vue"
 import MetadataEditor from "#src/components/dashboard/images/MetadataEditor.vue"
 import { useDashboardLayout } from "#src/composables/useDashboardLayout"
@@ -102,6 +103,35 @@ afterEach(() => {
 })
 
 describe("EditImage", () => {
+  it("round-trips real editor input, resets it and sends string ISO with the complete save payload", async () => {
+    const { router, wrapper } = await setup(true)
+    const fields = wrapper.findAllComponents(Input)
+    const camera = fields.find((field) => field.props("label") === "Camera")
+    const iso = fields.find((field) => field.props("label") === "ISO")
+    if (!camera || !iso) throw new Error("Missing metadata input")
+    expect(camera.get("input").element.value).toBe("Canon")
+    expect(iso.get("input").element.value).toBe("200")
+    expect(footerAction("save").disabled).toBe(true)
+    await camera.get("input").setValue("Nikon")
+    await flushPromises()
+    expect(footerAction("save").disabled).toBe(false)
+    const reset = useDashboardLayout().header.actions.find((action) => action.key === "reset")
+    if (!reset) throw new Error("Missing reset action")
+    reset.onClick()
+    await flushPromises()
+    expect(camera.get("input").element.value).toBe("Canon")
+    expect(footerAction("save").disabled).toBe(true)
+    await camera.get("input").setValue("Nikon")
+    await flushPromises()
+    await footerAction("save").onClick()
+    await flushPromises()
+    expect(useImagesStore().updateMetadata).toHaveBeenCalledExactlyOnceWith("img-1", {
+      ...changedMetadata,
+      iso: "200"
+    })
+    expect(router.currentRoute.value.path).toBe("/dashboard/images/img-1")
+  })
+
   it("maps the image into the editor metadata and registers the layout", async () => {
     const { wrapper } = await setup()
     expect(useImagesStore().fetch).toHaveBeenCalledOnce()

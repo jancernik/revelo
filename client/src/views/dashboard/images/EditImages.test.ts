@@ -18,7 +18,7 @@ vi.mock("#src/composables/useToast", () => ({ useToast: () => ({ show: toast }) 
 vi.mock("#src/stores/images", async () => {
   const { ref } = await import("vue")
   const store = {
-    bulkUpdateMetadata: vi.fn<(ids: string[], metadata: unknown) => Promise<Image[]>>(),
+    bulkUpdateMetadata: vi.fn<(ids: (null | string)[], metadata: unknown) => Promise<Image[]>>(),
     images: ref<Image[]>([])
   }
   return { useImagesStore: () => store }
@@ -109,6 +109,36 @@ describe("EditImages", () => {
     })
     expect(editor.props("previewUrl")).toBe("")
     expect(editor.props("showPreview")).toBe(false)
+  })
+
+  it("accepts repeated query ids without combining or losing them", async () => {
+    const { wrapper } = await setup("a&ids=c")
+    expect(wrapper.getComponent(ImageGrid).props("images")).toEqual([images[0], images[2]])
+    wrapper.getComponent(MetadataEditor).vm.$emit("update", { camera: "Nikon" })
+    await nextTick()
+    await footerAction("save").onClick()
+    expect(useImagesStore().bulkUpdateMetadata).toHaveBeenCalledWith(["a", "c"], {
+      camera: "Nikon"
+    })
+  })
+
+  it("preserves null query entries so malformed targets fail without updating a subset", async () => {
+    const { router, wrapper } = await setup("a&ids=b&ids")
+    vi.mocked(useImagesStore().bulkUpdateMetadata).mockRejectedValue(new Error("Invalid ids"))
+    expect(useDashboardLayout().header.title).toBe("Edit 3 Images")
+    wrapper.getComponent(MetadataEditor).vm.$emit("update", { camera: "Nikon" })
+    await nextTick()
+    await footerAction("save").onClick()
+    expect(useImagesStore().bulkUpdateMetadata).toHaveBeenCalledWith(["a", "b", null], {
+      camera: "Nikon"
+    })
+    expect(router.currentRoute.value.path).toBe("/dashboard/images/edit")
+    expect(toast).toHaveBeenCalledWith({
+      description: "Invalid ids",
+      title: "Update Failed",
+      type: "error"
+    })
+    expect(footerAction("save").disabled).toBe(false)
   })
 
   it("keeps save disabled when only empty fields are set", async () => {

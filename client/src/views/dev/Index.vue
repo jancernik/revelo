@@ -1,24 +1,34 @@
-<script setup>
+<script setup lang="ts">
+import type { Component, Ref } from "vue"
+
 import { markRaw, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import Sidebar from "#src/views/dev/Sidebar.vue"
 
+interface DevComponent {
+  component: Component
+  id: string
+  name: string
+}
+
 const route = useRoute()
 const router = useRouter()
 
-const components = ref([])
+const components = ref<DevComponent[]>([])
 const activeSection = ref("")
-const observer = ref(null)
+const observer: Ref<IntersectionObserver | null> = ref(null)
 let userClicked = false
 
 const loadComponents = async () => {
   try {
-    const modules = import.meta.glob("#src/views/dev/examples/*.vue", { eager: true })
-    const componentList = []
+    const modules = import.meta.glob<{ default: Component }>("#src/views/dev/examples/*.vue", {
+      eager: true
+    })
+    const componentList: DevComponent[] = []
 
     for (const path in modules) {
-      const filename = path.split("/").pop().replace(".vue", "")
+      const filename = path.split("/").pop()?.replace(".vue", "") ?? ""
       const component = modules[path].default
 
       componentList.push({
@@ -47,7 +57,7 @@ const setupIntersectionObserver = () => {
     threshold: 0
   }
 
-  observer.value = new IntersectionObserver((entries) => {
+  observer.value = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
     if (userClicked) return
 
     entries.forEach((entry) => {
@@ -61,7 +71,7 @@ const setupIntersectionObserver = () => {
   components.value.forEach((comp) => {
     const element = document.getElementById(comp.id)
     if (element) {
-      observer.value.observe(element)
+      observer.value?.observe(element)
     }
   })
 
@@ -75,19 +85,19 @@ const handleScroll = () => {
   if (userClicked) return
 
   const componentsContainer = document.querySelector(".components")
-  const scrollTop = componentsContainer.scrollTop
-  const scrollHeight = componentsContainer.scrollHeight
-  const clientHeight = componentsContainer.clientHeight
+  const scrollTop = componentsContainer?.scrollTop
+  const scrollHeight = componentsContainer?.scrollHeight
+  const clientHeight = componentsContainer?.clientHeight
 
-  const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50
+  const isNearBottom = (scrollTop ?? 0) + (clientHeight ?? 0) >= (scrollHeight ?? 0) - 50
 
   if (isNearBottom && components.value.length > 0) {
     const lastComponent = components.value[components.value.length - 1]
-    updateActiveSection(lastComponent.id)
+    if (lastComponent) updateActiveSection(lastComponent.id)
   }
 }
 
-const updateActiveSection = (id) => {
+const updateActiveSection = (id: string) => {
   if (activeSection.value !== id) {
     activeSection.value = id
     const newHash = `#${id}`
@@ -97,7 +107,7 @@ const updateActiveSection = (id) => {
   }
 }
 
-const scrollToSection = (id) => {
+const scrollToSection = (id: string) => {
   const element = document.getElementById(id)
   if (element) {
     element.scrollIntoView({
@@ -107,18 +117,18 @@ const scrollToSection = (id) => {
   }
 }
 
-const navigateToSection = (id) => {
+const navigateToSection = (id: string) => {
   userClicked = true
   updateActiveSection(id)
 
   const componentsContainer = document.querySelector(".components")
-  let scrollEndTimer
+  let scrollEndTimer: ReturnType<typeof setTimeout> | undefined
 
   const checkScrollEnd = () => {
     clearTimeout(scrollEndTimer)
     scrollEndTimer = setTimeout(() => {
       userClicked = false
-      componentsContainer.removeEventListener("scroll", checkScrollEnd)
+      componentsContainer?.removeEventListener("scroll", checkScrollEnd)
     }, 150)
   }
 

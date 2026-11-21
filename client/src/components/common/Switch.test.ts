@@ -42,6 +42,26 @@ describe("Switch", () => {
     expect(wrapper.emitted("update:modelValue")).toEqual([["one"]])
   })
 
+  it("preserves numeric option values on mount and keyboard, but emits native strings on change", async () => {
+    const wrapper = mount(Switch, {
+      global: { stubs: { Icon: true } },
+      props: {
+        modelValue: null,
+        options: [
+          { label: "First", value: 1 },
+          { label: "Second", value: 2 }
+        ]
+      }
+    })
+    expect(wrapper.emitted("update:modelValue")).toEqual([[1]])
+    await wrapper.setProps({ modelValue: 1 })
+    await wrapper.trigger("keydown", { key: "ArrowRight" })
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([2])
+    await wrapper.setProps({ modelValue: 2 })
+    await wrapper.get("input").setValue(true)
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual(["1"])
+  })
+
   it("renders labels, fallback values, icons and native checked state", async () => {
     const wrapper = setup("two")
     expect(wrapper.emitted("update:modelValue")).toBeUndefined()

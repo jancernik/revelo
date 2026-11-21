@@ -1,16 +1,13 @@
-<script setup>
-defineProps({
-  activeSection: {
-    default: "",
-    type: String
-  },
-  components: {
-    required: true,
-    type: Array
-  }
-})
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    activeSection?: string
+    components: { id: string; name: string }[]
+  }>(),
+  { activeSection: "" }
+)
 
-defineEmits(["navigate"])
+defineEmits<{ navigate: [id: string] }>()
 </script>
 
 <template>

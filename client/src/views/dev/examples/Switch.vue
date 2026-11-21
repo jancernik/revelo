@@ -1,5 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue"
+
+import type { SwitchOption } from "#src/components/common/types"
 
 import RSwitch from "#src/components/common/Switch.vue"
 
@@ -9,37 +11,37 @@ const alignment = ref("left")
 const verticalTheme = ref("auto")
 const disabledValue = ref("enabled")
 
-const viewOptions = [
+const viewOptions: SwitchOption[] = [
   { icon: "List", value: "list" },
   { icon: "Grid3X3", value: "grid" },
   { icon: "LayoutGrid", value: "card" }
 ]
 
-const themeOptions = [
+const themeOptions: SwitchOption[] = [
   { label: "Light", value: "light" },
   { label: "Dark", value: "dark" },
   { label: "Auto", value: "auto" }
 ]
 
-const alignmentOptions = [
+const alignmentOptions: SwitchOption[] = [
   { icon: "AlignLeft", value: "left" },
   { icon: "AlignCenter", value: "center" },
   { icon: "AlignRight", value: "right" },
   { icon: "AlignJustify", value: "justify" }
 ]
 
-const verticalOptions = [
+const verticalOptions: SwitchOption[] = [
   { label: "Light Theme", value: "light" },
   { label: "Dark Theme", value: "dark" },
   { label: "System", value: "auto" }
 ]
 
-const disabledOptions = [
+const disabledOptions: SwitchOption[] = [
   { label: "Enabled", value: "enabled" },
   { label: "Disabled", value: "disabled" }
 ]
 
-const mixedOptions = [
+const mixedOptions: SwitchOption[] = [
   { icon: "Plus", label: "Create", value: "create" },
   { icon: "Edit", label: "Edit", value: "edit" },
   { icon: "Trash2", label: "Delete", value: "delete" }

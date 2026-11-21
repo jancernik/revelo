@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue"
 
 import Toggle from "#src/components/common/Toggle.vue"

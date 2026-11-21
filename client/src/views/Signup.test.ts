@@ -15,11 +15,17 @@ vi.mock("#src/utils/api", async (importOriginal) => ({
   default: { get: vi.fn() }
 }))
 
-const auth = vi.hoisted(() => ({
-  accessToken: null as null | string,
-  signup: vi.fn(),
-  user: null as unknown
-}))
+const auth = vi.hoisted(
+  (): {
+    accessToken: null | string
+    signup: ReturnType<typeof vi.fn>
+    user: unknown
+  } => ({
+    accessToken: null,
+    signup: vi.fn(),
+    user: null
+  })
+)
 
 enableAutoUnmount(afterEach)
 

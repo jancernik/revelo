@@ -136,7 +136,7 @@ describe("Collections", () => {
   it("registers single-selection actions in order", async () => {
     const collections = [gridCollection("a")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
+    await select(wrapper, collections[0])
     const layout = useDashboardLayout()
     expect(layout.selection.items).toBe(1)
     expect(layout.selection.actions.map((action) => action.key)).toEqual([
@@ -158,8 +158,8 @@ describe("Collections", () => {
   it("drops the edit and select-images actions for a multi selection", async () => {
     const collections = [gridCollection("a"), gridCollection("b")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
-    await select(wrapper, collections[1] as Collection)
+    await select(wrapper, collections[0])
+    await select(wrapper, collections[1])
     const layout = useDashboardLayout()
     expect(layout.selection.items).toBe(2)
     expect(layout.selection.actions.map((action) => action.key)).toEqual([
@@ -172,7 +172,7 @@ describe("Collections", () => {
   it("edits and opens image selection for a single selection", async () => {
     const collections = [gridCollection("a")]
     const { router, wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
+    await select(wrapper, collections[0])
     selectionAction("collection-edit-single").onClick()
     await flushPromises()
     expect(router.currentRoute.value.path).toBe("/dashboard/collections/a/edit")
@@ -184,8 +184,8 @@ describe("Collections", () => {
   it("downloads the selection through the store", async () => {
     const collections = [gridCollection("a"), gridCollection("b")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
-    await select(wrapper, collections[1] as Collection)
+    await select(wrapper, collections[0])
+    await select(wrapper, collections[1])
     selectionAction("collection-download").onClick()
     expect(useCollectionsStore().bulkDownload).toHaveBeenCalledWith(["a", "b"])
   })
@@ -193,8 +193,8 @@ describe("Collections", () => {
   it("deletes a bulk selection through a dialog, store call and toast", async () => {
     const collections = [gridCollection("a"), gridCollection("b")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
-    await select(wrapper, collections[1] as Collection)
+    await select(wrapper, collections[0])
+    await select(wrapper, collections[1])
     selectionAction("collection-delete-bulk").onClick()
     const options = deleteOptions()
     expect(options.title).toBe("Delete Collections")
@@ -213,7 +213,7 @@ describe("Collections", () => {
   it("deletes a single collection from the grid through a dialog", async () => {
     const collections = [gridCollection("a")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
+    await select(wrapper, collections[0])
     grid(wrapper).vm.$emit("delete", collections[0])
     await nextTick()
     const options = deleteOptions()
@@ -244,17 +244,17 @@ describe("Collections", () => {
   it("selects a range with shift and deselects on a repeat click", async () => {
     const collections = [gridCollection("a"), gridCollection("b"), gridCollection("c")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
-    await select(wrapper, collections[2] as Collection, true)
+    await select(wrapper, collections[0])
+    await select(wrapper, collections[2], true)
     expect(useDashboardLayout().selection.items).toBe(3)
-    await select(wrapper, collections[0] as Collection)
+    await select(wrapper, collections[0])
     expect(useDashboardLayout().selection.items).toBe(2)
   })
 
   it("clears the selection from the cancel action", async () => {
     const collections = [gridCollection("a")]
     const { wrapper } = await setup(collections)
-    await select(wrapper, collections[0] as Collection)
+    await select(wrapper, collections[0])
     selectionAction("selection-cancel").onClick()
     await nextTick()
     expect(useDashboardLayout().selection.items).toBe(0)

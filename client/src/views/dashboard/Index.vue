@@ -1,7 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
+
+import type { GridImage } from "#src/components/dashboard/types"
+import type { LayoutAction } from "#src/composables/useDashboardLayout"
+import type { CachedCollection } from "#src/stores/collections"
 
 import CollectionGrid from "#src/components/dashboard/CollectionGrid.vue"
 import ImageGrid from "#src/components/dashboard/ImageGrid.vue"
@@ -21,10 +25,10 @@ const { images } = storeToRefs(imagesStore)
 const collectionsStore = useCollectionsStore()
 const { collections } = storeToRefs(collectionsStore)
 
-const selectedImagesIds = ref([])
-const selectedCollectionsIds = ref([])
+const selectedImagesIds = ref<string[]>([])
+const selectedCollectionsIds = ref<string[]>([])
 
-const handleSelectCollection = (collection) => {
+const handleSelectCollection = (collection: CachedCollection) => {
   if (selectedCollectionsIds.value.includes(collection.id)) {
     selectedCollectionsIds.value = selectedCollectionsIds.value.filter((id) => id !== collection.id)
   } else {
@@ -32,17 +36,17 @@ const handleSelectCollection = (collection) => {
   }
 }
 
-const handleEditCollection = (collectionOrId) => {
+const handleEditCollection = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   router.push(`/dashboard/collections/${collectionId}/edit`)
 }
 
-const handleSelectCollectionImages = (collectionOrId) => {
+const handleSelectCollectionImages = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   router.push(`/dashboard/collections/${collectionId}/images`)
 }
 
-const handleDeleteCollection = (collectionOrId) => {
+const handleDeleteCollection = (collectionOrId: CachedCollection | string) => {
   const collectionId = typeof collectionOrId === "object" ? collectionOrId.id : collectionOrId
   showDialog({
     actions: [
@@ -68,7 +72,7 @@ const handleDeleteCollection = (collectionOrId) => {
   })
 }
 
-const handleBulkDeleteCollections = (collectionIds) => {
+const handleBulkDeleteCollections = (collectionIds: string[]) => {
   showDialog({
     actions: [
       {
@@ -93,7 +97,7 @@ const handleBulkDeleteCollections = (collectionIds) => {
   })
 }
 
-const handleSelectImage = (image) => {
+const handleSelectImage = (image: GridImage) => {
   if (selectedImagesIds.value.includes(image.id)) {
     selectedImagesIds.value = selectedImagesIds.value.filter((id) => id !== image.id)
   } else {
@@ -101,16 +105,16 @@ const handleSelectImage = (image) => {
   }
 }
 
-const handleEditImage = (imageOrId) => {
+const handleEditImage = (imageOrId: GridImage | string) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
   router.push(`/dashboard/images/${imageId}/edit`)
 }
 
-const handleBulkEditImages = (imageIds) => {
+const handleBulkEditImages = (imageIds: string[]) => {
   router.push({ name: "images-edit", query: { ids: imageIds.join(",") } })
 }
 
-const handleDeleteImage = (imageOrId) => {
+const handleDeleteImage = (imageOrId: GridImage | string) => {
   const imageId = typeof imageOrId === "object" ? imageOrId.id : imageOrId
   showDialog({
     actions: [
@@ -131,7 +135,7 @@ const handleDeleteImage = (imageOrId) => {
   })
 }
 
-const handleBulkDeleteImages = (imageIds) => {
+const handleBulkDeleteImages = (imageIds: string[]) => {
   showDialog({
     actions: [
       {
@@ -162,7 +166,7 @@ const clearSelection = () => {
   setSelection({ items: 0 })
 }
 
-const cancelSelectionAction = {
+const cancelSelectionAction: LayoutAction = {
   color: "secondary",
   icon: "X",
   key: "selection-cancel",
@@ -170,21 +174,21 @@ const cancelSelectionAction = {
   text: "Cancel"
 }
 
-const editImageAction = {
+const editImageAction: LayoutAction = {
   icon: "Pencil",
   key: "image-edit-single",
   onClick: () => handleEditImage(selectedImagesIds.value[0]),
   text: "Edit"
 }
 
-const bulkEditImagesAction = {
+const bulkEditImagesAction: LayoutAction = {
   icon: "Pencil",
   key: "image-edit-bulk",
   onClick: () => handleBulkEditImages(selectedImagesIds.value),
   text: "Edit"
 }
 
-const baseImageActions = [
+const baseImageActions: LayoutAction[] = [
   {
     icon: "Trash",
     key: "image-delete-bulk",
@@ -193,35 +197,35 @@ const baseImageActions = [
   }
 ]
 
-const downloadImagesAction = {
+const downloadImagesAction: LayoutAction = {
   icon: "Download",
   key: "image-download",
   onClick: () => imagesStore.bulkDownload(selectedImagesIds.value),
   text: "Download"
 }
 
-const bulkDeleteCollectionsAction = {
+const bulkDeleteCollectionsAction: LayoutAction = {
   icon: "Trash",
   key: "collection-delete-bulk",
   onClick: () => handleBulkDeleteCollections(selectedCollectionsIds.value),
   text: "Delete"
 }
 
-const editCollectionAction = {
+const editCollectionAction: LayoutAction = {
   icon: "Pencil",
   key: "collection-edit-single",
   onClick: () => handleEditCollection(selectedCollectionsIds.value[0]),
   text: "Edit"
 }
 
-const selectCollectionImagesAction = {
+const selectCollectionImagesAction: LayoutAction = {
   icon: "Grid",
   key: "collection-select-images",
   onClick: () => handleSelectCollectionImages(selectedCollectionsIds.value[0]),
   text: "Select Images"
 }
 
-const downloadCollectionsAction = {
+const downloadCollectionsAction: LayoutAction = {
   icon: "Download",
   key: "collection-download",
   onClick: () => collectionsStore.bulkDownload(selectedCollectionsIds.value),

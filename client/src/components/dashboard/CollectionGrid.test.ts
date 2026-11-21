@@ -59,6 +59,18 @@ describe("CollectionGrid", () => {
     expect(items[1]?.get(".title").classes()).toContain("no-title")
   })
 
+  it("renders a bare cached collection and updates when its images are hydrated", async () => {
+    const { createdAt, description, id, title, updatedAt } = gridCollection("bare")
+    const collection = { createdAt, description, id, title, updatedAt }
+    const wrapper = render({ collections: [collection] })
+    expect(wrapper.get(".title").text()).toBe("Title bare")
+    expect(wrapper.get(".image-count").text()).toBe("0 images")
+    expect(wrapper.findAll("img")).toHaveLength(0)
+    await wrapper.setProps({ collections: [gridCollection("bare")] })
+    expect(wrapper.get(".image-count").text()).toBe("1 image")
+    expect(wrapper.get("img").attributes("src")).toBe("/thumb/bare-0")
+  })
+
   it("navigates outside selection and emits action identities", async () => {
     const collection = reactive(gridCollection())
     const wrapper = render({ collections: [collection], showActions: true })
