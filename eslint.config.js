@@ -5,9 +5,6 @@ import pluginVue from "eslint-plugin-vue"
 import globals from "globals"
 import tseslint from "typescript-eslint"
 
-// JavaScript components not yet migrated to TypeScript.
-const untypedComponents = []
-
 export default [
   {
     ignores: ["**/dist/", "**/node_modules/", "**/uploads/", "ai/**"]
@@ -16,8 +13,7 @@ export default [
   { ...pluginJs.configs.recommended, files: ["**/*.js"] },
   ...tseslint.configs.recommended.map((config) => ({
     ...config,
-    files: ["client/**/*.{ts,vue}"],
-    ignores: untypedComponents
+    files: ["client/**/*.{ts,vue}"]
   })),
   perfectionist.configs["recommended-natural"],
   ...pluginVue.configs["flat/recommended"],
@@ -42,7 +38,7 @@ export default [
   },
 
   {
-    files: ["client/**/*.{js,ts,vue}"],
+    files: ["client/**/*.{ts,vue}"],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
